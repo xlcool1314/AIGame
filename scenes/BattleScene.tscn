@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3 uid="uid://battle_scene_root"]
+
+[ext_resource type="Script" path="res://scripts/battle_scene.gd" id="1_script"]
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PlayerStatus" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "玩家状态"
+
+[node name="EnemyStatus" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "敌人状态"
+
+[node name="DeckStatus" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "牌堆状态"
+
+[node name="HandPanel" type="PanelContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HandCards" type="HBoxContainer" parent="MarginContainer/VBox/HandPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EndTurnButton" type="Button" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "结束回合"
+
+[node name="BattleLog" type="RichTextLabel" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = false
+scroll_following = true
+fit_content = false
