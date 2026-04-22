@@ -1,0 +1,40 @@
+{
+  "cards": [
+    {
+      "id": "strike",
+      "name": "打击",
+      "cost": 1,
+      "description": "造成 6 点伤害。",
+      "actions": [
+        { "type": "damage", "value": 6 }
+      ]
+    },
+    {
+      "id": "defend",
+      "name": "防御",
+      "cost": 1,
+      "description": "获得 5 点格挡。",
+      "actions": [
+        { "type": "block", "value": 5 }
+      ]
+    },
+    {
+      "id": "heavy_strike",
+      "name": "重击",
+      "cost": 2,
+      "description": "造成 12 点伤害。",
+      "actions": [
+        { "type": "damage", "value": 12 }
+      ]
+    },
+    {
+      "id": "focus",
+      "name": "专注",
+      "cost": 1,
+      "description": "抽 2 张牌。",
+      "actions": [
+        { "type": "draw", "value": 2 }
+      ]
+    }
+  ]
+}
