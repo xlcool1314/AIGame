@@ -49,17 +49,17 @@ public partial class BattleScene : Control
             child.QueueFree();
         }
 
-        var handCards = (Array)state["hand"];
+        var handCards = state["hand"].AsGodotArray<string>();
         for (var i = 0; i < handCards.Count; i++)
         {
             var idx = i;
-            var cardId = handCards[i].AsString();
+            var cardId = handCards[i];
             var card = _battle.GetCardView(cardId);
 
             var cardButton = new Button
             {
                 CustomMinimumSize = new Vector2(220, 180),
-                Text = $"{GetString(card, "name", cardId)} ({GetInt(card, "cost", 0)})\n\n{GetString(card, "description", "")}",
+                Text = $"{card.GetValueOrDefault("name", cardId)} ({card.GetValueOrDefault("cost", 0)})\n\n{card.GetValueOrDefault("description", "")}",
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Alignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -81,9 +81,8 @@ public partial class BattleScene : Control
                 ContentMarginLeft = 14,
                 ContentMarginTop = 10
             };
-
             cardButton.AddThemeStyleboxOverride("normal", normalStyle);
-            cardButton.AddThemeStyleboxOverride("hover", normalStyle.Duplicate() as StyleBox ?? normalStyle);
+            cardButton.AddThemeStyleboxOverride("hover", normalStyle.Duplicate() as StyleBox);
             cardButton.AddThemeColorOverride("font_color", new Color("E6EEFF"));
 
             cardButton.Pressed += () => _battle.PlayCard(idx);
@@ -93,7 +92,10 @@ public partial class BattleScene : Control
         _endTurnButton.Disabled = state["combat_over"].AsBool();
     }
 
-    private void OnEndTurnPressed() => _battle.EndTurn();
+    private void OnEndTurnPressed()
+    {
+        _battle.EndTurn();
+    }
 
     private void AppendLog(string message)
     {
@@ -103,28 +105,6 @@ public partial class BattleScene : Control
 
     private void OnCombatFinished(string result)
     {
-        AppendLog(result == "win"
-            ? "你赢了！可扩展到奖励结算 / 下一个房间。"
-            : "你输了！可扩展到重开 / 结算页面。");
-    }
-
-    private static int GetInt(Dictionary dict, string key, int fallback)
-    {
-        if (!dict.ContainsKey(key))
-        {
-            return fallback;
-        }
-
-        return dict[key].AsInt32();
-    }
-
-    private static string GetString(Dictionary dict, string key, string fallback)
-    {
-        if (!dict.ContainsKey(key))
-        {
-            return fallback;
-        }
-
-        return dict[key].AsString();
+        AppendLog(result == "win" ? "你赢了！可扩展到奖励结算 / 下一个房间。" : "你输了！可扩展到重开 / 结算页面。");
     }
 }

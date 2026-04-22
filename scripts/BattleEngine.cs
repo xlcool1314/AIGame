@@ -22,9 +22,9 @@ public partial class BattleEngine : RefCounted
     private int _enemyBlock = 0;
     private int _enemyIntentIndex = 0;
 
-    private Array _drawPile = new();
-    private Array _discardPile = new();
-    private Array _hand = new();
+    private Array<string> _drawPile = new();
+    private Array<string> _discardPile = new();
+    private Array<string> _hand = new();
 
     private bool _combatOver = false;
 
@@ -39,18 +39,15 @@ public partial class BattleEngine : RefCounted
         _enemyIntentIndex = 0;
 
         _enemyData = _gameData.GetEnemy(enemyId);
-        _enemyHp = GetInt(_enemyData, "max_hp", 0);
+        _enemyHp = _enemyData.GetValueOrDefault("max_hp", 0).AsInt32();
 
         var deckData = _gameData.GetDeck(deckId);
-        _drawPile = deckData.ContainsKey("cards") && deckData["cards"].VariantType == Variant.Type.Array
-            ? ((Array)deckData["cards"]).Duplicate()
-            : new Array();
-
+        _drawPile = deckData.GetValueOrDefault("cards", new Array()).AsGodotArray<string>().Duplicate();
         _discardPile.Clear();
         _hand.Clear();
         _drawPile.Shuffle();
 
-        EmitSignal(SignalName.CombatLog, $"战斗开始！敌人：{GetString(_enemyData, "name", "未知")}（{_enemyHp} HP）");
+        EmitSignal(SignalName.CombatLog, $"战斗开始！敌人：{_enemyData.GetValueOrDefault("name", "未知")}（{_enemyHp} HP）");
         StartPlayerTurn();
     }
 
@@ -62,11 +59,11 @@ public partial class BattleEngine : RefCounted
             {"player_max_hp", _playerMaxHp},
             {"player_block", _playerBlock},
             {"player_energy", _playerEnergy},
-            {"enemy_name", GetString(_enemyData, "name", "未知")},
+            {"enemy_name", _enemyData.GetValueOrDefault("name", "未知")},
             {"enemy_hp", _enemyHp},
-            {"enemy_max_hp", GetInt(_enemyData, "max_hp", 0)},
+            {"enemy_max_hp", _enemyData.GetValueOrDefault("max_hp", 0).AsInt32()},
             {"enemy_block", _enemyBlock},
-            {"enemy_intent", GetString(CurrentEnemyIntent(), "name", "...")},
+            {"enemy_intent", CurrentEnemyIntent().GetValueOrDefault("name", "...")},
             {"hand", _hand.Duplicate()},
             {"draw_count", _drawPile.Count},
             {"discard_count", _discardPile.Count},
@@ -83,17 +80,17 @@ public partial class BattleEngine : RefCounted
             return;
         }
 
-        var cardId = _hand[handIndex].AsString();
+        var cardId = _hand[handIndex];
         var card = _gameData.GetCard(cardId);
         if (card.Count == 0)
         {
             return;
         }
 
-        var cost = GetInt(card, "cost", 0);
+        var cost = card.GetValueOrDefault("cost", 0).AsInt32();
         if (cost > _playerEnergy)
         {
-            EmitSignal(SignalName.CombatLog, $"能量不足，无法打出 {GetString(card, "name", cardId)}");
+            EmitSignal(SignalName.CombatLog, $"能量不足，无法打出 {card.GetValueOrDefault("name", cardId)}");
             return;
         }
 
@@ -101,8 +98,8 @@ public partial class BattleEngine : RefCounted
         _hand.RemoveAt(handIndex);
         _discardPile.Add(cardId);
 
-        EmitSignal(SignalName.CombatLog, $"你打出 {GetString(card, "name", cardId)}");
-        ApplyActions(GetArray(card, "actions"), true);
+        EmitSignal(SignalName.CombatLog, $"你打出 {card.GetValueOrDefault("name", cardId)}");
+        ApplyActions(card.GetValueOrDefault("actions", new Array()).AsGodotArray(), true);
         CheckCombatEnd();
         EmitSignal(SignalName.StateChanged);
     }
@@ -139,37 +136,31 @@ public partial class BattleEngine : RefCounted
     private void EnemyTurn()
     {
         var intent = CurrentEnemyIntent();
-        EmitSignal(SignalName.CombatLog, $"{GetString(_enemyData, "name", "敌人")} 使用了 {GetString(intent, "name", "攻击")}");
+        EmitSignal(SignalName.CombatLog, $"{_enemyData.GetValueOrDefault("name", "敌人")} 使用了 {intent.GetValueOrDefault("name", "攻击")}");
 
-        ApplyActions(GetArray(intent, "actions"), false);
+        ApplyActions(intent.GetValueOrDefault("actions", new Array()).AsGodotArray(), false);
         _enemyIntentIndex += 1;
         CheckCombatEnd();
     }
 
     private Dictionary CurrentEnemyIntent()
     {
-        var intents = GetArray(_enemyData, "intents");
+        var intents = _enemyData.GetValueOrDefault("intents", new Array()).AsGodotArray();
         if (intents.Count == 0)
         {
             return new Dictionary();
         }
 
-        var intentValue = intents[_enemyIntentIndex % intents.Count];
-        return intentValue.VariantType == Variant.Type.Dictionary ? (Dictionary)intentValue : new Dictionary();
+        return intents[_enemyIntentIndex % intents.Count].AsGodotDictionary();
     }
 
     private void ApplyActions(Array actions, bool fromPlayer)
     {
         foreach (var actionValue in actions)
         {
-            if (actionValue.VariantType != Variant.Type.Dictionary)
-            {
-                continue;
-            }
-
-            var action = (Dictionary)actionValue;
-            var actionType = GetString(action, "type", "");
-            var value = GetInt(action, "value", 0);
+            var action = actionValue.AsGodotDictionary();
+            var actionType = action.GetValueOrDefault("type", "").AsString();
+            var value = action.GetValueOrDefault("value", 0).AsInt32();
 
             switch (actionType)
             {
@@ -259,9 +250,8 @@ public partial class BattleEngine : RefCounted
             return false;
         }
 
-        var top = _drawPile[_drawPile.Count - 1];
+        _hand.Add(_drawPile[_drawPile.Count - 1]);
         _drawPile.RemoveAt(_drawPile.Count - 1);
-        _hand.Add(top);
         return true;
     }
 
@@ -281,35 +271,5 @@ public partial class BattleEngine : RefCounted
             EmitSignal(SignalName.CombatLog, "你被击败了。");
             EmitSignal(SignalName.CombatFinished, "lose");
         }
-    }
-
-    private static int GetInt(Dictionary dict, string key, int fallback)
-    {
-        if (!dict.ContainsKey(key))
-        {
-            return fallback;
-        }
-
-        return dict[key].AsInt32();
-    }
-
-    private static string GetString(Dictionary dict, string key, string fallback)
-    {
-        if (!dict.ContainsKey(key))
-        {
-            return fallback;
-        }
-
-        return dict[key].AsString();
-    }
-
-    private static Array GetArray(Dictionary dict, string key)
-    {
-        if (!dict.ContainsKey(key) || dict[key].VariantType != Variant.Type.Array)
-        {
-            return new Array();
-        }
-
-        return (Array)dict[key];
     }
 }
