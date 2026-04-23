@@ -41,6 +41,7 @@ public partial class MainDemo : Control
 	private Label _brewLabel = null!;
 	private ProgressBar _brewBar = null!;
 	private HBoxContainer _buffList = null!;
+	private readonly System.Collections.Generic.List<ProgressBar> _patienceBars = new();
 
 	private VBoxContainer _productList = null!;
 	private VBoxContainer _customerQueueList = null!;
@@ -153,6 +154,7 @@ public partial class MainDemo : Control
 		_clockLabel.Text = Loc.Format("ui.header.clock", FormatClock(_clockTime));
 		_guestTimerBar.Value = _state.CustomerOrders.Count < 3 ? Math.Min(_customerTimer / 1.5f, 1f) * 100f : 100f;
 		RefreshBrewStatus();
+		RefreshPatienceBars();
 		RefreshProgressLabels();
 		AnimateAmbient();
 	}
@@ -287,29 +289,29 @@ public partial class MainDemo : Control
 
 	private Control BuildCustomerPanel()
 	{
-		_customerCard = CreateAbsolutePanel(new Rect2(20, 578, 420, 430), _cardColor);
+		_customerCard = CreateAbsolutePanel(new Rect2(20, 578, 500, 430), _cardColor);
 		_customerCard.AddChild(CreateAbsoluteLabel(Loc.Current == GameLanguage.Chinese ? "等候客人" : "Guest Queue", 16, _accentColor, new Rect2(18, 16, 160, 22)));
 
 		_customerVisual = TextureHelper.CreateImageOrFallback(
 			_database.Skin.DefaultCustomerTexturePath,
 			"Guest",
-			new Vector2(112, 90),
+			new Vector2(104, 84),
 			_cardColor,
 			_textColor);
 		_customerVisual.Position = new Vector2(18, 48);
-		_customerVisual.Size = new Vector2(112, 90);
+		_customerVisual.Size = new Vector2(104, 84);
 		_customerCard.AddChild(_customerVisual);
 
-		_customerName = CreateAbsoluteLabel(Loc.Text("ui.customer.waitName"), 20, _textColor, new Rect2(146, 54, 240, 26));
+		_customerName = CreateAbsoluteLabel(Loc.Text("ui.customer.waitName"), 20, _textColor, new Rect2(140, 54, 320, 26));
 		_customerCard.AddChild(_customerName);
 
-		_customerLine = CreateAbsoluteWrappedLabel(Loc.Text("ui.customer.waitLine"), 14, _mutedTextColor, new Rect2(146, 86, 240, 60));
+		_customerLine = CreateAbsoluteWrappedLabel(Loc.Text("ui.customer.waitLine"), 14, _mutedTextColor, new Rect2(140, 86, 330, 60));
 		_customerCard.AddChild(_customerLine);
 
 		var queueScroll = new ScrollContainer
 		{
 			Position = new Vector2(18, 158),
-			Size = new Vector2(384, 250),
+			Size = new Vector2(464, 250),
 			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
 			FollowFocus = true,
 		};
@@ -317,7 +319,7 @@ public partial class MainDemo : Control
 
 		_customerQueueList = new VBoxContainer
 		{
-			CustomMinimumSize = new Vector2(368, 0),
+			CustomMinimumSize = new Vector2(448, 0),
 		};
 		_customerQueueList.AddThemeConstantOverride("separation", 8);
 		queueScroll.AddChild(_customerQueueList);
@@ -326,22 +328,22 @@ public partial class MainDemo : Control
 
 	private Control BuildProductPanel()
 	{
-		_productPanel = CreateAbsolutePanel(new Rect2(460, 578, 790, 430), _cardColor);
+		_productPanel = CreateAbsolutePanel(new Rect2(540, 578, 710, 430), _cardColor);
 		_productPanel.AddChild(CreateAbsoluteLabel(Loc.Text("ui.products.title"), 16, _accentColor, new Rect2(18, 16, 160, 22)));
 		_productPanel.AddChild(CreateAbsoluteWrappedLabel(Loc.Text("ui.products.desc"), 15, _mutedTextColor, new Rect2(18, 46, 470, 24)));
 
-		_brewLabel = CreateAbsoluteLabel(string.Empty, 14, _accentColor, new Rect2(500, 46, 250, 20));
+		_brewLabel = CreateAbsoluteLabel(string.Empty, 14, _accentColor, new Rect2(438, 46, 250, 20));
 		_productPanel.AddChild(_brewLabel);
 
 		_brewBar = BuildGuestTimerBar();
-		_brewBar.Position = new Vector2(500, 68);
-		_brewBar.Size = new Vector2(250, 8);
+		_brewBar.Position = new Vector2(438, 68);
+		_brewBar.Size = new Vector2(236, 8);
 		_productPanel.AddChild(_brewBar);
 
 		_productScroll = new ScrollContainer
 		{
 			Position = new Vector2(18, 90),
-			Size = new Vector2(754, 320),
+			Size = new Vector2(674, 320),
 			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
 			VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
 			FollowFocus = true,
@@ -350,7 +352,7 @@ public partial class MainDemo : Control
 
 		_productList = new VBoxContainer
 		{
-			CustomMinimumSize = new Vector2(738, 0),
+			CustomMinimumSize = new Vector2(658, 0),
 		};
 		_productList.AddThemeConstantOverride("separation", 8);
 		_productScroll.AddChild(_productList);
@@ -695,6 +697,7 @@ public partial class MainDemo : Control
 	private void RefreshCustomerPanel()
 	{
 		ClearChildren(_customerQueueList);
+		_patienceBars.Clear();
 
 		if (_state.CustomerOrders.Count == 0)
 		{
@@ -730,25 +733,27 @@ public partial class MainDemo : Control
 	{
 		var customer = _database.GetCustomer(order.CustomerId);
 		var row = UiFactory.CreateCard(index == _state.SelectedOrderIndex ? _cardColor.Lightened(0.10f) : _cardColor.Lightened(0.03f));
-		row.CustomMinimumSize = new Vector2(368, 72);
+		row.CustomMinimumSize = new Vector2(448, 78);
 		BindInteractiveCard(row);
 
 		var name = customer == null ? order.CustomerId : CustomerName(customer);
-		row.AddChild(CreateAbsoluteLabel($"{index + 1}. {name}", 15, index == _state.SelectedOrderIndex ? _accentColor : _textColor, new Rect2(12, 8, 220, 20)));
-		row.AddChild(CreateAbsoluteLabel(GameState.TagToDisplay(order.RequestTag), 13, _infoColor, new Rect2(12, 30, 120, 18)));
+		row.AddChild(CreateAbsoluteLabel($"{index + 1}. {name}", 15, index == _state.SelectedOrderIndex ? _accentColor : _textColor, new Rect2(12, 8, 250, 20)));
+		row.AddChild(CreateAbsoluteLabel(Loc.Current == GameLanguage.Chinese ? $"需求 {GameState.TagToDisplay(order.RequestTag)}" : $"Need {GameState.TagToDisplay(order.RequestTag)}", 13, _infoColor, new Rect2(12, 32, 160, 18)));
+		row.AddChild(CreateAbsoluteLabel(Loc.Current == GameLanguage.Chinese ? "耐心" : "Patience", 12, _mutedTextColor, new Rect2(176, 32, 54, 18)));
 
 		var patience = new ProgressBar
 		{
-			Position = new Vector2(132, 34),
-			Size = new Vector2(92, 8),
+			Position = new Vector2(226, 36),
+			Size = new Vector2(104, 8),
 			MinValue = 0,
 			MaxValue = 100,
 			Value = order.PatiencePercent * 100f,
 			ShowPercentage = false,
 		};
 		row.AddChild(patience);
+		_patienceBars.Add(patience);
 
-		var button = CreateAbsoluteButton(Loc.Current == GameLanguage.Chinese ? "选择" : "Pick", new Rect2(270, 18, 76, 32), true);
+		var button = CreateAbsoluteButton(Loc.Current == GameLanguage.Chinese ? "选择" : "Pick", new Rect2(354, 20, 76, 32), true);
 		button.Disabled = _state.IsBrewing;
 		button.Pressed += () =>
 		{
@@ -758,6 +763,17 @@ public partial class MainDemo : Control
 		};
 		row.AddChild(button);
 		return row;
+	}
+
+	private void RefreshPatienceBars()
+	{
+		for (var i = 0; i < _patienceBars.Count && i < _state.CustomerOrders.Count; i++)
+		{
+			_patienceBars[i].Value = _state.CustomerOrders[i].PatiencePercent * 100f;
+			_patienceBars[i].Modulate = _state.CustomerOrders[i].PatiencePercent < 0.35f
+				? _warningColor
+				: Colors.White;
+		}
 	}
 
 	private void RefreshBuffList()
