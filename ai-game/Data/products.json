@@ -1,0 +1,20 @@
+{
+  "items": [
+    { "id": "black_tea", "displayName": "雨夜红茶", "basePrice": 10, "cost": 4, "brewSeconds": 2.0, "aromaGain": 1, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 1, "unlockReputation": 0, "tags": ["warm", "classic"] },
+    { "id": "oolong", "displayName": "柚香乌龙", "basePrice": 13, "cost": 5, "brewSeconds": 3.0, "aromaGain": 2, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 1, "unlockReputation": 0, "tags": ["warm", "refreshing"] },
+    { "id": "milk_tea", "displayName": "窗灯奶茶", "basePrice": 17, "cost": 6, "brewSeconds": 3.5, "aromaGain": 2, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 1, "unlockReputation": 1, "tags": ["warm", "milk"] },
+    { "id": "ginger_tea", "displayName": "生姜暖茶", "basePrice": 20, "cost": 7, "brewSeconds": 3.4, "aromaGain": 3, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 2, "unlockReputation": 2, "tags": ["warm", "spice"] },
+    { "id": "osmanthus", "displayName": "月见桂花露", "basePrice": 23, "cost": 8, "brewSeconds": 4.0, "aromaGain": 3, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 2, "unlockReputation": 3, "tags": ["floral", "refreshing"] },
+    { "id": "peach_brew", "displayName": "白桃冷泡", "basePrice": 27, "cost": 9, "brewSeconds": 4.2, "aromaGain": 4, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 3, "unlockReputation": 4, "tags": ["refreshing", "fruit"] },
+    { "id": "chestnut_latte", "displayName": "栗子茶拿铁", "basePrice": 32, "cost": 11, "brewSeconds": 4.8, "aromaGain": 4, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 4, "unlockReputation": 5, "tags": ["milk", "warm"] },
+    { "id": "night_special", "displayName": "深夜拼配", "basePrice": 38, "cost": 13, "brewSeconds": 5.5, "aromaGain": 5, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 5, "unlockReputation": 7, "tags": ["warm", "floral", "premium"] },
+    { "id": "jasmine_sencha", "displayName": "茉风煎茶", "basePrice": 42, "cost": 15, "brewSeconds": 5.2, "aromaGain": 5, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 5, "unlockReputation": 8, "tags": ["floral", "refreshing"] },
+    { "id": "berry_soda_tea", "displayName": "莓果气泡茶", "basePrice": 48, "cost": 17, "brewSeconds": 5.4, "aromaGain": 5, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 6, "unlockReputation": 9, "tags": ["refreshing", "fruit"] },
+    { "id": "charcoal_latte", "displayName": "焙茶炭焙拿铁", "basePrice": 54, "cost": 19, "brewSeconds": 5.8, "aromaGain": 6, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 6, "unlockReputation": 10, "tags": ["milk", "warm", "premium"] },
+    { "id": "plum_tea", "displayName": "青梅夜露", "basePrice": 59, "cost": 21, "brewSeconds": 5.8, "aromaGain": 6, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 7, "unlockReputation": 11, "tags": ["refreshing", "floral"] },
+    { "id": "rose_milk", "displayName": "玫瑰奶霜茶", "basePrice": 65, "cost": 23, "brewSeconds": 6.1, "aromaGain": 7, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 8, "unlockReputation": 12, "tags": ["milk", "floral"] },
+    { "id": "yuzu_spark", "displayName": "柚见星气泡", "basePrice": 72, "cost": 25, "brewSeconds": 6.1, "aromaGain": 7, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 9, "unlockReputation": 13, "tags": ["refreshing", "premium"] },
+    { "id": "spiced_chai", "displayName": "夜火香料奶茶", "basePrice": 80, "cost": 28, "brewSeconds": 6.3, "aromaGain": 8, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 10, "unlockReputation": 15, "tags": ["warm", "milk", "spice"] },
+    { "id": "midnight_fizz", "displayName": "午夜回声特饮", "basePrice": 92, "cost": 32, "brewSeconds": 6.6, "aromaGain": 9, "iconPath": "res://Assets/Placeholders/tea_placeholder.svg", "unlockShift": 12, "unlockReputation": 18, "tags": ["refreshing", "floral", "premium"] }
+  ]
+}

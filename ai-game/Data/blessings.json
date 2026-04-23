@@ -1,0 +1,32 @@
+{
+  "items": [
+    { "id": "golden_spoon", "displayName": "金边茶勺", "description": "所有饮品金币收益 +18%", "effectType": "coin_multiplier", "archetype": "收益", "amount": 0.18, "unlockShift": 1 },
+    { "id": "fragrant_steam", "displayName": "香雾回流", "description": "每杯茶额外获得 +1 茶香", "effectType": "flat_aroma", "archetype": "香气", "amount": 1, "unlockShift": 1 },
+    { "id": "warm_counter", "displayName": "暖柜余温", "description": "装饰被动收益 +30%", "effectType": "passive_multiplier", "archetype": "陈设", "amount": 0.3, "unlockShift": 1 },
+    { "id": "late_tip", "displayName": "夜归小费", "description": "客人更容易留下小费", "effectType": "tip_chance", "archetype": "小费", "amount": 0.22, "unlockShift": 1 },
+    { "id": "cash_box", "displayName": "零钱盒", "description": "每次触发小费时额外 +3 金币", "effectType": "tip_flat", "archetype": "小费", "amount": 3, "unlockShift": 1 },
+    { "id": "silver_menu", "displayName": "银边菜单", "description": "所有饮品金币收益 +12%", "effectType": "coin_multiplier", "archetype": "收益", "amount": 0.12, "unlockShift": 1 },
+    { "id": "night_prep", "displayName": "备料加速", "description": "每秒额外获得 1 金币", "effectType": "passive_flat", "archetype": "陈设", "amount": 1, "unlockShift": 2 },
+    { "id": "house_special", "displayName": "招牌记忆", "description": "今日招牌额外获得更多收益与茶香", "effectType": "special_multiplier", "archetype": "招牌", "amount": 0.2, "unlockShift": 2 },
+    { "id": "quick_hand", "displayName": "熟手节奏", "description": "连击收益提升，更容易打出高连击", "effectType": "combo_stack", "archetype": "连击", "amount": 0.05, "unlockShift": 2 },
+    { "id": "warm_blend", "displayName": "温热拼配", "description": "温热系饮品收益提升", "effectType": "warm_bonus", "archetype": "温热流", "amount": 0.15, "unlockShift": 2 },
+    { "id": "second_wind", "displayName": "二次开台", "description": "每秒额外获得 2 金币", "effectType": "passive_flat", "archetype": "陈设", "amount": 2, "unlockShift": 2 },
+    { "id": "flower_recipe", "displayName": "花香配方", "description": "花香系饮品收益提升", "effectType": "floral_bonus", "archetype": "花香流", "amount": 0.18, "unlockShift": 3 },
+    { "id": "cream_top", "displayName": "奶盖余温", "description": "奶香系饮品收益提升", "effectType": "milk_bonus", "archetype": "奶香流", "amount": 0.18, "unlockShift": 3 },
+    { "id": "cold_brew_note", "displayName": "冷泡笔记", "description": "清爽系饮品收益提升", "effectType": "refreshing_bonus", "archetype": "清爽流", "amount": 0.18, "unlockShift": 3 },
+    { "id": "double_order", "displayName": "双份点单", "description": "饮品收益与被动收益同时提升", "effectType": "hybrid", "archetype": "混合", "amount": 1, "unlockShift": 3 },
+    { "id": "chain_memory", "displayName": "连单记忆", "description": "连击收益再次提高", "effectType": "combo_stack", "archetype": "连击", "amount": 0.04, "unlockShift": 3 },
+    { "id": "tea_ritual", "displayName": "闭店仪式", "description": "装饰被动收益 +22%", "effectType": "passive_multiplier", "archetype": "陈设", "amount": 0.22, "unlockShift": 4 },
+    { "id": "word_of_mouth", "displayName": "口口相传", "description": "喜欢的饮品会带来更多声望", "effectType": "reputation_multiplier", "archetype": "声望", "amount": 0.5, "unlockShift": 4 },
+    { "id": "rush_hour", "displayName": "高峰应对", "description": "夜间订单奖励提升", "effectType": "event_reward_multiplier", "archetype": "订单", "amount": 0.35, "unlockShift": 4 },
+    { "id": "story_whisper", "displayName": "旧城耳语", "description": "茶香提升，同时更容易拿到小费", "effectType": "hybrid", "archetype": "故事", "amount": 1, "unlockShift": 4 },
+    { "id": "spotlight_special", "displayName": "今晚招牌秀", "description": "今日招牌额外获得更多金币收益", "effectType": "special_multiplier", "archetype": "招牌", "amount": 0.18, "unlockShift": 5 },
+    { "id": "soft_service", "displayName": "柔和招待", "description": "客人更容易留下小费", "effectType": "tip_chance", "archetype": "小费", "amount": 0.18, "unlockShift": 5 },
+    { "id": "flower_market", "displayName": "花市进货", "description": "花香系饮品收益再次提升", "effectType": "floral_bonus", "archetype": "花香流", "amount": 0.15, "unlockShift": 6 },
+    { "id": "milk_street", "displayName": "奶霜街角", "description": "奶香系饮品收益再次提升", "effectType": "milk_bonus", "archetype": "奶香流", "amount": 0.15, "unlockShift": 6 },
+    { "id": "fresh_route", "displayName": "清爽路线", "description": "清爽系饮品收益再次提升", "effectType": "refreshing_bonus", "archetype": "清爽流", "amount": 0.15, "unlockShift": 6 },
+    { "id": "warm_hearth", "displayName": "炉边火光", "description": "温热系饮品收益再次提升", "effectType": "warm_bonus", "archetype": "温热流", "amount": 0.12, "unlockShift": 6 },
+    { "id": "reputation_echo", "displayName": "回响口碑", "description": "喜欢的饮品会带来更多声望", "effectType": "reputation_multiplier", "archetype": "声望", "amount": 0.4, "unlockShift": 7 },
+    { "id": "festival_board", "displayName": "节庆看板", "description": "夜间订单奖励再次提升", "effectType": "event_reward_multiplier", "archetype": "订单", "amount": 0.25, "unlockShift": 7 }
+  ]
+}

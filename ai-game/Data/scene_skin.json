@@ -1,0 +1,9 @@
+{
+  "title": "深夜窗台茶馆 DEMO",
+  "backgroundTexturePath": "res://Assets/Placeholders/background_placeholder.svg",
+  "clerkTexturePath": "res://Assets/Placeholders/clerk_placeholder.svg",
+  "defaultCustomerTexturePath": "res://Assets/Placeholders/customer_placeholder.svg",
+  "accentColor": "#d9ab70",
+  "backgroundColor": "#1a1f28",
+  "cardColor": "#243241"
+}
