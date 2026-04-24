@@ -1,26 +1,16 @@
 {
   "items": [
-    { "id": "warm_lamp", "displayName": "暖黄台灯", "cost": 20, "passiveCoinsPerSecond": 0.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 1 },
-    { "id": "potted_plant", "displayName": "窗边盆栽", "cost": 35, "passiveCoinsPerSecond": 1.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 1 },
-    { "id": "record_player", "displayName": "旧唱片机", "cost": 50, "passiveCoinsPerSecond": 1.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 1 },
-    { "id": "curtain", "displayName": "雨纹窗帘", "cost": 80, "passiveCoinsPerSecond": 2.2, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 2 },
-    { "id": "shelf", "displayName": "木质茶架", "cost": 120, "passiveCoinsPerSecond": 3.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 3 },
-    { "id": "lamp_banner", "displayName": "招牌灯箱", "cost": 180, "passiveCoinsPerSecond": 4.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 4 },
-    { "id": "wall_clock", "displayName": "古旧挂钟", "cost": 260, "passiveCoinsPerSecond": 6.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 5 },
-    { "id": "brass_kettle", "displayName": "铜壶陈列", "cost": 320, "passiveCoinsPerSecond": 7.2, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 5 },
-    { "id": "postcard_wall", "displayName": "旅人明信片墙", "cost": 400, "passiveCoinsPerSecond": 8.8, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 6 },
-    { "id": "incense_set", "displayName": "香篆摆台", "cost": 460, "passiveCoinsPerSecond": 10.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 6 },
-    { "id": "tea_canister", "displayName": "锡制茶叶罐组", "cost": 540, "passiveCoinsPerSecond": 11.8, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 7 },
-    { "id": "floor_lantern", "displayName": "落地纸灯", "cost": 620, "passiveCoinsPerSecond": 13.4, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 7 },
-    { "id": "ceramic_cups", "displayName": "手作茶杯套组", "cost": 710, "passiveCoinsPerSecond": 15.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 8 },
-    { "id": "story_board", "displayName": "深夜故事板", "cost": 820, "passiveCoinsPerSecond": 17.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 8 },
-    { "id": "rain_sign", "displayName": "雨巷霓虹牌", "cost": 940, "passiveCoinsPerSecond": 20.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 9 },
-    { "id": "vinyl_shelf", "displayName": "黑胶展示架", "cost": 1080, "passiveCoinsPerSecond": 23.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 9 },
-    { "id": "cat_clock", "displayName": "招财猫摆钟", "cost": 1240, "passiveCoinsPerSecond": 26.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 10 },
-    { "id": "herb_dryer", "displayName": "草本晾架", "cost": 1420, "passiveCoinsPerSecond": 30.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 10 },
-    { "id": "greenhouse_corner", "displayName": "微型温室角", "cost": 1650, "passiveCoinsPerSecond": 34.5, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 11 },
-    { "id": "hanging_lights", "displayName": "串灯天幕", "cost": 1880, "passiveCoinsPerSecond": 39.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 11 },
-    { "id": "premium_counter", "displayName": "黄铜吧台前台", "cost": 2140, "passiveCoinsPerSecond": 44.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 12 },
-    { "id": "skylight", "displayName": "星顶天窗", "cost": 2450, "passiveCoinsPerSecond": 50.0, "texturePath": "res://Assets/Placeholders/decor_placeholder.svg", "unlockShift": 12 }
+    { "id": "warm_lamp", "displayName": "炉火壁灯", "cost": 28, "passiveCoinsPerSecond": 1.0, "texturePath": "res://Assets/Art/Decor/warm_lamp.svg", "unlockShift": 1 },
+    { "id": "potted_plant", "displayName": "狩猎旗架", "cost": 44, "passiveCoinsPerSecond": 1.4, "texturePath": "res://Assets/Art/Decor/banner_rack.svg", "unlockShift": 1 },
+    { "id": "record_player", "displayName": "磨刃石轮", "cost": 68, "passiveCoinsPerSecond": 1.9, "texturePath": "res://Assets/Art/Decor/grindstone.svg", "unlockShift": 2 },
+    { "id": "curtain", "displayName": "铁钩陈列墙", "cost": 96, "passiveCoinsPerSecond": 2.4, "texturePath": "res://Assets/Art/Decor/weapon_wall.svg", "unlockShift": 2 },
+    { "id": "shelf", "displayName": "备用箭柜", "cost": 138, "passiveCoinsPerSecond": 3.0, "texturePath": "res://Assets/Art/Decor/ammo_cabinet.svg", "unlockShift": 3 },
+    { "id": "lamp_banner", "displayName": "战团招牌", "cost": 188, "passiveCoinsPerSecond": 3.8, "texturePath": "res://Assets/Art/Decor/warband_sign.svg", "unlockShift": 4 },
+    { "id": "wall_clock", "displayName": "工序沙漏", "cost": 246, "passiveCoinsPerSecond": 4.6, "texturePath": "res://Assets/Art/Decor/sandglass.svg", "unlockShift": 4 },
+    { "id": "brass_kettle", "displayName": "铭纹工作台", "cost": 320, "passiveCoinsPerSecond": 5.5, "texturePath": "res://Assets/Art/Decor/workbench.svg", "unlockShift": 5 },
+    { "id": "postcard_wall", "displayName": "战利品墙", "cost": 410, "passiveCoinsPerSecond": 6.5, "texturePath": "res://Assets/Art/Decor/trophy_wall.svg", "unlockShift": 6 },
+    { "id": "incense_set", "displayName": "精钢锭架", "cost": 520, "passiveCoinsPerSecond": 7.8, "texturePath": "res://Assets/Art/Decor/ingot_rack.svg", "unlockShift": 7 },
+    { "id": "tea_canister", "displayName": "符文砧台", "cost": 650, "passiveCoinsPerSecond": 9.0, "texturePath": "res://Assets/Art/Decor/rune_anvil.svg", "unlockShift": 8 },
+    { "id": "floor_lantern", "displayName": "军械橱窗", "cost": 820, "passiveCoinsPerSecond": 10.5, "texturePath": "res://Assets/Art/Decor/armored_window.svg", "unlockShift": 9 }
   ]
 }

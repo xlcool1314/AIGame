@@ -13,6 +13,25 @@ public sealed class ProductConfig
     public string IconPath { get; set; } = string.Empty;
     public int UnlockShift { get; set; } = 1;
     public int UnlockReputation { get; set; }
+    public string Slot { get; set; } = "weapon";
+    public int Attack { get; set; }
+    public int Defense { get; set; }
+    public int Vitality { get; set; }
+    public float AttackSpeedBonus { get; set; }
+    public float ExtraAttackChance { get; set; }
+    public float CritChance { get; set; }
+    public float HealOnHit { get; set; }
+    public string BuffId { get; set; } = string.Empty;
+    public string BuffName { get; set; } = string.Empty;
+    public string BuffDescription { get; set; } = string.Empty;
+    public float BuffDuration { get; set; }
+    public int BuffAttack { get; set; }
+    public int BuffDefense { get; set; }
+    public int BuffVitality { get; set; }
+    public float BuffAttackSpeedBonus { get; set; }
+    public float BuffExtraAttackChance { get; set; }
+    public float BuffCritChance { get; set; }
+    public float BuffHealOnHit { get; set; }
     public List<string> Tags { get; set; } = new();
 }
 
@@ -26,6 +45,10 @@ public sealed class CustomerConfig
     public string FirstLine { get; set; } = string.Empty;
     public int UnlockShift { get; set; } = 1;
     public int TipCoins { get; set; }
+    public int MaxHp { get; set; } = 100;
+    public int BaseAttack { get; set; } = 8;
+    public int BaseDefense { get; set; } = 2;
+    public float BaseAttackSeconds { get; set; } = 2.8f;
 }
 
 public sealed class DecorConfig
