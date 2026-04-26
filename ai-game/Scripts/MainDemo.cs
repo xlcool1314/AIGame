@@ -1362,6 +1362,11 @@ public partial class MainDemo : Control
 		}
 
 		var viewportSize = GetViewportRect().Size;
+		if (viewportSize.X <= 0 || viewportSize.Y <= 0)
+		{
+			return;
+		}
+
 		const float targetAspect = DesignWidth / DesignHeight;
 		var viewportAspect = viewportSize.X / viewportSize.Y;
 
@@ -1375,9 +1380,13 @@ public partial class MainDemo : Control
 			canvasSize = new Vector2(viewportSize.X, viewportSize.X / targetAspect);
 		}
 
+		canvasSize = new Vector2(Mathf.Round(canvasSize.X), Mathf.Round(canvasSize.Y));
+		var canvasPosition = (viewportSize - canvasSize) * 0.5f;
+		canvasPosition = new Vector2(Mathf.Round(canvasPosition.X), Mathf.Round(canvasPosition.Y));
+
 		_canvasRoot.Size = new Vector2(DesignWidth, DesignHeight);
 		_canvasRoot.Scale = new Vector2(canvasSize.X / DesignWidth, canvasSize.Y / DesignHeight);
-		_canvasRoot.Position = (viewportSize - canvasSize) * 0.5f;
+		_canvasRoot.Position = canvasPosition;
 	}
 
 	private void AnimateAmbient()
