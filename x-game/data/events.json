@@ -1,0 +1,77 @@
+{
+  "events": [
+    {
+      "id": "echo_ore",
+      "title": "矿脉回声",
+      "description": "一簇蓝白矿晶在岩缝里低鸣。靠近它时，旧矿道的脚步声像潮水一样退回来。",
+      "choices": [
+        {
+          "text": "敲下一块稳定矿晶",
+          "result": "矿晶被收入背包，矿灯也亮了一些。",
+          "actions": [
+            { "type": "shards", "value": 18 }
+          ]
+        },
+        {
+          "text": "贴近聆听回声",
+          "result": "你从回声里辨认出更稳的呼吸节奏，生命上限提高了。",
+          "actions": [
+            { "type": "max_hp", "value": 6 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "collapsed_tunnel",
+      "title": "坍塌支道",
+      "description": "碎石挡住了侧路。缝隙后有一只旧工具箱，铁扣已经锈得发黑。",
+      "choices": [
+        {
+          "text": "搬开碎石拿工具箱（失去 6 点生命）",
+          "result": "碎石擦伤了手臂，但工具箱里躺着一柄保养完好的重镐。",
+          "actions": [
+            { "type": "damage", "value": 6 },
+            { "type": "add_card", "cardId": "heavy_pick" }
+          ]
+        },
+        {
+          "text": "绕路前进并包扎伤口",
+          "result": "你没有惊动支道深处的东西，并趁机处理了伤口。",
+          "actions": [
+            { "type": "heal", "value": 10 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "old_camp",
+      "title": "旧矿工营地",
+      "description": "几顶破旧帆布帐篷还挂在岩钉上。火塘早已冷透，但工具架上仍有能用的东西。",
+      "choices": [
+        {
+          "text": "翻找工具架",
+          "result": "你找到一份爆破药包，火药味让矿灯晃了一下。",
+          "actions": [
+            { "type": "add_card", "cardId": "blast_charge" }
+          ]
+        },
+        {
+          "text": "整理营地补给",
+          "result": "你把可用的绷带和灯油收好，状态稳定了不少。",
+          "actions": [
+            { "type": "heal", "value": 14 },
+            { "type": "shards", "value": 8 }
+          ]
+        },
+        {
+          "text": "带走刻着名字的铜牌",
+          "result": "铜牌被挂在矿灯旁。它像是在提醒你别走得太急。",
+          "actions": [
+            { "type": "relic", "relicId": "旧矿工铜牌" },
+            { "type": "max_hp", "value": 4 }
+          ]
+        }
+      ]
+    }
+  ]
+}

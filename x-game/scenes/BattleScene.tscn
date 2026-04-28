@@ -1,0 +1,144 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/BattleScene.cs" id="1_battle"]
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_battle")
+
+[node name="Root" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="MainLayout" type="VBoxContainer" parent="Root/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RunStatusLabel" type="Label" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+text = "跑局状态"
+
+[node name="TopButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MenuButton" type="Button" parent="Root/Margin/MainLayout/TopButtonRow"]
+layout_mode = 2
+text = "返回主菜单"
+
+[node name="RoomTitleLabel" type="Label" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "房间标题"
+
+[node name="RoomDescriptionLabel" type="Label" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+autowrap_mode = 3
+text = "房间描述"
+
+[node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+visible = false
+layout_mode = 2
+
+[node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ChoicePanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MineLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/MinePanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+layout_mode = 2
+text = "矿区状态"
+
+[node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+layout_mode = 2
+text = "模式：翻开"
+
+[node name="MineGrid" type="GridContainer" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+columns = 5
+
+[node name="BattlePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BattleLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/BattlePanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BattleStatusLabel" type="Label" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+layout_mode = 2
+text = "战斗状态"
+
+[node name="IntentLabel" type="Label" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+layout_mode = 2
+text = "敌人意图"
+
+[node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HandList" type="VBoxContainer" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout/HandPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+layout_mode = 2
+text = "结束回合"
+
+[node name="RewardPanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RewardList" type="VBoxContainer" parent="Root/Margin/MainLayout/RewardPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout"]
+visible = false
+layout_mode = 2
+text = "继续深入"
+
+[node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogText" type="RichTextLabel" parent="Root/Margin/MainLayout/LogPanel"]
+layout_mode = 2
+bbcode_enabled = false
+scroll_following = true
+fit_content = true

@@ -1,0 +1,12 @@
+{
+  "decks": [
+    {
+      "id": "starter",
+      "cards": [
+        "strike", "strike", "strike", "strike", "strike",
+        "defend", "defend", "defend", "defend",
+        "insight"
+      ]
+    }
+  ]
+}

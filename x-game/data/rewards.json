@@ -1,0 +1,42 @@
+{
+  "rewards": [
+    {
+      "id": "basic",
+      "title": "普通战利品",
+      "shards": 12,
+      "heal": 4,
+      "cardChoices": [
+        "heavy_pick",
+        "lamp_guard",
+        "quick_scan",
+        "blast_charge",
+        "reinforce"
+      ]
+    },
+    {
+      "id": "elite",
+      "title": "监管者战利品",
+      "shards": 32,
+      "heal": 8,
+      "cardChoices": [
+        "heavy_pick",
+        "lamp_guard",
+        "quick_scan",
+        "blast_charge",
+        "reinforce"
+      ]
+    },
+    {
+      "id": "shop",
+      "title": "矿灯商队货架",
+      "shards": 0,
+      "heal": 0,
+      "cardChoices": [
+        "quick_scan",
+        "lamp_guard",
+        "blast_charge",
+        "reinforce"
+      ]
+    }
+  ]
+}
