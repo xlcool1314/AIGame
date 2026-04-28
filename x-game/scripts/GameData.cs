@@ -8,24 +8,16 @@ public partial class GameData : Node
     public CardsConfig Cards { get; private set; } = new();
     public EnemiesConfig Enemies { get; private set; } = new();
     public DecksConfig Decks { get; private set; } = new();
-    public RelicsConfig Relics { get; private set; } = new();
+    public EventsConfig Events { get; private set; } = new();
+    public RewardsConfig Rewards { get; private set; } = new();
 
     public void LoadAll()
     {
         Cards = LoadJson<CardsConfig>("res://data/cards.json");
         Enemies = LoadJson<EnemiesConfig>("res://data/enemies.json");
         Decks = LoadJson<DecksConfig>("res://data/decks.json");
-        Relics = LoadJson<RelicsConfig>("res://data/relics.json");
-    }
-
-    public List<CardData> GetAllCards()
-    {
-        return new List<CardData>(Cards.Cards);
-    }
-
-    public List<RelicData> GetAllRelics()
-    {
-        return new List<RelicData>(Relics.Relics);
+        Events = LoadJson<EventsConfig>("res://data/events.json");
+        Rewards = LoadJson<RewardsConfig>("res://data/rewards.json");
     }
 
     public CardData GetCard(string cardId)
@@ -52,6 +44,32 @@ public partial class GameData : Node
         }
 
         throw new InvalidOperationException($"未找到敌人: {enemyId}");
+    }
+
+    public MineEventData GetEvent(string eventId)
+    {
+        foreach (var mineEvent in Events.Events)
+        {
+            if (mineEvent.Id == eventId)
+            {
+                return mineEvent;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到事件: {eventId}");
+    }
+
+    public RewardData GetReward(string rewardId)
+    {
+        foreach (var reward in Rewards.Rewards)
+        {
+            if (reward.Id == rewardId)
+            {
+                return reward;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到奖励: {rewardId}");
     }
 
     public List<CardData> BuildStarterDeck(string deckId)
@@ -103,9 +121,14 @@ public class DecksConfig
     public List<DeckData> Decks { get; set; } = new();
 }
 
-public class RelicsConfig
+public class EventsConfig
 {
-    public List<RelicData> Relics { get; set; } = new();
+    public List<MineEventData> Events { get; set; } = new();
+}
+
+public class RewardsConfig
+{
+    public List<RewardData> Rewards { get; set; } = new();
 }
 
 public class DeckData
@@ -143,11 +166,34 @@ public class IntentData
     public List<CardAction> Actions { get; set; } = new();
 }
 
-public class RelicData
+public class MineEventData
 {
     public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public List<EventChoiceData> Choices { get; set; } = new();
+}
+
+public class EventChoiceData
+{
+    public string Text { get; set; } = string.Empty;
+    public string Result { get; set; } = string.Empty;
+    public List<RunAction> Actions { get; set; } = new();
+}
+
+public class RewardData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public int Shards { get; set; }
+    public int Heal { get; set; }
+    public List<string> CardChoices { get; set; } = new();
+}
+
+public class RunAction
+{
     public string Type { get; set; } = string.Empty;
     public int Value { get; set; }
+    public string CardId { get; set; } = string.Empty;
+    public string RelicId { get; set; } = string.Empty;
 }

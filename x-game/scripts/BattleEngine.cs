@@ -10,17 +10,8 @@ public partial class BattleEngine : Node
     public int EnemyHp { get; private set; }
     public int EnemyBlock { get; private set; }
     public int Energy { get; private set; }
-    public int Turn { get; private set; }
-
-    public int PlayerWeak { get; private set; }
-    public int EnemyWeak { get; private set; }
-    public int PlayerVulnerable { get; private set; }
-    public int EnemyVulnerable { get; private set; }
 
     public EnemyData Enemy { get; private set; } = new();
-    public int BonusEnergyPerTurn { get; set; }
-    public int BonusBlockPerTurn { get; set; }
-    public int BonusPlayerDamage { get; set; }
 
     public readonly List<CardData> DrawPile = new();
     public readonly List<CardData> DiscardPile = new();
@@ -28,21 +19,21 @@ public partial class BattleEngine : Node
     public readonly List<string> Log = new();
 
     private int _intentIndex;
-    private readonly Random _random = new();
+    private Random _random = new();
 
-    public void StartBattle(List<CardData> deck, EnemyData enemy, int? playerHpOverride = null)
+    public void StartBattle(List<CardData> deck, EnemyData enemy)
+    {
+        StartBattle(deck, enemy, PlayerMaxHp, PlayerMaxHp);
+    }
+
+    public void StartBattle(List<CardData> deck, EnemyData enemy, int playerMaxHp, int playerHp)
     {
         Enemy = enemy;
         EnemyHp = enemy.MaxHp;
         EnemyBlock = 0;
-        PlayerHp = Math.Clamp(playerHpOverride ?? PlayerMaxHp, 1, PlayerMaxHp);
+        PlayerMaxHp = playerMaxHp;
+        PlayerHp = Math.Clamp(playerHp, 1, PlayerMaxHp);
         PlayerBlock = 0;
-
-        Turn = 0;
-        PlayerWeak = 0;
-        EnemyWeak = 0;
-        PlayerVulnerable = 0;
-        EnemyVulnerable = 0;
 
         DrawPile.Clear();
         DiscardPile.Clear();
@@ -52,21 +43,16 @@ public partial class BattleEngine : Node
         Shuffle(DrawPile);
 
         _intentIndex = 0;
-        Log.Add($"遭遇敌人：{Enemy.Name}");
         StartPlayerTurn();
+        Log.Add($"遭遇敌人：{Enemy.Name}");
     }
 
     public void StartPlayerTurn()
     {
-        Turn++;
-        PlayerBlock = BonusBlockPerTurn;
-        Energy = 3 + BonusEnergyPerTurn;
+        PlayerBlock = 0;
+        Energy = 3;
         DrawCards(5);
-        Log.Add($"你的第 {Turn} 回合开始。弱化:{PlayerWeak} 易伤:{PlayerVulnerable}");
-        if (BonusBlockPerTurn > 0)
-        {
-            Log.Add($"遗物效果：回合开始获得 {BonusBlockPerTurn} 格挡。");
-        }
+        Log.Add("你的回合开始。");
     }
 
     public bool PlayCard(int handIndex)
@@ -87,6 +73,7 @@ public partial class BattleEngine : Node
         ApplyActions(card.Actions, true, card.Name);
         Hand.RemoveAt(handIndex);
         DiscardPile.Add(card);
+
         return true;
     }
 
@@ -98,9 +85,8 @@ public partial class BattleEngine : Node
         }
         Hand.Clear();
 
-        TickStatusAfterPlayerTurn();
         EnemyTurn();
-        if (EnemyHp > 0 && PlayerHp > 0)
+        if (EnemyHp > 0)
         {
             StartPlayerTurn();
         }
@@ -118,16 +104,10 @@ public partial class BattleEngine : Node
 
     private void EnemyTurn()
     {
-        if (EnemyHp <= 0 || PlayerHp <= 0)
-        {
-            return;
-        }
-
         EnemyBlock = 0;
         var intent = GetCurrentEnemyIntent();
         ApplyActions(intent.Actions, false, $"敌人意图：{intent.Name}");
         _intentIndex++;
-        TickStatusAfterEnemyTurn();
     }
 
     private void DrawCards(int count)
@@ -144,7 +124,6 @@ public partial class BattleEngine : Node
                 DrawPile.AddRange(DiscardPile);
                 DiscardPile.Clear();
                 Shuffle(DrawPile);
-                Log.Add("抽牌堆耗尽，洗牌后继续抽牌。");
             }
 
             var top = DrawPile[0];
@@ -160,18 +139,34 @@ public partial class BattleEngine : Node
             switch (action.Type)
             {
                 case "damage":
-                    ApplyDamageAction(action.Value, fromPlayer, source);
+                    if (fromPlayer)
+                    {
+                        var enemyBlock = EnemyBlock;
+                        var damage = ResolveDamage(action.Value, ref enemyBlock);
+                        EnemyBlock = enemyBlock;
+                        EnemyHp -= damage;
+                        Log.Add($"{source} 造成 {damage} 点伤害。敌人生命 {Math.Max(EnemyHp, 0)}");
+                    }
+                    else
+                    {
+                        var playerBlock = PlayerBlock;
+                        var damage = ResolveDamage(action.Value, ref playerBlock);
+                        PlayerBlock = playerBlock;
+                        PlayerHp -= damage;
+                        Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}");
+                    }
                     break;
                 case "block":
                     if (fromPlayer)
                     {
                         PlayerBlock += action.Value;
+                        Log.Add($"{source} 获得 {action.Value} 点格挡。");
                     }
                     else
                     {
                         EnemyBlock += action.Value;
+                        Log.Add($"{source} 获得 {action.Value} 点格挡。");
                     }
-                    Log.Add($"{source} 获得 {action.Value} 点格挡。");
                     break;
                 case "draw":
                     if (fromPlayer)
@@ -180,115 +175,10 @@ public partial class BattleEngine : Node
                         Log.Add($"{source} 抽 {action.Value} 张牌。");
                     }
                     break;
-                case "heal":
-                    if (fromPlayer)
-                    {
-                        PlayerHp = Math.Min(PlayerMaxHp, PlayerHp + action.Value);
-                        Log.Add($"{source} 回复 {action.Value} 点生命。");
-                    }
-                    else
-                    {
-                        EnemyHp = Math.Min(Enemy.MaxHp, EnemyHp + action.Value);
-                        Log.Add($"{source} 回复 {action.Value} 点生命。");
-                    }
-                    break;
-                case "energy":
-                    if (fromPlayer)
-                    {
-                        Energy += action.Value;
-                        Log.Add($"{source} 获得 {action.Value} 点能量。");
-                    }
-                    break;
-                case "apply_weak":
-                    if (fromPlayer)
-                    {
-                        EnemyWeak += action.Value;
-                        Log.Add($"{source} 施加 {action.Value} 层弱化给敌人。");
-                    }
-                    else
-                    {
-                        PlayerWeak += action.Value;
-                        Log.Add($"{source} 施加 {action.Value} 层弱化给你。");
-                    }
-                    break;
-                case "apply_vulnerable":
-                    if (fromPlayer)
-                    {
-                        EnemyVulnerable += action.Value;
-                        Log.Add($"{source} 施加 {action.Value} 层易伤给敌人。");
-                    }
-                    else
-                    {
-                        PlayerVulnerable += action.Value;
-                        Log.Add($"{source} 施加 {action.Value} 层易伤给你。");
-                    }
-                    break;
                 default:
                     Log.Add($"未知动作类型: {action.Type}");
                     break;
             }
-        }
-    }
-
-    private void ApplyDamageAction(int value, bool fromPlayer, string source)
-    {
-        if (fromPlayer)
-        {
-            var boosted = value + BonusPlayerDamage;
-            var actual = ComputeModifiedDamage(boosted, attackerWeak: PlayerWeak, defenderVulnerable: EnemyVulnerable);
-            var damage = ResolveDamage(actual, ref EnemyBlock);
-            EnemyHp = Math.Max(0, EnemyHp - damage);
-            Log.Add($"{source} 造成 {damage} 点伤害。敌人生命 {EnemyHp}");
-        }
-        else
-        {
-            var actual = ComputeModifiedDamage(value, attackerWeak: EnemyWeak, defenderVulnerable: PlayerVulnerable);
-            var damage = ResolveDamage(actual, ref PlayerBlock);
-            PlayerHp = Math.Max(0, PlayerHp - damage);
-            Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {PlayerHp}");
-        }
-    }
-
-    private static int ComputeModifiedDamage(int raw, int attackerWeak, int defenderVulnerable)
-    {
-        var damage = raw;
-
-        if (attackerWeak > 0)
-        {
-            damage = (int)Math.Ceiling(damage * 0.75f);
-        }
-
-        if (defenderVulnerable > 0)
-        {
-            damage = (int)Math.Ceiling(damage * 1.5f);
-        }
-
-        return Math.Max(0, damage);
-    }
-
-    private void TickStatusAfterPlayerTurn()
-    {
-        if (PlayerWeak > 0)
-        {
-            PlayerWeak--;
-        }
-
-        if (PlayerVulnerable > 0)
-        {
-            PlayerVulnerable--;
-        }
-    }
-
-    private void TickStatusAfterEnemyTurn()
-    {
-        if (EnemyWeak > 0)
-        {
-            EnemyWeak--;
-        }
-
-        if (EnemyVulnerable > 0)
-        {
-            EnemyVulnerable--;
         }
     }
 
