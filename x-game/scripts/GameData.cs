@@ -12,8 +12,12 @@ public partial class GameData : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     public EventsConfig Events { get; private set; } = new();
     public RewardsConfig Rewards { get; private set; } = new();
+=======
+    public RelicsConfig Relics { get; private set; } = new();
+>>>>>>> theirs
 =======
     public RelicsConfig Relics { get; private set; } = new();
 >>>>>>> theirs
@@ -36,9 +40,12 @@ public partial class GameData : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
         Events = LoadJson<EventsConfig>("res://data/events.json");
         Rewards = LoadJson<RewardsConfig>("res://data/rewards.json");
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -59,6 +66,9 @@ public partial class GameData : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -98,6 +108,7 @@ public partial class GameData : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     public MineEventData GetEvent(string eventId)
     {
         foreach (var mineEvent in Events.Events)
@@ -124,6 +135,8 @@ public partial class GameData : Node
         throw new InvalidOperationException($"未找到奖励: {rewardId}");
     }
 
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -185,6 +198,7 @@ public class DecksConfig
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 public class EventsConfig
 {
     public List<MineEventData> Events { get; set; } = new();
@@ -193,6 +207,11 @@ public class EventsConfig
 public class RewardsConfig
 {
     public List<RewardData> Rewards { get; set; } = new();
+=======
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
+>>>>>>> theirs
 =======
 public class RelicsConfig
 {
@@ -254,6 +273,7 @@ public class IntentData
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 public class MineEventData
 {
     public string Id { get; set; } = string.Empty;
@@ -291,6 +311,8 @@ public class RunAction
 >>>>>>> theirs
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
 public class RelicData
 {
     public string Id { get; set; } = string.Empty;
@@ -301,6 +323,9 @@ public class RelicData
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

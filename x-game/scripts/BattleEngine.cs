@@ -14,9 +14,12 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 
     public EnemyData Enemy { get; private set; } = new();
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -37,6 +40,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -51,6 +57,7 @@ public partial class BattleEngine : Node
     public readonly List<string> Log = new();
 
     private int _intentIndex;
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -83,10 +90,16 @@ public partial class BattleEngine : Node
 
     public void StartBattle(List<CardData> deck, EnemyData enemy, int? playerHpOverride = null)
 >>>>>>> theirs
+=======
+    private readonly Random _random = new();
+
+    public void StartBattle(List<CardData> deck, EnemyData enemy, int? playerHpOverride = null)
+>>>>>>> theirs
     {
         Enemy = enemy;
         EnemyHp = enemy.MaxHp;
         EnemyBlock = 0;
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -96,6 +109,8 @@ public partial class BattleEngine : Node
         PlayerBlock = 0;
 
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -114,6 +129,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -133,8 +151,13 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
         StartPlayerTurn();
         Log.Add($"遭遇敌人：{Enemy.Name}");
+=======
+        Log.Add($"遭遇敌人：{Enemy.Name}");
+        StartPlayerTurn();
+>>>>>>> theirs
 =======
         Log.Add($"遭遇敌人：{Enemy.Name}");
         StartPlayerTurn();
@@ -159,11 +182,14 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
         PlayerBlock = 0;
         Energy = 3;
         DrawCards(5);
         Log.Add("你的回合开始。");
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -182,6 +208,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -213,7 +242,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -237,8 +269,14 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
         EnemyTurn();
         if (EnemyHp > 0)
+=======
+        TickStatusAfterPlayerTurn();
+        EnemyTurn();
+        if (EnemyHp > 0 && PlayerHp > 0)
+>>>>>>> theirs
 =======
         TickStatusAfterPlayerTurn();
         EnemyTurn();
@@ -280,7 +318,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -295,6 +336,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -310,6 +354,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+        TickStatusAfterEnemyTurn();
+>>>>>>> theirs
 =======
         TickStatusAfterEnemyTurn();
 >>>>>>> theirs
@@ -342,6 +390,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+                Log.Add("抽牌堆耗尽，洗牌后继续抽牌。");
+>>>>>>> theirs
 =======
                 Log.Add("抽牌堆耗尽，洗牌后继续抽牌。");
 >>>>>>> theirs
@@ -369,6 +421,7 @@ public partial class BattleEngine : Node
             switch (action.Type)
             {
                 case "damage":
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -401,6 +454,9 @@ public partial class BattleEngine : Node
 =======
                     ApplyDamageAction(action.Value, fromPlayer, source);
 >>>>>>> theirs
+=======
+                    ApplyDamageAction(action.Value, fromPlayer, source);
+>>>>>>> theirs
                     break;
                 case "block":
                     if (fromPlayer)
@@ -410,7 +466,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
                         Log.Add($"{source} 获得 {action.Value} 点格挡。");
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -427,8 +486,13 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
                         Log.Add($"{source} 获得 {action.Value} 点格挡。");
                     }
+=======
+                    }
+                    Log.Add($"{source} 获得 {action.Value} 点格挡。");
+>>>>>>> theirs
 =======
                     }
                     Log.Add($"{source} 获得 {action.Value} 点格挡。");
@@ -457,7 +521,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -510,6 +577,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -528,7 +598,10 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -600,6 +673,9 @@ public partial class BattleEngine : Node
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
