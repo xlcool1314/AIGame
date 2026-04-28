@@ -10,6 +10,8 @@ config_version=5
 
 [application]
 
+run/main_scene="res://scenes/BattleScene.tscn"
+
 config/name="XGame"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
@@ -25,3 +27,11 @@ project/assembly_name="XGame"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/vsync/vsync_mode=1
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
