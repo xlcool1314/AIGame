@@ -1,0 +1,23 @@
+{
+  "enemies": [
+    {
+      "id": "slime",
+      "name": "雾矿史莱姆",
+      "maxHp": 42,
+      "intents": [
+        {
+          "name": "撞击",
+          "actions": [
+            { "type": "damage", "value": 7 }
+          ]
+        },
+        {
+          "name": "凝胶护盾",
+          "actions": [
+            { "type": "block", "value": 6 }
+          ]
+        }
+      ]
+    }
+  ]
+}

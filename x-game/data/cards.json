@@ -1,0 +1,31 @@
+{
+  "cards": [
+    {
+      "id": "strike",
+      "name": "打击",
+      "cost": 1,
+      "description": "造成 6 点伤害。",
+      "actions": [
+        { "type": "damage", "value": 6 }
+      ]
+    },
+    {
+      "id": "defend",
+      "name": "防御",
+      "cost": 1,
+      "description": "获得 5 点格挡。",
+      "actions": [
+        { "type": "block", "value": 5 }
+      ]
+    },
+    {
+      "id": "insight",
+      "name": "洞察",
+      "cost": 0,
+      "description": "抽 1 张牌。",
+      "actions": [
+        { "type": "draw", "value": 1 }
+      ]
+    }
+  ]
+}
