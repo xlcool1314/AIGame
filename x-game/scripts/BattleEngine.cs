@@ -23,10 +23,16 @@ public partial class BattleEngine : Node
 
     public void StartBattle(List<CardData> deck, EnemyData enemy)
     {
+        StartBattle(deck, enemy, PlayerMaxHp, PlayerMaxHp);
+    }
+
+    public void StartBattle(List<CardData> deck, EnemyData enemy, int playerMaxHp, int playerHp)
+    {
         Enemy = enemy;
         EnemyHp = enemy.MaxHp;
         EnemyBlock = 0;
-        PlayerHp = PlayerMaxHp;
+        PlayerMaxHp = playerMaxHp;
+        PlayerHp = Math.Clamp(playerHp, 1, PlayerMaxHp);
         PlayerBlock = 0;
 
         DrawPile.Clear();
@@ -135,13 +141,17 @@ public partial class BattleEngine : Node
                 case "damage":
                     if (fromPlayer)
                     {
-                        var damage = ResolveDamage(action.Value, ref EnemyBlock);
+                        var enemyBlock = EnemyBlock;
+                        var damage = ResolveDamage(action.Value, ref enemyBlock);
+                        EnemyBlock = enemyBlock;
                         EnemyHp -= damage;
                         Log.Add($"{source} 造成 {damage} 点伤害。敌人生命 {Math.Max(EnemyHp, 0)}");
                     }
                     else
                     {
-                        var damage = ResolveDamage(action.Value, ref PlayerBlock);
+                        var playerBlock = PlayerBlock;
+                        var damage = ResolveDamage(action.Value, ref playerBlock);
+                        PlayerBlock = playerBlock;
                         PlayerHp -= damage;
                         Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}");
                     }

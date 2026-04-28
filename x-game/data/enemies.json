@@ -18,6 +18,78 @@
           ]
         }
       ]
+    },
+    {
+      "id": "crystal_bat",
+      "name": "晶翼蝠",
+      "maxHp": 36,
+      "intents": [
+        {
+          "name": "俯冲",
+          "actions": [
+            { "type": "damage", "value": 6 }
+          ]
+        },
+        {
+          "name": "碎晶尖啸",
+          "actions": [
+            { "type": "damage", "value": 4 },
+            { "type": "block", "value": 5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mine_overseer",
+      "name": "矿井监管者",
+      "maxHp": 68,
+      "intents": [
+        {
+          "name": "巡查重击",
+          "actions": [
+            { "type": "damage", "value": 10 }
+          ]
+        },
+        {
+          "name": "举盾推进",
+          "actions": [
+            { "type": "block", "value": 10 }
+          ]
+        },
+        {
+          "name": "惩戒连打",
+          "actions": [
+            { "type": "damage", "value": 5 },
+            { "type": "damage", "value": 5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crystal_guard",
+      "name": "晶壳守卫",
+      "maxHp": 58,
+      "intents": [
+        {
+          "name": "晶刺横扫",
+          "actions": [
+            { "type": "damage", "value": 8 }
+          ]
+        },
+        {
+          "name": "硬化外壳",
+          "actions": [
+            { "type": "block", "value": 12 }
+          ]
+        },
+        {
+          "name": "裂晶反扑",
+          "actions": [
+            { "type": "damage", "value": 6 },
+            { "type": "block", "value": 6 }
+          ]
+        }
+      ]
     }
   ]
 }
