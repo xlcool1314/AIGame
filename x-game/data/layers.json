@@ -1,0 +1,36 @@
+{
+  "layers": [
+    {
+      "rooms": [
+        { "kind": "mine", "title": "浅层矿脉", "titleEn": "Shallow Vein", "enemyId": "slime" },
+        { "kind": "battle", "title": "雾矿史莱姆", "titleEn": "Fog Slime", "enemyId": "slime", "rewardId": "basic" }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "mine", "title": "裂隙矿带", "titleEn": "Rift Vein", "enemyId": "crystal_bat" },
+        { "kind": "battle", "title": "晶翼蝠巢", "titleEn": "Crystal Bat Nest", "enemyId": "crystal_bat", "rewardId": "basic" },
+        { "kind": "event", "title": "坍塌支道", "titleEn": "Collapsed Side Tunnel", "eventId": "collapsed_tunnel" },
+        { "kind": "shop", "title": "矿灯商队", "titleEn": "Lamp Caravan", "rewardId": "shop" }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "rest", "title": "废弃升降机", "titleEn": "Abandoned Lift" },
+        { "kind": "mine", "title": "富矿夹层", "titleEn": "Rich Ore Seam", "enemyId": "crystal_guard" },
+        { "kind": "event", "title": "旧矿工营地", "titleEn": "Old Miners' Camp", "eventId": "old_camp" }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "battle", "title": "晶壳守卫", "titleEn": "Crystal Guard", "enemyId": "crystal_guard", "rewardId": "elite" },
+        { "kind": "battle", "title": "矿井监管者", "titleEn": "Mine Overseer", "enemyId": "mine_overseer", "rewardId": "elite" }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "complete", "title": "矿井深处", "titleEn": "Mine Depths" }
+      ]
+    }
+  ]
+}

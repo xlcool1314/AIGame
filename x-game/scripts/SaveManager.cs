@@ -39,6 +39,7 @@ public class RunSaveData
     public int Shards { get; set; }
     public int CurrentLayerIndex { get; set; }
     public List<string> DeckCardIds { get; set; } = new();
+    public List<ItemStackData> Items { get; set; } = new();
     public List<string> Relics { get; set; } = new();
     public List<string> Log { get; set; } = new();
 
@@ -57,6 +58,11 @@ public class RunSaveData
         foreach (var card in run.PlayerDeck)
         {
             data.DeckCardIds.Add(card.Id);
+        }
+
+        foreach (var item in run.Items)
+        {
+            data.Items.Add(new ItemStackData { ItemId = item.ItemId, Count = item.Count });
         }
 
         return data;

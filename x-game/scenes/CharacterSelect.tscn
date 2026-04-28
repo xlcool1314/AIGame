@@ -1,0 +1,75 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterSelect.cs" id="1_character"]
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_character")
+
+[node name="Root" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 96
+theme_override_constants/margin_top = 84
+theme_override_constants/margin_right = 96
+theme_override_constants/margin_bottom = 84
+
+[node name="MainLayout" type="VBoxContainer" parent="Root/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "选择角色"
+
+[node name="ContentRow" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="CharacterList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(460, 0)
+theme_override_constants/separation = 12
+
+[node name="DetailPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="DetailLabel" type="Label" parent="Root/Margin/MainLayout/ContentRow/DetailPanel"]
+layout_mode = 2
+autowrap_mode = 3
+text = "角色详情"
+
+[node name="ButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StartButton" type="Button" parent="Root/Margin/MainLayout/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 58)
+text = "开始探索"
+
+[node name="BackButton" type="Button" parent="Root/Margin/MainLayout/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 58)
+text = "返回"

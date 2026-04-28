@@ -10,6 +10,9 @@ public partial class GameData : Node
     public DecksConfig Decks { get; private set; } = new();
     public EventsConfig Events { get; private set; } = new();
     public RewardsConfig Rewards { get; private set; } = new();
+    public CharactersConfig Characters { get; private set; } = new();
+    public ItemsConfig Items { get; private set; } = new();
+    public LayersConfig Layers { get; private set; } = new();
 
     public void LoadAll()
     {
@@ -18,6 +21,9 @@ public partial class GameData : Node
         Decks = LoadJson<DecksConfig>("res://data/decks.json");
         Events = LoadJson<EventsConfig>("res://data/events.json");
         Rewards = LoadJson<RewardsConfig>("res://data/rewards.json");
+        Characters = LoadJson<CharactersConfig>("res://data/characters.json");
+        Items = LoadJson<ItemsConfig>("res://data/items.json");
+        Layers = LoadJson<LayersConfig>("res://data/layers.json");
     }
 
     public CardData GetCard(string cardId)
@@ -70,6 +76,32 @@ public partial class GameData : Node
         }
 
         throw new InvalidOperationException($"未找到奖励: {rewardId}");
+    }
+
+    public CharacterData GetCharacter(string characterId)
+    {
+        foreach (var character in Characters.Characters)
+        {
+            if (character.Id == characterId)
+            {
+                return character;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到角色: {characterId}");
+    }
+
+    public ItemData GetItem(string itemId)
+    {
+        foreach (var item in Items.Items)
+        {
+            if (item.Id == itemId)
+            {
+                return item;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到道具: {itemId}");
     }
 
     public List<CardData> BuildStarterDeck(string deckId)
@@ -131,6 +163,36 @@ public class RewardsConfig
     public List<RewardData> Rewards { get; set; } = new();
 }
 
+public class CharactersConfig
+{
+    public List<CharacterData> Characters { get; set; } = new();
+}
+
+public class ItemsConfig
+{
+    public List<ItemData> Items { get; set; } = new();
+}
+
+public class LayersConfig
+{
+    public List<LayerData> Layers { get; set; } = new();
+}
+
+public class LayerData
+{
+    public List<RoomData> Rooms { get; set; } = new();
+}
+
+public class RoomData
+{
+    public string Kind { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
+    public string EnemyId { get; set; } = string.Empty;
+    public string EventId { get; set; } = string.Empty;
+    public string RewardId { get; set; } = string.Empty;
+}
+
 public class DeckData
 {
     public string Id { get; set; } = string.Empty;
@@ -141,53 +203,78 @@ public class CardData
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
     public int Cost { get; set; }
     public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
     public List<CardAction> Actions { get; set; } = new();
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
 }
 
 public class CardAction
 {
     public string Type { get; set; } = string.Empty;
     public int Value { get; set; }
+    public int Duration { get; set; } = 1;
 }
 
 public class EnemyData
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
     public int MaxHp { get; set; }
     public List<IntentData> Intents { get; set; } = new();
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
 }
 
 public class IntentData
 {
     public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
     public List<CardAction> Actions { get; set; } = new();
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
 }
 
 public class MineEventData
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
     public List<EventChoiceData> Choices { get; set; } = new();
+
+    public string DisplayTitle() => Localization.Pick(Title, TitleEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
 }
 
 public class EventChoiceData
 {
     public string Text { get; set; } = string.Empty;
+    public string TextEn { get; set; } = string.Empty;
     public string Result { get; set; } = string.Empty;
+    public string ResultEn { get; set; } = string.Empty;
     public List<RunAction> Actions { get; set; } = new();
+
+    public string DisplayText() => Localization.Pick(Text, TextEn);
+    public string DisplayResult() => Localization.Pick(Result, ResultEn);
 }
 
 public class RewardData
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
     public int Shards { get; set; }
     public int Heal { get; set; }
     public List<string> CardChoices { get; set; } = new();
+
+    public string DisplayTitle() => Localization.Pick(Title, TitleEn);
 }
 
 public class RunAction
@@ -196,4 +283,40 @@ public class RunAction
     public int Value { get; set; }
     public string CardId { get; set; } = string.Empty;
     public string RelicId { get; set; } = string.Empty;
+}
+
+public class CharacterData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
+    public int MaxHp { get; set; }
+    public int Shards { get; set; }
+    public string DeckId { get; set; } = "starter";
+    public List<ItemStackData> StartingItems { get; set; } = new();
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
+public class ItemData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
+    public string UseMode { get; set; } = string.Empty;
+    public int Value { get; set; }
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
+public class ItemStackData
+{
+    public string ItemId { get; set; } = string.Empty;
+    public int Count { get; set; }
 }

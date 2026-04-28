@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": "probe_lamp",
+      "name": "探测灯",
+      "nameEn": "Probe Lamp",
+      "description": "选择一个隐藏矿格，显示它的内容但不触发。",
+      "descriptionEn": "Choose a hidden tile to preview its content without triggering it.",
+      "useMode": "target_tile",
+      "value": 1
+    },
+    {
+      "id": "bandage",
+      "name": "绷带",
+      "nameEn": "Bandage",
+      "description": "立即恢复 12 点生命。",
+      "descriptionEn": "Immediately restore 12 HP.",
+      "useMode": "instant_heal",
+      "value": 12
+    }
+  ]
+}

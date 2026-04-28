@@ -3,18 +3,24 @@
     {
       "id": "echo_ore",
       "title": "矿脉回声",
+      "titleEn": "Ore Vein Echo",
       "description": "一簇蓝白矿晶在岩缝里低鸣。靠近它时，旧矿道的脚步声像潮水一样退回来。",
+      "descriptionEn": "Blue-white crystals hum inside the rock. As you approach, old footsteps roll back like a tide.",
       "choices": [
         {
           "text": "敲下一块稳定矿晶",
+          "textEn": "Chip off a stable shard",
           "result": "矿晶被收入背包，矿灯也亮了一些。",
+          "resultEn": "The shard goes into your pack, and your lamp burns a little brighter.",
           "actions": [
             { "type": "shards", "value": 18 }
           ]
         },
         {
           "text": "贴近聆听回声",
+          "textEn": "Listen closely to the echo",
           "result": "你从回声里辨认出更稳的呼吸节奏，生命上限提高了。",
+          "resultEn": "You find a steadier breathing rhythm in the echo. Max HP increases.",
           "actions": [
             { "type": "max_hp", "value": 6 }
           ]
@@ -24,11 +30,15 @@
     {
       "id": "collapsed_tunnel",
       "title": "坍塌支道",
+      "titleEn": "Collapsed Side Tunnel",
       "description": "碎石挡住了侧路。缝隙后有一只旧工具箱，铁扣已经锈得发黑。",
+      "descriptionEn": "Rubble blocks a side path. Behind a narrow gap sits an old toolbox with blackened iron clasps.",
       "choices": [
         {
           "text": "搬开碎石拿工具箱（失去 6 点生命）",
+          "textEn": "Move rubble for the toolbox (-6 HP)",
           "result": "碎石擦伤了手臂，但工具箱里躺着一柄保养完好的重镐。",
+          "resultEn": "The stones scrape your arm, but the toolbox holds a well-kept heavy pick.",
           "actions": [
             { "type": "damage", "value": 6 },
             { "type": "add_card", "cardId": "heavy_pick" }
@@ -36,7 +46,9 @@
         },
         {
           "text": "绕路前进并包扎伤口",
+          "textEn": "Take a detour and treat your wounds",
           "result": "你没有惊动支道深处的东西，并趁机处理了伤口。",
+          "resultEn": "You avoid whatever waits deeper in the side path and tend your wounds.",
           "actions": [
             { "type": "heal", "value": 10 }
           ]
@@ -46,18 +58,24 @@
     {
       "id": "old_camp",
       "title": "旧矿工营地",
+      "titleEn": "Old Miners' Camp",
       "description": "几顶破旧帆布帐篷还挂在岩钉上。火塘早已冷透，但工具架上仍有能用的东西。",
+      "descriptionEn": "Torn canvas tents still hang from rock nails. The firepit is cold, but the tool rack has usable gear.",
       "choices": [
         {
           "text": "翻找工具架",
+          "textEn": "Search the tool rack",
           "result": "你找到一份爆破药包，火药味让矿灯晃了一下。",
+          "resultEn": "You find a blast charge. The powder smell makes your lamp flicker.",
           "actions": [
             { "type": "add_card", "cardId": "blast_charge" }
           ]
         },
         {
           "text": "整理营地补给",
+          "textEn": "Sort through camp supplies",
           "result": "你把可用的绷带和灯油收好，状态稳定了不少。",
+          "resultEn": "You gather usable bandages and lamp oil, stabilizing your condition.",
           "actions": [
             { "type": "heal", "value": 14 },
             { "type": "shards", "value": 8 }
@@ -65,7 +83,9 @@
         },
         {
           "text": "带走刻着名字的铜牌",
+          "textEn": "Take the engraved copper tag",
           "result": "铜牌被挂在矿灯旁。它像是在提醒你别走得太急。",
+          "resultEn": "The tag hangs beside your lamp, quietly reminding you not to rush.",
           "actions": [
             { "type": "relic", "relicId": "旧矿工铜牌" },
             { "type": "max_hp", "value": 4 }

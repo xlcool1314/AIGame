@@ -3,8 +3,10 @@
     {
       "id": "strike",
       "name": "打击",
+      "nameEn": "Strike",
       "cost": 1,
       "description": "造成 6 点伤害。",
+      "descriptionEn": "Deal 6 damage.",
       "actions": [
         { "type": "damage", "value": 6 }
       ]
@@ -12,8 +14,10 @@
     {
       "id": "defend",
       "name": "防御",
+      "nameEn": "Defend",
       "cost": 1,
       "description": "获得 5 点格挡。",
+      "descriptionEn": "Gain 5 block.",
       "actions": [
         { "type": "block", "value": 5 }
       ]
@@ -21,8 +25,10 @@
     {
       "id": "insight",
       "name": "洞察",
+      "nameEn": "Insight",
       "cost": 0,
       "description": "抽 1 张牌。",
+      "descriptionEn": "Draw 1 card.",
       "actions": [
         { "type": "draw", "value": 1 }
       ]
@@ -30,17 +36,22 @@
     {
       "id": "heavy_pick",
       "name": "重镐",
+      "nameEn": "Heavy Pick",
       "cost": 2,
-      "description": "造成 14 点伤害。",
+      "description": "造成 12 点伤害，并使敌人易伤 1 回合。",
+      "descriptionEn": "Deal 12 damage and apply 1 Vulnerable.",
       "actions": [
-        { "type": "damage", "value": 14 }
+        { "type": "damage", "value": 12 },
+        { "type": "vulnerable", "value": 0, "duration": 1 }
       ]
     },
     {
       "id": "lamp_guard",
       "name": "护灯",
+      "nameEn": "Lamp Guard",
       "cost": 1,
       "description": "获得 8 点格挡。",
+      "descriptionEn": "Gain 8 block.",
       "actions": [
         { "type": "block", "value": 8 }
       ]
@@ -48,8 +59,10 @@
     {
       "id": "quick_scan",
       "name": "速勘",
+      "nameEn": "Quick Scan",
       "cost": 0,
       "description": "造成 3 点伤害，抽 1 张牌。",
+      "descriptionEn": "Deal 3 damage. Draw 1 card.",
       "actions": [
         { "type": "damage", "value": 3 },
         { "type": "draw", "value": 1 }
@@ -58,18 +71,23 @@
     {
       "id": "blast_charge",
       "name": "爆破药包",
+      "nameEn": "Blast Charge",
       "cost": 2,
-      "description": "造成 10 点伤害，抽 1 张牌。",
+      "description": "造成 10 点伤害，使敌人虚弱 1 回合，抽 1 张牌。",
+      "descriptionEn": "Deal 10 damage, apply 1 Weak, and draw 1 card.",
       "actions": [
         { "type": "damage", "value": 10 },
+        { "type": "weak", "value": 0, "duration": 1 },
         { "type": "draw", "value": 1 }
       ]
     },
     {
       "id": "reinforce",
       "name": "支架加固",
+      "nameEn": "Reinforce",
       "cost": 2,
       "description": "获得 14 点格挡。",
+      "descriptionEn": "Gain 14 block.",
       "actions": [
         { "type": "block", "value": 14 }
       ]

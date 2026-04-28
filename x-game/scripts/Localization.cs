@@ -46,6 +46,14 @@ public static class Localization
             ["mine_status"] = "安全格: {0}/{1} | 标记: {2}/{3} | 踩雷伤害: {4} | 完成奖励: {5} 矿晶",
             ["run_status"] = "层数: {0}/{1} | HP: {2}/{3} | 矿晶: {4} | 牌组: {5} 张{6}",
             ["relics"] = " | 遗物: {0}",
+            ["hp"] = "生命",
+            ["shards"] = "矿晶",
+            ["start_items"] = "初始道具",
+            ["choose_character"] = "选择角色",
+            ["start_explore"] = "开始探索",
+            ["cost"] = "耗能",
+            ["buy_card"] = "购买 {0} - {1} 矿晶",
+            ["encounter_reward"] = "遭遇 {0}，胜利后获得战利品。",
         },
         [English] = new Dictionary<string, string>
         {
@@ -81,6 +89,14 @@ public static class Localization
             ["mine_status"] = "Safe: {0}/{1} | Flags: {2}/{3} | Mine Damage: {4} | Reward: {5} Shards",
             ["run_status"] = "Layer: {0}/{1} | HP: {2}/{3} | Shards: {4} | Deck: {5} cards{6}",
             ["relics"] = " | Relics: {0}",
+            ["hp"] = "HP",
+            ["shards"] = "Shards",
+            ["start_items"] = "Starting Items",
+            ["choose_character"] = "Choose Character",
+            ["start_explore"] = "Start Expedition",
+            ["cost"] = "Cost",
+            ["buy_card"] = "Buy {0} - {1} Shards",
+            ["encounter_reward"] = "Encounter {0}. Win to earn spoils.",
         }
     };
 
@@ -114,5 +130,10 @@ public static class Localization
         }
 
         return Texts[Chinese].TryGetValue(key, out var fallback) ? fallback : key;
+    }
+
+    public static string Pick(string zh, string en)
+    {
+        return Language == English && !string.IsNullOrWhiteSpace(en) ? en : zh;
     }
 }

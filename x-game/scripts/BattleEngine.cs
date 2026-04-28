@@ -10,6 +10,9 @@ public partial class BattleEngine : Node
     public int EnemyHp { get; private set; }
     public int EnemyBlock { get; private set; }
     public int Energy { get; private set; }
+    public int PlayerWeak { get; private set; }
+    public int EnemyWeak { get; private set; }
+    public int EnemyVulnerable { get; private set; }
 
     public EnemyData Enemy { get; private set; } = new();
 
@@ -34,6 +37,9 @@ public partial class BattleEngine : Node
         PlayerMaxHp = playerMaxHp;
         PlayerHp = Math.Clamp(playerHp, 1, PlayerMaxHp);
         PlayerBlock = 0;
+        PlayerWeak = 0;
+        EnemyWeak = 0;
+        EnemyVulnerable = 0;
 
         DrawPile.Clear();
         DiscardPile.Clear();
@@ -44,13 +50,17 @@ public partial class BattleEngine : Node
 
         _intentIndex = 0;
         StartPlayerTurn();
-        Log.Add($"遭遇敌人：{Enemy.Name}");
+        Log.Add($"遭遇敌人：{Enemy.DisplayName()}");
     }
 
     public void StartPlayerTurn()
     {
         PlayerBlock = 0;
         Energy = 3;
+        if (PlayerWeak > 0)
+        {
+            PlayerWeak--;
+        }
         DrawCards(5);
         Log.Add("你的回合开始。");
     }
@@ -65,14 +75,18 @@ public partial class BattleEngine : Node
         var card = Hand[handIndex];
         if (card.Cost > Energy)
         {
-            Log.Add($"能量不足，无法使用 {card.Name}");
+            Log.Add($"能量不足，无法使用 {card.DisplayName()}");
             return false;
         }
 
         Energy -= card.Cost;
-        ApplyActions(card.Actions, true, card.Name);
+        ApplyActions(card.Actions, true, card.DisplayName());
         Hand.RemoveAt(handIndex);
         DiscardPile.Add(card);
+        if (EnemyVulnerable > 0)
+        {
+            EnemyVulnerable--;
+        }
 
         return true;
     }
@@ -102,12 +116,48 @@ public partial class BattleEngine : Node
         return Enemy.Intents[_intentIndex % Enemy.Intents.Count];
     }
 
+    public string GetIntentPreview()
+    {
+        var intent = GetCurrentEnemyIntent();
+        if (intent.Actions.Count == 0)
+        {
+            return intent.DisplayName();
+        }
+
+        var parts = new List<string>();
+        foreach (var action in intent.Actions)
+        {
+            switch (action.Type)
+            {
+                case "damage":
+                    var damage = EnemyWeak > 0 ? Math.Max(0, action.Value - 2) : action.Value;
+                    parts.Add($"伤害 {damage}");
+                    break;
+                case "block":
+                    parts.Add($"格挡 {action.Value}");
+                    break;
+                case "weak":
+                    parts.Add($"虚弱 {action.Duration}");
+                    break;
+                default:
+                    parts.Add(action.Type);
+                    break;
+            }
+        }
+
+        return $"{intent.DisplayName()} / {string.Join(" + ", parts)}";
+    }
+
     private void EnemyTurn()
     {
         EnemyBlock = 0;
         var intent = GetCurrentEnemyIntent();
-        ApplyActions(intent.Actions, false, $"敌人意图：{intent.Name}");
+        ApplyActions(intent.Actions, false, $"敌人意图：{intent.DisplayName()}");
         _intentIndex++;
+        if (EnemyWeak > 0)
+        {
+            EnemyWeak--;
+        }
     }
 
     private void DrawCards(int count)
@@ -141,16 +191,18 @@ public partial class BattleEngine : Node
                 case "damage":
                     if (fromPlayer)
                     {
+                        var incoming = EnemyVulnerable > 0 ? (int)Math.Ceiling(action.Value * 1.5f) : action.Value;
                         var enemyBlock = EnemyBlock;
-                        var damage = ResolveDamage(action.Value, ref enemyBlock);
+                        var damage = ResolveDamage(incoming, ref enemyBlock);
                         EnemyBlock = enemyBlock;
                         EnemyHp -= damage;
                         Log.Add($"{source} 造成 {damage} 点伤害。敌人生命 {Math.Max(EnemyHp, 0)}");
                     }
                     else
                     {
+                        var incoming = EnemyWeak > 0 ? Math.Max(0, action.Value - 2) : action.Value;
                         var playerBlock = PlayerBlock;
-                        var damage = ResolveDamage(action.Value, ref playerBlock);
+                        var damage = ResolveDamage(incoming, ref playerBlock);
                         PlayerBlock = playerBlock;
                         PlayerHp -= damage;
                         Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}");
@@ -173,6 +225,25 @@ public partial class BattleEngine : Node
                     {
                         DrawCards(action.Value);
                         Log.Add($"{source} 抽 {action.Value} 张牌。");
+                    }
+                    break;
+                case "weak":
+                    if (fromPlayer)
+                    {
+                        EnemyWeak += Math.Max(1, action.Duration);
+                        Log.Add($"{source} 使敌人虚弱 {Math.Max(1, action.Duration)} 回合。");
+                    }
+                    else
+                    {
+                        PlayerWeak += Math.Max(1, action.Duration);
+                        Log.Add($"{source} 使你虚弱 {Math.Max(1, action.Duration)} 回合。");
+                    }
+                    break;
+                case "vulnerable":
+                    if (fromPlayer)
+                    {
+                        EnemyVulnerable += Math.Max(1, action.Duration);
+                        Log.Add($"{source} 使敌人易伤 {Math.Max(1, action.Duration)} 回合。");
                     }
                     break;
                 default:

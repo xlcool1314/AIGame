@@ -11,6 +11,7 @@ public partial class RunEngine : Node
     public RunRoom? CurrentRoom { get; private set; }
 
     public readonly List<CardData> PlayerDeck = new();
+    public readonly List<ItemStackData> Items = new();
     public readonly List<string> Relics = new();
     public readonly List<List<RunRoom>> MapLayers = new();
     public MinefieldState? Minefield { get; private set; }
@@ -18,44 +19,28 @@ public partial class RunEngine : Node
 
     public void StartRun(GameData gameData)
     {
-        PlayerHp = 70;
-        PlayerMaxHp = 70;
-        Shards = 20;
+        StartRun(gameData, GameSession.SelectedCharacterId);
+    }
+
+    public void StartRun(GameData gameData, string characterId)
+    {
+        var character = gameData.GetCharacter(characterId);
+        PlayerMaxHp = character.MaxHp;
+        PlayerHp = PlayerMaxHp;
+        Shards = character.Shards;
         CurrentLayerIndex = -1;
         CurrentRoom = null;
 
         PlayerDeck.Clear();
-        PlayerDeck.AddRange(gameData.BuildStarterDeck("starter"));
+        PlayerDeck.AddRange(gameData.BuildStarterDeck(character.DeckId));
+        Items.Clear();
+        foreach (var item in character.StartingItems)
+        {
+            Items.Add(new ItemStackData { ItemId = item.ItemId, Count = item.Count });
+        }
         Relics.Clear();
 
-        MapLayers.Clear();
-        MapLayers.Add(new List<RunRoom>
-        {
-            new("mine", "浅层矿脉"),
-            new("battle", "雾矿史莱姆", enemyId: "slime", rewardId: "basic")
-        });
-        MapLayers.Add(new List<RunRoom>
-        {
-            new("mine", "裂隙矿带"),
-            new("battle", "晶翼蝠巢", enemyId: "crystal_bat", rewardId: "basic"),
-            new("event", "坍塌支道", eventId: "collapsed_tunnel"),
-            new("shop", "矿灯商队", rewardId: "shop")
-        });
-        MapLayers.Add(new List<RunRoom>
-        {
-            new("rest", "废弃升降机"),
-            new("mine", "富矿夹层"),
-            new("event", "旧矿工营地", eventId: "old_camp")
-        });
-        MapLayers.Add(new List<RunRoom>
-        {
-            new("battle", "晶壳守卫", enemyId: "crystal_guard", rewardId: "elite"),
-            new("battle", "矿井监管者", enemyId: "mine_overseer", rewardId: "elite")
-        });
-        MapLayers.Add(new List<RunRoom>
-        {
-            new("complete", "矿井深处")
-        });
+        BuildMapLayers(gameData);
 
         Log.Clear();
         Log.Add("你点亮矿灯，进入迷雾矿井。");
@@ -84,6 +69,12 @@ public partial class RunEngine : Node
 
         Relics.Clear();
         Relics.AddRange(saveData.Relics);
+
+        Items.Clear();
+        foreach (var item in saveData.Items)
+        {
+            Items.Add(new ItemStackData { ItemId = item.ItemId, Count = item.Count });
+        }
 
         Log.Clear();
         Log.AddRange(saveData.Log);
@@ -117,7 +108,7 @@ public partial class RunEngine : Node
         CurrentLayerIndex++;
         CurrentRoom = choices[clampedIndex];
         Minefield = null;
-        Log.Add($"进入第 {CurrentLayerIndex + 1} 层：{CurrentRoom.Title}");
+        Log.Add($"进入第 {CurrentLayerIndex + 1} 层：{CurrentRoom.DisplayTitle()}");
         return CurrentRoom;
     }
 
@@ -140,10 +131,28 @@ public partial class RunEngine : Node
         }
 
         var result = Minefield.Reveal(index);
-        if (result == MineRevealResult.HitMine)
+        if (result == MineRevealResult.Monster)
         {
-            PlayerHp = Math.Max(0, PlayerHp - Minefield.MineDamage);
-            Log.Add($"触发暗雷，失去 {Minefield.MineDamage} 点生命。");
+            Log.Add("惊动矿穴怪物，战斗开始。");
+        }
+        else if (result == MineRevealResult.Trap)
+        {
+            PlayerHp = Math.Max(0, PlayerHp - Minefield.TrapDamage);
+            Log.Add($"触发陷阱，失去 {Minefield.TrapDamage} 点生命。");
+        }
+        else if (result == MineRevealResult.Treasure)
+        {
+            Shards += 18;
+            Log.Add("打开宝箱，获得 18 矿晶。");
+        }
+        else if (result == MineRevealResult.Ore)
+        {
+            Shards += 8;
+            Log.Add("采集矿石，获得 8 矿晶。");
+        }
+        else if (result == MineRevealResult.Exit)
+        {
+            Log.Add("你找到了通往下一层的出口，可以继续探索或立刻深入。");
         }
 
         if (Minefield.IsCleared)
@@ -160,9 +169,55 @@ public partial class RunEngine : Node
         Minefield?.ToggleFlag(index);
     }
 
+    public bool UseInstantItem(ItemData item)
+    {
+        if (!ConsumeItem(item.Id))
+        {
+            return false;
+        }
+
+        if (item.UseMode == "instant_heal")
+        {
+            Heal(item.Value);
+            Log.Add($"使用 {item.DisplayName()}，恢复 {item.Value} 点生命。");
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool UseTileItem(ItemData item, int index)
+    {
+        if (Minefield == null || item.UseMode != "target_tile")
+        {
+            return false;
+        }
+
+        if (!Minefield.CanPreview(index))
+        {
+            Log.Add("这个矿格不需要探测。");
+            return false;
+        }
+
+        if (!ConsumeItem(item.Id))
+        {
+            return false;
+        }
+
+        var result = Minefield.Preview(index);
+        Log.Add($"探测灯照亮目标：{result}。");
+        return true;
+    }
+
     public void SyncAfterBattle(int playerHp)
     {
         PlayerHp = Math.Clamp(playerHp, 0, PlayerMaxHp);
+    }
+
+    public void ResolveMineMonsterVictory()
+    {
+        Shards += 8 + Math.Max(CurrentLayerIndex, 0) * 2;
+        Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
     }
 
     public void ApplyReward(RewardData reward, CardData? chosenCard)
@@ -173,7 +228,7 @@ public partial class RunEngine : Node
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add($"战利品：获得 {reward.Shards} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.Name}。");
+            Log.Add($"战利品：获得 {reward.Shards} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
         }
         else
         {
@@ -185,13 +240,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add($"矿晶不足，无法购买 {card.Name}。");
+            Log.Add($"矿晶不足，无法购买 {card.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         PlayerDeck.Add(card);
-        Log.Add($"花费 {cost} 矿晶购买 {card.Name}。");
+        Log.Add($"花费 {cost} 矿晶购买 {card.DisplayName()}。");
         return true;
     }
 
@@ -216,7 +271,7 @@ public partial class RunEngine : Node
             ApplyRunAction(action, gameData);
         }
 
-        Log.Add(choice.Result);
+        Log.Add(choice.DisplayResult());
     }
 
     public void Rest(string mode)
@@ -267,6 +322,38 @@ public partial class RunEngine : Node
     {
         PlayerHp = Math.Min(PlayerMaxHp, PlayerHp + Math.Max(0, amount));
     }
+
+    private void BuildMapLayers(GameData gameData)
+    {
+        MapLayers.Clear();
+        foreach (var layer in gameData.Layers.Layers)
+        {
+            var rooms = new List<RunRoom>();
+            foreach (var room in layer.Rooms)
+            {
+                rooms.Add(new RunRoom(room.Kind, room.Title, room.TitleEn, room.EnemyId, room.EventId, room.RewardId));
+            }
+
+            MapLayers.Add(rooms);
+        }
+    }
+
+    private bool ConsumeItem(string itemId)
+    {
+        foreach (var stack in Items)
+        {
+            if (stack.ItemId != itemId || stack.Count <= 0)
+            {
+                continue;
+            }
+
+            stack.Count--;
+            return true;
+        }
+
+        Log.Add("没有可用道具。");
+        return false;
+    }
 }
 
 public class RunRoom
@@ -276,14 +363,21 @@ public class RunRoom
     public string EnemyId { get; }
     public string EventId { get; }
     public string RewardId { get; }
+    public string TitleEn { get; }
 
-    public RunRoom(string kind, string title, string enemyId = "", string eventId = "", string rewardId = "")
+    public RunRoom(string kind, string title, string titleEn = "", string enemyId = "", string eventId = "", string rewardId = "")
     {
         Kind = kind;
         Title = title;
+        TitleEn = titleEn;
         EnemyId = enemyId;
         EventId = eventId;
         RewardId = rewardId;
+    }
+
+    public string DisplayTitle()
+    {
+        return Localization.Pick(Title, TitleEn);
     }
 }
 
@@ -291,9 +385,11 @@ public class MinefieldState
 {
     public int Width { get; private set; }
     public int Height { get; private set; }
-    public int MineCount { get; private set; }
+    public int DangerCount { get; private set; }
+    public int RewardCount { get; private set; }
     public int RewardShards { get; private set; }
-    public int MineDamage { get; private set; } = 8;
+    public int TrapDamage { get; private set; } = 8;
+    public bool ExitFound { get; private set; }
     public bool IsCleared { get; private set; }
     public readonly List<MineCell> Cells = new();
 
@@ -303,7 +399,6 @@ public class MinefieldState
         {
             Width = width,
             Height = height,
-            MineCount = mineCount,
             RewardShards = rewardShards
         };
 
@@ -312,25 +407,26 @@ public class MinefieldState
             state.Cells.Add(new MineCell());
         }
 
-        var random = new Random();
-        var placed = 0;
-        while (placed < mineCount)
-        {
-            var index = random.Next(state.Cells.Count);
-            if (state.Cells[index].IsMine)
-            {
-                continue;
-            }
+        var entranceIndex = 0;
+        var exitIndex = state.Cells.Count - 1;
+        state.Cells[entranceIndex].Type = MineTileType.Entrance;
+        state.Cells[exitIndex].Type = MineTileType.Exit;
 
-            state.Cells[index].IsMine = true;
-            placed++;
-        }
+        var random = new Random();
+        state.PlaceTiles(random, MineTileType.Monster, Math.Max(2, mineCount / 2));
+        state.PlaceTiles(random, MineTileType.Trap, Math.Max(2, mineCount - Math.Max(2, mineCount / 2)));
+        state.PlaceTiles(random, MineTileType.Treasure, Math.Max(2, width / 2));
+        state.PlaceTiles(random, MineTileType.Ore, Math.Max(4, width));
 
         for (var i = 0; i < state.Cells.Count; i++)
         {
-            state.Cells[i].AdjacentMines = state.CountAdjacentMines(i);
+            state.Cells[i].DangerClue = state.CountAdjacent(i, true);
+            state.Cells[i].RewardClue = state.CountAdjacent(i, false);
         }
 
+        state.RevealStartArea();
+        state.DangerCount = state.CountTiles(true);
+        state.RewardCount = state.CountTiles(false);
         return state;
     }
 
@@ -348,12 +444,35 @@ public class MinefieldState
         }
 
         cell.IsRevealed = true;
-        if (cell.IsMine)
+        if (cell.Type == MineTileType.Exit)
         {
-            return MineRevealResult.HitMine;
+            ExitFound = true;
+            return MineRevealResult.Exit;
         }
 
-        if (cell.AdjacentMines == 0)
+        if (cell.Type == MineTileType.Monster)
+        {
+            return MineRevealResult.Monster;
+        }
+
+        if (cell.Type == MineTileType.Trap)
+        {
+            return MineRevealResult.Trap;
+        }
+
+        if (cell.Type == MineTileType.Treasure)
+        {
+            UpdateCleared();
+            return MineRevealResult.Treasure;
+        }
+
+        if (cell.Type == MineTileType.Ore)
+        {
+            UpdateCleared();
+            return MineRevealResult.Ore;
+        }
+
+        if (cell.DangerClue == 0 && cell.RewardClue == 0)
         {
             FloodReveal(index);
         }
@@ -376,6 +495,33 @@ public class MinefieldState
         }
     }
 
+    public string Preview(int index)
+    {
+        if (index < 0 || index >= Cells.Count)
+        {
+            return "未知";
+        }
+
+        var cell = Cells[index];
+        cell.IsPreviewed = true;
+        return cell.Type switch
+        {
+            MineTileType.Empty => $"安全格 D{cell.DangerClue}/R{cell.RewardClue}",
+            MineTileType.Entrance => "入口",
+            MineTileType.Exit => "出口",
+            MineTileType.Monster => "怪物",
+            MineTileType.Trap => "陷阱",
+            MineTileType.Treasure => "宝箱",
+            MineTileType.Ore => "矿石",
+            _ => "未知"
+        };
+    }
+
+    public bool CanPreview(int index)
+    {
+        return index >= 0 && index < Cells.Count && !Cells[index].IsRevealed && !Cells[index].IsPreviewed;
+    }
+
     private void FloodReveal(int startIndex)
     {
         var queue = new Queue<int>();
@@ -387,13 +533,13 @@ public class MinefieldState
             foreach (var neighbor in GetNeighbors(current))
             {
                 var cell = Cells[neighbor];
-                if (cell.IsMine || cell.IsFlagged || cell.IsRevealed)
+                if (cell.IsDanger || cell.IsReward || cell.Type == MineTileType.Exit || cell.IsFlagged || cell.IsRevealed)
                 {
                     continue;
                 }
 
                 cell.IsRevealed = true;
-                if (cell.AdjacentMines == 0)
+                if (cell.DangerClue == 0 && cell.RewardClue == 0)
                 {
                     queue.Enqueue(neighbor);
                 }
@@ -405,7 +551,7 @@ public class MinefieldState
     {
         foreach (var cell in Cells)
         {
-            if (!cell.IsMine && !cell.IsRevealed)
+            if (!cell.IsDanger && cell.Type != MineTileType.Exit && !cell.IsRevealed)
             {
                 return;
             }
@@ -414,12 +560,76 @@ public class MinefieldState
         IsCleared = true;
     }
 
-    private int CountAdjacentMines(int index)
+    private void PlaceTiles(Random random, MineTileType type, int count)
+    {
+        var placed = 0;
+        var attempts = 0;
+        while (placed < count && attempts < Cells.Count * 20)
+        {
+            attempts++;
+            var index = random.Next(Cells.Count);
+            if (Cells[index].Type != MineTileType.Empty || IsStartSafeIndex(index))
+            {
+                continue;
+            }
+
+            Cells[index].Type = type;
+            placed++;
+        }
+    }
+
+    private void RevealStartArea()
+    {
+        Cells[0].IsRevealed = true;
+        foreach (var neighbor in GetNeighbors(0))
+        {
+            if (!Cells[neighbor].IsDanger)
+            {
+                Cells[neighbor].IsRevealed = true;
+            }
+        }
+    }
+
+    private bool IsStartSafeIndex(int index)
+    {
+        if (index == 0 || index == Cells.Count - 1)
+        {
+            return true;
+        }
+
+        var x = index % Width;
+        var y = index / Width;
+        return x <= 1 && y <= 1;
+    }
+
+    private int CountTiles(bool danger)
+    {
+        var count = 0;
+        foreach (var cell in Cells)
+        {
+            if (danger && cell.IsDanger)
+            {
+                count++;
+            }
+            else if (!danger && cell.IsReward)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountAdjacent(int index, bool danger)
     {
         var count = 0;
         foreach (var neighbor in GetNeighbors(index))
         {
-            if (Cells[neighbor].IsMine)
+            if (danger && Cells[neighbor].IsDanger)
+            {
+                count++;
+            }
+            else if (!danger && Cells[neighbor].IsReward)
             {
                 count++;
             }
@@ -455,16 +665,35 @@ public class MinefieldState
 
 public class MineCell
 {
-    public bool IsMine { get; set; }
+    public MineTileType Type { get; set; } = MineTileType.Empty;
     public bool IsRevealed { get; set; }
     public bool IsFlagged { get; set; }
-    public int AdjacentMines { get; set; }
+    public bool IsPreviewed { get; set; }
+    public int DangerClue { get; set; }
+    public int RewardClue { get; set; }
+    public bool IsDanger => Type == MineTileType.Monster || Type == MineTileType.Trap;
+    public bool IsReward => Type == MineTileType.Treasure || Type == MineTileType.Ore;
+}
+
+public enum MineTileType
+{
+    Empty,
+    Entrance,
+    Exit,
+    Monster,
+    Trap,
+    Treasure,
+    Ore
 }
 
 public enum MineRevealResult
 {
     NoChange,
     Revealed,
-    HitMine,
+    Monster,
+    Trap,
+    Treasure,
+    Ore,
+    Exit,
     Cleared
 }

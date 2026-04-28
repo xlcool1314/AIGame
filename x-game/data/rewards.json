@@ -3,6 +3,7 @@
     {
       "id": "basic",
       "title": "普通战利品",
+      "titleEn": "Basic Spoils",
       "shards": 12,
       "heal": 4,
       "cardChoices": [
@@ -16,6 +17,7 @@
     {
       "id": "elite",
       "title": "监管者战利品",
+      "titleEn": "Elite Spoils",
       "shards": 32,
       "heal": 8,
       "cardChoices": [
@@ -29,6 +31,7 @@
     {
       "id": "shop",
       "title": "矿灯商队货架",
+      "titleEn": "Lamp Caravan Stock",
       "shards": 0,
       "heal": 0,
       "cardChoices": [

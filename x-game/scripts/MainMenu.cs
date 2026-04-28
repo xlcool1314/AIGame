@@ -38,13 +38,14 @@ public partial class MainMenu : Control
         _settingsButton.Pressed += OnSettingsPressed;
         _backButton.Pressed += OnBackPressed;
 
+        ApplyUiStyle();
         RenderText();
     }
 
     private void OnNewGamePressed()
     {
         GameSession.LoadRequested = false;
-        GetTree().ChangeSceneToFile("res://scenes/BattleScene.tscn");
+        GetTree().ChangeSceneToFile("res://scenes/CharacterSelect.tscn");
     }
 
     private void OnContinuePressed()
@@ -86,5 +87,62 @@ public partial class MainMenu : Control
         _languageLabel.Text = Localization.T("language");
         _backButton.Text = Localization.T("back");
         _languageOption.Select(Localization.Language == Localization.English ? 1 : 0);
+    }
+
+    private void ApplyUiStyle()
+    {
+        GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
+        _settingsPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
+        StyleButton(_newGameButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
+        StyleButton(_continueButton, Color.FromHtml("263f5a"), Color.FromHtml("e4f0ff"));
+        StyleButton(_settingsButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
+        StyleButton(_backButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
+    }
+
+    private static StyleBoxFlat MakePanelStyle(string background, string border, int borderWidth)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = Color.FromHtml(background),
+            BorderColor = Color.FromHtml(border),
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 12,
+            ContentMarginTop = 12,
+            ContentMarginRight = 12,
+            ContentMarginBottom = 12
+        };
+        style.SetBorderWidthAll(borderWidth);
+        return style;
+    }
+
+    private static void StyleButton(Button button, Color background, Color fontColor)
+    {
+        button.AddThemeStyleboxOverride("normal", MakeButtonStyle(background));
+        button.AddThemeStyleboxOverride("hover", MakeButtonStyle(background.Lightened(0.12f)));
+        button.AddThemeStyleboxOverride("pressed", MakeButtonStyle(background.Darkened(0.12f)));
+        button.AddThemeColorOverride("font_color", fontColor);
+        button.AddThemeColorOverride("font_hover_color", fontColor.Lightened(0.08f));
+    }
+
+    private static StyleBoxFlat MakeButtonStyle(Color background)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = background.Lightened(0.18f),
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 10,
+            ContentMarginTop = 8,
+            ContentMarginRight = 10,
+            ContentMarginBottom = 8
+        };
+        style.SetBorderWidthAll(1);
+        return style;
     }
 }

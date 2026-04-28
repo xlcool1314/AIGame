@@ -27,45 +27,45 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 120
-theme_override_constants/margin_top = 120
+theme_override_constants/margin_top = 96
 theme_override_constants/margin_right = 120
-theme_override_constants/margin_bottom = 120
+theme_override_constants/margin_bottom = 96
 
 [node name="MenuLayout" type="VBoxContainer" parent="Root/Margin"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-theme_override_constants/separation = 16
+theme_override_constants/separation = 18
 
 [node name="TitleLabel" type="Label" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 56
+theme_override_font_sizes/font_size = 68
 text = "迷雾矿井"
 
 [node name="SubtitleLabel" type="Label" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 24
 text = "扫雷探勘 + 卡牌战斗原型"
 
 [node name="NewGameButton" type="Button" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(420, 64)
 text = "新游戏"
 
 [node name="ContinueButton" type="Button" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(420, 64)
 text = "读档"
 
 [node name="SettingsButton" type="Button" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(420, 64)
 text = "设置"
 
 [node name="SettingsPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(360, 0)
+custom_minimum_size = Vector2(420, 0)
 
 [node name="SettingsLayout" type="VBoxContainer" parent="Root/Margin/MenuLayout/SettingsPanel"]
 layout_mode = 2

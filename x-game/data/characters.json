@@ -1,0 +1,32 @@
+{
+  "characters": [
+    {
+      "id": "miner",
+      "name": "矿工",
+      "nameEn": "Miner",
+      "description": "稳定的生命值和补给，适合熟悉矿井规则。",
+      "descriptionEn": "Reliable health and supplies, ideal for learning the mine.",
+      "maxHp": 76,
+      "shards": 20,
+      "deckId": "starter",
+      "startingItems": [
+        { "itemId": "probe_lamp", "count": 2 },
+        { "itemId": "bandage", "count": 1 }
+      ]
+    },
+    {
+      "id": "scout",
+      "name": "勘探员",
+      "nameEn": "Scout",
+      "description": "生命较低，但携带更多探测灯，适合谨慎推理。",
+      "descriptionEn": "Lower health, more probe lamps, and better suited for careful deduction.",
+      "maxHp": 62,
+      "shards": 28,
+      "deckId": "starter",
+      "startingItems": [
+        { "itemId": "probe_lamp", "count": 4 },
+        { "itemId": "bandage", "count": 1 }
+      ]
+    }
+  ]
+}

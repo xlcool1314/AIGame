@@ -26,119 +26,265 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
+theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 24
+theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 24
 
 [node name="MainLayout" type="VBoxContainer" parent="Root/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="RunStatusLabel" type="Label" parent="Root/Margin/MainLayout"]
+[node name="TopBar" type="PanelContainer" parent="Root/Margin/MainLayout"]
 layout_mode = 2
+
+[node name="TopBarLayout" type="HBoxContainer" parent="Root/Margin/MainLayout/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RunStatusLabel" type="Label" parent="Root/Margin/MainLayout/TopBar/TopBarLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "跑局状态"
 
-[node name="TopButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+[node name="MenuButton" type="Button" parent="Root/Margin/MainLayout/TopBar/TopBarLayout"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="MenuButton" type="Button" parent="Root/Margin/MainLayout/TopButtonRow"]
-layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
 text = "返回主菜单"
 
-[node name="RoomTitleLabel" type="Label" parent="Root/Margin/MainLayout"]
+[node name="RoomHeader" type="PanelContainer" parent="Root/Margin/MainLayout"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+
+[node name="RoomHeaderLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/RoomHeader"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RoomTitleLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
 text = "房间标题"
 
-[node name="RoomDescriptionLabel" type="Label" parent="Root/Margin/MainLayout"]
+[node name="RoomDescriptionLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout"]
 layout_mode = 2
 autowrap_mode = 3
 text = "房间描述"
 
-[node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="ContentSplit" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="MainPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContentStack" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
 visible = false
 layout_mode = 2
 
-[node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ChoicePanel"]
+[node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/ChoicePanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MineLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/MinePanel"]
+[node name="MineLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+size_flags_vertical = 3
+theme_override_constants/separation = 12
 
-[node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+[node name="MineHeader" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout"]
 layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "矿区状态"
 
-[node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+[node name="MineLegendLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader"]
 layout_mode = 2
-text = "模式：翻开"
+text = "D=危险  R=奖励  右键=标记"
 
-[node name="MineGrid" type="GridContainer" parent="Root/Margin/MainLayout/MinePanel/MineLayout"]
+[node name="MineBoardFrame" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MineBoardCenter" type="CenterContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MineGrid" type="GridContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
 columns = 5
 
-[node name="BattlePanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="BattlePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BattleLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/BattlePanel"]
+[node name="BattleLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="BattleStatusLabel" type="Label" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+[node name="CombatantRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
 layout_mode = 2
-text = "战斗状态"
+theme_override_constants/separation = 12
 
-[node name="IntentLabel" type="Label" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+[node name="PlayerCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow"]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PlayerCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+layout_mode = 2
+autowrap_mode = 3
+text = "玩家"
+
+[node name="PlayerHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+layout_mode = 2
+show_percentage = false
+
+[node name="PlayerBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+layout_mode = 2
+text = "格挡"
+
+[node name="EnemyCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnemyCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="EnemyCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+layout_mode = 2
+autowrap_mode = 3
+text = "敌人"
+
+[node name="EnemyHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+layout_mode = 2
+show_percentage = false
+
+[node name="EnemyBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+layout_mode = 2
+text = "格挡"
+
+[node name="BattleResourceLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+layout_mode = 2
+text = "战斗资源"
+
+[node name="IntentPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+layout_mode = 2
+
+[node name="IntentLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel"]
+layout_mode = 2
+autowrap_mode = 3
 text = "敌人意图"
 
-[node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+[node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HandList" type="VBoxContainer" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout/HandPanel"]
+[node name="HandList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/BattlePanel/BattleLayout"]
+[node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
 layout_mode = 2
 text = "结束回合"
 
-[node name="RewardPanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="RewardPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="RewardList" type="VBoxContainer" parent="Root/Margin/MainLayout/RewardPanel"]
+[node name="RewardList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="EndPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EndLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="EndTitleLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "结算"
+
+[node name="EndSummaryLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
+layout_mode = 2
+autowrap_mode = 3
+text = "结算详情"
+
+[node name="EndButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout"]
+[node name="RetryButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow"]
+layout_mode = 2
+text = "再来一局"
+
+[node name="EndMenuButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow"]
+layout_mode = 2
+text = "返回主菜单"
+
+[node name="SidePanel" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit"]
+layout_mode = 2
+custom_minimum_size = Vector2(420, 0)
+theme_override_constants/separation = 12
+
+[node name="ItemPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+layout_mode = 2
+
+[node name="ItemList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ItemPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ActionPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+layout_mode = 2
+
+[node name="ActionLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
+layout_mode = 2
+text = "模式：翻开"
+
+[node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
 visible = false
 layout_mode = 2
 text = "继续深入"
 
-[node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LogText" type="RichTextLabel" parent="Root/Margin/MainLayout/LogPanel"]
+[node name="LogText" type="RichTextLabel" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel"]
 layout_mode = 2
 bbcode_enabled = false
 scroll_following = true
-fit_content = true
+fit_content = false
