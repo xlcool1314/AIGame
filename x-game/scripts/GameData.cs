@@ -8,16 +8,64 @@ public partial class GameData : Node
     public CardsConfig Cards { get; private set; } = new();
     public EnemiesConfig Enemies { get; private set; } = new();
     public DecksConfig Decks { get; private set; } = new();
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
     public EventsConfig Events { get; private set; } = new();
     public RewardsConfig Rewards { get; private set; } = new();
+=======
+    public RelicsConfig Relics { get; private set; } = new();
+>>>>>>> theirs
+=======
+    public RelicsConfig Relics { get; private set; } = new();
+>>>>>>> theirs
+=======
+    public RelicsConfig Relics { get; private set; } = new();
+>>>>>>> theirs
+=======
+    public RelicsConfig Relics { get; private set; } = new();
+>>>>>>> theirs
 
     public void LoadAll()
     {
         Cards = LoadJson<CardsConfig>("res://data/cards.json");
         Enemies = LoadJson<EnemiesConfig>("res://data/enemies.json");
         Decks = LoadJson<DecksConfig>("res://data/decks.json");
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
         Events = LoadJson<EventsConfig>("res://data/events.json");
         Rewards = LoadJson<RewardsConfig>("res://data/rewards.json");
+=======
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+        Relics = LoadJson<RelicsConfig>("res://data/relics.json");
+    }
+
+    public List<CardData> GetAllCards()
+    {
+        return new List<CardData>(Cards.Cards);
+    }
+
+    public List<RelicData> GetAllRelics()
+    {
+        return new List<RelicData>(Relics.Relics);
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
     }
 
     public CardData GetCard(string cardId)
@@ -46,6 +94,10 @@ public partial class GameData : Node
         throw new InvalidOperationException($"未找到敌人: {enemyId}");
     }
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
     public MineEventData GetEvent(string eventId)
     {
         foreach (var mineEvent in Events.Events)
@@ -72,6 +124,14 @@ public partial class GameData : Node
         throw new InvalidOperationException($"未找到奖励: {rewardId}");
     }
 
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
     public List<CardData> BuildStarterDeck(string deckId)
     {
         foreach (var deck in Decks.Decks)
@@ -121,6 +181,10 @@ public class DecksConfig
     public List<DeckData> Decks { get; set; } = new();
 }
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
 public class EventsConfig
 {
     public List<MineEventData> Events { get; set; } = new();
@@ -129,6 +193,26 @@ public class EventsConfig
 public class RewardsConfig
 {
     public List<RewardData> Rewards { get; set; } = new();
+=======
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
+>>>>>>> theirs
+=======
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
+>>>>>>> theirs
+=======
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
+>>>>>>> theirs
+=======
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
+>>>>>>> theirs
 }
 
 public class DeckData
@@ -166,6 +250,10 @@ public class IntentData
     public List<CardAction> Actions { get; set; } = new();
 }
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
 public class MineEventData
 {
     public string Id { get; set; } = string.Empty;
@@ -196,4 +284,28 @@ public class RunAction
     public int Value { get; set; }
     public string CardId { get; set; } = string.Empty;
     public string RelicId { get; set; } = string.Empty;
+=======
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+public class RelicData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public int Value { get; set; }
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 }

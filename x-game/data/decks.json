@@ -3,9 +3,36 @@
     {
       "id": "starter",
       "cards": [
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
         "strike", "strike", "strike", "strike", "strike",
         "defend", "defend", "defend", "defend",
         "insight"
+=======
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+        "strike", "strike", "strike", "strike",
+        "defend", "defend", "defend", "defend",
+        "ore_scan", "ore_scan",
+        "dust_throw", "dust_throw",
+        "armor_break",
+        "first_aid"
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
       ]
     }
   ]

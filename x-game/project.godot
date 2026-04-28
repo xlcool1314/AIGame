@@ -35,10 +35,22 @@ project/assembly_name="XGame"
 
 [display]
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
 rendering_device/driver.windows="d3d12"
 
 [display]
 
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/vsync/vsync_mode=1
