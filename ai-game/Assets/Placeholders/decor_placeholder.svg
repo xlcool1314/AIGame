@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="20" fill="#2f3e4d"/>
-  <rect x="34" y="28" width="60" height="72" rx="10" fill="#d9ab70"/>
-  <circle cx="64" cy="54" r="10" fill="#f3eadc"/>
-  <text x="64" y="116" font-size="16" text-anchor="middle" fill="#f3eadc" font-family="Verdana">Decor</text>
-</svg>
