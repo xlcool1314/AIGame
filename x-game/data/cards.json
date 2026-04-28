@@ -26,6 +26,53 @@
       "actions": [
         { "type": "draw", "value": 1 }
       ]
+    },
+    {
+      "id": "heavy_pick",
+      "name": "重镐",
+      "cost": 2,
+      "description": "造成 14 点伤害。",
+      "actions": [
+        { "type": "damage", "value": 14 }
+      ]
+    },
+    {
+      "id": "lamp_guard",
+      "name": "护灯",
+      "cost": 1,
+      "description": "获得 8 点格挡。",
+      "actions": [
+        { "type": "block", "value": 8 }
+      ]
+    },
+    {
+      "id": "quick_scan",
+      "name": "速勘",
+      "cost": 0,
+      "description": "造成 3 点伤害，抽 1 张牌。",
+      "actions": [
+        { "type": "damage", "value": 3 },
+        { "type": "draw", "value": 1 }
+      ]
+    },
+    {
+      "id": "blast_charge",
+      "name": "爆破药包",
+      "cost": 2,
+      "description": "造成 10 点伤害，抽 1 张牌。",
+      "actions": [
+        { "type": "damage", "value": 10 },
+        { "type": "draw", "value": 1 }
+      ]
+    },
+    {
+      "id": "reinforce",
+      "name": "支架加固",
+      "cost": 2,
+      "description": "获得 14 点格挡。",
+      "actions": [
+        { "type": "block", "value": 14 }
+      ]
     }
   ]
 }
