@@ -1,0 +1,62 @@
+{
+  "cards": [
+    {
+      "id": "strike",
+      "name": "矿镐打击",
+      "cost": 1,
+      "description": "造成 6 点伤害。",
+      "actions": [
+        { "type": "damage", "value": 6 }
+      ]
+    },
+    {
+      "id": "defend",
+      "name": "矿工防御",
+      "cost": 1,
+      "description": "获得 5 点格挡。",
+      "actions": [
+        { "type": "block", "value": 5 }
+      ]
+    },
+    {
+      "id": "ore_scan",
+      "name": "矿脉勘测",
+      "cost": 0,
+      "description": "抽 1，获得 1 点能量。",
+      "actions": [
+        { "type": "draw", "value": 1 },
+        { "type": "energy", "value": 1 }
+      ]
+    },
+    {
+      "id": "armor_break",
+      "name": "破甲重击",
+      "cost": 2,
+      "description": "造成 9 点伤害并施加 2 层易伤。",
+      "actions": [
+        { "type": "damage", "value": 9 },
+        { "type": "apply_vulnerable", "value": 2 }
+      ]
+    },
+    {
+      "id": "dust_throw",
+      "name": "扬尘",
+      "cost": 1,
+      "description": "造成 4 点伤害并施加 2 层弱化。",
+      "actions": [
+        { "type": "damage", "value": 4 },
+        { "type": "apply_weak", "value": 2 }
+      ]
+    },
+    {
+      "id": "first_aid",
+      "name": "急救包",
+      "cost": 1,
+      "description": "回复 5 点生命并获得 4 点格挡。",
+      "actions": [
+        { "type": "heal", "value": 5 },
+        { "type": "block", "value": 4 }
+      ]
+    }
+  ]
+}

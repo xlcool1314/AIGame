@@ -1,0 +1,83 @@
+{
+  "enemies": [
+    {
+      "id": "slime",
+      "name": "雾矿史莱姆",
+      "maxHp": 56,
+      "intents": [
+        {
+          "name": "黏液撞击",
+          "actions": [
+            { "type": "damage", "value": 8 }
+          ]
+        },
+        {
+          "name": "雾化腐蚀",
+          "actions": [
+            { "type": "apply_weak", "value": 1 },
+            { "type": "apply_vulnerable", "value": 1 }
+          ]
+        },
+        {
+          "name": "凝胶再生",
+          "actions": [
+            { "type": "block", "value": 7 },
+            { "type": "heal", "value": 4 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mushroom_guard",
+      "name": "孢子守卫",
+      "maxHp": 74,
+      "intents": [
+        {
+          "name": "重锤打击",
+          "actions": [
+            { "type": "damage", "value": 12 }
+          ]
+        },
+        {
+          "name": "孢子喷发",
+          "actions": [
+            { "type": "apply_vulnerable", "value": 2 }
+          ]
+        },
+        {
+          "name": "硬壳防卫",
+          "actions": [
+            { "type": "block", "value": 10 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crystal_golem",
+      "name": "晶簇魔像（精英）",
+      "maxHp": 96,
+      "intents": [
+        {
+          "name": "晶核冲击",
+          "actions": [
+            { "type": "damage", "value": 15 }
+          ]
+        },
+        {
+          "name": "棱镜压制",
+          "actions": [
+            { "type": "apply_weak", "value": 2 },
+            { "type": "apply_vulnerable", "value": 1 }
+          ]
+        },
+        {
+          "name": "硬化结晶",
+          "actions": [
+            { "type": "block", "value": 12 },
+            { "type": "heal", "value": 6 }
+          ]
+        }
+      ]
+    }
+  ]
+}

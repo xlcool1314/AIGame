@@ -1,40 +1,51 @@
-# AIGame（Godot 4 + C# 数据驱动卡牌战斗框架）
+# AIGame（Godot 4 + C# 数据驱动卡牌战斗原型）
 
-这是一个用 **Godot 4 + C#** 编写的最小可运行框架，目标是快速搭建类似《杀戮尖塔》的单场战斗原型。
+这是一个基于 **Godot 4 + C#** 的最小可运行战斗原型，提供类似《杀戮尖塔》的单场战斗循环：抽牌、出牌、结束回合、敌人行动。
 
-## 当前版本特性
+## 当前实现
 
-- 全部逻辑脚本已切换为 C#：`GameData.cs` / `BattleEngine.cs` / `BattleScene.cs`
-- 数据驱动：卡牌 / 敌人 / 初始牌组都来自 `data/*.json`
-- 回合制战斗：玩家回合 + 敌人意图循环
-- 战斗要素：手牌、抽牌堆、弃牌堆、能量、格挡、日志
-- 支持动作：`damage` / `block` / `draw`
-- UI 目标分辨率：**1920 x 1080**，并使用深色幻想风样式
+- 全部核心逻辑使用 C#：`GameData.cs` / `BattleEngine.cs` / `BattleScene.cs`
+- 数据驱动：卡牌 / 敌人 / 初始牌组来源于 JSON 配置
+- 战斗机制：生命、格挡、能量、抽牌堆、弃牌堆、手牌
+- 进阶机制：`弱化(Weak)`、`易伤(Vulnerable)`、回复、临时能量
+- 行动类型：`damage` / `block` / `draw` / `heal` / `energy` / `apply_weak` / `apply_vulnerable`
+- 局内推进：连续遭遇战（样章 2 场）+ 胜利后三选一卡牌奖励（简版构筑成长）
+- 遗物系统：开局随机获得 1 个遗物（能量/格挡/攻击加成）并影响整局战斗
+- 事件节点：在关卡之间可进入营地回复或祭坛重铸遗物，且生命值在遭遇间持久化
+- 分支路线：祭坛分支会切换为精英遭遇（更高难度）并提供更多奖励选项
+- 地图预览：顶部显示当前样章路线（起点/岔路/普通线/精英线）
+- 地图交互：事件阶段可直接点击顶部路线节点选择“营地线”或“精英线”
+- 路线高亮：节点会按“已完成/当前/可选/锁定”状态显示不同高亮色
+- 路线动效：当前节点带有轻微脉冲动画，并在节点间显示方向连线
+- 悬停提示：鼠标悬停在分支节点会显示该路线的风险/收益说明
+- 改进 UI：顶部信息面板 + 左侧战斗操作区 + 右侧日志区，配色偏深色矿井风格
 
 ## 目录结构
 
-- `project.godot`：项目入口与分辨率配置（1920x1080）
-- `scenes/BattleScene.tscn`：战斗主场景（含 UI 样式）
-- `scripts/GameData.cs`：JSON 数据加载与索引
-- `scripts/BattleEngine.cs`：核心战斗逻辑（与 UI 解耦）
-- `scripts/BattleScene.cs`：UI 与输入层
-- `data/cards.json`：卡牌配置
-- `data/enemies.json`：敌人配置（含意图序列）
-- `data/decks.json`：初始牌组配置
+- `x-game/project.godot`：Godot 项目入口（主场景 + 分辨率）
+- `x-game/scenes/BattleScene.tscn`：战斗场景 UI
+- `x-game/scripts/GameData.cs`：JSON 读取与数据索引
+- `x-game/scripts/BattleEngine.cs`：战斗状态机与规则
+- `x-game/scripts/BattleScene.cs`：UI 渲染与输入处理
+- `x-game/data/cards.json`：卡牌定义
+- `x-game/data/enemies.json`：敌人定义（含意图循环）
+- `x-game/data/decks.json`：初始牌组
+- `x-game/data/relics.json`：遗物定义
 
-## 如何运行
+## 运行方式
 
-1. 用 Godot 4.x（Mono/.NET 版本）打开项目。
-2. 确保本机已安装 .NET SDK（Godot C# 必需）。
-3. 点击运行，主场景为 `scenes/BattleScene.tscn`。
+1. 使用 Godot 4.x（Mono / .NET）打开 `x-game/project.godot`。
+2. 确保本地安装 .NET SDK。
+3. 运行项目，进入战斗场景。
 
-## 如何扩展
+## 显示稳定性说明
 
-### 1) 新增卡牌
-在 `data/cards.json` 中添加 `cards` 条目并配置 `actions`。
+- 已针对高分辨率屏幕（如 2560x1440）调整布局：日志区不再使用 `fit_content` 自适应高度，改为稳定分栏布局，避免刷新日志时出现抖动/闪烁。
+- 项目窗口拉伸模式为 `viewport`，并显式开启 VSync，减少高分辨率下的画面撕裂和闪烁概率。
+- 不再强制 Windows 使用 `d3d12` 渲染驱动，避免不同显卡/驱动组合下出现兼容性异常。
 
-### 2) 新增敌人
-在 `data/enemies.json` 中增加敌人与 `intents`（敌人按顺序循环意图）。
+## 下一步建议
 
-### 3) 增加动作类型
-在 `scripts/BattleEngine.cs` 的 `ApplyActions()` 中新增 `switch` 分支。
+1. 增加“遗物/装备”系统，形成局外构筑策略。
+2. 增加多敌人战斗与目标选择。
+3. 增加战斗外事件与地图流程。
