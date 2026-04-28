@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#11141b"/>
+  <rect x="42" y="42" width="1836" height="996" rx="34" fill="#202b36" stroke="#506a7d" stroke-width="3"/>
+  <text x="84" y="120" font-size="50" font-family="serif" fill="#f5ead9">灰炉远征补给店 - 美术效果图</text>
+  <text x="84" y="170" font-size="24" fill="#aab4bd">魔兽感高幻想、厚重铁器、温暖炉火、暗蓝石墙、金色交互强调</text>
+  <rect x="84" y="220" width="1080" height="600" rx="28" fill="#151d27"/>
+  <image href="../Backgrounds/ashforge_shop_stage.svg" x="120" y="260" width="1008" height="567"/>
+  <g transform="translate(1230 240)">
+    <text x="0" y="0" font-size="28" fill="#dca763">角色剪影</text>
+    <rect x="0" y="32" width="570" height="220" rx="24" fill="#263542"/>
+    <circle cx="92" cy="100" r="40" fill="#d9a45f"/><path d="M42 155q50-55 100 0v56H42z" fill="#6e2f2d"/><path d="M58 92l68-32 28 42-44 22z" fill="#b9c4c9"/>
+    <circle cx="254" cy="100" r="40" fill="#c58d58"/><path d="M204 155q50-55 100 0v56H204z" fill="#295c48"/><path d="M230 62h70l-14 56h-44z" fill="#7aa7ad"/>
+    <circle cx="416" cy="100" r="40" fill="#b98562"/><path d="M366 155q50-55 100 0v56H366z" fill="#49366e"/><path d="M398 46h38l20 76h-78z" fill="#6eb8d6"/>
+  </g>
+  <g transform="translate(1230 560)">
+    <text x="0" y="0" font-size="28" fill="#dca763">装备图标语言</text>
+    <rect x="0" y="32" width="570" height="260" rx="24" fill="#263542"/>
+    <path d="M76 205l155-155 34 34-155 155z" fill="#c6d1d7"/><path d="M54 222l58-24 22 22-62 29z" fill="#dca763"/>
+    <path d="M300 214c70-120 142-120 206 0-76-40-132-40-206 0z" fill="#926638" stroke="#dca763" stroke-width="14" fill-opacity=".4"/>
+    <circle cx="420" cy="122" r="44" fill="#683e99"/><path d="M420 70v104M368 122h104" stroke="#9fd6ff" stroke-width="10"/>
+  </g>
+  <g transform="translate(84 875)">
+    <text x="0" y="0" font-size="28" fill="#dca763">功能色</text>
+    <rect x="0" y="30" width="130" height="80" rx="16" fill="#dca763"/><text x="150" y="78" font-size="22" fill="#f5ead9">金币 / 可点击 / 关键收益</text>
+    <rect x="520" y="30" width="130" height="80" rx="16" fill="#66b486"/><text x="670" y="78" font-size="22" fill="#f5ead9">匹配 / 成功 / 增益</text>
+    <rect x="1040" y="30" width="130" height="80" rx="16" fill="#d95c4f"/><text x="1190" y="78" font-size="22" fill="#f5ead9">不匹配 / 耐心危险</text>
+  </g>
+</svg>
