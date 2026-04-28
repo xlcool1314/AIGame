@@ -2,27 +2,7 @@
   "cards": [
     {
       "id": "strike",
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
       "name": "打击",
-=======
-      "name": "矿镐打击",
->>>>>>> theirs
-=======
-      "name": "矿镐打击",
->>>>>>> theirs
-=======
-      "name": "矿镐打击",
->>>>>>> theirs
-=======
-      "name": "矿镐打击",
->>>>>>> theirs
-=======
-      "name": "矿镐打击",
->>>>>>> theirs
       "cost": 1,
       "description": "造成 6 点伤害。",
       "actions": [
@@ -31,27 +11,7 @@
     },
     {
       "id": "defend",
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
       "name": "防御",
-=======
-      "name": "矿工防御",
->>>>>>> theirs
-=======
-      "name": "矿工防御",
->>>>>>> theirs
-=======
-      "name": "矿工防御",
->>>>>>> theirs
-=======
-      "name": "矿工防御",
->>>>>>> theirs
-=======
-      "name": "矿工防御",
->>>>>>> theirs
       "cost": 1,
       "description": "获得 5 点格挡。",
       "actions": [
@@ -59,11 +19,6 @@
       ]
     },
     {
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
       "id": "insight",
       "name": "洞察",
       "cost": 0,
@@ -117,65 +72,6 @@
       "description": "获得 14 点格挡。",
       "actions": [
         { "type": "block", "value": 14 }
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-      "id": "ore_scan",
-      "name": "矿脉勘测",
-      "cost": 0,
-      "description": "抽 1，获得 1 点能量。",
-      "actions": [
-        { "type": "draw", "value": 1 },
-        { "type": "energy", "value": 1 }
-      ]
-    },
-    {
-      "id": "armor_break",
-      "name": "破甲重击",
-      "cost": 2,
-      "description": "造成 9 点伤害并施加 2 层易伤。",
-      "actions": [
-        { "type": "damage", "value": 9 },
-        { "type": "apply_vulnerable", "value": 2 }
-      ]
-    },
-    {
-      "id": "dust_throw",
-      "name": "扬尘",
-      "cost": 1,
-      "description": "造成 4 点伤害并施加 2 层弱化。",
-      "actions": [
-        { "type": "damage", "value": 4 },
-        { "type": "apply_weak", "value": 2 }
-      ]
-    },
-    {
-      "id": "first_aid",
-      "name": "急救包",
-      "cost": 1,
-      "description": "回复 5 点生命并获得 4 点格挡。",
-      "actions": [
-        { "type": "heal", "value": 5 },
-        { "type": "block", "value": 4 }
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
       ]
     }
   ]
