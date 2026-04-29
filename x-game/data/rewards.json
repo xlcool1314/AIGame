@@ -2,43 +2,57 @@
   "rewards": [
     {
       "id": "basic",
-      "title": "普通战利品",
+      "title": "\u666e\u901a\u6218\u5229\u54c1",
       "titleEn": "Basic Spoils",
       "shards": 12,
       "heal": 4,
       "cardChoices": [
-        "heavy_pick",
-        "lamp_guard",
-        "quick_scan",
-        "blast_charge",
-        "reinforce"
+        "copper_hook", "guarded_swing", "echo_probe", "emergency_patch",
+        "quick_scan", "lamp_guard", "ore_shot", "safe_route"
+      ]
+    },
+    {
+      "id": "advanced",
+      "title": "\u6df1\u5c42\u6218\u5229\u54c1",
+      "titleEn": "Deep Spoils",
+      "shards": 18,
+      "heal": 5,
+      "cardChoices": [
+        "heavy_pick", "blast_charge", "reinforce", "signal_flare",
+        "crack_finder", "chain_drill", "vent_pressure", "steady_breath"
       ]
     },
     {
       "id": "elite",
-      "title": "监管者战利品",
+      "title": "\u7cbe\u82f1\u6218\u5229\u54c1",
       "titleEn": "Elite Spoils",
       "shards": 32,
       "heal": 8,
       "cardChoices": [
-        "heavy_pick",
-        "lamp_guard",
-        "quick_scan",
-        "blast_charge",
-        "reinforce"
+        "lamp_overdrive", "crystal_salve", "fault_line", "bulwark",
+        "chain_drill", "crack_finder", "blast_charge", "heavy_pick"
+      ]
+    },
+    {
+      "id": "boss",
+      "title": "\u6838\u5fc3\u5956\u52b1",
+      "titleEn": "Core Reward",
+      "shards": 48,
+      "heal": 12,
+      "cardChoices": [
+        "lamp_overdrive", "fault_line", "bulwark", "crystal_salve",
+        "chain_drill", "safe_route"
       ]
     },
     {
       "id": "shop",
-      "title": "矿灯商队货架",
+      "title": "\u77ff\u706f\u5546\u961f\u8d27\u67b6",
       "titleEn": "Lamp Caravan Stock",
       "shards": 0,
       "heal": 0,
       "cardChoices": [
-        "quick_scan",
-        "lamp_guard",
-        "blast_charge",
-        "reinforce"
+        "quick_scan", "lamp_guard", "blast_charge", "reinforce",
+        "battery_pack", "signal_flare", "emergency_patch", "crack_finder"
       ]
     }
   ]

@@ -2,21 +2,39 @@
   "items": [
     {
       "id": "probe_lamp",
-      "name": "探测灯",
+      "name": "\u63a2\u6d4b\u706f",
       "nameEn": "Probe Lamp",
-      "description": "选择一个隐藏矿格，显示它的内容但不触发。",
+      "description": "\u9009\u62e9\u4e00\u4e2a\u9690\u85cf\u77ff\u683c\uff0c\u663e\u793a\u5185\u5bb9\u4f46\u4e0d\u89e6\u53d1\u3002",
       "descriptionEn": "Choose a hidden tile to preview its content without triggering it.",
       "useMode": "target_tile",
       "value": 1
     },
     {
+      "id": "smoke_marker",
+      "name": "\u70df\u96fe\u6807\u8bb0\u5668",
+      "nameEn": "Smoke Marker",
+      "description": "\u6807\u8bb0\u6216\u9884\u89c8\u4e00\u4e2a\u53ef\u7591\u77ff\u683c\uff0c\u7528\u4e8e\u9ad8\u98ce\u9669\u68cb\u76d8\u3002",
+      "descriptionEn": "Preview a suspicious tile, useful on higher-risk boards.",
+      "useMode": "target_tile",
+      "value": 1
+    },
+    {
       "id": "bandage",
-      "name": "绷带",
+      "name": "\u7ef7\u5e26",
       "nameEn": "Bandage",
-      "description": "立即恢复 12 点生命。",
+      "description": "\u7acb\u5373\u6062\u590d 12 \u70b9\u751f\u547d\u3002",
       "descriptionEn": "Immediately restore 12 HP.",
       "useMode": "instant_heal",
       "value": 12
+    },
+    {
+      "id": "crystal_tonic",
+      "name": "\u6676\u77ff\u836f\u5242",
+      "nameEn": "Crystal Tonic",
+      "description": "\u7acb\u5373\u6062\u590d 20 \u70b9\u751f\u547d\u3002",
+      "descriptionEn": "Immediately restore 20 HP.",
+      "useMode": "instant_heal",
+      "value": 20
     }
   ]
 }

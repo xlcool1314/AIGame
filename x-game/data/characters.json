@@ -1,32 +1,67 @@
 {
   "characters": [
-    {
-      "id": "miner",
-      "name": "矿工",
-      "nameEn": "Miner",
-      "description": "稳定的生命值和补给，适合熟悉矿井规则。",
-      "descriptionEn": "Reliable health and supplies, ideal for learning the mine.",
-      "maxHp": 76,
-      "shards": 20,
-      "deckId": "starter",
-      "startingItems": [
-        { "itemId": "probe_lamp", "count": 2 },
-        { "itemId": "bandage", "count": 1 }
-      ]
-    },
-    {
-      "id": "scout",
-      "name": "勘探员",
-      "nameEn": "Scout",
-      "description": "生命较低，但携带更多探测灯，适合谨慎推理。",
-      "descriptionEn": "Lower health, more probe lamps, and better suited for careful deduction.",
-      "maxHp": 62,
-      "shards": 28,
-      "deckId": "starter",
-      "startingItems": [
-        { "itemId": "probe_lamp", "count": 4 },
-        { "itemId": "bandage", "count": 1 }
-      ]
-    }
+	{
+	  "id": "miner",
+	  "name": "\u77ff\u5de5",
+	  "nameEn": "Miner",
+	  "description": "\u751f\u547d\u9ad8\uff0c\u724c\u7ec4\u7a33\u5b9a\uff0c\u9002\u5408\u8dd1\u5b8c\u4e00\u6574\u6761\u77ff\u9053\u3002",
+	  "descriptionEn": "High HP and a stable deck, suited for completing a full route.",
+	  "artPath": "res://art/placeholders/characters/miner.svg",
+	  "maxHp": 78,
+	  "shards": 20,
+	  "deckId": "starter",
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 2 },
+		{ "itemId": "bandage", "count": 1 }
+	  ]
+	},
+	{
+	  "id": "scout",
+	  "name": "\u52d8\u63a2\u5458",
+	  "nameEn": "Scout",
+	  "description": "\u751f\u547d\u8f83\u4f4e\uff0c\u4f46\u62e5\u6709\u66f4\u591a\u62bd\u724c\u548c\u63a7\u5236\uff0c\u9002\u5408\u8c28\u614e\u63a8\u7406\u3002",
+	  "descriptionEn": "Lower HP, stronger draw and control, suited for careful deduction.",
+	  "artPath": "res://art/placeholders/characters/scout.svg",
+	  "maxHp": 62,
+	  "shards": 30,
+	  "deckId": "scout",
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 4 },
+		{ "itemId": "bandage", "count": 1 }
+	  ]
+	},
+	{
+	  "id": "breaker",
+	  "name": "\u7206\u7834\u624b",
+	  "nameEn": "Breaker",
+	  "description": "\u8fdb\u653b\u724c\u8d28\u91cf\u9ad8\uff0c\u4f46\u521d\u59cb\u8865\u7ed9\u5c11\uff0c\u9700\u8981\u7528\u6218\u6597\u5956\u52b1\u6eda\u8d77\u6765\u3002",
+	  "descriptionEn": "Starts with stronger attacks but fewer supplies. Snowballs through combat rewards.",
+	  "artPath": "res://art/placeholders/characters/breaker.svg",
+	  "unlockId": "character_breaker",
+	  "maxHp": 70,
+	  "shards": 12,
+	  "deckId": "breaker",
+	  "startingItems": [
+		{ "itemId": "bandage", "count": 1 },
+		{ "itemId": "smoke_marker", "count": 1 }
+	  ]
+	},
+	{
+	  "id": "engineer",
+	  "name": "\u5de5\u7a0b\u5e08",
+	  "nameEn": "Engineer",
+	  "description": "\u64c5\u957f\u80fd\u91cf\u548c\u9632\u5fa1\uff0c\u5f00\u5c40\u643a\u5e26\u989d\u5916\u5de5\u5177\u3002",
+	  "descriptionEn": "Specializes in energy and defense, with extra tools at the start.",
+	  "artPath": "res://art/placeholders/characters/engineer.svg",
+	  "unlockId": "character_engineer",
+	  "maxHp": 68,
+	  "shards": 24,
+	  "deckId": "engineer",
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 2 },
+		{ "itemId": "bandage", "count": 2 },
+		{ "itemId": "smoke_marker", "count": 1 }
+	  ]
+	}
   ]
 }

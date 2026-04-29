@@ -1,0 +1,54 @@
+{
+  "objectives": [
+    {
+      "id": "reach_depth_4",
+      "title": "\u59d4\u6258\uff1a\u627e\u5230\u6df1\u5c42\u8def\u6807",
+      "titleEn": "Commission: Reach the Deep Marker",
+      "description": "\u62b5\u8fbe\u7b2c 4 \u5c42\u3002",
+      "descriptionEn": "Reach layer 4.",
+      "type": "depth",
+      "target": 4,
+      "emberReward": 8
+    },
+    {
+      "id": "win_3_battles",
+      "title": "\u59d4\u6258\uff1a\u6e05\u9664\u77ff\u9053\u5a01\u80c1",
+      "titleEn": "Commission: Clear Mine Threats",
+      "description": "\u83b7\u5f97 3 \u573a\u6218\u6597\u80dc\u5229\u3002",
+      "descriptionEn": "Win 3 battles.",
+      "type": "battles",
+      "target": 3,
+      "emberReward": 9
+    },
+    {
+      "id": "clear_2_mines",
+      "title": "\u59d4\u6258\uff1a\u5b89\u5168\u52d8\u6d4b",
+      "titleEn": "Commission: Safe Survey",
+      "description": "\u6e05\u7406 2 \u4e2a\u77ff\u533a\u68cb\u76d8\u3002",
+      "descriptionEn": "Clear 2 mine boards.",
+      "type": "mines",
+      "target": 2,
+      "emberReward": 10
+    },
+    {
+      "id": "score_220",
+      "title": "\u59d4\u6258\uff1a\u9ad8\u98ce\u9669\u8bb0\u5f55",
+      "titleEn": "Commission: High Risk Record",
+      "description": "\u672c\u5c40\u8fbe\u5230 220 \u5206\u3002",
+      "descriptionEn": "Reach 220 score this run.",
+      "type": "score",
+      "target": 220,
+      "emberReward": 12
+    },
+    {
+      "id": "collect_120_shards",
+      "title": "\u59d4\u6258\uff1a\u6676\u77ff\u8ba2\u5355",
+      "titleEn": "Commission: Crystal Order",
+      "description": "\u672c\u5c40\u6301\u6709 120 \u77ff\u6676\u3002",
+      "descriptionEn": "Hold 120 shards this run.",
+      "type": "shards",
+      "target": 120,
+      "emberReward": 8
+    }
+  ]
+}

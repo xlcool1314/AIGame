@@ -2,108 +2,94 @@
   "enemies": [
     {
       "id": "slime",
-      "name": "雾矿史莱姆",
+      "name": "\u96fe\u77ff\u53f2\u83b1\u59c6",
       "nameEn": "Fog Slime",
+      "artPath": "res://art/placeholders/enemies/slime.svg",
       "maxHp": 42,
       "intents": [
-        {
-          "name": "撞击",
-          "nameEn": "Slam",
-          "actions": [
-            { "type": "damage", "value": 7 }
-          ]
-        },
-        {
-          "name": "凝胶护盾",
-          "nameEn": "Gel Shield",
-          "actions": [
-            { "type": "block", "value": 6 }
-          ]
-        }
+        { "name": "\u649e\u51fb", "nameEn": "Slam", "actions": [ { "type": "damage", "value": 7 } ] },
+        { "name": "\u51dd\u80f6\u62a4\u76fe", "nameEn": "Gel Shield", "actions": [ { "type": "block", "value": 6 } ] }
       ]
     },
     {
       "id": "crystal_bat",
-      "name": "晶翼蝠",
+      "name": "\u6676\u7ffc\u8760",
       "nameEn": "Crystal Bat",
+      "artPath": "res://art/placeholders/enemies/bat.svg",
       "maxHp": 36,
       "intents": [
-        {
-          "name": "俯冲",
-          "nameEn": "Dive",
-          "actions": [
-            { "type": "damage", "value": 6 }
-          ]
-        },
-        {
-          "name": "碎晶尖啸",
-          "nameEn": "Shard Screech",
-          "actions": [
-            { "type": "damage", "value": 4 },
-            { "type": "block", "value": 5 },
-            { "type": "weak", "value": 0, "duration": 1 }
-          ]
-        }
+        { "name": "\u4fef\u51b2", "nameEn": "Dive", "actions": [ { "type": "damage", "value": 6 } ] },
+        { "name": "\u788e\u6676\u5c16\u5578", "nameEn": "Shard Screech", "actions": [ { "type": "damage", "value": 4 }, { "type": "block", "value": 5 }, { "type": "weak", "duration": 1 } ] }
       ]
     },
     {
-      "id": "mine_overseer",
-      "name": "矿井监管者",
-      "nameEn": "Mine Overseer",
-      "maxHp": 68,
+      "id": "lamp_mite",
+      "name": "\u706f\u6cb9\u87a8",
+      "nameEn": "Lamp Mite",
+      "artPath": "res://art/placeholders/enemies/mite.svg",
+      "maxHp": 30,
       "intents": [
-        {
-          "name": "巡查重击",
-          "nameEn": "Patrol Smash",
-          "actions": [
-            { "type": "damage", "value": 10 }
-          ]
-        },
-        {
-          "name": "举盾推进",
-          "nameEn": "Shield Advance",
-          "actions": [
-            { "type": "block", "value": 10 }
-          ]
-        },
-        {
-          "name": "惩戒连打",
-          "nameEn": "Punitive Combo",
-          "actions": [
-            { "type": "damage", "value": 5 },
-            { "type": "damage", "value": 5 }
-          ]
-        }
+        { "name": "\u5438\u5149", "nameEn": "Sip Light", "actions": [ { "type": "damage", "value": 5 }, { "type": "weak", "duration": 1 } ] },
+        { "name": "\u8eb2\u5165\u706f\u5f71", "nameEn": "Hide in Glow", "actions": [ { "type": "block", "value": 9 } ] }
+      ]
+    },
+    {
+      "id": "ore_leecher",
+      "name": "\u77ff\u8109\u5438\u9644\u8005",
+      "nameEn": "Ore Leecher",
+      "artPath": "res://art/placeholders/enemies/leecher.svg",
+      "maxHp": 48,
+      "intents": [
+        { "name": "\u5438\u9644", "nameEn": "Latch", "actions": [ { "type": "damage", "value": 8 } ] },
+        { "name": "\u6676\u8109\u56de\u590d", "nameEn": "Crystal Feed", "actions": [ { "type": "heal", "value": 6 }, { "type": "block", "value": 4 } ] }
       ]
     },
     {
       "id": "crystal_guard",
-      "name": "晶壳守卫",
+      "name": "\u6676\u58f3\u5b88\u536b",
       "nameEn": "Crystal Guard",
+      "artPath": "res://art/placeholders/enemies/guard.svg",
       "maxHp": 58,
       "intents": [
-        {
-          "name": "晶刺横扫",
-          "nameEn": "Crystal Sweep",
-          "actions": [
-            { "type": "damage", "value": 8 }
-          ]
-        },
-        {
-          "name": "硬化外壳",
-          "nameEn": "Harden Shell",
-          "actions": [
-            { "type": "block", "value": 12 }
-          ]
-        },
-        {
-          "name": "裂晶反扑",
-          "nameEn": "Fracture Counter",
-          "actions": [
-            { "type": "damage", "value": 6 },
-            { "type": "block", "value": 6 }
-          ]
-        }
+        { "name": "\u6676\u523a\u6a2a\u626b", "nameEn": "Crystal Sweep", "actions": [ { "type": "damage", "value": 8 } ] },
+        { "name": "\u786c\u5316\u5916\u58f3", "nameEn": "Harden Shell", "actions": [ { "type": "block", "value": 12 } ] },
+        { "name": "\u88c2\u6676\u53cd\u6251", "nameEn": "Fracture Counter", "actions": [ { "type": "damage", "value": 6 }, { "type": "block", "value": 6 } ] }
+      ]
+    },
+    {
+      "id": "spore_mason",
+      "name": "\u5b62\u5b50\u77ff\u5320",
+      "nameEn": "Spore Mason",
+      "artPath": "res://art/placeholders/enemies/mason.svg",
+      "maxHp": 52,
+      "intents": [
+        { "name": "\u629b\u6492\u5b62\u7c89", "nameEn": "Spore Dust", "actions": [ { "type": "weak", "duration": 2 }, { "type": "damage", "value": 4 } ] },
+        { "name": "\u5806\u780c\u83cc\u58f3", "nameEn": "Build Shell", "actions": [ { "type": "block", "value": 14 } ] },
+        { "name": "\u83cc\u77f3\u7838\u51fb", "nameEn": "Fungal Boulder", "actions": [ { "type": "damage", "value": 11 } ] }
+      ]
+    },
+    {
+      "id": "mine_overseer",
+      "name": "\u77ff\u4e95\u76d1\u7ba1\u8005",
+      "nameEn": "Mine Overseer",
+      "artPath": "res://art/placeholders/enemies/overseer.svg",
+      "maxHp": 72,
+      "intents": [
+        { "name": "\u5de1\u67e5\u91cd\u51fb", "nameEn": "Patrol Smash", "actions": [ { "type": "damage", "value": 10 } ] },
+        { "name": "\u4e3e\u76fe\u63a8\u8fdb", "nameEn": "Shield Advance", "actions": [ { "type": "block", "value": 12 } ] },
+        { "name": "\u60e9\u6212\u8fde\u6253", "nameEn": "Punitive Combo", "actions": [ { "type": "damage", "value": 5 }, { "type": "damage", "value": 5 } ] }
+      ]
+    },
+    {
+      "id": "fog_core",
+      "name": "\u96fe\u706f\u6838\u5fc3",
+      "nameEn": "Fog Lamp Core",
+      "artPath": "res://art/placeholders/enemies/fog_core.svg",
+      "maxHp": 88,
+      "intents": [
+        { "name": "\u8fc7\u8f7d\u95ea\u5149", "nameEn": "Overload Flash", "actions": [ { "type": "damage", "value": 8 }, { "type": "weak", "duration": 1 } ] },
+        { "name": "\u7ed3\u6676\u5916\u58f3", "nameEn": "Crystal Casing", "actions": [ { "type": "block", "value": 16 }, { "type": "heal", "value": 5 } ] },
+        { "name": "\u6df1\u5c42\u9707\u8361", "nameEn": "Deep Tremor", "actions": [ { "type": "damage", "value": 6 }, { "type": "damage", "value": 6 }, { "type": "damage", "value": 6 } ] }
       ]
     }
   ]

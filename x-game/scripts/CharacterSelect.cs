@@ -6,10 +6,13 @@ public partial class CharacterSelect : Control
     private readonly GameData _gameData = new();
     private VBoxContainer _characterList = null!;
     private Label _detailLabel = null!;
+    private TextureRect _portraitTexture = null!;
+    private PanelContainer _portraitFrame = null!;
     private Button _startButton = null!;
     private Button _backButton = null!;
     private Label _titleLabel = null!;
     private string _selectedCharacterId = "miner";
+    private readonly Dictionary<string, bool> _characterUnlocked = new();
     private readonly Dictionary<string, Button> _characterButtons = new();
 
     public override void _Ready()
@@ -18,9 +21,11 @@ public partial class CharacterSelect : Control
         AddChild(_gameData);
         _gameData.LoadAll();
 
-        _characterList = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentRow/CharacterList");
+        _characterList = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentRow/CharacterScroll/CharacterList");
         _titleLabel = GetNode<Label>("Root/Margin/MainLayout/TitleLabel");
-        _detailLabel = GetNode<Label>("Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLabel");
+        _detailLabel = GetNode<Label>("Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout/DetailLabel");
+        _portraitTexture = GetNode<TextureRect>("Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout/PortraitFrame/PortraitTexture");
+        _portraitFrame = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout/PortraitFrame");
         _startButton = GetNode<Button>("Root/Margin/MainLayout/ButtonRow/StartButton");
         _backButton = GetNode<Button>("Root/Margin/MainLayout/ButtonRow/BackButton");
 
@@ -35,18 +40,24 @@ public partial class CharacterSelect : Control
     private void RenderCharacters()
     {
         _characterButtons.Clear();
+        _characterUnlocked.Clear();
         foreach (var character in _gameData.Characters.Characters)
         {
+            var unlocked = SaveManager.IsUnlocked(character.UnlockId);
             var button = new Button
             {
-                Text = $"{character.DisplayName()}\n{Localization.T("hp")} {character.MaxHp}  |  {Localization.T("shards")} {character.Shards}\n{character.DisplayDescription()}",
-                CustomMinimumSize = new Vector2(440, 128),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
+                Text = unlocked
+                    ? $"{character.DisplayName()}\n{Localization.T("hp")} {character.MaxHp}  |  {Localization.T("shards")} {character.Shards}\n{character.DisplayDescription()}"
+                    : $"🔒 {character.DisplayName()}\n{(Localization.Language == Localization.English ? "Unlock from main menu." : "请在主菜单解锁。")}",
+                CustomMinimumSize = new Vector2(420, 112),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = !unlocked
             };
             var id = character.Id;
             button.Pressed += () => SelectCharacter(id);
             StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
             _characterButtons[id] = button;
+            _characterUnlocked[id] = unlocked;
             _characterList.AddChild(button);
         }
     }
@@ -55,6 +66,10 @@ public partial class CharacterSelect : Control
     {
         _selectedCharacterId = characterId;
         var character = _gameData.GetCharacter(characterId);
+        if (!SaveManager.IsUnlocked(character.UnlockId))
+        {
+            return;
+        }
         var items = "";
         foreach (var item in character.StartingItems)
         {
@@ -65,6 +80,7 @@ public partial class CharacterSelect : Control
         _titleLabel.Text = Localization.T("choose_character");
         _startButton.Text = Localization.T("start_explore");
         _backButton.Text = Localization.T("back");
+        _portraitTexture.Texture = LoadTexture(character.ArtPath);
         _detailLabel.Text = $"{character.DisplayName()}\n\n{character.DisplayDescription()}\n\n{Localization.T("hp")}: {character.MaxHp}\n{Localization.T("shards")}: {character.Shards}\n{Localization.T("start_items")}:{items}";
         RefreshSelectionStyles();
     }
@@ -80,8 +96,19 @@ public partial class CharacterSelect : Control
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentRow/DetailPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
+        _portraitFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "315f46", 1));
         StyleButton(_startButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_backButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
+    }
+
+    private static Texture2D? LoadTexture(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
+        {
+            return null;
+        }
+
+        return ResourceLoader.Load<Texture2D>(path);
     }
 
     private void RefreshSelectionStyles()
@@ -89,7 +116,8 @@ public partial class CharacterSelect : Control
         foreach (var pair in _characterButtons)
         {
             var selected = pair.Key == _selectedCharacterId;
-            StyleButton(pair.Value, selected ? Color.FromHtml("315f46") : Color.FromHtml("263445"), selected ? Color.FromHtml("e7fff1") : Color.FromHtml("d8e2ee"));
+            var unlocked = _characterUnlocked.TryGetValue(pair.Key, out var value) && value;
+            StyleButton(pair.Value, !unlocked ? Color.FromHtml("303946") : selected ? Color.FromHtml("315f46") : Color.FromHtml("263445"), selected ? Color.FromHtml("e7fff1") : Color.FromHtml("d8e2ee"));
         }
     }
 

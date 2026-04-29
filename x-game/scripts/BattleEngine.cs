@@ -139,6 +139,15 @@ public partial class BattleEngine : Node
                 case "weak":
                     parts.Add($"虚弱 {action.Duration}");
                     break;
+                case "vulnerable":
+                    parts.Add($"易伤 {action.Duration}");
+                    break;
+                case "heal":
+                    parts.Add($"治疗 {action.Value}");
+                    break;
+                case "energy":
+                    parts.Add($"能量 {action.Value}");
+                    break;
                 default:
                     parts.Add(action.Type);
                     break;
@@ -225,6 +234,25 @@ public partial class BattleEngine : Node
                     {
                         DrawCards(action.Value);
                         Log.Add($"{source} 抽 {action.Value} 张牌。");
+                    }
+                    break;
+                case "heal":
+                    if (fromPlayer)
+                    {
+                        PlayerHp = Math.Min(PlayerMaxHp, PlayerHp + Math.Max(0, action.Value));
+                        Log.Add($"{source} 恢复 {action.Value} 点生命。");
+                    }
+                    else
+                    {
+                        EnemyHp = Math.Min(Enemy.MaxHp, EnemyHp + Math.Max(0, action.Value));
+                        Log.Add($"{source} 恢复 {action.Value} 点生命。");
+                    }
+                    break;
+                case "energy":
+                    if (fromPlayer)
+                    {
+                        Energy += action.Value;
+                        Log.Add($"{source} 获得 {action.Value} 点能量。");
                     }
                     break;
                 case "weak":

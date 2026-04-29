@@ -8,6 +8,20 @@ public partial class RunEngine : Node
     public int PlayerMaxHp { get; private set; } = 70;
     public int Shards { get; private set; }
     public int CurrentLayerIndex { get; private set; } = -1;
+    public int RunSeed { get; private set; }
+    public int LampOil { get; private set; } = 100;
+    public int MaxLampOil { get; private set; } = 100;
+    public int FogPressure { get; private set; }
+    public int RoomsCompleted { get; private set; }
+    public int BattlesWon { get; private set; }
+    public int MinesCleared { get; private set; }
+    public int Score { get; private set; }
+    public string ObjectiveId { get; private set; } = string.Empty;
+    public string ObjectiveTitle { get; private set; } = string.Empty;
+    public string ObjectiveTitleEn { get; private set; } = string.Empty;
+    public string ObjectiveType { get; private set; } = string.Empty;
+    public int ObjectiveTarget { get; private set; }
+    public int ObjectiveEmberReward { get; private set; }
     public RunRoom? CurrentRoom { get; private set; }
 
     public readonly List<CardData> PlayerDeck = new();
@@ -29,6 +43,14 @@ public partial class RunEngine : Node
         PlayerHp = PlayerMaxHp;
         Shards = character.Shards;
         CurrentLayerIndex = -1;
+        RunSeed = Random.Shared.Next(1, int.MaxValue);
+        MaxLampOil = SaveManager.IsUnlocked("start_lamp_plus") ? 115 : 100;
+        LampOil = MaxLampOil;
+        FogPressure = 0;
+        RoomsCompleted = 0;
+        BattlesWon = 0;
+        MinesCleared = 0;
+        Score = 0;
         CurrentRoom = null;
 
         PlayerDeck.Clear();
@@ -41,6 +63,7 @@ public partial class RunEngine : Node
         Relics.Clear();
 
         BuildMapLayers(gameData);
+        SelectObjective(gameData);
 
         Log.Clear();
         Log.Add("你点亮矿灯，进入迷雾矿井。");
@@ -49,10 +72,27 @@ public partial class RunEngine : Node
     public void LoadFromSave(GameData gameData, RunSaveData saveData)
     {
         StartRun(gameData);
+        RunSeed = saveData.RunSeed > 0 ? saveData.RunSeed : Random.Shared.Next(1, int.MaxValue);
         PlayerHp = Math.Clamp(saveData.PlayerHp, 0, saveData.PlayerMaxHp);
         PlayerMaxHp = Math.Max(1, saveData.PlayerMaxHp);
         Shards = Math.Max(0, saveData.Shards);
         CurrentLayerIndex = Math.Clamp(saveData.CurrentLayerIndex, -1, MapLayers.Count - 1);
+        LampOil = Math.Clamp(saveData.LampOil <= 0 ? 70 : saveData.LampOil, 0, MaxLampOil);
+        FogPressure = Math.Max(0, saveData.FogPressure);
+        RoomsCompleted = Math.Max(0, saveData.RoomsCompleted);
+        BattlesWon = Math.Max(0, saveData.BattlesWon);
+        MinesCleared = Math.Max(0, saveData.MinesCleared);
+        Score = Math.Max(0, saveData.Score);
+        ObjectiveId = saveData.ObjectiveId;
+        ObjectiveTitle = saveData.ObjectiveTitle;
+        ObjectiveTitleEn = saveData.ObjectiveTitleEn;
+        ObjectiveType = saveData.ObjectiveType;
+        ObjectiveTarget = saveData.ObjectiveTarget;
+        ObjectiveEmberReward = saveData.ObjectiveEmberReward;
+        if (string.IsNullOrWhiteSpace(ObjectiveId))
+        {
+            SelectObjective(gameData);
+        }
         CurrentRoom = null;
         Minefield = null;
 
@@ -108,19 +148,18 @@ public partial class RunEngine : Node
         CurrentLayerIndex++;
         CurrentRoom = choices[clampedIndex];
         Minefield = null;
+        ApplyRoomPressure(CurrentRoom);
         Log.Add($"进入第 {CurrentLayerIndex + 1} 层：{CurrentRoom.DisplayTitle()}");
         return CurrentRoom;
     }
 
     public void StartMinefield()
     {
-        var layer = Math.Max(CurrentLayerIndex, 0);
-        var width = layer >= 2 ? 6 : 5;
-        var height = layer >= 2 ? 6 : 5;
-        var mineCount = Math.Min(width * height - 6, 4 + layer * 2);
-        var reward = 14 + layer * 6;
-        Minefield = MinefieldState.Create(width, height, mineCount, reward);
-        Log.Add($"开始探勘：{width}x{height} 矿区，疑似雷区 {mineCount} 处。");
+        var config = CurrentRoom?.MineConfig ?? new MineRoomConfig();
+        var seed = HashCode.Combine(RunSeed, CurrentLayerIndex, CurrentRoom?.Kind ?? string.Empty, CurrentRoom?.TitleEn ?? string.Empty);
+        Minefield = MinefieldState.Create(config, seed);
+        var dangerCount = config.Monsters + config.Traps;
+        Log.Add($"开始探勘：{config.Width}x{config.Height} 矿区，疑似雷区 {dangerCount} 处。");
     }
 
     public MineRevealResult RevealMineCell(int index)
@@ -158,6 +197,8 @@ public partial class RunEngine : Node
         if (Minefield.IsCleared)
         {
             Shards += Minefield.RewardShards;
+            MinesCleared++;
+            Score += 18 + Minefield.RewardShards;
             Log.Add($"矿区清理完成，获得 {Minefield.RewardShards} 矿晶。");
         }
 
@@ -216,23 +257,28 @@ public partial class RunEngine : Node
 
     public void ResolveMineMonsterVictory()
     {
+        BattlesWon++;
+        Score += 12 + Math.Max(CurrentLayerIndex, 0) * 4;
         Shards += 8 + Math.Max(CurrentLayerIndex, 0) * 2;
         Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
     }
 
-    public void ApplyReward(RewardData reward, CardData? chosenCard)
+    public void ApplyReward(RewardData reward, CardData? chosenCard, int bonusPercent = 0)
     {
-        Shards += reward.Shards;
+        var shardReward = reward.Shards + (reward.Shards * Math.Max(0, bonusPercent) / 100);
+        BattlesWon++;
+        Score += 25 + shardReward + Math.Max(0, bonusPercent);
+        Shards += shardReward;
         Heal(reward.Heal);
 
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add($"战利品：获得 {reward.Shards} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
         }
         else
         {
-            Log.Add($"战利品：获得 {reward.Shards} 矿晶，治疗 {reward.Heal} 点。");
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
         }
     }
 
@@ -279,14 +325,51 @@ public partial class RunEngine : Node
         if (mode == "forge")
         {
             Shards += 12;
+            RestoreLamp(18);
             Relics.Add("校准矿灯");
-            Log.Add("你校准矿灯并整理矿石，获得 12 矿晶和遗物：校准矿灯。");
+            Log.Add("你校准矿灯并整理矿石，获得 12 矿晶、18 灯油和遗物：校准矿灯。");
             return;
         }
 
         var amount = Math.Max(12, PlayerMaxHp / 3);
         Heal(amount);
-        Log.Add($"你在废弃升降机旁短暂休整，恢复 {amount} 点生命。");
+        RestoreLamp(10);
+        Log.Add($"你在废弃升降机旁短暂休整，恢复 {amount} 点生命和 10 灯油。");
+    }
+
+    public int CalculateMetaEmbers(bool victory)
+    {
+        var depth = Math.Max(0, CurrentLayerIndex + 1);
+        var ember = depth * 3 + BattlesWon * 2 + MinesCleared * 3 + Shards / 20 + Score / 60;
+        if (victory)
+        {
+            ember += 18;
+        }
+
+        return Math.Max(1, ember);
+    }
+
+    public string DisplayObjectiveTitle()
+    {
+        return Localization.Pick(ObjectiveTitle, ObjectiveTitleEn);
+    }
+
+    public int GetObjectiveProgress()
+    {
+        return ObjectiveType switch
+        {
+            "depth" => Math.Max(0, CurrentLayerIndex + 1),
+            "battles" => BattlesWon,
+            "mines" => MinesCleared,
+            "score" => Score,
+            "shards" => Shards,
+            _ => 0
+        };
+    }
+
+    public bool IsObjectiveComplete()
+    {
+        return !string.IsNullOrWhiteSpace(ObjectiveId) && GetObjectiveProgress() >= ObjectiveTarget;
     }
 
     private void ApplyRunAction(RunAction action, GameData gameData)
@@ -331,11 +414,34 @@ public partial class RunEngine : Node
             var rooms = new List<RunRoom>();
             foreach (var room in layer.Rooms)
             {
-                rooms.Add(new RunRoom(room.Kind, room.Title, room.TitleEn, room.EnemyId, room.EventId, room.RewardId));
+                rooms.Add(new RunRoom(room.Kind, room.Title, room.TitleEn, room.EnemyId, room.EventId, room.RewardId, room.MineConfig, room.Risk, room.LampCost, room.RewardBonus));
             }
 
             MapLayers.Add(rooms);
         }
+    }
+
+    private void SelectObjective(GameData gameData)
+    {
+        if (gameData.Objectives.Objectives.Count == 0)
+        {
+            ObjectiveId = string.Empty;
+            ObjectiveTitle = string.Empty;
+            ObjectiveTitleEn = string.Empty;
+            ObjectiveType = string.Empty;
+            ObjectiveTarget = 0;
+            ObjectiveEmberReward = 0;
+            return;
+        }
+
+        var random = new Random(HashCode.Combine(RunSeed, GameSession.SelectedCharacterId));
+        var objective = gameData.Objectives.Objectives[random.Next(gameData.Objectives.Objectives.Count)];
+        ObjectiveId = objective.Id;
+        ObjectiveTitle = objective.Title;
+        ObjectiveTitleEn = objective.TitleEn;
+        ObjectiveType = objective.Type;
+        ObjectiveTarget = objective.Target;
+        ObjectiveEmberReward = objective.EmberReward;
     }
 
     private bool ConsumeItem(string itemId)
@@ -354,6 +460,33 @@ public partial class RunEngine : Node
         Log.Add("没有可用道具。");
         return false;
     }
+
+    private void ApplyRoomPressure(RunRoom room)
+    {
+        RoomsCompleted++;
+        var layerPressure = Math.Max(0, CurrentLayerIndex) * 2;
+        var riskPressure = Math.Max(1, room.Risk) * 3;
+        var lampCost = Math.Max(0, room.LampCost + layerPressure + riskPressure);
+        LampOil -= lampCost;
+        FogPressure += Math.Max(0, room.Risk - 1) + Math.Max(0, CurrentLayerIndex / 2);
+        Score += Math.Max(1, room.Risk) * 6;
+
+        if (LampOil >= 0)
+        {
+            Log.Add($"矿灯消耗 {lampCost}。剩余灯油 {LampOil}/{MaxLampOil}。");
+            return;
+        }
+
+        var damage = Math.Min(Math.Max(0, PlayerHp - 1), Math.Abs(LampOil) + FogPressure);
+        PlayerHp = Math.Max(1, PlayerHp - damage);
+        LampOil = 0;
+        Log.Add($"灯油见底，雾压造成 {damage} 点伤害。雾压 {FogPressure}。");
+    }
+
+    private void RestoreLamp(int amount)
+    {
+        LampOil = Math.Min(MaxLampOil, LampOil + Math.Max(0, amount));
+    }
 }
 
 public class RunRoom
@@ -364,8 +497,12 @@ public class RunRoom
     public string EventId { get; }
     public string RewardId { get; }
     public string TitleEn { get; }
+    public MineRoomConfig MineConfig { get; }
+    public int Risk { get; }
+    public int LampCost { get; }
+    public int RewardBonus { get; }
 
-    public RunRoom(string kind, string title, string titleEn = "", string enemyId = "", string eventId = "", string rewardId = "")
+    public RunRoom(string kind, string title, string titleEn = "", string enemyId = "", string eventId = "", string rewardId = "", MineRoomConfig? mineConfig = null, int risk = 1, int lampCost = 8, int rewardBonus = 0)
     {
         Kind = kind;
         Title = title;
@@ -373,6 +510,10 @@ public class RunRoom
         EnemyId = enemyId;
         EventId = eventId;
         RewardId = rewardId;
+        MineConfig = mineConfig ?? new MineRoomConfig();
+        Risk = Math.Clamp(risk, 1, 4);
+        LampCost = Math.Max(0, lampCost);
+        RewardBonus = Math.Max(0, rewardBonus);
     }
 
     public string DisplayTitle()
@@ -389,17 +530,27 @@ public class MinefieldState
     public int RewardCount { get; private set; }
     public int RewardShards { get; private set; }
     public int TrapDamage { get; private set; } = 8;
+    public int Seed { get; private set; }
     public bool ExitFound { get; private set; }
     public bool IsCleared { get; private set; }
     public readonly List<MineCell> Cells = new();
 
-    public static MinefieldState Create(int width, int height, int mineCount, int rewardShards)
+    public static MinefieldState Create(MineRoomConfig config, int seed)
     {
+        var width = Math.Clamp(config.Width, 4, 8);
+        var height = Math.Clamp(config.Height, 4, 8);
+        var maxPayload = Math.Max(0, width * height - 6);
+        var monsters = Math.Clamp(config.Monsters, 0, maxPayload);
+        var traps = Math.Clamp(config.Traps, 0, Math.Max(0, maxPayload - monsters));
+        var treasures = Math.Clamp(config.Treasures, 0, Math.Max(0, maxPayload - monsters - traps));
+        var ores = Math.Clamp(config.Ores, 0, Math.Max(0, maxPayload - monsters - traps - treasures));
         var state = new MinefieldState
         {
             Width = width,
             Height = height,
-            RewardShards = rewardShards
+            RewardShards = Math.Max(0, config.ClearReward),
+            TrapDamage = Math.Max(1, config.TrapDamage),
+            Seed = seed
         };
 
         for (var i = 0; i < width * height; i++)
@@ -412,11 +563,11 @@ public class MinefieldState
         state.Cells[entranceIndex].Type = MineTileType.Entrance;
         state.Cells[exitIndex].Type = MineTileType.Exit;
 
-        var random = new Random();
-        state.PlaceTiles(random, MineTileType.Monster, Math.Max(2, mineCount / 2));
-        state.PlaceTiles(random, MineTileType.Trap, Math.Max(2, mineCount - Math.Max(2, mineCount / 2)));
-        state.PlaceTiles(random, MineTileType.Treasure, Math.Max(2, width / 2));
-        state.PlaceTiles(random, MineTileType.Ore, Math.Max(4, width));
+        var random = new Random(seed);
+        state.PlaceTiles(random, MineTileType.Monster, monsters);
+        state.PlaceTiles(random, MineTileType.Trap, traps);
+        state.PlaceTiles(random, MineTileType.Treasure, treasures);
+        state.PlaceTiles(random, MineTileType.Ore, ores);
 
         for (var i = 0; i < state.Cells.Count; i++)
         {
@@ -520,6 +671,48 @@ public class MinefieldState
     public bool CanPreview(int index)
     {
         return index >= 0 && index < Cells.Count && !Cells[index].IsRevealed && !Cells[index].IsPreviewed;
+    }
+
+    public int CountType(MineTileType type)
+    {
+        var count = 0;
+        foreach (var cell in Cells)
+        {
+            if (cell.Type == type)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public int CountRevealed()
+    {
+        var count = 0;
+        foreach (var cell in Cells)
+        {
+            if (cell.IsRevealed)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public int CountFlags()
+    {
+        var count = 0;
+        foreach (var cell in Cells)
+        {
+            if (cell.IsFlagged)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private void FloodReveal(int startIndex)

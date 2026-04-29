@@ -20,6 +20,8 @@ public partial class BattleScene : Control
     private PanelContainer _battlePanel = null!;
     private Label _playerCombatLabel = null!;
     private Label _enemyCombatLabel = null!;
+    private TextureRect _playerPortrait = null!;
+    private TextureRect _enemyPortrait = null!;
     private ProgressBar _playerHpBar = null!;
     private ProgressBar _enemyHpBar = null!;
     private Label _playerBlockLabel = null!;
@@ -40,11 +42,15 @@ public partial class BattleScene : Control
     private Button _retryButton = null!;
     private Button _endMenuButton = null!;
     private RichTextLabel _logLabel = null!;
+    private PanelContainer _debugPanel = null!;
+    private Label _debugLabel = null!;
 
     private RunRoom? _activeBattleRoom;
     private RunRoom? _activeMineRoom;
     private bool _returnToMineAfterBattle;
     private bool _mineFlagMode;
+    private bool _debugVisible;
+    private bool _metaRecorded;
     private string _selectedItemId = string.Empty;
 
     public override void _Ready()
@@ -63,6 +69,8 @@ public partial class BattleScene : Control
         _mineModeButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/MineModeButton");
         _mineGrid = GetNode<GridContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter/MineGrid");
         _battlePanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel");
+        _playerPortrait = GetNode<TextureRect>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerPortrait");
+        _enemyPortrait = GetNode<TextureRect>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout/EnemyPortrait");
         _playerCombatLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerCombatLabel");
         _enemyCombatLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout/EnemyCombatLabel");
         _playerHpBar = GetNode<ProgressBar>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerHpBar");
@@ -83,6 +91,8 @@ public partial class BattleScene : Control
         _retryButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow/RetryButton");
         _endMenuButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow/EndMenuButton");
         _logLabel = GetNode<RichTextLabel>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel/LogText");
+        _debugPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel");
+        _debugLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel/DebugLabel");
 
         AddChild(_gameData);
         AddChild(_battle);
@@ -119,6 +129,19 @@ public partial class BattleScene : Control
         ApplyUiStyle();
 
         ShowNextRoomChoices();
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo || keyEvent.Keycode != Key.F3)
+        {
+            return;
+        }
+
+        _debugVisible = !_debugVisible;
+        _debugPanel.Visible = _debugVisible;
+        RenderDebug();
+        GetViewport().SetInputAsHandled();
     }
 
     private void OnContinuePressed()
@@ -166,7 +189,7 @@ public partial class BattleScene : Control
             var room = choices[i];
             var button = new Button
             {
-                Text = $"{GetRoomIcon(room.Kind)} {room.DisplayTitle()}\n{GetRoomSummary(room)}",
+                Text = $"{GetRoomIcon(room.Kind)} {room.DisplayTitle()}  {FormatRoomRisk(room)}\n{GetRoomSummary(room)}",
                 CustomMinimumSize = new Vector2(0, 82),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart
             };
@@ -231,7 +254,7 @@ public partial class BattleScene : Control
         return room.Kind switch
         {
             "battle" => string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName()),
-            "mine" => Localization.T("mine_summary"),
+            "mine" => FormatMineSummary(room.MineConfig),
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
             "rest" => Localization.T("rest_summary"),
             "shop" => Localization.T("shop_summary"),
@@ -240,13 +263,51 @@ public partial class BattleScene : Control
         };
     }
 
+    private static string FormatRoomRisk(RunRoom room)
+    {
+        var risk = room.Risk switch
+        {
+            1 => Localization.Language == Localization.English ? "Safe" : "稳妥",
+            2 => Localization.Language == Localization.English ? "Risk" : "风险",
+            3 => Localization.Language == Localization.English ? "High Risk" : "高危",
+            _ => Localization.Language == Localization.English ? "Critical" : "极危"
+        };
+        var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}% reward" : string.Empty;
+        if (Localization.Language != Localization.English)
+        {
+            bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%奖励" : string.Empty;
+        }
+
+        return $"[{risk} | 灯油-{room.LampCost}{bonus}]";
+    }
+
+    private static string FormatMineSummary(MineRoomConfig config)
+    {
+        if (Localization.Language == Localization.English)
+        {
+            return $"{config.Width}x{config.Height} survey board. Threats: {config.Monsters + config.Traps}; rewards: {config.Treasures + config.Ores}; clear reward: {config.ClearReward} shards.";
+        }
+
+        return $"{config.Width}x{config.Height} 探勘棋盘。危险：{config.Monsters + config.Traps}；资源：{config.Treasures + config.Ores}；清理奖励：{config.ClearReward} 矿晶。";
+    }
+
+    private static string FormatMineIntro(MineRoomConfig config)
+    {
+        if (Localization.Language == Localization.English)
+        {
+            return $"Survey started. Numbers show nearby danger and reward clues. Board {config.Width}x{config.Height}, monsters {config.Monsters}, traps {config.Traps}, resources {config.Treasures + config.Ores}.";
+        }
+
+        return $"扫雷探勘开始。数字同时提示周围危险与资源。棋盘 {config.Width}x{config.Height}，怪物 {config.Monsters}，陷阱 {config.Traps}，资源 {config.Treasures + config.Ores}。";
+    }
+
     private void RenderMineRoom(RunRoom room)
     {
         _activeMineRoom = room;
         _run.StartMinefield();
         _mineFlagMode = false;
         _roomTitleLabel.Text = room.DisplayTitle();
-        _roomDescriptionLabel.Text = "扫雷探勘开始。数字代表周围八格暗雷数量；用标记模式插旗，翻完所有安全格即可带走矿晶。";
+        _roomDescriptionLabel.Text = FormatMineIntro(room.MineConfig);
         _minePanel.Visible = true;
         RenderMinefield();
     }
@@ -309,6 +370,7 @@ public partial class BattleScene : Control
         var enemyId = string.IsNullOrEmpty(_activeMineRoom?.EnemyId) ? "slime" : _activeMineRoom.EnemyId;
         var enemy = _gameData.GetEnemy(enemyId);
         _battle.StartBattle(_run.PlayerDeck, enemy, _run.PlayerMaxHp, _run.PlayerHp);
+        SetCombatPortraits(enemy);
         _returnToMineAfterBattle = true;
 
         _minePanel.Visible = false;
@@ -472,6 +534,10 @@ public partial class BattleScene : Control
         foreach (var cardId in reward.CardChoices)
         {
             var card = _gameData.GetCard(cardId);
+            if (!SaveManager.IsUnlocked(card.UnlockId))
+            {
+                continue;
+            }
             AddChoiceButton($"{string.Format(Localization.T("buy_card"), card.DisplayName(), 22)}\n{card.DisplayDescription()}", () => OnBuyCardPressed(card));
         }
 
@@ -515,6 +581,7 @@ public partial class BattleScene : Control
         _returnToMineAfterBattle = false;
         var enemy = _gameData.GetEnemy(room.EnemyId);
         _battle.StartBattle(_run.PlayerDeck, enemy, _run.PlayerMaxHp, _run.PlayerHp);
+        SetCombatPortraits(enemy);
 
         _roomTitleLabel.Text = room.DisplayTitle();
         _roomDescriptionLabel.Text = "战斗开始。用手牌削减敌人生命，并观察敌人的下一步意图。";
@@ -593,6 +660,10 @@ public partial class BattleScene : Control
         foreach (var cardId in reward.CardChoices)
         {
             var card = _gameData.GetCard(cardId);
+            if (!SaveManager.IsUnlocked(card.UnlockId))
+            {
+                continue;
+            }
             var button = new Button
             {
                 Text = $"{card.DisplayName()} ({Localization.T("cost")} {card.Cost})\n{card.DisplayDescription()}",
@@ -617,7 +688,7 @@ public partial class BattleScene : Control
 
     private void OnRewardPicked(RewardData reward, CardData? card)
     {
-        _run.ApplyReward(reward, card);
+        _run.ApplyReward(reward, card, _activeBattleRoom?.RewardBonus ?? 0);
         _rewardPanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
@@ -666,13 +737,30 @@ public partial class BattleScene : Control
         }
     }
 
+    private void SetCombatPortraits(EnemyData enemy)
+    {
+        var character = _gameData.GetCharacter(GameSession.SelectedCharacterId);
+        _playerPortrait.Texture = LoadTexture(character.ArtPath);
+        _enemyPortrait.Texture = LoadTexture(enemy.ArtPath);
+    }
+
+    private static Texture2D? LoadTexture(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
+        {
+            return null;
+        }
+
+        return ResourceLoader.Load<Texture2D>(path);
+    }
+
     private void RenderShared()
     {
         var displayedHp = _battlePanel.Visible ? _battle.PlayerHp : _run.PlayerHp;
         var displayedMaxHp = _battlePanel.Visible ? _battle.PlayerMaxHp : _run.PlayerMaxHp;
         var layerText = $"{Math.Max(_run.CurrentLayerIndex + 1, 0)}/{_run.MapLayers.Count}";
         var relicText = _run.Relics.Count > 0 ? string.Format(Localization.T("relics"), string.Join(", ", _run.Relics)) : string.Empty;
-        _runStatusLabel.Text = string.Format(Localization.T("run_status"), layerText, _run.MapLayers.Count, displayedHp, displayedMaxHp, _run.Shards, _run.PlayerDeck.Count, relicText);
+        _runStatusLabel.Text = $"{string.Format(Localization.T("run_status"), layerText, _run.MapLayers.Count, displayedHp, displayedMaxHp, _run.Shards, _run.PlayerDeck.Count, relicText)} | 灯油: {_run.LampOil}/{_run.MaxLampOil} | 雾压: {_run.FogPressure} | 分数: {_run.Score} | 委托: {FormatObjectiveStatus()}";
 
         var sb = new StringBuilder();
         for (var i = _battle.Log.Count - 1; i >= 0; i--)
@@ -692,6 +780,58 @@ public partial class BattleScene : Control
 
         _logLabel.Text = sb.ToString();
         RenderItems();
+        RenderDebug();
+    }
+
+    private void RenderDebug()
+    {
+        if (!_debugVisible)
+        {
+            return;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Debug");
+        sb.AppendLine($"Run seed: {_run.RunSeed}");
+        sb.AppendLine($"Layer: {Math.Max(_run.CurrentLayerIndex + 1, 0)}/{_run.MapLayers.Count}");
+        sb.AppendLine($"Room: {_run.CurrentRoom?.Kind ?? "-"} / {_run.CurrentRoom?.DisplayTitle() ?? "-"}");
+        sb.AppendLine($"HP: {_run.PlayerHp}/{_run.PlayerMaxHp}  Shards: {_run.Shards}");
+        sb.AppendLine($"Lamp: {_run.LampOil}/{_run.MaxLampOil}  Fog: {_run.FogPressure}  Score: {_run.Score}");
+        sb.AppendLine($"Deck: {_run.PlayerDeck.Count}  Items: {_run.Items.Count}");
+
+        if (_run.Minefield != null)
+        {
+            var mine = _run.Minefield;
+            sb.AppendLine();
+            sb.AppendLine($"Mine seed: {mine.Seed}");
+            sb.AppendLine($"Board: {mine.Width}x{mine.Height}");
+            sb.AppendLine($"Visible: {mine.CountRevealed()}/{mine.Cells.Count}  Flags: {mine.CountFlags()}");
+            sb.AppendLine($"Monster: {mine.CountType(MineTileType.Monster)}  Trap: {mine.CountType(MineTileType.Trap)}");
+            sb.AppendLine($"Treasure: {mine.CountType(MineTileType.Treasure)}  Ore: {mine.CountType(MineTileType.Ore)}");
+            sb.AppendLine($"Clear reward: {mine.RewardShards}  Trap dmg: {mine.TrapDamage}");
+        }
+
+        if (_battlePanel.Visible)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Battle HP: {_battle.PlayerHp}/{_battle.PlayerMaxHp} vs {_battle.EnemyHp}/{_battle.Enemy.MaxHp}");
+            sb.AppendLine($"Energy: {_battle.Energy}  Hand: {_battle.Hand.Count}");
+        }
+
+        _debugLabel.Text = sb.ToString();
+    }
+
+    private string FormatObjectiveStatus()
+    {
+        if (string.IsNullOrWhiteSpace(_run.ObjectiveId))
+        {
+            return Localization.Language == Localization.English ? "None" : "无";
+        }
+
+        var state = _run.IsObjectiveComplete()
+            ? (Localization.Language == Localization.English ? "Done" : "完成")
+            : $"{Math.Min(_run.GetObjectiveProgress(), _run.ObjectiveTarget)}/{_run.ObjectiveTarget}";
+        return $"{_run.DisplayObjectiveTitle()} {state} (+{_run.ObjectiveEmberReward})";
     }
 
     private void RenderItems()
@@ -735,12 +875,14 @@ public partial class BattleScene : Control
 
     private void ShowEndPanel(bool victory, string reason)
     {
+        var meta = _metaRecorded ? SaveManager.LoadMeta() : SaveManager.RecordRun(_run, victory);
+        _metaRecorded = true;
         HideInteractivePanels();
         _endPanel.Visible = true;
         _roomTitleLabel.Text = victory ? "探索完成" : "探索失败";
         _roomDescriptionLabel.Text = reason;
         _endTitleLabel.Text = victory ? "本次探索完成" : "本次探索结束";
-        _endSummaryLabel.Text = $"抵达层数: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余 HP: {_run.PlayerHp}/{_run.PlayerMaxHp}\n矿晶: {_run.Shards}\n牌组: {_run.PlayerDeck.Count} 张\n遗物: {(_run.Relics.Count == 0 ? "无" : string.Join(", ", _run.Relics))}";
+        _endSummaryLabel.Text = $"抵达层数: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余 HP: {_run.PlayerHp}/{_run.PlayerMaxHp}\n灯油: {_run.LampOil}/{_run.MaxLampOil}  雾压: {_run.FogPressure}\n矿晶: {_run.Shards}  分数: {_run.Score}\n战斗胜利: {_run.BattlesWon}  清理矿区: {_run.MinesCleared}\n委托: {FormatObjectiveStatus()}  委托奖励: {meta.LastObjectiveBonus}\n本局获得余烬: {meta.LastEarnedEmbers}  总余烬: {meta.TotalEmbers}\n最佳深度: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n遗物: {(_run.Relics.Count == 0 ? "无" : string.Join(", ", _run.Relics))}";
         RenderShared();
     }
 
@@ -798,6 +940,7 @@ public partial class BattleScene : Control
         _endPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171f2b", "52627a", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("121b24", "2a3544", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("0f141b", "2a3544", 1));
+        _debugPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171720", "5a4d70", 1));
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_mineModeButton, Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));

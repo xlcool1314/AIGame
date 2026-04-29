@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.cs" id="1_menu"]
+[ext_resource type="Texture2D" path="res://art/placeholders/ui/menu_hero.svg" id="2_hero"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -19,6 +20,29 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="HeroTexture" type="TextureRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_hero")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="HeroShade" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0392157, 0.0941176, 0.117647, 0.38)
+
 [node name="Margin" type="MarginContainer" parent="Root"]
 layout_mode = 1
 anchors_preset = 15
@@ -26,14 +50,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 120
-theme_override_constants/margin_top = 96
+theme_override_constants/margin_left = 104
+theme_override_constants/margin_top = 72
 theme_override_constants/margin_right = 120
 theme_override_constants/margin_bottom = 96
 
 [node name="MenuLayout" type="VBoxContainer" parent="Root/Margin"]
 layout_mode = 2
-size_flags_horizontal = 4
+custom_minimum_size = Vector2(460, 0)
+size_flags_horizontal = 0
 size_flags_vertical = 4
 theme_override_constants/separation = 18
 
@@ -62,6 +87,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(420, 64)
 text = "设置"
 
+[node name="UnlocksButton" type="Button" parent="Root/Margin/MenuLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(420, 64)
+text = "解锁"
+
 [node name="SettingsPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
 visible = false
 layout_mode = 2
@@ -79,6 +109,23 @@ text = "语言"
 layout_mode = 2
 
 [node name="BackButton" type="Button" parent="Root/Margin/MenuLayout/SettingsPanel/SettingsLayout"]
+layout_mode = 2
+text = "返回"
+
+[node name="UnlocksPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(520, 0)
+
+[node name="UnlocksLayout" type="VBoxContainer" parent="Root/Margin/MenuLayout/UnlocksPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UnlocksList" type="VBoxContainer" parent="Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UnlocksBackButton" type="Button" parent="Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout"]
 layout_mode = 2
 text = "返回"
 

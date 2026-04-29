@@ -45,9 +45,14 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 18
 
-[node name="CharacterList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentRow"]
+[node name="CharacterScroll" type="ScrollContainer" parent="Root/Margin/MainLayout/ContentRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(460, 0)
+size_flags_vertical = 3
+
+[node name="CharacterList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentRow/CharacterScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
 [node name="DetailPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentRow"]
@@ -55,8 +60,24 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="DetailLabel" type="Label" parent="Root/Margin/MainLayout/ContentRow/DetailPanel"]
+[node name="DetailLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentRow/DetailPanel"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="PortraitFrame" type="PanelContainer" parent="Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 300)
+
+[node name="PortraitTexture" type="TextureRect" parent="Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout/PortraitFrame"]
+layout_mode = 2
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DetailLabel" type="Label" parent="Root/Margin/MainLayout/ContentRow/DetailPanel/DetailLayout"]
+layout_mode = 2
+size_flags_vertical = 3
 autowrap_mode = 3
 text = "角色详情"
 

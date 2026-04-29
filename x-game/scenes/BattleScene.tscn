@@ -153,6 +153,12 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_constants/separation = 6
 
+[node name="PlayerPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 156)
+expand_mode = 1
+stretch_mode = 5
+
 [node name="PlayerCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
 layout_mode = 2
 autowrap_mode = 3
@@ -173,6 +179,12 @@ size_flags_horizontal = 3
 [node name="EnemyCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel"]
 layout_mode = 2
 theme_override_constants/separation = 6
+
+[node name="EnemyPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 156)
+expand_mode = 1
+stretch_mode = 5
 
 [node name="EnemyCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
 layout_mode = 2
@@ -278,6 +290,15 @@ text = "模式：翻开"
 visible = false
 layout_mode = 2
 text = "继续深入"
+
+[node name="DebugPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+visible = false
+layout_mode = 2
+
+[node name="DebugLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Debug"
 
 [node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
 layout_mode = 2

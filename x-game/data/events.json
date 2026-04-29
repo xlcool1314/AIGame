@@ -2,95 +2,71 @@
   "events": [
     {
       "id": "echo_ore",
-      "title": "矿脉回声",
+      "title": "\u77ff\u8109\u56de\u58f0",
       "titleEn": "Ore Vein Echo",
-      "description": "一簇蓝白矿晶在岩缝里低鸣。靠近它时，旧矿道的脚步声像潮水一样退回来。",
-      "descriptionEn": "Blue-white crystals hum inside the rock. As you approach, old footsteps roll back like a tide.",
+      "description": "\u84dd\u767d\u77ff\u6676\u5728\u5ca9\u7f1d\u4e2d\u4f4e\u9e23\uff0c\u8001\u77ff\u9053\u628a\u811a\u6b65\u58f0\u9001\u56de\u4f60\u8eab\u8fb9\u3002",
+      "descriptionEn": "Blue-white crystals hum inside the rock, sending old footsteps back toward you.",
       "choices": [
-        {
-          "text": "敲下一块稳定矿晶",
-          "textEn": "Chip off a stable shard",
-          "result": "矿晶被收入背包，矿灯也亮了一些。",
-          "resultEn": "The shard goes into your pack, and your lamp burns a little brighter.",
-          "actions": [
-            { "type": "shards", "value": 18 }
-          ]
-        },
-        {
-          "text": "贴近聆听回声",
-          "textEn": "Listen closely to the echo",
-          "result": "你从回声里辨认出更稳的呼吸节奏，生命上限提高了。",
-          "resultEn": "You find a steadier breathing rhythm in the echo. Max HP increases.",
-          "actions": [
-            { "type": "max_hp", "value": 6 }
-          ]
-        }
+        { "text": "\u6572\u4e0b\u7a33\u5b9a\u77ff\u6676", "textEn": "Chip off stable shards", "result": "\u80cc\u5305\u6c89\u4e86\u4e00\u70b9\uff0c\u77ff\u706f\u4e5f\u66f4\u4eae\u4e86\u3002", "resultEn": "Your pack grows heavier and your lamp brighter.", "actions": [ { "type": "shards", "value": 20 } ] },
+        { "text": "\u8d34\u8fd1\u8046\u542c\u56de\u58f0", "textEn": "Listen closely", "result": "\u4f60\u5728\u56de\u58f0\u91cc\u627e\u5230\u66f4\u7a33\u7684\u547c\u5438\u8282\u594f\u3002", "resultEn": "You find a steadier breathing rhythm in the echo.", "actions": [ { "type": "max_hp", "value": 6 } ] },
+        { "text": "\u7528\u56de\u58f0\u6821\u51c6\u706f\u67f1", "textEn": "Tune your lamp to the echo", "result": "\u706f\u5149\u6536\u675f\u6210\u4e00\u9053\u7a33\u5b9a\u5149\u7ebf\u3002", "resultEn": "The lamp focuses into a steady beam.", "actions": [ { "type": "add_card", "cardId": "echo_probe" } ] }
       ]
     },
     {
       "id": "collapsed_tunnel",
-      "title": "坍塌支道",
+      "title": "\u574d\u584c\u652f\u9053",
       "titleEn": "Collapsed Side Tunnel",
-      "description": "碎石挡住了侧路。缝隙后有一只旧工具箱，铁扣已经锈得发黑。",
-      "descriptionEn": "Rubble blocks a side path. Behind a narrow gap sits an old toolbox with blackened iron clasps.",
+      "description": "\u788e\u77f3\u6321\u4f4f\u4fa7\u8def\uff0c\u7f1d\u9699\u540e\u6709\u4e00\u53ea\u65e7\u5de5\u5177\u7bb1\u3002",
+      "descriptionEn": "Rubble blocks a side path. An old toolbox sits behind a narrow gap.",
       "choices": [
-        {
-          "text": "搬开碎石拿工具箱（失去 6 点生命）",
-          "textEn": "Move rubble for the toolbox (-6 HP)",
-          "result": "碎石擦伤了手臂，但工具箱里躺着一柄保养完好的重镐。",
-          "resultEn": "The stones scrape your arm, but the toolbox holds a well-kept heavy pick.",
-          "actions": [
-            { "type": "damage", "value": 6 },
-            { "type": "add_card", "cardId": "heavy_pick" }
-          ]
-        },
-        {
-          "text": "绕路前进并包扎伤口",
-          "textEn": "Take a detour and treat your wounds",
-          "result": "你没有惊动支道深处的东西，并趁机处理了伤口。",
-          "resultEn": "You avoid whatever waits deeper in the side path and tend your wounds.",
-          "actions": [
-            { "type": "heal", "value": 10 }
-          ]
-        }
+        { "text": "\u642c\u5f00\u788e\u77f3\uff08-6 HP\uff09", "textEn": "Move the rubble (-6 HP)", "result": "\u624b\u81c2\u88ab\u64e6\u4f24\uff0c\u4f46\u4f60\u627e\u5230\u4e86\u4e00\u628a\u91cd\u9550\u3002", "resultEn": "The stones scrape your arm, but you find a heavy pick.", "actions": [ { "type": "damage", "value": 6 }, { "type": "add_card", "cardId": "heavy_pick" } ] },
+        { "text": "\u7ed5\u8def\u5e76\u5305\u624e\u4f24\u53e3", "textEn": "Detour and tend wounds", "result": "\u4f60\u6ca1\u6709\u60ca\u52a8\u652f\u9053\u6df1\u5904\u7684\u4e1c\u897f\u3002", "resultEn": "You avoid whatever waits deeper in the side path.", "actions": [ { "type": "heal", "value": 10 } ] },
+        { "text": "\u62c6\u4e0b\u652f\u67b6\u52a0\u56fa\u88c5\u7f6e", "textEn": "Salvage the brace", "result": "\u4f60\u62c6\u4e0b\u4e00\u5957\u8fd8\u80fd\u7528\u7684\u652f\u62a4\u88c5\u7f6e\u3002", "resultEn": "You salvage a usable brace rig.", "actions": [ { "type": "add_card", "cardId": "reinforce" } ] }
       ]
     },
     {
       "id": "old_camp",
-      "title": "旧矿工营地",
+      "title": "\u65e7\u77ff\u5de5\u8425\u5730",
       "titleEn": "Old Miners' Camp",
-      "description": "几顶破旧帆布帐篷还挂在岩钉上。火塘早已冷透，但工具架上仍有能用的东西。",
-      "descriptionEn": "Torn canvas tents still hang from rock nails. The firepit is cold, but the tool rack has usable gear.",
+      "description": "\u7834\u65e7\u5e10\u7bf7\u8fd8\u6302\u5728\u5ca9\u9489\u4e0a\uff0c\u5de5\u5177\u67b6\u4e0a\u4ecd\u6709\u53ef\u7528\u7684\u4e1c\u897f\u3002",
+      "descriptionEn": "Torn tents still hang from rock nails, and the tool rack has usable gear.",
       "choices": [
-        {
-          "text": "翻找工具架",
-          "textEn": "Search the tool rack",
-          "result": "你找到一份爆破药包，火药味让矿灯晃了一下。",
-          "resultEn": "You find a blast charge. The powder smell makes your lamp flicker.",
-          "actions": [
-            { "type": "add_card", "cardId": "blast_charge" }
-          ]
-        },
-        {
-          "text": "整理营地补给",
-          "textEn": "Sort through camp supplies",
-          "result": "你把可用的绷带和灯油收好，状态稳定了不少。",
-          "resultEn": "You gather usable bandages and lamp oil, stabilizing your condition.",
-          "actions": [
-            { "type": "heal", "value": 14 },
-            { "type": "shards", "value": 8 }
-          ]
-        },
-        {
-          "text": "带走刻着名字的铜牌",
-          "textEn": "Take the engraved copper tag",
-          "result": "铜牌被挂在矿灯旁。它像是在提醒你别走得太急。",
-          "resultEn": "The tag hangs beside your lamp, quietly reminding you not to rush.",
-          "actions": [
-            { "type": "relic", "relicId": "旧矿工铜牌" },
-            { "type": "max_hp", "value": 4 }
-          ]
-        }
+        { "text": "\u7ffb\u627e\u5de5\u5177\u67b6", "textEn": "Search the tool rack", "result": "\u4f60\u627e\u5230\u4e00\u4efd\u7206\u7834\u836f\u5305\u3002", "resultEn": "You find a blast charge.", "actions": [ { "type": "add_card", "cardId": "blast_charge" } ] },
+        { "text": "\u6574\u7406\u8425\u5730\u8865\u7ed9", "textEn": "Sort camp supplies", "result": "\u4f60\u6536\u597d\u7ef7\u5e26\u548c\u706f\u6cb9\uff0c\u72b6\u6001\u7a33\u5b9a\u4e86\u4e0d\u5c11\u3002", "resultEn": "You gather bandages and lamp oil.", "actions": [ { "type": "heal", "value": 14 }, { "type": "shards", "value": 8 } ] },
+        { "text": "\u5e26\u8d70\u523b\u540d\u94dc\u724c", "textEn": "Take the engraved tag", "result": "\u94dc\u724c\u88ab\u6302\u5728\u77ff\u706f\u65c1\uff0c\u50cf\u662f\u5728\u63d0\u9192\u4f60\u522b\u8d70\u5f97\u592a\u6025\u3002", "resultEn": "The tag hangs beside your lamp, reminding you not to rush.", "actions": [ { "type": "relic", "relicId": "\u65e7\u77ff\u5de5\u94dc\u724c" }, { "type": "max_hp", "value": 4 } ] }
+      ]
+    },
+    {
+      "id": "fault_map",
+      "title": "\u65ad\u5c42\u5730\u56fe",
+      "titleEn": "Fault Map",
+      "description": "\u4e00\u5f20\u6f6e\u6e7f\u7684\u5730\u56fe\u8bb0\u5f55\u7740\u672a\u6807\u6ce8\u7684\u5bcc\u77ff\u7ebf\u3002",
+      "descriptionEn": "A damp map records unmarked rich veins.",
+      "choices": [
+        { "text": "\u8bb0\u4e0b\u5371\u9669\u65ad\u5c42", "textEn": "Mark the dangerous faults", "result": "\u4f60\u5b66\u4f1a\u4e86\u66f4\u51c6\u786e\u5730\u627e\u5230\u88c2\u9699\u3002", "resultEn": "You learn how to find cracks more precisely.", "actions": [ { "type": "add_card", "cardId": "crack_finder" } ] },
+        { "text": "\u6cbf\u5bcc\u77ff\u7ebf\u91c7\u96c6", "textEn": "Mine the rich vein", "result": "\u4f60\u5f97\u5230\u4e86\u4e00\u5305\u6676\u77ff\u3002", "resultEn": "You collect a pouch of crystal ore.", "actions": [ { "type": "shards", "value": 28 } ] }
+      ]
+    },
+    {
+      "id": "broken_lift",
+      "title": "\u6545\u969c\u5347\u964d\u673a",
+      "titleEn": "Broken Lift",
+      "description": "\u5347\u964d\u673a\u5361\u5728\u534a\u7a7a\uff0c\u7535\u6c60\u7bb1\u91cc\u8fd8\u6709\u4e00\u70b9\u4f59\u7535\u3002",
+      "descriptionEn": "A lift is stuck midshaft, with some charge left in its battery box.",
+      "choices": [
+        { "text": "\u62c6\u4e0b\u7535\u6c60\u7bb1", "textEn": "Remove the battery pack", "result": "\u4f60\u628a\u7535\u6c60\u63a5\u5230\u77ff\u706f\u4e0a\u3002", "resultEn": "You wire the battery into your lamp.", "actions": [ { "type": "add_card", "cardId": "battery_pack" } ] },
+        { "text": "\u5f3a\u884c\u542f\u52a8\uff08-8 HP\uff09", "textEn": "Force it open (-8 HP)", "result": "\u94a2\u7d22\u7a81\u7136\u56de\u5f39\uff0c\u4f46\u4f60\u6253\u5f00\u4e86\u5de5\u7a0b\u7bb1\u3002", "resultEn": "The cable snaps back, but you open the engineering box.", "actions": [ { "type": "damage", "value": 8 }, { "type": "add_card", "cardId": "lamp_overdrive" } ] }
+      ]
+    },
+    {
+      "id": "crystal_spring",
+      "title": "\u6676\u77ff\u6cc9",
+      "titleEn": "Crystal Spring",
+      "description": "\u6d45\u6d45\u7684\u9752\u8272\u6cc9\u6c34\u4ece\u77ff\u6676\u4e0b\u6e17\u51fa\uff0c\u5e26\u7740\u6e29\u70ed\u7684\u84b8\u6c7d\u3002",
+      "descriptionEn": "A shallow cyan spring seeps from under the crystals, warm with vapor.",
+      "choices": [
+        { "text": "\u6e05\u6d17\u4f24\u53e3", "textEn": "Wash your wounds", "result": "\u523a\u75db\u5f88\u5feb\u9000\u53bb\u3002", "resultEn": "The sting quickly fades.", "actions": [ { "type": "heal", "value": 18 } ] },
+        { "text": "\u714e\u6210\u6676\u77ff\u836f\u818f", "textEn": "Brew crystal salve", "result": "\u4f60\u628a\u6cc9\u6c34\u71ac\u6210\u53ef\u643a\u5e26\u7684\u836f\u818f\u3002", "resultEn": "You brew the spring water into portable salve.", "actions": [ { "type": "add_card", "cardId": "crystal_salve" } ] }
       ]
     }
   ]

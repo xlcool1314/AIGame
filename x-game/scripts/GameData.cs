@@ -13,6 +13,8 @@ public partial class GameData : Node
     public CharactersConfig Characters { get; private set; } = new();
     public ItemsConfig Items { get; private set; } = new();
     public LayersConfig Layers { get; private set; } = new();
+    public UnlocksConfig Unlocks { get; private set; } = new();
+    public ObjectivesConfig Objectives { get; private set; } = new();
 
     public void LoadAll()
     {
@@ -24,6 +26,8 @@ public partial class GameData : Node
         Characters = LoadJson<CharactersConfig>("res://data/characters.json");
         Items = LoadJson<ItemsConfig>("res://data/items.json");
         Layers = LoadJson<LayersConfig>("res://data/layers.json");
+        Unlocks = LoadJson<UnlocksConfig>("res://data/unlocks.json");
+        Objectives = LoadJson<ObjectivesConfig>("res://data/objectives.json");
     }
 
     public CardData GetCard(string cardId)
@@ -76,6 +80,19 @@ public partial class GameData : Node
         }
 
         throw new InvalidOperationException($"未找到奖励: {rewardId}");
+    }
+
+    public ObjectiveData GetObjective(string objectiveId)
+    {
+        foreach (var objective in Objectives.Objectives)
+        {
+            if (objective.Id == objectiveId)
+            {
+                return objective;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到委托: {objectiveId}");
     }
 
     public CharacterData GetCharacter(string characterId)
@@ -178,6 +195,48 @@ public class LayersConfig
     public List<LayerData> Layers { get; set; } = new();
 }
 
+public class UnlocksConfig
+{
+    public List<UnlockData> Unlocks { get; set; } = new();
+}
+
+public class ObjectivesConfig
+{
+    public List<ObjectiveData> Objectives { get; set; } = new();
+}
+
+public class ObjectiveData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public int Target { get; set; }
+    public int EmberReward { get; set; }
+
+    public string DisplayTitle() => Localization.Pick(Title, TitleEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
+public class UnlockData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
+    public int Cost { get; set; }
+    public int RequiredBestDepth { get; set; }
+    public int RequiredBestScore { get; set; }
+    public int RequiredVictories { get; set; }
+    public int RequiredRuns { get; set; }
+
+    public string DisplayTitle() => Localization.Pick(Title, TitleEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
 public class LayerData
 {
     public List<RoomData> Rooms { get; set; } = new();
@@ -191,6 +250,22 @@ public class RoomData
     public string EnemyId { get; set; } = string.Empty;
     public string EventId { get; set; } = string.Empty;
     public string RewardId { get; set; } = string.Empty;
+    public int Risk { get; set; } = 1;
+    public int LampCost { get; set; } = 8;
+    public int RewardBonus { get; set; }
+    public MineRoomConfig MineConfig { get; set; } = new();
+}
+
+public class MineRoomConfig
+{
+    public int Width { get; set; } = 5;
+    public int Height { get; set; } = 5;
+    public int Monsters { get; set; } = 2;
+    public int Traps { get; set; } = 2;
+    public int Treasures { get; set; } = 2;
+    public int Ores { get; set; } = 5;
+    public int ClearReward { get; set; } = 14;
+    public int TrapDamage { get; set; } = 8;
 }
 
 public class DeckData
@@ -204,6 +279,7 @@ public class CardData
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string NameEn { get; set; } = string.Empty;
+    public string UnlockId { get; set; } = string.Empty;
     public int Cost { get; set; }
     public string Description { get; set; } = string.Empty;
     public string DescriptionEn { get; set; } = string.Empty;
@@ -225,6 +301,7 @@ public class EnemyData
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string NameEn { get; set; } = string.Empty;
+    public string ArtPath { get; set; } = string.Empty;
     public int MaxHp { get; set; }
     public List<IntentData> Intents { get; set; } = new();
 
@@ -292,6 +369,8 @@ public class CharacterData
     public string NameEn { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string DescriptionEn { get; set; } = string.Empty;
+    public string ArtPath { get; set; } = string.Empty;
+    public string UnlockId { get; set; } = string.Empty;
     public int MaxHp { get; set; }
     public int Shards { get; set; }
     public string DeckId { get; set; } = "starter";
