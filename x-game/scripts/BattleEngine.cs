@@ -255,6 +255,13 @@ public partial class BattleEngine : Node
                         Log.Add($"{source} 获得 {action.Value} 点能量。");
                     }
                     break;
+                case "self_damage":
+                    if (fromPlayer)
+                    {
+                        PlayerHp = Math.Max(1, PlayerHp - Math.Max(0, action.Value));
+                        Log.Add($"{source} 反噬，失去 {action.Value} 点生命。");
+                    }
+                    break;
                 case "weak":
                     if (fromPlayer)
                     {

@@ -9,11 +9,15 @@ public partial class MainMenu : Control
     private Button _continueButton = null!;
     private Button _settingsButton = null!;
     private Button _unlocksButton = null!;
+    private Button _cardLibraryButton = null!;
     private Button _backButton = null!;
     private Button _unlocksBackButton = null!;
+    private Button _cardLibraryBackButton = null!;
     private PanelContainer _settingsPanel = null!;
     private PanelContainer _unlocksPanel = null!;
+    private PanelContainer _cardLibraryPanel = null!;
     private VBoxContainer _unlocksList = null!;
+    private VBoxContainer _cardLibraryList = null!;
     private Label _languageLabel = null!;
     private OptionButton _languageOption = null!;
     private Label _messageLabel = null!;
@@ -30,13 +34,17 @@ public partial class MainMenu : Control
         _continueButton = GetNode<Button>("Root/Margin/MenuLayout/ContinueButton");
         _settingsButton = GetNode<Button>("Root/Margin/MenuLayout/SettingsButton");
         _unlocksButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksButton");
+        _cardLibraryButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryButton");
         _settingsPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/SettingsPanel");
         _unlocksPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/UnlocksPanel");
+        _cardLibraryPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/CardLibraryPanel");
         _unlocksList = GetNode<VBoxContainer>("Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout/UnlocksList");
+        _cardLibraryList = GetNode<VBoxContainer>("Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout/CardLibraryScroll/CardLibraryList");
         _languageLabel = GetNode<Label>("Root/Margin/MenuLayout/SettingsPanel/SettingsLayout/LanguageLabel");
         _languageOption = GetNode<OptionButton>("Root/Margin/MenuLayout/SettingsPanel/SettingsLayout/LanguageOption");
         _backButton = GetNode<Button>("Root/Margin/MenuLayout/SettingsPanel/SettingsLayout/BackButton");
         _unlocksBackButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout/UnlocksBackButton");
+        _cardLibraryBackButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout/CardLibraryBackButton");
         _messageLabel = GetNode<Label>("Root/Margin/MenuLayout/MessageLabel");
 
         _languageOption.Clear();
@@ -48,8 +56,10 @@ public partial class MainMenu : Control
         _continueButton.Pressed += OnContinuePressed;
         _settingsButton.Pressed += OnSettingsPressed;
         _unlocksButton.Pressed += OnUnlocksPressed;
+        _cardLibraryButton.Pressed += OnCardLibraryPressed;
         _backButton.Pressed += OnBackPressed;
         _unlocksBackButton.Pressed += OnUnlocksBackPressed;
+        _cardLibraryBackButton.Pressed += OnCardLibraryBackPressed;
 
         ApplyUiStyle();
         RenderText();
@@ -75,33 +85,69 @@ public partial class MainMenu : Control
 
     private void OnSettingsPressed()
     {
-        _settingsPanel.Visible = true;
-        _unlocksPanel.Visible = false;
+        ShowSubPage(_settingsPanel);
         _messageLabel.Text = string.Empty;
     }
 
     private void OnUnlocksPressed()
     {
-        _settingsPanel.Visible = false;
-        _unlocksPanel.Visible = true;
+        ShowSubPage(_unlocksPanel);
         RenderUnlocks();
+    }
+
+    private void OnCardLibraryPressed()
+    {
+        ShowSubPage(_cardLibraryPanel);
+        RenderCardLibrary();
     }
 
     private void OnBackPressed()
     {
-        _settingsPanel.Visible = false;
+        ShowMainPage();
     }
 
     private void OnUnlocksBackPressed()
     {
-        _unlocksPanel.Visible = false;
-        RenderText();
+        ShowMainPage();
+    }
+
+    private void OnCardLibraryBackPressed()
+    {
+        ShowMainPage();
     }
 
     private void OnLanguageSelected(long index)
     {
         Localization.SetLanguage(index == 1 ? Localization.English : Localization.Chinese);
         RenderText();
+    }
+
+    private void ShowSubPage(PanelContainer activePanel)
+    {
+        SetMainControlsVisible(false);
+        _settingsPanel.Visible = activePanel == _settingsPanel;
+        _unlocksPanel.Visible = activePanel == _unlocksPanel;
+        _cardLibraryPanel.Visible = activePanel == _cardLibraryPanel;
+    }
+
+    private void ShowMainPage()
+    {
+        _settingsPanel.Visible = false;
+        _unlocksPanel.Visible = false;
+        _cardLibraryPanel.Visible = false;
+        SetMainControlsVisible(true);
+        RenderText();
+    }
+
+    private void SetMainControlsVisible(bool visible)
+    {
+        _titleLabel.Visible = visible;
+        _subtitleLabel.Visible = visible;
+        _newGameButton.Visible = visible;
+        _continueButton.Visible = visible;
+        _settingsButton.Visible = visible;
+        _unlocksButton.Visible = visible;
+        _cardLibraryButton.Visible = visible;
     }
 
     private void RenderText()
@@ -112,9 +158,11 @@ public partial class MainMenu : Control
         _continueButton.Text = Localization.T("continue_game");
         _settingsButton.Text = Localization.T("settings");
         _unlocksButton.Text = Localization.Language == Localization.English ? "Unlocks" : "解锁";
+        _cardLibraryButton.Text = Localization.Language == Localization.English ? "Card Library" : "卡牌库";
         _languageLabel.Text = Localization.T("language");
         _backButton.Text = Localization.T("back");
         _unlocksBackButton.Text = Localization.T("back");
+        _cardLibraryBackButton.Text = Localization.T("back");
         _languageOption.Select(Localization.Language == Localization.English ? 1 : 0);
         var meta = SaveManager.LoadMeta();
         _messageLabel.Text = Localization.Language == Localization.English
@@ -165,17 +213,66 @@ public partial class MainMenu : Control
         return $"\n{requirementText}";
     }
 
+    private void RenderCardLibrary()
+    {
+        ClearBox(_cardLibraryList);
+        _messageLabel.Text = Localization.Language == Localization.English
+            ? "Cards are data-driven. Pools decide which heroes can find them."
+            : "卡牌由数据配置驱动。牌池决定哪些英雄能在奖励和商店中遇到它们。";
+
+        foreach (var card in _gameData.Cards.Cards)
+        {
+            if (card.UpgradeOnly)
+            {
+                continue;
+            }
+
+            var pools = card.Pools.Count == 0
+                ? (Localization.Language == Localization.English ? "All heroes" : "全职业")
+                : string.Join(", ", card.Pools);
+            var upgrade = string.IsNullOrWhiteSpace(card.UpgradeTo)
+                ? (Localization.Language == Localization.English ? "No upgrade" : "无升级")
+                : $"{(Localization.Language == Localization.English ? "Upgrades to" : "升级为")} {_gameData.GetCard(card.UpgradeTo).DisplayName()}";
+            var unlock = SaveManager.IsUnlocked(card.UnlockId)
+                ? string.Empty
+                : $"\n{(Localization.Language == Localization.English ? "Locked by" : "解锁需求")} {card.UnlockId}";
+            var button = new Button
+            {
+                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}\n{(Localization.Language == Localization.English ? "Pool" : "牌池")}: {pools} | {upgrade}{unlock}",
+                CustomMinimumSize = new Vector2(0, 84),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = true
+            };
+            StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
+            _cardLibraryList.AddChild(button);
+        }
+    }
+
+    private static string FormatCardHeader(CardData card)
+    {
+        var rarity = card.Rarity switch
+        {
+            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
+            _ => Localization.Language == Localization.English ? "Common" : "普通"
+        };
+        return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
+    }
+
     private void ApplyUiStyle()
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
         _settingsPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
         _unlocksPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "5b4a2a", 1));
+        _cardLibraryPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
         StyleButton(_newGameButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_continueButton, Color.FromHtml("263f5a"), Color.FromHtml("e4f0ff"));
         StyleButton(_settingsButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_unlocksButton, Color.FromHtml("5b4a2a"), Color.FromHtml("fff1d0"));
+        StyleButton(_cardLibraryButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
         StyleButton(_backButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
         StyleButton(_unlocksBackButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
+        StyleButton(_cardLibraryBackButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
     }
 
     private static void ClearBox(Container container)

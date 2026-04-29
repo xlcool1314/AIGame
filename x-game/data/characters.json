@@ -10,6 +10,7 @@
 	  "maxHp": 78,
 	  "shards": 20,
 	  "deckId": "starter",
+	  "cardPools": [ "miner" ],
 	  "startingItems": [
 		{ "itemId": "probe_lamp", "count": 2 },
 		{ "itemId": "bandage", "count": 1 }
@@ -25,6 +26,7 @@
 	  "maxHp": 62,
 	  "shards": 30,
 	  "deckId": "scout",
+	  "cardPools": [ "scout" ],
 	  "startingItems": [
 		{ "itemId": "probe_lamp", "count": 4 },
 		{ "itemId": "bandage", "count": 1 }
@@ -41,6 +43,7 @@
 	  "maxHp": 70,
 	  "shards": 12,
 	  "deckId": "breaker",
+	  "cardPools": [ "breaker" ],
 	  "startingItems": [
 		{ "itemId": "bandage", "count": 1 },
 		{ "itemId": "smoke_marker", "count": 1 }
@@ -57,6 +60,7 @@
 	  "maxHp": 68,
 	  "shards": 24,
 	  "deckId": "engineer",
+	  "cardPools": [ "engineer" ],
 	  "startingItems": [
 		{ "itemId": "probe_lamp", "count": 2 },
 		{ "itemId": "bandage", "count": 2 },

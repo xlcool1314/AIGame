@@ -8,7 +8,8 @@
       "heal": 4,
       "cardChoices": [
         "copper_hook", "guarded_swing", "echo_probe", "emergency_patch",
-        "quick_scan", "lamp_guard", "ore_shot", "safe_route"
+        "quick_scan", "lamp_guard", "ore_shot", "safe_route",
+        "braced_pick", "survey_notes", "capacitor"
       ]
     },
     {
@@ -19,7 +20,8 @@
       "heal": 5,
       "cardChoices": [
         "heavy_pick", "blast_charge", "reinforce", "signal_flare",
-        "crack_finder", "chain_drill", "vent_pressure", "steady_breath"
+        "crack_finder", "chain_drill", "vent_pressure", "steady_breath",
+        "fuse_strike", "braced_pick", "survey_notes", "capacitor"
       ]
     },
     {
@@ -52,7 +54,8 @@
       "heal": 0,
       "cardChoices": [
         "quick_scan", "lamp_guard", "blast_charge", "reinforce",
-        "battery_pack", "signal_flare", "emergency_patch", "crack_finder"
+        "battery_pack", "signal_flare", "emergency_patch", "crack_finder",
+        "braced_pick", "survey_notes", "fuse_strike", "capacitor"
       ]
     }
   ]

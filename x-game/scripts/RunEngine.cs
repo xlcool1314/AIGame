@@ -296,6 +296,53 @@ public partial class RunEngine : Node
         return true;
     }
 
+    public bool UpgradeCard(int deckIndex, GameData gameData, int cost = 0)
+    {
+        if (deckIndex < 0 || deckIndex >= PlayerDeck.Count)
+        {
+            return false;
+        }
+
+        var card = PlayerDeck[deckIndex];
+        if (string.IsNullOrWhiteSpace(card.UpgradeTo))
+        {
+            Log.Add($"{card.DisplayName()} 暂时没有可用升级。");
+            return false;
+        }
+
+        if (Shards < cost)
+        {
+            Log.Add($"矿晶不足，无法升级 {card.DisplayName()}。");
+            return false;
+        }
+
+        Shards -= cost;
+        var upgraded = gameData.GetCard(card.UpgradeTo);
+        PlayerDeck[deckIndex] = upgraded;
+        Log.Add($"牌组整备：{card.DisplayName()} 升级为 {upgraded.DisplayName()}。");
+        return true;
+    }
+
+    public bool RemoveCard(int deckIndex, int cost)
+    {
+        if (deckIndex < 0 || deckIndex >= PlayerDeck.Count || PlayerDeck.Count <= 1)
+        {
+            return false;
+        }
+
+        if (Shards < cost)
+        {
+            Log.Add("矿晶不足，无法精简牌组。");
+            return false;
+        }
+
+        Shards -= cost;
+        var removed = PlayerDeck[deckIndex];
+        PlayerDeck.RemoveAt(deckIndex);
+        Log.Add($"牌组整备：移除 {removed.DisplayName()}。");
+        return true;
+    }
+
     public bool BuyHeal(int amount, int cost)
     {
         if (Shards < cost)

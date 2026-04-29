@@ -30,6 +30,7 @@ public partial class BattleScene : Control
     private Label _intentLabel = null!;
     private VBoxContainer _handBox = null!;
     private Button _endTurnButton = null!;
+    private Button _deckButton = null!;
     private PanelContainer _rewardPanel = null!;
     private VBoxContainer _rewardList = null!;
     private Button _continueButton = null!;
@@ -52,6 +53,10 @@ public partial class BattleScene : Control
     private bool _debugVisible;
     private bool _metaRecorded;
     private string _selectedItemId = string.Empty;
+    private bool _deckReturnBattle;
+    private bool _deckReturnMine;
+    private bool _deckReturnReward;
+    private bool _deckReturnContinue;
 
     public override void _Ready()
     {
@@ -81,6 +86,7 @@ public partial class BattleScene : Control
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
         _handBox = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
         _endTurnButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/EndTurnButton");
+        _deckButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/DeckButton");
         _rewardPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel");
         _rewardList = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel/RewardList");
         _continueButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/ContinueButton");
@@ -119,12 +125,14 @@ public partial class BattleScene : Control
         }
 
         _endTurnButton.Pressed += OnEndTurnPressed;
+        _deckButton.Pressed += OnDeckPressed;
         _continueButton.Pressed += OnContinuePressed;
         _mineModeButton.Pressed += OnMineModePressed;
         _menuButton.Pressed += OnMenuPressed;
         _retryButton.Pressed += OnRetryPressed;
         _endMenuButton.Pressed += OnEndMenuPressed;
         _continueButton.Text = Localization.T("continue_deeper");
+        _deckButton.Text = Localization.Language == Localization.English ? "View Deck" : "查看牌组";
         _menuButton.Text = Localization.T("back_menu");
         ApplyUiStyle();
 
@@ -153,6 +161,53 @@ public partial class BattleScene : Control
     {
         SaveManager.SaveRun(_run);
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
+    }
+
+    private void OnDeckPressed()
+    {
+        _deckReturnBattle = _battlePanel.Visible;
+        _deckReturnMine = _minePanel.Visible;
+        _deckReturnReward = _rewardPanel.Visible;
+        _deckReturnContinue = _continueButton.Visible;
+        HideInteractivePanels();
+        _choicePanel.Visible = true;
+        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Current Deck" : "当前牌组";
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "Cards are grouped by copy. Upgrade and removal happen at camps and shops."
+            : "这里显示本局当前牌组。升级和删牌会在营地、商店中进行。";
+        RenderDeckList(false, 0, 0);
+        AddChoiceButton(Localization.Language == Localization.English ? "Back\nReturn to the current screen." : "返回\n回到当前界面。", RestoreDeckReturn);
+        RenderShared();
+    }
+
+    private void RestoreDeckReturn()
+    {
+        HideInteractivePanels();
+        if (_deckReturnBattle)
+        {
+            _battlePanel.Visible = true;
+            RenderBattle();
+        }
+        else if (_deckReturnMine)
+        {
+            _minePanel.Visible = true;
+            RenderMinefield();
+        }
+        else if (_deckReturnReward)
+        {
+            ShowBattleReward();
+        }
+        else if (_deckReturnContinue)
+        {
+            _continueButton.Visible = true;
+        }
+        else
+        {
+            RenderCurrentRoom();
+            return;
+        }
+
+        RenderShared();
     }
 
     private void OnRetryPressed()
@@ -513,6 +568,7 @@ public partial class BattleScene : Control
         _choicePanel.Visible = true;
 
         AddChoiceButton("休息\n恢复一大段生命。", () => OnRestChoicePressed("heal"));
+        AddChoiceButton("锻造一张牌\n免费升级牌组中一张可升级卡牌。", () => RenderDeckUpgradeChoices(0));
         AddChoiceButton("整备\n获得 12 矿晶和遗物：校准矿灯。", () => OnRestChoicePressed("forge"));
     }
 
@@ -531,17 +587,15 @@ public partial class BattleScene : Control
         _choicePanel.Visible = true;
 
         var reward = _gameData.GetReward(room.RewardId);
-        foreach (var cardId in reward.CardChoices)
+        var shopCards = _gameData.BuildRewardChoices(reward, GameSession.SelectedCharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, "shop"), 4);
+        foreach (var card in shopCards)
         {
-            var card = _gameData.GetCard(cardId);
-            if (!SaveManager.IsUnlocked(card.UnlockId))
-            {
-                continue;
-            }
             AddChoiceButton($"{string.Format(Localization.T("buy_card"), card.DisplayName(), 22)}\n{card.DisplayDescription()}", () => OnBuyCardPressed(card));
         }
 
         AddChoiceButton("购买治疗 - 16 矿晶\n恢复 18 点生命。", OnBuyHealPressed);
+        AddChoiceButton("升级一张牌 - 18 矿晶\n让已有卡牌变成强化版本。", () => RenderDeckUpgradeChoices(18));
+        AddChoiceButton("移除一张牌 - 20 矿晶\n精简牌组，提高关键牌上手率。", () => RenderDeckRemoveChoices(20));
         AddChoiceButton("离开商队\n保留矿晶继续深入。", OnLeaveShopPressed);
     }
 
@@ -657,16 +711,12 @@ public partial class BattleScene : Control
         var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
         ClearBox(_rewardList);
 
-        foreach (var cardId in reward.CardChoices)
+        var cardChoices = _gameData.BuildRewardChoices(reward, GameSession.SelectedCharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, reward.Id, _run.PlayerDeck.Count), 3);
+        foreach (var card in cardChoices)
         {
-            var card = _gameData.GetCard(cardId);
-            if (!SaveManager.IsUnlocked(card.UnlockId))
-            {
-                continue;
-            }
             var button = new Button
             {
-                Text = $"{card.DisplayName()} ({Localization.T("cost")} {card.Cost})\n{card.DisplayDescription()}",
+                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}",
                 CustomMinimumSize = new Vector2(0, 72),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart
             };
@@ -922,6 +972,127 @@ public partial class BattleScene : Control
         _choiceList.AddChild(button);
     }
 
+    private void RenderDeckList(bool interactive, int upgradeCost, int removeCost)
+    {
+        ClearBox(_choiceList);
+        for (var i = 0; i < _run.PlayerDeck.Count; i++)
+        {
+            var card = _run.PlayerDeck[i];
+            var text = $"{i + 1}. {FormatCardHeader(card)}\n{card.DisplayDescription()}";
+            if (interactive && upgradeCost >= 0)
+            {
+                text += string.IsNullOrWhiteSpace(card.UpgradeTo)
+                    ? "\n已到当前最高等级。"
+                    : $"\n升级费用：{upgradeCost} 矿晶";
+            }
+            else if (interactive && removeCost >= 0)
+            {
+                text += $"\n移除费用：{removeCost} 矿晶";
+            }
+
+            var button = new Button
+            {
+                Text = text,
+                CustomMinimumSize = new Vector2(0, 82),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = !interactive || (upgradeCost >= 0 && string.IsNullOrWhiteSpace(card.UpgradeTo))
+            };
+            StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
+            var captured = i;
+            if (interactive && upgradeCost >= 0)
+            {
+                button.Pressed += () => OnUpgradeCardPicked(captured, upgradeCost);
+            }
+            else if (interactive && removeCost >= 0)
+            {
+                button.Pressed += () => OnRemoveCardPicked(captured, removeCost);
+            }
+
+            _choiceList.AddChild(button);
+        }
+    }
+
+    private void RenderDeckUpgradeChoices(int cost)
+    {
+        HideInteractivePanels();
+        _choicePanel.Visible = true;
+        _roomTitleLabel.Text = cost <= 0 ? "锻造卡牌" : "升级卡牌";
+        _roomDescriptionLabel.Text = "选择一张拥有强化版本的卡牌。强化后的卡牌会直接进入本局牌组。";
+        RenderDeckList(true, cost, -1);
+        AddChoiceButton("返回\n暂时不调整牌组。", RenderCurrentRoom);
+        RenderShared();
+    }
+
+    private void RenderDeckRemoveChoices(int cost)
+    {
+        HideInteractivePanels();
+        _choicePanel.Visible = true;
+        _roomTitleLabel.Text = "移除卡牌";
+        _roomDescriptionLabel.Text = "删牌能让核心牌更稳定上手，但会消耗矿晶。";
+        RenderDeckList(true, -1, cost);
+        AddChoiceButton("返回\n暂时不调整牌组。", RenderCurrentRoom);
+        RenderShared();
+    }
+
+    private void OnUpgradeCardPicked(int deckIndex, int cost)
+    {
+        if (_run.UpgradeCard(deckIndex, _gameData, cost))
+        {
+            _choicePanel.Visible = false;
+            _continueButton.Visible = true;
+        }
+
+        RenderShared();
+    }
+
+    private void OnRemoveCardPicked(int deckIndex, int cost)
+    {
+        if (_run.RemoveCard(deckIndex, cost))
+        {
+            _choicePanel.Visible = false;
+            _continueButton.Visible = true;
+        }
+
+        RenderShared();
+    }
+
+    private void RenderCurrentRoom()
+    {
+        HideInteractivePanels();
+        var room = _run.CurrentRoom;
+        if (room == null)
+        {
+            ShowNextRoomChoices();
+            return;
+        }
+
+        if (room.Kind == "rest")
+        {
+            RenderRestRoom(room);
+        }
+        else if (room.Kind == "shop")
+        {
+            RenderShopRoom(room);
+        }
+        else
+        {
+            ShowNextRoomChoices();
+        }
+
+        RenderShared();
+    }
+
+    private static string FormatCardHeader(CardData card)
+    {
+        var rarity = card.Rarity switch
+        {
+            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
+            _ => Localization.Language == Localization.English ? "Common" : "普通"
+        };
+        return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
+    }
+
     private void ApplyUiStyle()
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("111820", "263445", 0));
@@ -944,6 +1115,7 @@ public partial class BattleScene : Control
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_mineModeButton, Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));
+        StyleButton(_deckButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
         StyleButton(_retryButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_endMenuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleProgressBar(_playerHpBar, Color.FromHtml("2f9d68"));

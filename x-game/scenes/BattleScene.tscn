@@ -286,6 +286,10 @@ theme_override_constants/separation = 8
 layout_mode = 2
 text = "模式：翻开"
 
+[node name="DeckButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
+layout_mode = 2
+text = "查看牌组"
+
 [node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
 visible = false
 layout_mode = 2

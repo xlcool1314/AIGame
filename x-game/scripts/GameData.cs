@@ -142,6 +142,88 @@ public partial class GameData : Node
         throw new InvalidOperationException($"未找到卡组: {deckId}");
     }
 
+    public List<CardData> BuildRewardChoices(RewardData reward, string characterId, int seed, int count = 3)
+    {
+        var character = GetCharacter(characterId);
+        var candidates = new List<CardData>();
+        foreach (var cardId in reward.CardChoices)
+        {
+            var card = GetCard(cardId);
+            if (IsCardEligibleForReward(card, character))
+            {
+                candidates.Add(card);
+            }
+        }
+
+        foreach (var card in Cards.Cards)
+        {
+            if (!candidates.Contains(card) && IsCardEligibleForReward(card, character))
+            {
+                candidates.Add(card);
+            }
+        }
+
+        var result = new List<CardData>();
+        var random = new Random(seed);
+        while (result.Count < count && candidates.Count > 0)
+        {
+            var totalWeight = 0;
+            foreach (var card in candidates)
+            {
+                totalWeight += GetRarityWeight(card.Rarity);
+            }
+
+            var roll = random.Next(Math.Max(1, totalWeight));
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                roll -= GetRarityWeight(candidates[i].Rarity);
+                if (roll >= 0)
+                {
+                    continue;
+                }
+
+                result.Add(candidates[i]);
+                candidates.RemoveAt(i);
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private static bool IsCardEligibleForReward(CardData card, CharacterData character)
+    {
+        if (card.UpgradeOnly || !SaveManager.IsUnlocked(card.UnlockId))
+        {
+            return false;
+        }
+
+        if (card.Pools.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (var pool in card.Pools)
+        {
+            if (pool == "neutral" || pool == character.Id || character.CardPools.Contains(pool))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int GetRarityWeight(string rarity)
+    {
+        return rarity switch
+        {
+            "rare" => 12,
+            "uncommon" => 28,
+            _ => 60
+        };
+    }
+
     private static T LoadJson<T>(string path)
     {
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
@@ -283,6 +365,12 @@ public class CardData
     public int Cost { get; set; }
     public string Description { get; set; } = string.Empty;
     public string DescriptionEn { get; set; } = string.Empty;
+    public string Rarity { get; set; } = "common";
+    public string Type { get; set; } = "skill";
+    public string UpgradeTo { get; set; } = string.Empty;
+    public bool UpgradeOnly { get; set; }
+    public List<string> Pools { get; set; } = new();
+    public List<string> Tags { get; set; } = new();
     public List<CardAction> Actions { get; set; } = new();
 
     public string DisplayName() => Localization.Pick(Name, NameEn);
@@ -374,6 +462,7 @@ public class CharacterData
     public int MaxHp { get; set; }
     public int Shards { get; set; }
     public string DeckId { get; set; } = "starter";
+    public List<string> CardPools { get; set; } = new();
     public List<ItemStackData> StartingItems { get; set; } = new();
 
     public string DisplayName() => Localization.Pick(Name, NameEn);

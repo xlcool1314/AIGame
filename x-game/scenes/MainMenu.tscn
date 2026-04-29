@@ -57,7 +57,7 @@ theme_override_constants/margin_bottom = 96
 
 [node name="MenuLayout" type="VBoxContainer" parent="Root/Margin"]
 layout_mode = 2
-custom_minimum_size = Vector2(460, 0)
+custom_minimum_size = Vector2(720, 0)
 size_flags_horizontal = 0
 size_flags_vertical = 4
 theme_override_constants/separation = 18
@@ -92,10 +92,15 @@ layout_mode = 2
 custom_minimum_size = Vector2(420, 64)
 text = "解锁"
 
+[node name="CardLibraryButton" type="Button" parent="Root/Margin/MenuLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(420, 64)
+text = "卡牌库"
+
 [node name="SettingsPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(420, 0)
+custom_minimum_size = Vector2(560, 0)
 
 [node name="SettingsLayout" type="VBoxContainer" parent="Root/Margin/MenuLayout/SettingsPanel"]
 layout_mode = 2
@@ -115,7 +120,7 @@ text = "返回"
 [node name="UnlocksPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(520, 0)
+custom_minimum_size = Vector2(720, 520)
 
 [node name="UnlocksLayout" type="VBoxContainer" parent="Root/Margin/MenuLayout/UnlocksPanel"]
 layout_mode = 2
@@ -126,6 +131,29 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="UnlocksBackButton" type="Button" parent="Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout"]
+layout_mode = 2
+text = "返回"
+
+[node name="CardLibraryPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(720, 560)
+
+[node name="CardLibraryLayout" type="VBoxContainer" parent="Root/Margin/MenuLayout/CardLibraryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CardLibraryScroll" type="ScrollContainer" parent="Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 420)
+size_flags_vertical = 3
+
+[node name="CardLibraryList" type="VBoxContainer" parent="Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout/CardLibraryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CardLibraryBackButton" type="Button" parent="Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout"]
 layout_mode = 2
 text = "返回"
 

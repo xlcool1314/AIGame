@@ -5,7 +5,7 @@
       "cards": [
         "strike", "strike", "strike", "strike",
         "defend", "defend", "defend", "defend",
-        "insight", "guarded_swing"
+        "insight", "braced_pick"
       ]
     },
     {
@@ -13,7 +13,7 @@
       "cards": [
         "strike", "strike", "quick_scan", "quick_scan",
         "defend", "defend", "safe_route",
-        "insight", "echo_probe", "signal_flare"
+        "insight", "survey_notes", "signal_flare"
       ]
     },
     {
@@ -21,14 +21,14 @@
       "cards": [
         "strike", "strike", "copper_hook", "ore_shot",
         "defend", "defend", "lamp_guard",
-        "heavy_pick", "blast_charge", "emergency_patch"
+        "heavy_pick", "blast_charge", "fuse_strike"
       ]
     },
     {
       "id": "engineer",
       "cards": [
         "strike", "strike", "defend", "defend", "defend",
-        "battery_pack", "echo_probe", "reinforce",
+        "battery_pack", "capacitor", "reinforce",
         "vent_pressure", "steady_breath"
       ]
     }
