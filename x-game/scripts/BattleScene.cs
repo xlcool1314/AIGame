@@ -9,7 +9,27 @@ public partial class BattleScene : Control
     private readonly BattleEngine _battle = new();
     private readonly RunEngine _run = new();
 
+    private VBoxContainer _mainLayout = null!;
+    private HBoxContainer _contentSplit = null!;
+    private HBoxContainer _topBarLayout = null!;
+    private VBoxContainer _sidePanel = null!;
+    private VBoxContainer _rightPanel = null!;
+    private PanelContainer _topBarPanel = null!;
+    private PanelContainer _roomHeaderPanel = null!;
+    private PanelContainer _mainPanel = null!;
+    private PanelContainer _actionPanel = null!;
+    private PanelContainer _logPanel = null!;
+    private PanelContainer _intentPanel = null!;
+    private PanelContainer _mineBoardFrame = null!;
     private Label _runStatusLabel = null!;
+    private Label _hudLayerLabel = null!;
+    private Label _hudHpLabel = null!;
+    private Label _hudShardsLabel = null!;
+    private Label _hudDeckLabel = null!;
+    private Label _hudLampLabel = null!;
+    private Label _hudFogLabel = null!;
+    private Label _hudScoreLabel = null!;
+    private Label _hudObjectiveLabel = null!;
     private Label _roomTitleLabel = null!;
     private Label _roomDescriptionLabel = null!;
     private PanelContainer _choicePanel = null!;
@@ -58,8 +78,8 @@ public partial class BattleScene : Control
     private Label _dragHintLabel = null!;
     private Line2D _dragLine = null!;
 
-    private const float RouteMapWidth = 1040f;
-    private const float RouteNodeWidth = 154f;
+    private const float RouteMapWidth = 940f;
+    private const float RouteNodeWidth = 148f;
     private const float RouteNodeHeight = 102f;
     private const float RouteLayerGap = 132f;
     private const float RouteMapSidePadding = 96f;
@@ -83,6 +103,13 @@ public partial class BattleScene : Control
     {
         Localization.LoadSettings();
 
+        _mainLayout = GetNode<VBoxContainer>("Root/Margin/MainLayout");
+        _topBarPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/TopBar");
+        _topBarLayout = GetNode<HBoxContainer>("Root/Margin/MainLayout/TopBar/TopBarLayout");
+        _roomHeaderPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/RoomHeader");
+        _contentSplit = GetNode<HBoxContainer>("Root/Margin/MainLayout/ContentSplit");
+        _mainPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel");
+        _sidePanel = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel");
         _runStatusLabel = GetNode<Label>("Root/Margin/MainLayout/TopBar/TopBarLayout/RunStatusLabel");
         _itemPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ItemPanel");
         _itemList = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ItemPanel/ItemList");
@@ -107,6 +134,7 @@ public partial class BattleScene : Control
         _playerBlockLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerBlockLabel");
         _enemyBlockLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout/EnemyBlockLabel");
         _battleResourceLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/BattleResourceLabel");
+        _intentPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel");
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
         _handBox = GetNode<HBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
         _endTurnButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/EndTurnButton");
@@ -115,14 +143,18 @@ public partial class BattleScene : Control
         _rewardList = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel/RewardList");
         _continueButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/ContinueButton");
         _menuButton = GetNode<Button>("Root/Margin/MainLayout/TopBar/TopBarLayout/MenuButton");
+        _actionPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel");
         _endPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel");
         _endTitleLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndTitleLabel");
         _endSummaryLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndSummaryLabel");
         _retryButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow/RetryButton");
         _endMenuButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow/EndMenuButton");
+        _mineBoardFrame = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame");
+        _logPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel");
         _logLabel = GetNode<RichTextLabel>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel/LogText");
         _debugPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel");
         _debugLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel/DebugLabel");
+        BuildRunLayout();
         BuildModalHost();
         BuildEnemyTargetRow();
 
@@ -242,6 +274,94 @@ public partial class BattleScene : Control
     private void CloseDeckModal()
     {
         _modalOverlay.Visible = false;
+    }
+
+    private void BuildRunLayout()
+    {
+        _mainLayout.AddThemeConstantOverride("separation", 10);
+        _contentSplit.AddThemeConstantOverride("separation", 12);
+
+        _sidePanel.CustomMinimumSize = new Vector2(286, 0);
+        _sidePanel.SizeFlagsVertical = SizeFlags.ExpandFill;
+        _contentSplit.MoveChild(_sidePanel, 0);
+        _mainPanel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
+        _rightPanel = new VBoxContainer
+        {
+            Name = "RightPanel",
+            CustomMinimumSize = new Vector2(372, 0),
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        _rightPanel.AddThemeConstantOverride("separation", 10);
+        _contentSplit.AddChild(_rightPanel);
+
+        MoveToPanelColumn(_roomHeaderPanel, _rightPanel);
+        MoveToPanelColumn(_debugPanel, _rightPanel);
+        MoveToPanelColumn(_logPanel, _rightPanel);
+        _logPanel.SizeFlagsVertical = SizeFlags.ExpandFill;
+        _debugPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        _roomHeaderPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        _itemPanel.CustomMinimumSize = new Vector2(0, 210);
+        _actionPanel.CustomMinimumSize = new Vector2(0, 180);
+        _mineModeButton.CustomMinimumSize = new Vector2(0, 58);
+        _deckButton.CustomMinimumSize = new Vector2(0, 58);
+        _continueButton.CustomMinimumSize = new Vector2(0, 64);
+        _logLabel.CustomMinimumSize = new Vector2(0, 360);
+        _roomTitleLabel.AddThemeFontSizeOverride("font_size", 24);
+
+        BuildHudBar();
+    }
+
+    private static void MoveToPanelColumn(Control node, Container target)
+    {
+        node.GetParent()?.RemoveChild(node);
+        target.AddChild(node);
+    }
+
+    private void BuildHudBar()
+    {
+        _topBarPanel.CustomMinimumSize = new Vector2(0, 76);
+        _topBarLayout.AddThemeConstantOverride("separation", 8);
+        _runStatusLabel.Visible = false;
+
+        _topBarLayout.RemoveChild(_menuButton);
+        _hudLayerLabel = AddHudCell("HudLayer", 96);
+        _hudHpLabel = AddHudCell("HudHp", 150);
+        _hudShardsLabel = AddHudCell("HudShards", 132);
+        _hudDeckLabel = AddHudCell("HudDeck", 112);
+        _hudLampLabel = AddHudCell("HudLamp", 124);
+        _hudFogLabel = AddHudCell("HudFog", 144);
+        _hudScoreLabel = AddHudCell("HudScore", 134);
+        _hudObjectiveLabel = AddHudCell("HudObjective", 300, true);
+        _topBarLayout.AddChild(_menuButton);
+        _menuButton.CustomMinimumSize = new Vector2(72, 52);
+    }
+
+    private Label AddHudCell(string name, float minWidth, bool expand = false)
+    {
+        var cell = new PanelContainer
+        {
+            Name = $"{name}Cell",
+            CustomMinimumSize = new Vector2(minWidth, 56),
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        if (expand)
+        {
+            cell.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        }
+
+        cell.AddThemeStyleboxOverride("panel", MistTheme.PanelStyle(MistPanelVariant.Inset));
+        var label = new Label
+        {
+            Name = name,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        label.AddThemeFontSizeOverride("font_size", 16);
+        label.AddThemeColorOverride("font_color", MistTheme.TextMain);
+        cell.AddChild(label);
+        _topBarLayout.AddChild(cell);
+        return label;
     }
 
     private void BuildEnemyTargetRow()
@@ -1531,7 +1651,7 @@ public partial class BattleScene : Control
     private void SetCombatPortraits()
     {
         var character = _gameData.GetCharacter(GameSession.SelectedCharacterId);
-        _playerPortrait.Texture = LoadTexture(character.ArtPath);
+        _playerPortrait.Texture = UiArt.LoadTexture(character.ArtPath);
     }
 
     private void LayoutHandFan()
@@ -1560,21 +1680,14 @@ public partial class BattleScene : Control
 
     private static Texture2D? LoadTexture(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
-        {
-            return null;
-        }
-
-        return ResourceLoader.Load<Texture2D>(path);
+        return UiArt.LoadTexture(path);
     }
 
     private void RenderShared()
     {
         var displayedHp = _battlePanel.Visible ? _battle.PlayerHp : _run.PlayerHp;
         var displayedMaxHp = _battlePanel.Visible ? _battle.PlayerMaxHp : _run.PlayerMaxHp;
-        var layerText = $"{Math.Max(_run.CurrentLayerIndex + 1, 0)}/{_run.MapLayers.Count}";
-        var relicText = _run.Relics.Count > 0 ? string.Format(Localization.T("relics"), string.Join(", ", _run.Relics)) : string.Empty;
-        _runStatusLabel.Text = $"{string.Format(Localization.T("run_status"), layerText, _run.MapLayers.Count, displayedHp, displayedMaxHp, _run.Shards, _run.PlayerDeck.Count, relicText)} | 灯油: {_run.LampOil}/{_run.MaxLampOil} | 雾压: {_run.FogPressure} | 分数: {_run.Score} | 委托: {FormatObjectiveStatus()}";
+        RenderHud(displayedHp, displayedMaxHp);
 
         var sb = new StringBuilder();
         for (var i = _battle.Log.Count - 1; i >= 0; i--)
@@ -1595,6 +1708,32 @@ public partial class BattleScene : Control
         _logLabel.Text = sb.ToString();
         RenderItems();
         RenderDebug();
+    }
+
+    private void RenderHud(int displayedHp, int displayedMaxHp)
+    {
+        var currentLayer = Math.Max(_run.CurrentLayerIndex + 1, 0);
+        var isEnglish = Localization.Language == Localization.English;
+        _hudLayerLabel.Text = $"{(isEnglish ? "Layer" : "层数")}\n{currentLayer}/{_run.MapLayers.Count}";
+        _hudHpLabel.Text = $"HP\n{displayedHp}/{displayedMaxHp}";
+        _hudShardsLabel.Text = $"{(isEnglish ? "Shards" : "矿晶")}\n{_run.Shards}";
+        _hudDeckLabel.Text = $"{(isEnglish ? "Deck" : "牌组")}\n{_run.PlayerDeck.Count}";
+        _hudLampLabel.Text = $"{(isEnglish ? "Oil" : "灯油")}\n{_run.LampOil}/{_run.MaxLampOil}";
+        _hudFogLabel.Text = $"{(isEnglish ? "Fog" : "雾压")}\n{FormatFogDots()}";
+        _hudScoreLabel.Text = $"{(isEnglish ? "Score" : "分数")}\n{_run.Score}";
+        _hudObjectiveLabel.Text = $"{(isEnglish ? "Objective" : "目标")}\n{FormatObjectiveStatus()}";
+
+        _hudHpLabel.AddThemeColorOverride("font_color", displayedHp <= displayedMaxHp / 3 ? Color.FromHtml("ff9aa8") : MistTheme.TextMain);
+        _hudShardsLabel.AddThemeColorOverride("font_color", Color.FromHtml("b58aff"));
+        _hudLampLabel.AddThemeColorOverride("font_color", _run.LampOil <= _run.MaxLampOil / 4 ? Color.FromHtml("ffcf88") : MistTheme.TextMain);
+        _hudFogLabel.AddThemeColorOverride("font_color", Color.FromHtml("b58aff"));
+        _hudObjectiveLabel.AddThemeColorOverride("font_color", _run.IsObjectiveComplete() ? Color.FromHtml("bdf7d4") : MistTheme.TextMain);
+    }
+
+    private string FormatFogDots()
+    {
+        var filled = Math.Clamp(_run.FogPressure, 0, 8);
+        return $"{new string('●', filled)}{new string('○', 8 - filled)}";
     }
 
     private void RenderDebug()
@@ -1985,7 +2124,7 @@ public partial class BattleScene : Control
 
     private void ApplyUiStyle()
     {
-        GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("111820", "263445", 0));
+        MistTheme.ApplyRoot(GetNode<Panel>("Root"), "run");
         ApplyLabelColor(_runStatusLabel, "d6e2ec");
         ApplyLabelColor(_roomTitleLabel, "f4f0df");
         ApplyLabelColor(_roomDescriptionLabel, "b8c7d5");
@@ -2000,22 +2139,22 @@ public partial class BattleScene : Control
         ApplyLabelColor(_endSummaryLabel, "d6e2ec");
         ApplyLabelColor(_debugLabel, "d6e2ec");
         _logLabel.AddThemeColorOverride("default_color", Color.FromHtml("b8c7d5"));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/TopBar").AddThemeStyleboxOverride("panel", MakePanelStyle("141d27", "2d3c4d", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/RoomHeader").AddThemeStyleboxOverride("panel", MakePanelStyle("151f2b", "32445a", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("121923", "2a394a", 1));
-        _choicePanel.AddThemeStyleboxOverride("panel", MakePanelStyle("18222d", "34465b", 1));
-        _itemPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("121b24", "2a3544", 1));
-        _minePanel.AddThemeStyleboxOverride("panel", MakePanelStyle("16202a", "38506a", 1));
-        _battlePanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171f2b", "3b4b62", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("2b2634", "5a4d70", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame").AddThemeStyleboxOverride("panel", MakePanelStyle("0f151d", "2c3d50", 1));
-        _rewardPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("201c2a", "504264", 1));
-        _endPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171f2b", "52627a", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("121b24", "2a3544", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("0f141b", "2a3544", 1));
-        _debugPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171720", "5a4d70", 1));
-        _deckModalPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
-        _dragHintPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("1d2b35", "78a8d8", 1));
+        MistTheme.StylePanel(_topBarPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_roomHeaderPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_mainPanel, MistPanelVariant.Inset);
+        MistTheme.StylePanel(_choicePanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_itemPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_minePanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_battlePanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_intentPanel, MistPanelVariant.Purple);
+        MistTheme.StylePanel(_mineBoardFrame, MistPanelVariant.Inset);
+        MistTheme.StylePanel(_rewardPanel, MistPanelVariant.Purple);
+        MistTheme.StylePanel(_endPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_actionPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_logPanel, MistPanelVariant.Inset);
+        MistTheme.StylePanel(_debugPanel, MistPanelVariant.Purple);
+        MistTheme.StylePanel(_deckModalPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_dragHintPanel, MistPanelVariant.Purple);
         _dragHintLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         StyleCombatPanels(false, false);
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));

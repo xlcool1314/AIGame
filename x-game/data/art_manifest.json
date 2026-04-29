@@ -1,0 +1,47 @@
+{
+  "backgrounds": {
+    "main_menu": "res://art/placeholders/ui/menu_hero.svg",
+    "character_select": "res://art/placeholders/ui/menu_hero.svg",
+    "run": "res://art/placeholders/ui/menu_hero.svg",
+    "battle": "res://art/placeholders/ui/menu_hero.svg",
+    "map": "res://art/placeholders/ui/menu_hero.svg",
+    "library": "res://art/placeholders/ui/menu_hero.svg"
+  },
+  "frames": {
+    "panel_stone": "",
+    "panel_inset": "",
+    "button_stone": "",
+    "button_primary": "",
+    "card_attack": "",
+    "card_skill": "",
+    "route_node": "",
+    "mine_tile": ""
+  },
+  "icons": {
+    "hp": "",
+    "shards": "",
+    "deck": "",
+    "oil": "",
+    "fog": "",
+    "score": "",
+    "objective": "",
+    "battle": "",
+    "elite": "",
+    "boss": "",
+    "mine": "",
+    "event": "",
+    "rest": "",
+    "shop": "",
+    "unknown": ""
+  },
+  "mineTiles": {
+    "hidden": "",
+    "empty": "",
+    "monster": "",
+    "trap": "",
+    "treasure": "",
+    "ore": "",
+    "entrance": "",
+    "exit": ""
+  }
+}

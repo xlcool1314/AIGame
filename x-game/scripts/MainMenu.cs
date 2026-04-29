@@ -13,6 +13,7 @@ public partial class MainMenu : Control
     private Button _backButton = null!;
     private Button _unlocksBackButton = null!;
     private Button _cardLibraryBackButton = null!;
+    private TextureRect _heroTexture = null!;
     private PanelContainer _settingsPanel = null!;
     private PanelContainer _unlocksPanel = null!;
     private PanelContainer _cardLibraryPanel = null!;
@@ -38,6 +39,7 @@ public partial class MainMenu : Control
         _settingsButton = GetNode<Button>("Root/Margin/MenuLayout/SettingsButton");
         _unlocksButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksButton");
         _cardLibraryButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryButton");
+        _heroTexture = GetNode<TextureRect>("Root/HeroTexture");
         _settingsPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/SettingsPanel");
         _unlocksPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/UnlocksPanel");
         _cardLibraryPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/CardLibraryPanel");
@@ -50,6 +52,7 @@ public partial class MainMenu : Control
         _cardLibraryBackButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout/CardLibraryBackButton");
         _messageLabel = GetNode<Label>("Root/Margin/MenuLayout/MessageLabel");
         BuildModalHost();
+        _heroTexture.Texture = UiArt.LoadBackground("main_menu") ?? _heroTexture.Texture;
 
         _languageOption.Clear();
         _languageOption.AddItem("中文", 0);
@@ -316,23 +319,23 @@ public partial class MainMenu : Control
 
     private void ApplyUiStyle()
     {
-        GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
-        _titleLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
-        _subtitleLabel.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
-        _languageLabel.AddThemeColorOverride("font_color", Color.FromHtml("dbe6ef"));
-        _messageLabel.AddThemeColorOverride("font_color", Color.FromHtml("d6e2ec"));
-        _modalMessageLabel.AddThemeColorOverride("font_color", Color.FromHtml("c9d8e5"));
-        _settingsPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
-        _unlocksPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "5b4a2a", 1));
-        _cardLibraryPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
-        StyleButton(_newGameButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
-        StyleButton(_continueButton, Color.FromHtml("263f5a"), Color.FromHtml("e4f0ff"));
-        StyleButton(_settingsButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
-        StyleButton(_unlocksButton, Color.FromHtml("5b4a2a"), Color.FromHtml("fff1d0"));
-        StyleButton(_cardLibraryButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
-        StyleButton(_backButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
-        StyleButton(_unlocksBackButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
-        StyleButton(_cardLibraryBackButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
+        GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MistTheme.PanelStyle(MistPanelVariant.Root));
+        MistTheme.StyleLabel(_titleLabel);
+        MistTheme.StyleLabel(_subtitleLabel, true);
+        MistTheme.StyleLabel(_languageLabel);
+        MistTheme.StyleLabel(_messageLabel);
+        MistTheme.StyleLabel(_modalMessageLabel, true);
+        MistTheme.StylePanel(_settingsPanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_unlocksPanel, MistPanelVariant.Purple);
+        MistTheme.StylePanel(_cardLibraryPanel, MistPanelVariant.Stone);
+        MistTheme.StyleButton(_newGameButton, MistButtonVariant.Primary);
+        MistTheme.StyleButton(_continueButton, MistButtonVariant.Neutral);
+        MistTheme.StyleButton(_settingsButton, MistButtonVariant.Purple);
+        MistTheme.StyleButton(_unlocksButton, MistButtonVariant.Gold);
+        MistTheme.StyleButton(_cardLibraryButton, MistButtonVariant.Neutral);
+        MistTheme.StyleButton(_backButton, MistButtonVariant.Neutral);
+        MistTheme.StyleButton(_unlocksBackButton, MistButtonVariant.Neutral);
+        MistTheme.StyleButton(_cardLibraryBackButton, MistButtonVariant.Neutral);
     }
 
     private static void ClearBox(Container container)

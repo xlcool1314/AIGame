@@ -94,23 +94,18 @@ public partial class CharacterSelect : Control
 
     private void ApplyUiStyle()
     {
-        GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
-        _titleLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
-        _detailLabel.AddThemeColorOverride("font_color", Color.FromHtml("d6e2ec"));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentRow/DetailPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
-        _portraitFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "315f46", 1));
-        StyleButton(_startButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
-        StyleButton(_backButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
+        MistTheme.ApplyRoot(GetNode<Panel>("Root"), "character_select");
+        MistTheme.StyleLabel(_titleLabel);
+        MistTheme.StyleLabel(_detailLabel);
+        MistTheme.StylePanel(GetNode<PanelContainer>("Root/Margin/MainLayout/ContentRow/DetailPanel"), MistPanelVariant.Stone);
+        MistTheme.StylePanel(_portraitFrame, MistPanelVariant.Purple);
+        MistTheme.StyleButton(_startButton, MistButtonVariant.Primary);
+        MistTheme.StyleButton(_backButton, MistButtonVariant.Neutral);
     }
 
     private static Texture2D? LoadTexture(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
-        {
-            return null;
-        }
-
-        return ResourceLoader.Load<Texture2D>(path);
+        return UiArt.LoadTexture(path);
     }
 
     private void RefreshSelectionStyles()
