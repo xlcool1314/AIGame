@@ -330,6 +330,7 @@ public class RoomData
     public string Title { get; set; } = string.Empty;
     public string TitleEn { get; set; } = string.Empty;
     public string EnemyId { get; set; } = string.Empty;
+    public List<string> EnemyIds { get; set; } = new();
     public string EventId { get; set; } = string.Empty;
     public string RewardId { get; set; } = string.Empty;
     public int Risk { get; set; } = 1;

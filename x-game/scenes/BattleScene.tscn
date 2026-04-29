@@ -87,9 +87,11 @@ theme_override_constants/separation = 10
 [node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
 visible = false
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/ChoicePanel"]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 10
 
 [node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
@@ -213,11 +215,12 @@ text = "敌人意图"
 
 [node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 210)
 size_flags_vertical = 3
 
-[node name="HandList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel"]
+[node name="HandList" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
 layout_mode = 2

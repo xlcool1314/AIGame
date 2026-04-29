@@ -22,6 +22,7 @@ public partial class RunEngine : Node
     public string ObjectiveType { get; private set; } = string.Empty;
     public int ObjectiveTarget { get; private set; }
     public int ObjectiveEmberReward { get; private set; }
+    public string CurrentRoomNodeId { get; private set; } = string.Empty;
     public RunRoom? CurrentRoom { get; private set; }
 
     public readonly List<CardData> PlayerDeck = new();
@@ -51,6 +52,7 @@ public partial class RunEngine : Node
         BattlesWon = 0;
         MinesCleared = 0;
         Score = 0;
+        CurrentRoomNodeId = string.Empty;
         CurrentRoom = null;
 
         PlayerDeck.Clear();
@@ -83,6 +85,7 @@ public partial class RunEngine : Node
         BattlesWon = Math.Max(0, saveData.BattlesWon);
         MinesCleared = Math.Max(0, saveData.MinesCleared);
         Score = Math.Max(0, saveData.Score);
+        CurrentRoomNodeId = saveData.CurrentRoomNodeId ?? string.Empty;
         ObjectiveId = saveData.ObjectiveId;
         ObjectiveTitle = saveData.ObjectiveTitle;
         ObjectiveTitleEn = saveData.ObjectiveTitleEn;
@@ -93,7 +96,8 @@ public partial class RunEngine : Node
         {
             SelectObjective(gameData);
         }
-        CurrentRoom = null;
+        BuildMapLayers(gameData);
+        CurrentRoom = FindRoomByNodeId(CurrentRoomNodeId);
         Minefield = null;
 
         PlayerDeck.Clear();
@@ -133,7 +137,40 @@ public partial class RunEngine : Node
             return Array.Empty<RunRoom>();
         }
 
-        return MapLayers[CurrentLayerIndex + 1];
+        if (string.IsNullOrWhiteSpace(CurrentRoomNodeId) || CurrentRoom == null)
+        {
+            return MapLayers[CurrentLayerIndex + 1];
+        }
+
+        var nextRooms = new List<RunRoom>();
+        foreach (var nodeId in CurrentRoom.NextNodeIds)
+        {
+            var room = FindRoomByNodeId(nodeId);
+            if (room != null)
+            {
+                nextRooms.Add(room);
+            }
+        }
+
+        return nextRooms;
+    }
+
+    public bool IsRoomReachable(RunRoom room)
+    {
+        if (!HasNextLayer() || room.LayerIndex != CurrentLayerIndex + 1)
+        {
+            return false;
+        }
+
+        foreach (var choice in GetNextRoomChoices())
+        {
+            if (choice.NodeId == room.NodeId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public RunRoom EnterNextRoom(int choiceIndex)
@@ -147,6 +184,7 @@ public partial class RunEngine : Node
         var clampedIndex = Math.Clamp(choiceIndex, 0, choices.Count - 1);
         CurrentLayerIndex++;
         CurrentRoom = choices[clampedIndex];
+        CurrentRoomNodeId = CurrentRoom.NodeId;
         Minefield = null;
         ApplyRoomPressure(CurrentRoom);
         Log.Add($"进入第 {CurrentLayerIndex + 1} 层：{CurrentRoom.DisplayTitle()}");
@@ -456,16 +494,122 @@ public partial class RunEngine : Node
     private void BuildMapLayers(GameData gameData)
     {
         MapLayers.Clear();
-        foreach (var layer in gameData.Layers.Layers)
+        for (var layerIndex = 0; layerIndex < gameData.Layers.Layers.Count; layerIndex++)
         {
+            var layer = gameData.Layers.Layers[layerIndex];
             var rooms = new List<RunRoom>();
-            foreach (var room in layer.Rooms)
+            for (var roomIndex = 0; roomIndex < layer.Rooms.Count; roomIndex++)
             {
-                rooms.Add(new RunRoom(room.Kind, room.Title, room.TitleEn, room.EnemyId, room.EventId, room.RewardId, room.MineConfig, room.Risk, room.LampCost, room.RewardBonus));
+                var room = layer.Rooms[roomIndex];
+                rooms.Add(new RunRoom(
+                    $"L{layerIndex}R{roomIndex}",
+                    layerIndex,
+                    roomIndex,
+                    room.Kind,
+                    room.Title,
+                    room.TitleEn,
+                    room.EnemyId,
+                    room.EnemyIds,
+                    room.EventId,
+                    room.RewardId,
+                    room.MineConfig,
+                    room.Risk,
+                    room.LampCost,
+                    room.RewardBonus));
             }
 
             MapLayers.Add(rooms);
         }
+
+        BuildMapConnections();
+    }
+
+    private void BuildMapConnections()
+    {
+        for (var layerIndex = 0; layerIndex < MapLayers.Count - 1; layerIndex++)
+        {
+            var currentLayer = MapLayers[layerIndex];
+            var nextLayer = MapLayers[layerIndex + 1];
+            if (currentLayer.Count == 0 || nextLayer.Count == 0)
+            {
+                continue;
+            }
+
+            var random = new Random(HashCode.Combine(RunSeed, layerIndex, 701));
+            for (var i = 0; i < currentLayer.Count; i++)
+            {
+                var room = currentLayer[i];
+                var mapped = currentLayer.Count == 1
+                    ? nextLayer.Count / 2
+                    : (int)Math.Round(i * (nextLayer.Count - 1) / (float)Math.Max(1, currentLayer.Count - 1));
+                AddConnection(room, nextLayer[Math.Clamp(mapped, 0, nextLayer.Count - 1)]);
+
+                if (nextLayer.Count > 1)
+                {
+                    var branchDirection = random.Next(0, 2) == 0 ? -1 : 1;
+                    var branchIndex = Math.Clamp(mapped + branchDirection, 0, nextLayer.Count - 1);
+                    if (branchIndex != mapped && random.NextDouble() < 0.72)
+                    {
+                        AddConnection(room, nextLayer[branchIndex]);
+                    }
+                }
+            }
+
+            for (var nextIndex = 0; nextIndex < nextLayer.Count; nextIndex++)
+            {
+                if (HasIncomingConnection(currentLayer, nextLayer[nextIndex].NodeId))
+                {
+                    continue;
+                }
+
+                var sourceIndex = nextLayer.Count == 1
+                    ? 0
+                    : (int)Math.Round(nextIndex * (currentLayer.Count - 1) / (float)Math.Max(1, nextLayer.Count - 1));
+                AddConnection(currentLayer[Math.Clamp(sourceIndex, 0, currentLayer.Count - 1)], nextLayer[nextIndex]);
+            }
+        }
+    }
+
+    private static void AddConnection(RunRoom from, RunRoom to)
+    {
+        if (!from.NextNodeIds.Contains(to.NodeId))
+        {
+            from.NextNodeIds.Add(to.NodeId);
+        }
+    }
+
+    private static bool HasIncomingConnection(List<RunRoom> sourceLayer, string nodeId)
+    {
+        foreach (var room in sourceLayer)
+        {
+            if (room.NextNodeIds.Contains(nodeId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private RunRoom? FindRoomByNodeId(string nodeId)
+    {
+        if (string.IsNullOrWhiteSpace(nodeId))
+        {
+            return null;
+        }
+
+        foreach (var layer in MapLayers)
+        {
+            foreach (var room in layer)
+            {
+                if (room.NodeId == nodeId)
+                {
+                    return room;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void SelectObjective(GameData gameData)
@@ -538,9 +682,13 @@ public partial class RunEngine : Node
 
 public class RunRoom
 {
+    public string NodeId { get; }
+    public int LayerIndex { get; }
+    public int ColumnIndex { get; }
     public string Kind { get; }
     public string Title { get; }
     public string EnemyId { get; }
+    public List<string> EnemyIds { get; }
     public string EventId { get; }
     public string RewardId { get; }
     public string TitleEn { get; }
@@ -548,13 +696,18 @@ public class RunRoom
     public int Risk { get; }
     public int LampCost { get; }
     public int RewardBonus { get; }
+    public List<string> NextNodeIds { get; } = new();
 
-    public RunRoom(string kind, string title, string titleEn = "", string enemyId = "", string eventId = "", string rewardId = "", MineRoomConfig? mineConfig = null, int risk = 1, int lampCost = 8, int rewardBonus = 0)
+    public RunRoom(string nodeId, int layerIndex, int columnIndex, string kind, string title, string titleEn = "", string enemyId = "", List<string>? enemyIds = null, string eventId = "", string rewardId = "", MineRoomConfig? mineConfig = null, int risk = 1, int lampCost = 8, int rewardBonus = 0)
     {
+        NodeId = nodeId;
+        LayerIndex = layerIndex;
+        ColumnIndex = columnIndex;
         Kind = kind;
         Title = title;
         TitleEn = titleEn;
         EnemyId = enemyId;
+        EnemyIds = enemyIds == null ? new List<string>() : new List<string>(enemyIds);
         EventId = eventId;
         RewardId = rewardId;
         MineConfig = mineConfig ?? new MineRoomConfig();

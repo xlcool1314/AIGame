@@ -95,6 +95,8 @@ public partial class CharacterSelect : Control
     private void ApplyUiStyle()
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
+        _titleLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        _detailLabel.AddThemeColorOverride("font_color", Color.FromHtml("d6e2ec"));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentRow/DetailPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
         _portraitFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "315f46", 1));
         StyleButton(_startButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));

@@ -163,6 +163,7 @@ public class RunSaveData
     public int PlayerMaxHp { get; set; }
     public int Shards { get; set; }
     public int CurrentLayerIndex { get; set; }
+    public string CurrentRoomNodeId { get; set; } = string.Empty;
     public int RunSeed { get; set; }
     public int LampOil { get; set; }
     public int FogPressure { get; set; }
@@ -189,6 +190,7 @@ public class RunSaveData
             PlayerMaxHp = run.PlayerMaxHp,
             Shards = run.Shards,
             CurrentLayerIndex = run.CurrentLayerIndex,
+            CurrentRoomNodeId = run.CurrentRoomNodeId,
             RunSeed = run.RunSeed,
             LampOil = run.LampOil,
             FogPressure = run.FogPressure,

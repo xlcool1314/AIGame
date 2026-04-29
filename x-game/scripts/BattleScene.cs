@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 public partial class BattleScene : Control
@@ -18,6 +19,10 @@ public partial class BattleScene : Control
     private Button _mineModeButton = null!;
     private GridContainer _mineGrid = null!;
     private PanelContainer _battlePanel = null!;
+    private PanelContainer _playerCombatPanel = null!;
+    private PanelContainer _enemyCombatPanel = null!;
+    private VBoxContainer _enemyCombatLayout = null!;
+    private HBoxContainer _enemyTargetRow = null!;
     private Label _playerCombatLabel = null!;
     private Label _enemyCombatLabel = null!;
     private TextureRect _playerPortrait = null!;
@@ -28,7 +33,7 @@ public partial class BattleScene : Control
     private Label _enemyBlockLabel = null!;
     private Label _battleResourceLabel = null!;
     private Label _intentLabel = null!;
-    private VBoxContainer _handBox = null!;
+    private HBoxContainer _handBox = null!;
     private Button _endTurnButton = null!;
     private Button _deckButton = null!;
     private PanelContainer _rewardPanel = null!;
@@ -45,6 +50,21 @@ public partial class BattleScene : Control
     private RichTextLabel _logLabel = null!;
     private PanelContainer _debugPanel = null!;
     private Label _debugLabel = null!;
+    private Panel _modalOverlay = null!;
+    private PanelContainer _deckModalPanel = null!;
+    private VBoxContainer _deckModalList = null!;
+    private Button _deckModalCloseButton = null!;
+    private PanelContainer _dragHintPanel = null!;
+    private Label _dragHintLabel = null!;
+    private Line2D _dragLine = null!;
+
+    private const float RouteMapWidth = 1040f;
+    private const float RouteNodeWidth = 154f;
+    private const float RouteNodeHeight = 102f;
+    private const float RouteLayerGap = 132f;
+    private const float RouteMapSidePadding = 96f;
+    private const float RouteMapTopPadding = 48f;
+    private const float RouteMapBottomPadding = 56f;
 
     private RunRoom? _activeBattleRoom;
     private RunRoom? _activeMineRoom;
@@ -53,10 +73,11 @@ public partial class BattleScene : Control
     private bool _debugVisible;
     private bool _metaRecorded;
     private string _selectedItemId = string.Empty;
-    private bool _deckReturnBattle;
-    private bool _deckReturnMine;
-    private bool _deckReturnReward;
-    private bool _deckReturnContinue;
+    private readonly Dictionary<int, Button> _enemyTargetButtons = new();
+    private Button? _aimingCardButton;
+    private int _aimingCardIndex = -1;
+    private Vector2 _dragLineStart;
+    private bool _dragTargetsEnemy;
 
     public override void _Ready()
     {
@@ -74,6 +95,9 @@ public partial class BattleScene : Control
         _mineModeButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/MineModeButton");
         _mineGrid = GetNode<GridContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter/MineGrid");
         _battlePanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel");
+        _playerCombatPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel");
+        _enemyCombatPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel");
+        _enemyCombatLayout = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout");
         _playerPortrait = GetNode<TextureRect>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerPortrait");
         _enemyPortrait = GetNode<TextureRect>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout/EnemyPortrait");
         _playerCombatLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout/PlayerCombatLabel");
@@ -84,7 +108,7 @@ public partial class BattleScene : Control
         _enemyBlockLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout/EnemyBlockLabel");
         _battleResourceLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/BattleResourceLabel");
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
-        _handBox = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
+        _handBox = GetNode<HBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
         _endTurnButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/EndTurnButton");
         _deckButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/DeckButton");
         _rewardPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel");
@@ -99,6 +123,8 @@ public partial class BattleScene : Control
         _logLabel = GetNode<RichTextLabel>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel/LogText");
         _debugPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel");
         _debugLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel/DebugLabel");
+        BuildModalHost();
+        BuildEnemyTargetRow();
 
         AddChild(_gameData);
         AddChild(_battle);
@@ -126,11 +152,13 @@ public partial class BattleScene : Control
 
         _endTurnButton.Pressed += OnEndTurnPressed;
         _deckButton.Pressed += OnDeckPressed;
+        _deckModalCloseButton.Pressed += CloseDeckModal;
         _continueButton.Pressed += OnContinuePressed;
         _mineModeButton.Pressed += OnMineModePressed;
         _menuButton.Pressed += OnMenuPressed;
         _retryButton.Pressed += OnRetryPressed;
         _endMenuButton.Pressed += OnEndMenuPressed;
+        _playerCombatPanel.GuiInput += OnPlayerCombatGuiInput;
         _continueButton.Text = Localization.T("continue_deeper");
         _deckButton.Text = Localization.Language == Localization.English ? "View Deck" : "查看牌组";
         _menuButton.Text = Localization.T("back_menu");
@@ -141,6 +169,13 @@ public partial class BattleScene : Control
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Right)
+        {
+            CancelAimingCard();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo || keyEvent.Keycode != Key.F3)
         {
             return;
@@ -152,8 +187,24 @@ public partial class BattleScene : Control
         GetViewport().SetInputAsHandled();
     }
 
+    public override void _Process(double delta)
+    {
+        if (_aimingCardButton == null || _aimingCardIndex < 0 || !GodotObject.IsInstanceValid(_aimingCardButton))
+        {
+            return;
+        }
+
+        UpdateAimingLine(GetGlobalMousePosition());
+        UpdateAimingFeedback(GetGlobalMousePosition());
+    }
+
     private void OnContinuePressed()
     {
+        if (_battlePanel.Visible || _modalOverlay.Visible)
+        {
+            return;
+        }
+
         ShowNextRoomChoices();
     }
 
@@ -165,49 +216,47 @@ public partial class BattleScene : Control
 
     private void OnDeckPressed()
     {
-        _deckReturnBattle = _battlePanel.Visible;
-        _deckReturnMine = _minePanel.Visible;
-        _deckReturnReward = _rewardPanel.Visible;
-        _deckReturnContinue = _continueButton.Visible;
-        HideInteractivePanels();
-        _choicePanel.Visible = true;
-        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Current Deck" : "当前牌组";
-        _roomDescriptionLabel.Text = Localization.Language == Localization.English
-            ? "Cards are grouped by copy. Upgrade and removal happen at camps and shops."
-            : "这里显示本局当前牌组。升级和删牌会在营地、商店中进行。";
-        RenderDeckList(false, 0, 0);
-        AddChoiceButton(Localization.Language == Localization.English ? "Back\nReturn to the current screen." : "返回\n回到当前界面。", RestoreDeckReturn);
-        RenderShared();
+        ShowDeckModal();
     }
 
-    private void RestoreDeckReturn()
+    private void ShowDeckModal()
     {
-        HideInteractivePanels();
-        if (_deckReturnBattle)
-        {
-            _battlePanel.Visible = true;
-            RenderBattle();
-        }
-        else if (_deckReturnMine)
-        {
-            _minePanel.Visible = true;
-            RenderMinefield();
-        }
-        else if (_deckReturnReward)
-        {
-            ShowBattleReward();
-        }
-        else if (_deckReturnContinue)
-        {
-            _continueButton.Visible = true;
-        }
-        else
-        {
-            RenderCurrentRoom();
-            return;
-        }
+        _modalOverlay.Visible = true;
+        ClearBox(_deckModalList);
 
-        RenderShared();
+        for (var i = 0; i < _run.PlayerDeck.Count; i++)
+        {
+            var card = _run.PlayerDeck[i];
+            var button = new Button
+            {
+                Text = $"{i + 1}. {FormatBattleCardText(card)}",
+                CustomMinimumSize = new Vector2(0, 112),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = true
+            };
+            StyleCardButton(button, card, true);
+            _deckModalList.AddChild(button);
+        }
+    }
+
+    private void CloseDeckModal()
+    {
+        _modalOverlay.Visible = false;
+    }
+
+    private void BuildEnemyTargetRow()
+    {
+        _enemyPortrait.Visible = false;
+        _enemyHpBar.Visible = false;
+        _enemyBlockLabel.Visible = false;
+
+        _enemyTargetRow = new HBoxContainer
+        {
+            Name = "EnemyTargetRow",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        _enemyTargetRow.AddThemeConstantOverride("separation", 10);
+        _enemyCombatLayout.AddChild(_enemyTargetRow);
     }
 
     private void OnRetryPressed()
@@ -238,21 +287,7 @@ public partial class BattleScene : Control
         _roomTitleLabel.Text = _run.CurrentLayerIndex < 0 ? Localization.T("select_entry") : Localization.T("select_next");
         _roomDescriptionLabel.Text = Localization.T("route_desc");
         _choicePanel.Visible = true;
-
-        for (var i = 0; i < choices.Count; i++)
-        {
-            var room = choices[i];
-            var button = new Button
-            {
-                Text = $"{GetRoomIcon(room.Kind)} {room.DisplayTitle()}  {FormatRoomRisk(room)}\n{GetRoomSummary(room)}",
-                CustomMinimumSize = new Vector2(0, 82),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
-            };
-            StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
-            var captured = i;
-            button.Pressed += () => EnterNextRoom(captured);
-            _choiceList.AddChild(button);
-        }
+        RenderRouteMap(choices);
 
         RenderShared();
     }
@@ -308,7 +343,7 @@ public partial class BattleScene : Control
     {
         return room.Kind switch
         {
-            "battle" => string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName()),
+            "battle" => $"{string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName())} {FormatThreatPreview(room)}",
             "mine" => FormatMineSummary(room.MineConfig),
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
             "rest" => Localization.T("rest_summary"),
@@ -316,6 +351,344 @@ public partial class BattleScene : Control
             "complete" => Localization.T("complete_summary"),
             _ => Localization.T("unknown_room")
         };
+    }
+
+    private void RenderRouteMap(IReadOnlyList<RunRoom> choices)
+    {
+        ClearBox(_choiceList);
+
+        var legend = new Label
+        {
+            Text = Localization.T("route_map_legend"),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        legend.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+        _choiceList.AddChild(legend);
+
+        var mapFrame = new PanelContainer
+        {
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        mapFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("182432", "51677f", 1));
+
+        var scroll = new ScrollContainer
+        {
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 600)
+        };
+
+        var mapCanvas = new Control
+        {
+            CustomMinimumSize = new Vector2(RouteMapWidth, GetRouteMapHeight()),
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+
+        var availableRoute = BuildAvailableRouteSet();
+        AddRouteLayerBands(mapCanvas);
+        AddRouteConnections(mapCanvas, availableRoute);
+        AddRouteNodes(mapCanvas, choices, availableRoute);
+
+        scroll.AddChild(mapCanvas);
+        mapFrame.AddChild(scroll);
+        _choiceList.AddChild(mapFrame);
+        var scrollTarget = GetRouteScrollTarget();
+        GetTree().CreateTimer(0.01).Timeout += () => scroll.ScrollVertical = scrollTarget;
+    }
+
+    private void AddRouteLayerBands(Control mapCanvas)
+    {
+        for (var layerIndex = 0; layerIndex < _run.MapLayers.Count; layerIndex++)
+        {
+            var y = GetRouteLayerY(layerIndex);
+            var band = new ColorRect
+            {
+                Color = layerIndex % 2 == 0 ? new Color(0.09f, 0.15f, 0.20f, 0.42f) : new Color(0.07f, 0.11f, 0.16f, 0.32f),
+                Position = new Vector2(18, y - 16),
+                Size = new Vector2(RouteMapWidth - 36, RouteNodeHeight + 32),
+                MouseFilter = MouseFilterEnum.Ignore,
+                ZIndex = -2
+            };
+            mapCanvas.AddChild(band);
+
+            var label = new Label
+            {
+                Text = FormatRouteLayerTitle(layerIndex),
+                Position = new Vector2(18, y + 30),
+                Size = new Vector2(116, 42),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                MouseFilter = MouseFilterEnum.Ignore,
+                ZIndex = 3
+            };
+            label.AddThemeColorOverride("font_color", layerIndex == _run.CurrentLayerIndex + 1 ? Color.FromHtml("f4f0df") : Color.FromHtml("92a4b8"));
+            label.AddThemeFontSizeOverride("font_size", 14);
+            mapCanvas.AddChild(label);
+        }
+    }
+
+    private void AddRouteConnections(Control mapCanvas, HashSet<string> availableRoute)
+    {
+        for (var layerIndex = 0; layerIndex < _run.MapLayers.Count - 1; layerIndex++)
+        {
+            foreach (var room in _run.MapLayers[layerIndex])
+            {
+                foreach (var nextNodeId in room.NextNodeIds)
+                {
+                    var next = FindMapRoom(nextNodeId);
+                    if (next == null)
+                    {
+                        continue;
+                    }
+
+                    var from = GetRouteNodeCenter(room);
+                    var to = GetRouteNodeCenter(next);
+                    var active = room.NodeId == _run.CurrentRoomNodeId || _run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId);
+                    var forward = availableRoute.Contains(next.NodeId);
+                    var line = new Line2D
+                    {
+                        Width = active && forward ? 4f : 2.5f,
+                        DefaultColor = GetRouteLineColor(active && forward),
+                        Antialiased = true,
+                        ZIndex = -1
+                    };
+                    line.AddPoint(from);
+                    line.AddPoint((from + to) / 2f + new Vector2(0, -10));
+                    line.AddPoint(to);
+                    mapCanvas.AddChild(line);
+                }
+            }
+        }
+    }
+
+    private void AddRouteNodes(Control mapCanvas, IReadOnlyList<RunRoom> choices, HashSet<string> availableRoute)
+    {
+        for (var layerIndex = 0; layerIndex < _run.MapLayers.Count; layerIndex++)
+        {
+            foreach (var room in _run.MapLayers[layerIndex])
+            {
+                var selectable = _run.IsRoomReachable(room);
+                var current = room.NodeId == _run.CurrentRoomNodeId;
+                var past = room.LayerIndex < _run.CurrentLayerIndex || (room.LayerIndex == _run.CurrentLayerIndex && !current);
+                var onRoute = current || selectable || availableRoute.Contains(room.NodeId);
+                var button = new Button
+                {
+                    Text = FormatRouteNodeText(room, current, selectable, past, onRoute),
+                    Position = GetRouteNodePosition(room),
+                    Size = new Vector2(RouteNodeWidth, RouteNodeHeight),
+                    AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                    Disabled = !selectable,
+                    ZIndex = 2
+                };
+                StyleRouteNodeButton(button, room, current, selectable, past, onRoute);
+                if (selectable)
+                {
+                    var captured = FindChoiceIndex(choices, room.NodeId);
+                    button.Pressed += () => EnterNextRoom(captured);
+                }
+
+                mapCanvas.AddChild(button);
+            }
+        }
+    }
+
+    private float GetRouteMapHeight()
+    {
+        return RouteMapTopPadding + RouteMapBottomPadding + RouteNodeHeight + Math.Max(0, _run.MapLayers.Count - 1) * RouteLayerGap;
+    }
+
+    private int GetRouteScrollTarget()
+    {
+        var focusLayer = Math.Clamp(_run.CurrentLayerIndex < 0 ? 0 : _run.CurrentLayerIndex, 0, Math.Max(0, _run.MapLayers.Count - 1));
+        return Math.Max(0, (int)(GetRouteLayerY(focusLayer) - 360f));
+    }
+
+    private float GetRouteLayerY(int layerIndex)
+    {
+        return GetRouteMapHeight() - RouteMapBottomPadding - RouteNodeHeight - layerIndex * RouteLayerGap;
+    }
+
+    private Vector2 GetRouteNodePosition(RunRoom room)
+    {
+        var layer = _run.MapLayers[room.LayerIndex];
+        var usableWidth = RouteMapWidth - RouteMapSidePadding * 2f;
+        var x = layer.Count <= 1
+            ? RouteMapWidth / 2f
+            : RouteMapSidePadding + room.ColumnIndex * (usableWidth / Math.Max(1, layer.Count - 1));
+        return new Vector2(x - RouteNodeWidth / 2f, GetRouteLayerY(room.LayerIndex));
+    }
+
+    private Vector2 GetRouteNodeCenter(RunRoom room)
+    {
+        return GetRouteNodePosition(room) + new Vector2(RouteNodeWidth / 2f, RouteNodeHeight / 2f);
+    }
+
+    private static Color GetRouteLineColor(bool active)
+    {
+        return active ? Color.FromHtml("7fc8a4") : new Color(0.33f, 0.42f, 0.52f, 0.46f);
+    }
+
+    private HashSet<string> BuildAvailableRouteSet()
+    {
+        var result = new HashSet<string>();
+        var queue = new Queue<RunRoom>();
+        foreach (var choice in _run.GetNextRoomChoices())
+        {
+            queue.Enqueue(choice);
+        }
+
+        while (queue.Count > 0)
+        {
+            var room = queue.Dequeue();
+            if (!result.Add(room.NodeId))
+            {
+                continue;
+            }
+
+            foreach (var nextNodeId in room.NextNodeIds)
+            {
+                var next = FindMapRoom(nextNodeId);
+                if (next != null)
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private RunRoom? FindMapRoom(string nodeId)
+    {
+        foreach (var layer in _run.MapLayers)
+        {
+            foreach (var room in layer)
+            {
+                if (room.NodeId == nodeId)
+                {
+                    return room;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private string FormatRouteLayerTitle(int layerIndex)
+    {
+        var title = layerIndex == 0 ? Localization.T("route_entry_layer") : string.Format(Localization.T("route_layer"), layerIndex + 1);
+        if (layerIndex == _run.CurrentLayerIndex)
+        {
+            return $"{title} · {Localization.T("route_current")}";
+        }
+
+        if (layerIndex == _run.CurrentLayerIndex + 1)
+        {
+            return $"{title} · {Localization.T("route_available")}";
+        }
+
+        return title;
+    }
+
+    private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    {
+        var state = current
+            ? Localization.T("route_current")
+            : selectable
+                ? Localization.T("route_available")
+                : past || !onRoute
+                    ? Localization.T("route_lost")
+                    : Localization.T("route_future");
+        return $"{GetMapNodeIcon(room.Kind)}  {room.DisplayTitle()}\n{state}\n{FormatRouteCost(room)}\n{FormatRouteNodeSummary(room)}";
+    }
+
+    private string FormatRouteNodeSummary(RunRoom room)
+    {
+        return room.Kind switch
+        {
+            "battle" => _gameData.GetEnemy(room.EnemyId).DisplayName(),
+            "mine" => $"{room.MineConfig.Width}x{room.MineConfig.Height} D{room.MineConfig.Monsters + room.MineConfig.Traps}/R{room.MineConfig.Treasures + room.MineConfig.Ores}",
+            "event" => Localization.Language == Localization.English ? "Choice event" : "事件抉择",
+            "rest" => Localization.Language == Localization.English ? "Recover / forge" : "恢复 / 锻造",
+            "shop" => Localization.Language == Localization.English ? "Cards / healing" : "卡牌 / 治疗",
+            "complete" => Localization.T("route_endpoint"),
+            _ => Localization.T("unknown_room")
+        };
+    }
+
+    private static string FormatRouteCost(RunRoom room)
+    {
+        var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%" : string.Empty;
+        return Localization.Language == Localization.English
+            ? $"R{room.Risk}  Oil -{room.LampCost}{bonus}"
+            : $"险{room.Risk}  灯油 -{room.LampCost}{bonus}";
+    }
+
+    private string FormatRouteNext(RunRoom room)
+    {
+        if (room.NextNodeIds.Count == 0)
+        {
+            return $"{Localization.T("route_next")}: {Localization.T("route_endpoint")}";
+        }
+
+        var icons = new List<string>();
+        foreach (var nextNodeId in room.NextNodeIds)
+        {
+            var next = FindMapRoom(nextNodeId);
+            if (next != null)
+            {
+                icons.Add(GetMapNodeIcon(next.Kind));
+            }
+        }
+
+        return $"{Localization.T("route_next")}: {string.Join(" ", icons)}";
+    }
+
+    private static int FindChoiceIndex(IReadOnlyList<RunRoom> choices, string nodeId)
+    {
+        for (var i = 0; i < choices.Count; i++)
+        {
+            if (choices[i].NodeId == nodeId)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private static string GetMapNodeIcon(string kind)
+    {
+        if (Localization.Language == Localization.English)
+        {
+            return kind switch
+            {
+                "battle" => "B",
+                "mine" => "M",
+                "event" => "?",
+                "rest" => "R",
+                "shop" => "S",
+                "complete" => "END",
+                _ => "?"
+            };
+        }
+
+        return kind switch
+        {
+            "battle" => "战",
+            "mine" => "矿",
+            "event" => "?",
+            "rest" => "休",
+            "shop" => "商",
+            "complete" => "终",
+            _ => "?"
+        };
+    }
+
+    private string FormatThreatPreview(RunRoom room)
+    {
+        var threat = Math.Clamp(Math.Max(0, _run.CurrentLayerIndex + 1) + Math.Max(1, room.Risk) - 1, 0, 12);
+        return Localization.Language == Localization.English ? $"Threat {threat}." : $"威胁 {threat}。";
     }
 
     private static string FormatRoomRisk(RunRoom room)
@@ -422,16 +795,17 @@ public partial class BattleScene : Control
 
     private void StartMineMonsterBattle()
     {
+        _continueButton.Visible = false;
         var enemyId = string.IsNullOrEmpty(_activeMineRoom?.EnemyId) ? "slime" : _activeMineRoom.EnemyId;
-        var enemy = _gameData.GetEnemy(enemyId);
-        _battle.StartBattle(_run.PlayerDeck, enemy, _run.PlayerMaxHp, _run.PlayerHp);
-        SetCombatPortraits(enemy);
+        var enemies = BuildEncounterEnemies(_activeMineRoom, true, enemyId);
+        _battle.StartBattle(_run.PlayerDeck, enemies, _run.PlayerMaxHp, _run.PlayerHp, CalculateThreatLevel(_activeMineRoom, true));
+        SetCombatPortraits();
         _returnToMineAfterBattle = true;
 
         _minePanel.Visible = false;
         _battlePanel.Visible = true;
-        _roomTitleLabel.Text = $"{Localization.T("room_battle")} {enemy.DisplayName()}";
-        _roomDescriptionLabel.Text = "矿格里的怪物拦住了去路。击退它后可以回到当前矿区继续探索。";
+        _roomTitleLabel.Text = $"{Localization.T("room_battle")} {FormatEncounterNames(enemies)}";
+        _roomDescriptionLabel.Text = $"矿格里的怪物拦住了去路。威胁等级 {_battle.ThreatLevel}，击退它后可以回到当前矿区继续探索。";
         RenderBattle();
     }
 
@@ -631,16 +1005,77 @@ public partial class BattleScene : Control
 
     private void StartBattleRoom(RunRoom room)
     {
+        _continueButton.Visible = false;
         _activeBattleRoom = room;
         _returnToMineAfterBattle = false;
-        var enemy = _gameData.GetEnemy(room.EnemyId);
-        _battle.StartBattle(_run.PlayerDeck, enemy, _run.PlayerMaxHp, _run.PlayerHp);
-        SetCombatPortraits(enemy);
+        var enemies = BuildEncounterEnemies(room, false, room.EnemyId);
+        _battle.StartBattle(_run.PlayerDeck, enemies, _run.PlayerMaxHp, _run.PlayerHp, CalculateThreatLevel(room, false));
+        SetCombatPortraits();
 
         _roomTitleLabel.Text = room.DisplayTitle();
-        _roomDescriptionLabel.Text = "战斗开始。用手牌削减敌人生命，并观察敌人的下一步意图。";
+        _roomDescriptionLabel.Text = $"战斗开始。威胁等级 {_battle.ThreatLevel}，敌群：{FormatEncounterNames(enemies)}。优先击杀目标会直接改变下一回合压力。";
         _battlePanel.Visible = true;
         RenderBattle();
+    }
+
+    private List<EnemyData> BuildEncounterEnemies(RunRoom? room, bool fromMine, string fallbackEnemyId)
+    {
+        var enemies = new List<EnemyData>();
+        if (room != null)
+        {
+            foreach (var enemyId in room.EnemyIds)
+            {
+                if (!string.IsNullOrWhiteSpace(enemyId))
+                {
+                    enemies.Add(_gameData.GetEnemy(enemyId));
+                }
+            }
+        }
+
+        if (enemies.Count == 0 && !string.IsNullOrWhiteSpace(fallbackEnemyId))
+        {
+            enemies.Add(_gameData.GetEnemy(fallbackEnemyId));
+        }
+
+        if (!fromMine && enemies.Count == 1 && room != null && room.Risk >= 3)
+        {
+            enemies.Add(_gameData.GetEnemy(room.Risk >= 4 ? "crystal_guard" : "lamp_mite"));
+        }
+        else if (fromMine && enemies.Count == 1 && room != null && room.Risk >= 4)
+        {
+            enemies.Add(_gameData.GetEnemy("lamp_mite"));
+        }
+
+        if (enemies.Count == 0)
+        {
+            enemies.Add(_gameData.GetEnemy("slime"));
+        }
+
+        return enemies;
+    }
+
+    private static string FormatEncounterNames(IReadOnlyList<EnemyData> enemies)
+    {
+        var names = new List<string>();
+        foreach (var enemy in enemies)
+        {
+            names.Add(enemy.DisplayName());
+        }
+
+        return string.Join("、", names);
+    }
+
+    private int CalculateThreatLevel(RunRoom? room, bool fromMine)
+    {
+        var depth = Math.Max(0, _run.CurrentLayerIndex);
+        var risk = Math.Max(1, room?.Risk ?? 1);
+        var threat = depth + risk - 1;
+        if (fromMine)
+        {
+            threat = Math.Max(0, threat - 1);
+        }
+
+        return Math.Clamp(threat, 0, 12);
     }
 
     private void OnEndTurnPressed()
@@ -650,28 +1085,261 @@ public partial class BattleScene : Control
             return;
         }
 
+        var beforePlayerHp = _battle.PlayerHp;
+        var beforeEnemyHp = _battle.TotalEnemyHp;
+        var beforeEnemyBlock = _battle.TotalEnemyBlock;
         _battle.EndPlayerTurn();
         ResolveBattleIfFinished();
+        if (_battle.PlayerHp < beforePlayerHp)
+        {
+            AnimateCombatFeedback(_playerPortrait, new Vector2(-18, 0), Color.FromHtml("ffb1b8"));
+        }
+        if (_battle.TotalEnemyHp > beforeEnemyHp || _battle.TotalEnemyBlock > beforeEnemyBlock)
+        {
+            AnimateCombatFeedback(GetEnemyFeedbackTarget(_battle.SelectedEnemyIndex), new Vector2(10, 0), Color.FromHtml("d8e2ee"));
+        }
         RenderBattle();
         RenderShared();
     }
 
-    private void OnPlayCardPressed(int index)
+    private void OnPlayCardPressed(int index, int targetEnemyIndex = -1)
     {
         if (IsBattleFinished())
         {
             return;
         }
 
-        _battle.PlayCard(index);
+        if (index < 0 || index >= _battle.Hand.Count)
+        {
+            return;
+        }
+
+        var card = _battle.Hand[index];
+        var targetsEnemy = CardTargetsEnemy(card);
+        var resolvedTarget = targetEnemyIndex >= 0 ? targetEnemyIndex : _battle.SelectedEnemyIndex;
+        var beforeTargetHp = targetsEnemy && resolvedTarget >= 0 && resolvedTarget < _battle.Enemies.Count
+            ? _battle.Enemies[resolvedTarget].Hp
+            : _battle.EnemyHp;
+        var beforePlayerHp = _battle.PlayerHp;
+        var beforePlayerBlock = _battle.PlayerBlock;
+        if (!_battle.PlayCard(index, resolvedTarget))
+        {
+            RenderBattle();
+            RenderShared();
+            return;
+        }
+
+        if (targetsEnemy && resolvedTarget >= 0 && resolvedTarget < _battle.Enemies.Count && _battle.Enemies[resolvedTarget].Hp < beforeTargetHp)
+        {
+            AnimateCombatFeedback(GetEnemyFeedbackTarget(resolvedTarget), new Vector2(18, 0), Color.FromHtml("ffb1b8"));
+        }
+        if (_battle.PlayerBlock > beforePlayerBlock || _battle.PlayerHp > beforePlayerHp)
+        {
+            AnimateCombatFeedback(_playerPortrait, new Vector2(-10, 0), Color.FromHtml("bdf7d4"));
+        }
+        CancelAimingCard(false);
         ResolveBattleIfFinished();
         RenderBattle();
         RenderShared();
     }
 
+    private void OnCardGuiInput(InputEvent inputEvent, Button button, int handIndex)
+    {
+        if (IsBattleFinished() || handIndex < 0 || handIndex >= _battle.Hand.Count)
+        {
+            return;
+        }
+
+        if (inputEvent is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+        {
+            SelectAimingCard(button, handIndex);
+        }
+    }
+
+    private void SelectAimingCard(Button button, int handIndex)
+    {
+        CancelAimingCard(false);
+        _aimingCardButton = button;
+        _aimingCardIndex = handIndex;
+        _dragTargetsEnemy = CardTargetsEnemy(_battle.Hand[handIndex]);
+        _dragLineStart = button.GlobalPosition + button.Size * new Vector2(0.5f, 0.06f);
+        button.ZIndex = 100;
+        button.Scale = new Vector2(1.08f, 1.08f);
+        button.Modulate = Color.FromHtml("ffffff");
+        ShowAimingFeedback(_battle.Hand[handIndex]);
+        UpdateAimingLine(GetGlobalMousePosition());
+        UpdateAimingFeedback(GetGlobalMousePosition());
+    }
+
+    private void CancelAimingCard(bool animate = true)
+    {
+        if (_aimingCardButton != null && GodotObject.IsInstanceValid(_aimingCardButton))
+        {
+            _aimingCardButton.ZIndex = 0;
+            _aimingCardButton.Scale = Vector2.One;
+            if (animate)
+            {
+                AnimateInvalidDrop(_aimingCardButton);
+            }
+        }
+
+        _aimingCardButton = null;
+        _aimingCardIndex = -1;
+        HideAimingFeedback();
+    }
+
+    private void TryPlayAimedCardOnEnemy(int enemyIndex)
+    {
+        if (_aimingCardIndex < 0 || _aimingCardIndex >= _battle.Hand.Count)
+        {
+            _battle.SelectEnemy(enemyIndex);
+            RenderBattle();
+            return;
+        }
+
+        var card = _battle.Hand[_aimingCardIndex];
+        if (!CardTargetsEnemy(card))
+        {
+            AnimateInvalidDrop(_aimingCardButton ?? GetEnemyFeedbackTarget(enemyIndex));
+            return;
+        }
+
+        if (card.Cost > _battle.Energy)
+        {
+            AnimateInvalidDrop(_aimingCardButton ?? GetEnemyFeedbackTarget(enemyIndex));
+            return;
+        }
+
+        OnPlayCardPressed(_aimingCardIndex, enemyIndex);
+    }
+
+    private void TryPlayAimedCardOnPlayer()
+    {
+        if (_aimingCardIndex < 0 || _aimingCardIndex >= _battle.Hand.Count)
+        {
+            return;
+        }
+
+        var card = _battle.Hand[_aimingCardIndex];
+        if (CardTargetsEnemy(card) || card.Cost > _battle.Energy)
+        {
+            AnimateInvalidDrop((Control?)_aimingCardButton ?? _playerCombatPanel);
+            return;
+        }
+
+        OnPlayCardPressed(_aimingCardIndex, -1);
+    }
+
+    private int FindEnemyTargetAt(Vector2 globalPosition)
+    {
+        foreach (var pair in _enemyTargetButtons)
+        {
+            if (pair.Value.GetGlobalRect().HasPoint(globalPosition))
+            {
+                return pair.Key;
+            }
+        }
+
+        return -1;
+    }
+
+    private bool IsValidAimingTarget(CardData card, Vector2 globalPosition)
+    {
+        if (card.Cost > _battle.Energy)
+        {
+            return false;
+        }
+
+        var wantsEnemy = CardTargetsEnemy(card);
+        return wantsEnemy ? FindEnemyTargetAt(globalPosition) >= 0 : _playerCombatPanel.GetGlobalRect().HasPoint(globalPosition);
+    }
+
+    private static bool CardTargetsEnemy(CardData card)
+    {
+        foreach (var action in card.Actions)
+        {
+            if (action.Type is "damage" or "weak" or "vulnerable")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void AnimateInvalidDrop(Control button)
+    {
+        var originalModulate = button.Modulate;
+        var tween = CreateTween();
+        tween.TweenProperty(button, "modulate", Color.FromHtml("ff8f8f"), 0.05f);
+        tween.TweenProperty(button, "modulate", originalModulate, 0.12f);
+    }
+
+    private void ShowAimingFeedback(CardData card)
+    {
+        var targetText = CardTargetsEnemy(card)
+            ? (Localization.Language == Localization.English ? "Click an enemy to play" : "点击敌人释放")
+            : (Localization.Language == Localization.English ? "Click yourself to play" : "点击自己释放");
+        _dragHintLabel.Text = $"{card.DisplayName()} - {targetText}";
+        _dragHintPanel.Visible = true;
+        StyleCombatPanels(!_dragTargetsEnemy, _dragTargetsEnemy);
+    }
+
+    private void UpdateAimingFeedback(Vector2 globalMousePosition)
+    {
+        if (_aimingCardIndex < 0 || _aimingCardIndex >= _battle.Hand.Count)
+        {
+            return;
+        }
+
+        var valid = IsValidAimingTarget(_battle.Hand[_aimingCardIndex], globalMousePosition);
+        _dragHintLabel.AddThemeColorOverride("font_color", valid ? Color.FromHtml("bdf7d4") : Color.FromHtml("f4f0df"));
+    }
+
+    private void HideAimingFeedback()
+    {
+        _dragHintPanel.Visible = false;
+        _dragLine.Visible = false;
+        StyleCombatPanels(false, false);
+    }
+
+    private void UpdateAimingLine(Vector2 globalMousePosition)
+    {
+        if (_aimingCardButton == null || _aimingCardIndex < 0 || _aimingCardIndex >= _battle.Hand.Count)
+        {
+            return;
+        }
+
+        var root = GetNode<Panel>("Root");
+        _dragLine.Visible = true;
+        var rootOrigin = root.GlobalPosition;
+        _dragLineStart = _aimingCardButton.GlobalPosition + _aimingCardButton.Size * new Vector2(0.5f, 0.06f);
+        _dragLine.Points = new[]
+        {
+            _dragLineStart - rootOrigin,
+            globalMousePosition - rootOrigin
+        };
+        _dragLine.DefaultColor = IsValidAimingTarget(_battle.Hand[_aimingCardIndex], globalMousePosition)
+            ? Color.FromHtml("78d69b")
+            : Color.FromHtml("d7b45f");
+    }
+
+    private void AnimateCombatFeedback(Control target, Vector2 offset, Color flashColor)
+    {
+        var originalPosition = target.Position;
+        var originalModulate = target.Modulate;
+        var tween = CreateTween();
+        tween.SetParallel(true);
+        tween.TweenProperty(target, "position", originalPosition + offset, 0.08f).SetTrans(Tween.TransitionType.Sine);
+        tween.TweenProperty(target, "modulate", flashColor, 0.08f);
+        tween.SetParallel(false);
+        tween.TweenProperty(target, "position", originalPosition, 0.12f).SetTrans(Tween.TransitionType.Sine);
+        tween.TweenProperty(target, "modulate", originalModulate, 0.12f);
+    }
+
     private void ResolveBattleIfFinished()
     {
-        if (_battle.EnemyHp <= 0)
+        if (_battle.AllEnemiesDefeated)
         {
             _run.SyncAfterBattle(_battle.PlayerHp);
             if (_returnToMineAfterBattle)
@@ -746,7 +1414,7 @@ public partial class BattleScene : Control
 
     private bool IsBattleFinished()
     {
-        return _battle.PlayerHp <= 0 || _battle.EnemyHp <= 0;
+        return _battle.PlayerHp <= 0 || _battle.AllEnemiesDefeated;
     }
 
     private void RenderBattle()
@@ -756,19 +1424,16 @@ public partial class BattleScene : Control
             return;
         }
 
-        var intent = _battle.GetCurrentEnemyIntent();
         var playerStatuses = _battle.PlayerWeak > 0 ? $" | 虚弱 {_battle.PlayerWeak}" : string.Empty;
-        var enemyStatuses = $"{(_battle.EnemyWeak > 0 ? $" | 虚弱 {_battle.EnemyWeak}" : string.Empty)}{(_battle.EnemyVulnerable > 0 ? $" | 易伤 {_battle.EnemyVulnerable}" : string.Empty)}";
         _playerHpBar.MaxValue = _battle.PlayerMaxHp;
         _playerHpBar.Value = Math.Max(0, _battle.PlayerHp);
-        _enemyHpBar.MaxValue = _battle.Enemy.MaxHp;
-        _enemyHpBar.Value = Math.Max(0, _battle.EnemyHp);
         _playerCombatLabel.Text = $"玩家  HP {_battle.PlayerHp}/{_battle.PlayerMaxHp}\n能量 {_battle.Energy}{playerStatuses}";
-        _enemyCombatLabel.Text = $"{_battle.Enemy.DisplayName()}  HP {_battle.EnemyHp}/{_battle.Enemy.MaxHp}{enemyStatuses}";
+        _enemyCombatLabel.Text = $"敌群  存活 {CountAliveEnemies()}/{_battle.Enemies.Count}\n威胁 {_battle.ThreatLevel} | 当前目标：{_battle.Enemy.DisplayName()}";
         _playerBlockLabel.Text = $"格挡 {_battle.PlayerBlock}";
-        _enemyBlockLabel.Text = $"格挡 {_battle.EnemyBlock}";
         _battleResourceLabel.Text = $"抽牌堆 {_battle.DrawPile.Count} | 弃牌堆 {_battle.DiscardPile.Count} | 手牌 {_battle.Hand.Count}";
-        _intentLabel.Text = $"敌人下一步: {_battle.GetIntentPreview()}\n当前意图会在你结束回合后执行。";
+        _intentLabel.Text = $"敌人下一步:\n{_battle.GetIntentPreview()}\n左键选中卡牌后会保留辅助线；点击目标释放，右键取消。";
+
+        RenderEnemyTargets();
 
         ClearBox(_handBox);
         for (var i = 0; i < _battle.Hand.Count; i++)
@@ -776,22 +1441,121 @@ public partial class BattleScene : Control
             var card = _battle.Hand[i];
             var button = new Button
             {
-                Text = $"[{i + 1}] {card.DisplayName()} ({Localization.T("cost")} {card.Cost})\n{card.DisplayDescription()}",
-                CustomMinimumSize = new Vector2(0, 70),
+                Text = FormatBattleCardText(card),
+                CustomMinimumSize = new Vector2(150, 188),
+                SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
                 AutowrapMode = TextServer.AutowrapMode.WordSmart
             };
-            StyleButton(button, Color.FromHtml("233548"), Color.FromHtml("d8e2ee"));
+            StyleCardButton(button, card, card.Cost <= _battle.Energy);
             var captured = i;
-            button.Pressed += () => OnPlayCardPressed(captured);
+            button.GuiInput += inputEvent => OnCardGuiInput(inputEvent, button, captured);
             _handBox.AddChild(button);
+        }
+
+        CallDeferred(nameof(LayoutHandFan));
+    }
+
+    private int CountAliveEnemies()
+    {
+        var count = 0;
+        foreach (var enemy in _battle.Enemies)
+        {
+            if (enemy.IsAlive)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private void RenderEnemyTargets()
+    {
+        ClearBox(_enemyTargetRow);
+        _enemyTargetButtons.Clear();
+        for (var i = 0; i < _battle.Enemies.Count; i++)
+        {
+            var enemy = _battle.Enemies[i];
+            var selected = i == _battle.SelectedEnemyIndex;
+            var button = new Button
+            {
+                Text = FormatEnemyTargetText(enemy, i, selected),
+                CustomMinimumSize = new Vector2(154, 176),
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = !enemy.IsAlive
+            };
+            StyleEnemyTargetButton(button, enemy, selected);
+            var captured = i;
+            button.Pressed += () => OnEnemyTargetPressed(captured);
+            _enemyTargetButtons[captured] = button;
+            _enemyTargetRow.AddChild(button);
         }
     }
 
-    private void SetCombatPortraits(EnemyData enemy)
+    private string FormatEnemyTargetText(BattleEnemyState enemy, int index, bool selected)
+    {
+        var status = $"{(enemy.Weak > 0 ? $" 虚弱{enemy.Weak}" : string.Empty)}{(enemy.Vulnerable > 0 ? $" 易伤{enemy.Vulnerable}" : string.Empty)}";
+        var intent = enemy.IsAlive ? _battle.GetCurrentEnemyIntent(index).DisplayName() : "击倒";
+        var marker = selected ? "▶ " : string.Empty;
+        return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}\n格挡 {enemy.Block}  破势 {enemy.Stagger}/{enemy.StaggerLimit}\n意图: {intent}{status}";
+    }
+
+    private void OnEnemyTargetPressed(int enemyIndex)
+    {
+        if (_aimingCardIndex >= 0)
+        {
+            TryPlayAimedCardOnEnemy(enemyIndex);
+            return;
+        }
+
+        _battle.SelectEnemy(enemyIndex);
+        RenderBattle();
+    }
+
+    private void OnPlayerCombatGuiInput(InputEvent inputEvent)
+    {
+        if (inputEvent is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } && _aimingCardIndex >= 0)
+        {
+            TryPlayAimedCardOnPlayer();
+        }
+    }
+
+    private Control GetEnemyFeedbackTarget(int enemyIndex)
+    {
+        return _enemyTargetButtons.TryGetValue(enemyIndex, out var button) && GodotObject.IsInstanceValid(button)
+            ? button
+            : _enemyCombatPanel;
+    }
+
+    private void SetCombatPortraits()
     {
         var character = _gameData.GetCharacter(GameSession.SelectedCharacterId);
         _playerPortrait.Texture = LoadTexture(character.ArtPath);
-        _enemyPortrait.Texture = LoadTexture(enemy.ArtPath);
+    }
+
+    private void LayoutHandFan()
+    {
+        var count = _handBox.GetChildCount();
+        if (count <= 0)
+        {
+            return;
+        }
+
+        var middle = (count - 1) / 2f;
+        for (var i = 0; i < count; i++)
+        {
+            if (_handBox.GetChild(i) is not Control cardControl)
+            {
+                continue;
+            }
+
+            var offsetFromMiddle = i - middle;
+            var normalized = middle <= 0 ? 0 : offsetFromMiddle / middle;
+            cardControl.PivotOffset = cardControl.Size / 2f;
+            cardControl.RotationDegrees = normalized * 9f;
+            cardControl.Position += new Vector2(0, Math.Abs(normalized) * 24f);
+        }
     }
 
     private static Texture2D? LoadTexture(string path)
@@ -1093,9 +1857,149 @@ public partial class BattleScene : Control
         return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
     }
 
+    private static string FormatBattleCardText(CardData card)
+    {
+        var rarity = card.Rarity switch
+        {
+            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
+            _ => Localization.Language == Localization.English ? "Common" : "普通"
+        };
+        var type = card.Type switch
+        {
+            "attack" => Localization.Language == Localization.English ? "Attack" : "攻击",
+            "skill" => Localization.Language == Localization.English ? "Skill" : "技能",
+            _ => card.Type
+        };
+        return $"[{card.Cost}] {card.DisplayName()}\n{type} / {rarity}\n{card.DisplayDescription()}";
+    }
+
+    private void BuildModalHost()
+    {
+        _modalOverlay = new Panel
+        {
+            Name = "ModalOverlay",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Stop
+        };
+        _modalOverlay.SetAnchorsPreset(LayoutPreset.FullRect);
+        _modalOverlay.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.05f, 0.07f, 0.76f)
+        });
+
+        var center = new CenterContainer
+        {
+            Name = "ModalCenter",
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        _deckModalPanel = new PanelContainer
+        {
+            Name = "DeckModalPanel",
+            CustomMinimumSize = new Vector2(760, 620)
+        };
+
+        var layout = new VBoxContainer
+        {
+            Name = "DeckModalLayout"
+        };
+        layout.AddThemeConstantOverride("separation", 12);
+
+        var title = new Label
+        {
+            Text = Localization.Language == Localization.English ? "Current Deck" : "当前牌组",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        title.AddThemeFontSizeOverride("font_size", 28);
+        title.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+
+        var description = new Label
+        {
+            Text = Localization.Language == Localization.English
+                ? "This is your current run deck. Upgrade and removal happen at camps and shops."
+                : "这里展示当前跑局牌组。升级和删牌会在营地、商店中进行。",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        description.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+
+        var scroll = new ScrollContainer
+        {
+            Name = "DeckModalScroll",
+            CustomMinimumSize = new Vector2(0, 460),
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        _deckModalList = new VBoxContainer
+        {
+            Name = "DeckModalList",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        _deckModalList.AddThemeConstantOverride("separation", 8);
+
+        _deckModalCloseButton = new Button
+        {
+            Text = Localization.Language == Localization.English ? "Close" : "关闭",
+            CustomMinimumSize = new Vector2(0, 52)
+        };
+
+        scroll.AddChild(_deckModalList);
+        layout.AddChild(title);
+        layout.AddChild(description);
+        layout.AddChild(scroll);
+        layout.AddChild(_deckModalCloseButton);
+        _deckModalPanel.AddChild(layout);
+        center.AddChild(_deckModalPanel);
+        _modalOverlay.AddChild(center);
+        GetNode<Panel>("Root").AddChild(_modalOverlay);
+
+        _dragHintPanel = new PanelContainer
+        {
+            Name = "DragHintPanel",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        _dragHintPanel.SetAnchorsPreset(LayoutPreset.CenterTop);
+        _dragHintPanel.Position = new Vector2(-190, 22);
+        _dragHintPanel.CustomMinimumSize = new Vector2(380, 46);
+        _dragHintLabel = new Label
+        {
+            Name = "DragHintLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _dragHintPanel.AddChild(_dragHintLabel);
+        GetNode<Panel>("Root").AddChild(_dragHintPanel);
+
+        _dragLine = new Line2D
+        {
+            Name = "DragAimLine",
+            Visible = false,
+            Width = 4,
+            DefaultColor = Color.FromHtml("d7b45f"),
+            ZIndex = 80
+        };
+        GetNode<Panel>("Root").AddChild(_dragLine);
+    }
+
     private void ApplyUiStyle()
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("111820", "263445", 0));
+        ApplyLabelColor(_runStatusLabel, "d6e2ec");
+        ApplyLabelColor(_roomTitleLabel, "f4f0df");
+        ApplyLabelColor(_roomDescriptionLabel, "b8c7d5");
+        ApplyLabelColor(_mineStatusLabel, "d6e2ec");
+        ApplyLabelColor(_playerCombatLabel, "e7fff1");
+        ApplyLabelColor(_enemyCombatLabel, "ffe2e6");
+        ApplyLabelColor(_playerBlockLabel, "d8e2ee");
+        ApplyLabelColor(_enemyBlockLabel, "ffd9df");
+        ApplyLabelColor(_battleResourceLabel, "b8c7d5");
+        ApplyLabelColor(_intentLabel, "ead7f7");
+        ApplyLabelColor(_endTitleLabel, "f4f0df");
+        ApplyLabelColor(_endSummaryLabel, "d6e2ec");
+        ApplyLabelColor(_debugLabel, "d6e2ec");
+        _logLabel.AddThemeColorOverride("default_color", Color.FromHtml("b8c7d5"));
         GetNode<PanelContainer>("Root/Margin/MainLayout/TopBar").AddThemeStyleboxOverride("panel", MakePanelStyle("141d27", "2d3c4d", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/RoomHeader").AddThemeStyleboxOverride("panel", MakePanelStyle("151f2b", "32445a", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("121923", "2a394a", 1));
@@ -1103,8 +2007,6 @@ public partial class BattleScene : Control
         _itemPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("121b24", "2a3544", 1));
         _minePanel.AddThemeStyleboxOverride("panel", MakePanelStyle("16202a", "38506a", 1));
         _battlePanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171f2b", "3b4b62", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("14243a", "38506a", 1));
-        GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("2b1d24", "6b3b4a", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("2b2634", "5a4d70", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame").AddThemeStyleboxOverride("panel", MakePanelStyle("0f151d", "2c3d50", 1));
         _rewardPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("201c2a", "504264", 1));
@@ -1112,10 +2014,15 @@ public partial class BattleScene : Control
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("121b24", "2a3544", 1));
         GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel").AddThemeStyleboxOverride("panel", MakePanelStyle("0f141b", "2a3544", 1));
         _debugPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("171720", "5a4d70", 1));
+        _deckModalPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
+        _dragHintPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("1d2b35", "78a8d8", 1));
+        _dragHintLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        StyleCombatPanels(false, false);
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_mineModeButton, Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));
         StyleButton(_deckButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
+        StyleButton(_deckModalCloseButton, Color.FromHtml("303946"), Color.FromHtml("eef5ff"));
         StyleButton(_retryButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_endMenuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleProgressBar(_playerHpBar, Color.FromHtml("2f9d68"));
@@ -1149,9 +2056,145 @@ public partial class BattleScene : Control
         button.AddThemeStyleboxOverride("normal", normal);
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("pressed", pressed);
+        button.AddThemeStyleboxOverride("disabled", MakeButtonStyle(background.Darkened(0.24f)));
         button.AddThemeColorOverride("font_color", fontColor);
         button.AddThemeColorOverride("font_hover_color", fontColor.Lightened(0.08f));
         button.AddThemeColorOverride("font_pressed_color", fontColor);
+        button.AddThemeColorOverride("font_disabled_color", fontColor.Darkened(0.35f));
+    }
+
+    private static void StyleRouteNodeButton(Button button, RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    {
+        var background = Color.FromHtml("202a35");
+        var font = Color.FromHtml("8f9aa8");
+        if (past || !onRoute)
+        {
+            background = Color.FromHtml("20242b");
+            font = Color.FromHtml("667382");
+        }
+        else if (current)
+        {
+            background = Color.FromHtml("5b4a2a");
+            font = Color.FromHtml("fff1d0");
+        }
+        else if (selectable)
+        {
+            background = room.Risk >= 3 ? Color.FromHtml("6b3b4a") : Color.FromHtml("315f46");
+            font = Color.FromHtml("e7fff1");
+        }
+        else
+        {
+            background = Color.FromHtml("263445");
+            font = Color.FromHtml("d8e2ee");
+        }
+
+        var border = selectable
+            ? Color.FromHtml("8ed8a8")
+            : current
+                ? Color.FromHtml("e0bd73")
+                : onRoute
+                    ? Color.FromHtml("57708d")
+                    : Color.FromHtml("384351");
+        var normal = MakeCardStyle(background, border);
+        var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
+        var pressed = MakeCardStyle(background.Darkened(0.08f), border);
+        button.AddThemeStyleboxOverride("normal", normal);
+        button.AddThemeStyleboxOverride("hover", hover);
+        button.AddThemeStyleboxOverride("pressed", pressed);
+        button.AddThemeStyleboxOverride("disabled", normal);
+        button.AddThemeColorOverride("font_color", font);
+        button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
+        button.AddThemeColorOverride("font_pressed_color", font);
+        button.AddThemeColorOverride("font_disabled_color", font);
+    }
+
+    private static void StyleEnemyTargetButton(Button button, BattleEnemyState enemy, bool selected)
+    {
+        var background = enemy.IsAlive
+            ? selected ? Color.FromHtml("3d2830") : Color.FromHtml("241d25")
+            : Color.FromHtml("20242b");
+        var border = enemy.IsAlive
+            ? selected ? Color.FromHtml("ff9aa8") : Color.FromHtml("6b3b4a")
+            : Color.FromHtml("384351");
+        var font = enemy.IsAlive ? Color.FromHtml("ffe2e6") : Color.FromHtml("667382");
+        var normal = MakeCardStyle(background, border);
+        var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
+        var pressed = MakeCardStyle(background.Darkened(0.08f), border);
+        button.AddThemeStyleboxOverride("normal", normal);
+        button.AddThemeStyleboxOverride("hover", hover);
+        button.AddThemeStyleboxOverride("pressed", pressed);
+        button.AddThemeStyleboxOverride("disabled", normal);
+        button.AddThemeColorOverride("font_color", font);
+        button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
+        button.AddThemeColorOverride("font_pressed_color", font);
+        button.AddThemeColorOverride("font_disabled_color", font);
+    }
+
+    private static void StyleCardButton(Button button, CardData card, bool playable)
+    {
+        var border = card.Rarity switch
+        {
+            "rare" => Color.FromHtml("d7b45f"),
+            "uncommon" => Color.FromHtml("78a8d8"),
+            _ => Color.FromHtml("7d8a96")
+        };
+        var background = card.Type == "attack" ? Color.FromHtml("2b2324") : Color.FromHtml("1d2b35");
+        if (!playable)
+        {
+            background = Color.FromHtml("252b32");
+            border = Color.FromHtml("4a5664");
+        }
+
+        var normal = MakeCardStyle(background, border);
+        var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
+        var pressed = MakeCardStyle(background.Darkened(0.08f), border);
+        var font = playable ? Color.FromHtml("f3ead7") : Color.FromHtml("8f9aa8");
+        button.AddThemeStyleboxOverride("normal", normal);
+        button.AddThemeStyleboxOverride("hover", hover);
+        button.AddThemeStyleboxOverride("pressed", pressed);
+        button.AddThemeStyleboxOverride("disabled", normal);
+        button.AddThemeColorOverride("font_color", font);
+        button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
+        button.AddThemeColorOverride("font_pressed_color", font);
+        button.AddThemeColorOverride("font_disabled_color", font);
+    }
+
+    private void StyleCombatPanels(bool highlightPlayer, bool highlightEnemy)
+    {
+        _playerCombatPanel.AddThemeStyleboxOverride("panel", MakePanelStyle(
+            highlightPlayer ? "1f3b31" : "14243a",
+            highlightPlayer ? "78d69b" : "38506a",
+            highlightPlayer ? 3 : 1));
+        _enemyCombatPanel.AddThemeStyleboxOverride("panel", MakePanelStyle(
+            highlightEnemy ? "3d2229" : "2b1d24",
+            highlightEnemy ? "ff7f8f" : "6b3b4a",
+            highlightEnemy ? 3 : 1));
+    }
+
+    private static StyleBoxFlat MakeCardStyle(Color background, Color border)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 12,
+            ContentMarginTop = 10,
+            ContentMarginRight = 12,
+            ContentMarginBottom = 10,
+            ShadowColor = new Color(0, 0, 0, 0.35f),
+            ShadowSize = 4
+        };
+        style.SetBorderWidthAll(2);
+        return style;
+    }
+
+    private static void ApplyLabelColor(Label label, string color)
+    {
+        label.AddThemeColorOverride("font_color", Color.FromHtml(color));
     }
 
     private static StyleBoxFlat MakeButtonStyle(Color background)

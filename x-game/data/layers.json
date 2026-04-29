@@ -28,8 +28,8 @@
           "rewardBonus": 10,
           "mineConfig": { "width": 5, "height": 6, "monsters": 3, "traps": 3, "treasures": 2, "ores": 6, "clearReward": 20, "trapDamage": 9 }
         },
-        { "kind": "battle", "title": "\u6676\u7ffc\u8760\u5de2", "titleEn": "Crystal Bat Nest", "enemyId": "crystal_bat", "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
-        { "kind": "battle", "title": "\u706f\u6cb9\u87a8\u7fa4", "titleEn": "Lamp Mite Swarm", "enemyId": "lamp_mite", "rewardId": "basic", "risk": 1, "lampCost": 6 },
+        { "kind": "battle", "title": "\u6676\u7ffc\u8760\u5de2", "titleEn": "Crystal Bat Nest", "enemyId": "crystal_bat", "enemyIds": ["crystal_bat", "lamp_mite"], "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
+        { "kind": "battle", "title": "\u706f\u6cb9\u87a8\u7fa4", "titleEn": "Lamp Mite Swarm", "enemyId": "lamp_mite", "enemyIds": ["lamp_mite", "lamp_mite"], "rewardId": "basic", "risk": 1, "lampCost": 6 },
         { "kind": "event", "title": "\u574d\u584c\u652f\u9053", "titleEn": "Collapsed Side Tunnel", "eventId": "collapsed_tunnel", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
         { "kind": "shop", "title": "\u77ff\u706f\u5546\u961f", "titleEn": "Lamp Caravan", "rewardId": "shop", "risk": 1, "lampCost": 5 }
       ]
@@ -47,7 +47,7 @@
           "rewardBonus": 20,
           "mineConfig": { "width": 6, "height": 6, "monsters": 4, "traps": 4, "treasures": 3, "ores": 8, "clearReward": 28, "trapDamage": 10 }
         },
-        { "kind": "battle", "title": "\u77ff\u8109\u5438\u9644\u8005", "titleEn": "Ore Leecher", "enemyId": "ore_leecher", "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
+        { "kind": "battle", "title": "\u77ff\u8109\u5438\u9644\u8005", "titleEn": "Ore Leecher", "enemyId": "ore_leecher", "enemyIds": ["ore_leecher", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
         { "kind": "event", "title": "\u65e7\u77ff\u5de5\u8425\u5730", "titleEn": "Old Miners' Camp", "eventId": "old_camp", "risk": 1, "lampCost": 6 },
         { "kind": "event", "title": "\u65ad\u5c42\u5730\u56fe", "titleEn": "Fault Map", "eventId": "fault_map", "risk": 3, "lampCost": 12, "rewardBonus": 20 }
       ]
@@ -64,8 +64,8 @@
           "rewardBonus": 25,
           "mineConfig": { "width": 6, "height": 7, "monsters": 5, "traps": 5, "treasures": 3, "ores": 9, "clearReward": 34, "trapDamage": 11 }
         },
-        { "kind": "battle", "title": "\u6676\u58f3\u5b88\u536b", "titleEn": "Crystal Guard", "enemyId": "crystal_guard", "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
-        { "kind": "battle", "title": "\u5b62\u5b50\u77ff\u5320", "titleEn": "Spore Mason", "enemyId": "spore_mason", "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
+        { "kind": "battle", "title": "\u6676\u58f3\u5b88\u536b", "titleEn": "Crystal Guard", "enemyId": "crystal_guard", "enemyIds": ["crystal_guard", "lamp_mite"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "battle", "title": "\u5b62\u5b50\u77ff\u5320", "titleEn": "Spore Mason", "enemyId": "spore_mason", "enemyIds": ["spore_mason", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
         { "kind": "event", "title": "\u6545\u969c\u5347\u964d\u673a", "titleEn": "Broken Lift", "eventId": "broken_lift", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
         { "kind": "shop", "title": "\u6df1\u5c42\u5546\u961f", "titleEn": "Deep Caravan", "rewardId": "shop", "risk": 1, "lampCost": 6 }
       ]
@@ -83,13 +83,13 @@
           "rewardBonus": 35,
           "mineConfig": { "width": 7, "height": 7, "monsters": 6, "traps": 6, "treasures": 4, "ores": 10, "clearReward": 42, "trapDamage": 12 }
         },
-        { "kind": "battle", "title": "\u77ff\u4e95\u76d1\u7ba1\u8005", "titleEn": "Mine Overseer", "enemyId": "mine_overseer", "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "battle", "title": "\u77ff\u4e95\u76d1\u7ba1\u8005", "titleEn": "Mine Overseer", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "spore_mason"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
         { "kind": "event", "title": "\u6676\u77ff\u6cc9", "titleEn": "Crystal Spring", "eventId": "crystal_spring", "risk": 1, "lampCost": 7 }
       ]
     },
     {
       "rooms": [
-        { "kind": "battle", "title": "\u96fe\u706f\u6838\u5fc3", "titleEn": "Fog Lamp Core", "enemyId": "fog_core", "rewardId": "boss", "risk": 4, "lampCost": 16, "rewardBonus": 50 }
+        { "kind": "battle", "title": "\u96fe\u706f\u6838\u5fc3", "titleEn": "Fog Lamp Core", "enemyId": "fog_core", "enemyIds": ["fog_core", "crystal_guard"], "rewardId": "boss", "risk": 4, "lampCost": 16, "rewardBonus": 50 }
       ]
     },
     {

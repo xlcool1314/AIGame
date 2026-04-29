@@ -16,6 +16,9 @@ public partial class MainMenu : Control
     private PanelContainer _settingsPanel = null!;
     private PanelContainer _unlocksPanel = null!;
     private PanelContainer _cardLibraryPanel = null!;
+    private Panel _modalOverlay = null!;
+    private VBoxContainer _modalStack = null!;
+    private Label _modalMessageLabel = null!;
     private VBoxContainer _unlocksList = null!;
     private VBoxContainer _cardLibraryList = null!;
     private Label _languageLabel = null!;
@@ -46,6 +49,7 @@ public partial class MainMenu : Control
         _unlocksBackButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksPanel/UnlocksLayout/UnlocksBackButton");
         _cardLibraryBackButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryPanel/CardLibraryLayout/CardLibraryBackButton");
         _messageLabel = GetNode<Label>("Root/Margin/MenuLayout/MessageLabel");
+        BuildModalHost();
 
         _languageOption.Clear();
         _languageOption.AddItem("中文", 0);
@@ -124,7 +128,7 @@ public partial class MainMenu : Control
 
     private void ShowSubPage(PanelContainer activePanel)
     {
-        SetMainControlsVisible(false);
+        _modalOverlay.Visible = true;
         _settingsPanel.Visible = activePanel == _settingsPanel;
         _unlocksPanel.Visible = activePanel == _unlocksPanel;
         _cardLibraryPanel.Visible = activePanel == _cardLibraryPanel;
@@ -132,10 +136,10 @@ public partial class MainMenu : Control
 
     private void ShowMainPage()
     {
+        _modalOverlay.Visible = false;
         _settingsPanel.Visible = false;
         _unlocksPanel.Visible = false;
         _cardLibraryPanel.Visible = false;
-        SetMainControlsVisible(true);
         RenderText();
     }
 
@@ -160,9 +164,10 @@ public partial class MainMenu : Control
         _unlocksButton.Text = Localization.Language == Localization.English ? "Unlocks" : "解锁";
         _cardLibraryButton.Text = Localization.Language == Localization.English ? "Card Library" : "卡牌库";
         _languageLabel.Text = Localization.T("language");
-        _backButton.Text = Localization.T("back");
-        _unlocksBackButton.Text = Localization.T("back");
-        _cardLibraryBackButton.Text = Localization.T("back");
+        var closeText = Localization.Language == Localization.English ? "Close" : "关闭";
+        _backButton.Text = closeText;
+        _unlocksBackButton.Text = closeText;
+        _cardLibraryBackButton.Text = closeText;
         _languageOption.Select(Localization.Language == Localization.English ? 1 : 0);
         var meta = SaveManager.LoadMeta();
         _messageLabel.Text = Localization.Language == Localization.English
@@ -174,7 +179,7 @@ public partial class MainMenu : Control
     {
         ClearBox(_unlocksList);
         var meta = SaveManager.LoadMeta();
-        _messageLabel.Text = Localization.Language == Localization.English
+        _modalMessageLabel.Text = Localization.Language == Localization.English
             ? $"Available embers: {meta.TotalEmbers}"
             : $"可用余烬：{meta.TotalEmbers}";
 
@@ -196,7 +201,7 @@ public partial class MainMenu : Control
             button.Pressed += () =>
             {
                 SaveManager.TryUnlock(unlock, out var message);
-                _messageLabel.Text = message;
+                _modalMessageLabel.Text = message;
                 RenderUnlocks();
             };
             _unlocksList.AddChild(button);
@@ -216,7 +221,7 @@ public partial class MainMenu : Control
     private void RenderCardLibrary()
     {
         ClearBox(_cardLibraryList);
-        _messageLabel.Text = Localization.Language == Localization.English
+        _modalMessageLabel.Text = Localization.Language == Localization.English
             ? "Cards are data-driven. Pools decide which heroes can find them."
             : "卡牌由数据配置驱动。牌池决定哪些英雄能在奖励和商店中遇到它们。";
 
@@ -239,11 +244,11 @@ public partial class MainMenu : Control
             var button = new Button
             {
                 Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}\n{(Localization.Language == Localization.English ? "Pool" : "牌池")}: {pools} | {upgrade}{unlock}",
-                CustomMinimumSize = new Vector2(0, 84),
+                CustomMinimumSize = new Vector2(0, 118),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Disabled = true
             };
-            StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
+            StyleCardButton(button, card);
             _cardLibraryList.AddChild(button);
         }
     }
@@ -259,9 +264,64 @@ public partial class MainMenu : Control
         return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
     }
 
+    private void BuildModalHost()
+    {
+        _modalOverlay = new Panel
+        {
+            Name = "ModalOverlay",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Stop
+        };
+        _modalOverlay.SetAnchorsPreset(LayoutPreset.FullRect);
+        _modalOverlay.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.05f, 0.07f, 0.78f)
+        });
+
+        var center = new CenterContainer
+        {
+            Name = "ModalCenter",
+            MouseFilter = MouseFilterEnum.Pass
+        };
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        _modalStack = new VBoxContainer
+        {
+            Name = "ModalStack",
+            CustomMinimumSize = new Vector2(780, 0)
+        };
+        _modalStack.AddThemeConstantOverride("separation", 12);
+
+        MovePanelToModal(_settingsPanel);
+        MovePanelToModal(_unlocksPanel);
+        MovePanelToModal(_cardLibraryPanel);
+
+        _modalMessageLabel = new Label
+        {
+            Name = "ModalMessageLabel",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _modalStack.AddChild(_modalMessageLabel);
+
+        center.AddChild(_modalStack);
+        _modalOverlay.AddChild(center);
+        GetNode<Panel>("Root").AddChild(_modalOverlay);
+    }
+
+    private void MovePanelToModal(PanelContainer panel)
+    {
+        panel.GetParent()?.RemoveChild(panel);
+        _modalStack.AddChild(panel);
+    }
+
     private void ApplyUiStyle()
     {
         GetNode<Panel>("Root").AddThemeStyleboxOverride("panel", MakePanelStyle("101820", "283748", 0));
+        _titleLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        _subtitleLabel.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+        _languageLabel.AddThemeColorOverride("font_color", Color.FromHtml("dbe6ef"));
+        _messageLabel.AddThemeColorOverride("font_color", Color.FromHtml("d6e2ec"));
+        _modalMessageLabel.AddThemeColorOverride("font_color", Color.FromHtml("c9d8e5"));
         _settingsPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
         _unlocksPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "5b4a2a", 1));
         _cardLibraryPanel.AddThemeStyleboxOverride("panel", MakePanelStyle("182331", "3a5068", 1));
@@ -310,6 +370,43 @@ public partial class MainMenu : Control
         button.AddThemeStyleboxOverride("pressed", MakeButtonStyle(background.Darkened(0.12f)));
         button.AddThemeColorOverride("font_color", fontColor);
         button.AddThemeColorOverride("font_hover_color", fontColor.Lightened(0.08f));
+    }
+
+    private static void StyleCardButton(Button button, CardData card)
+    {
+        var border = card.Rarity switch
+        {
+            "rare" => Color.FromHtml("d7b45f"),
+            "uncommon" => Color.FromHtml("78a8d8"),
+            _ => Color.FromHtml("7d8a96")
+        };
+        var background = card.Type == "attack" ? Color.FromHtml("2b2324") : Color.FromHtml("1d2b35");
+        var normal = MakeCardStyle(background, border);
+        button.AddThemeStyleboxOverride("normal", normal);
+        button.AddThemeStyleboxOverride("disabled", normal);
+        button.AddThemeColorOverride("font_color", Color.FromHtml("f3ead7"));
+        button.AddThemeColorOverride("font_disabled_color", Color.FromHtml("f3ead7"));
+    }
+
+    private static StyleBoxFlat MakeCardStyle(Color background, Color border)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 12,
+            ContentMarginTop = 10,
+            ContentMarginRight = 12,
+            ContentMarginBottom = 10,
+            ShadowColor = new Color(0, 0, 0, 0.35f),
+            ShadowSize = 4
+        };
+        style.SetBorderWidthAll(2);
+        return style;
     }
 
     private static StyleBoxFlat MakeButtonStyle(Color background)
