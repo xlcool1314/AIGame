@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://oukfi1bh248q"]
 
-[ext_resource type="Script" path="res://scripts/BattleScene.cs" id="1_battle"]
+[ext_resource type="Script" uid="uid://btsqvecpko6jk" path="res://scripts/BattleScene.cs" id="1_battle"]
 
-[node name="BattleScene" type="Control"]
+[node name="BattleScene" type="Control" unique_id=1339820347]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_battle")
 
-[node name="Root" type="Panel" parent="."]
+[node name="Root" type="Panel" parent="." unique_id=930943834]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="Root"]
+[node name="Margin" type="MarginContainer" parent="Root" unique_id=210352359]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -31,102 +31,102 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 24
 
-[node name="MainLayout" type="VBoxContainer" parent="Root/Margin"]
+[node name="MainLayout" type="VBoxContainer" parent="Root/Margin" unique_id=240208447]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TopBar" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="TopBar" type="PanelContainer" parent="Root/Margin/MainLayout" unique_id=1369584764]
 layout_mode = 2
 
-[node name="TopBarLayout" type="HBoxContainer" parent="Root/Margin/MainLayout/TopBar"]
+[node name="TopBarLayout" type="HBoxContainer" parent="Root/Margin/MainLayout/TopBar" unique_id=914202827]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="RunStatusLabel" type="Label" parent="Root/Margin/MainLayout/TopBar/TopBarLayout"]
+[node name="RunStatusLabel" type="Label" parent="Root/Margin/MainLayout/TopBar/TopBarLayout" unique_id=1574560294]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "跑局状态"
 
-[node name="MenuButton" type="Button" parent="Root/Margin/MainLayout/TopBar/TopBarLayout"]
-layout_mode = 2
+[node name="MenuButton" type="Button" parent="Root/Margin/MainLayout/TopBar/TopBarLayout" unique_id=362681691]
 custom_minimum_size = Vector2(150, 42)
+layout_mode = 2
 text = "返回主菜单"
 
-[node name="RoomHeader" type="PanelContainer" parent="Root/Margin/MainLayout"]
+[node name="RoomHeader" type="PanelContainer" parent="Root/Margin/MainLayout" unique_id=1447051469]
 layout_mode = 2
 
-[node name="RoomHeaderLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/RoomHeader"]
+[node name="RoomHeaderLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/RoomHeader" unique_id=1061118504]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="RoomTitleLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout"]
+[node name="RoomTitleLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout" unique_id=932467238]
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "房间标题"
 
-[node name="RoomDescriptionLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout"]
+[node name="RoomDescriptionLabel" type="Label" parent="Root/Margin/MainLayout/RoomHeader/RoomHeaderLayout" unique_id=972617577]
 layout_mode = 2
-autowrap_mode = 3
 text = "房间描述"
+autowrap_mode = 3
 
-[node name="ContentSplit" type="HBoxContainer" parent="Root/Margin/MainLayout"]
+[node name="ContentSplit" type="HBoxContainer" parent="Root/Margin/MainLayout" unique_id=1750514980]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 14
 
-[node name="MainPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit"]
+[node name="MainPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit" unique_id=1014266249]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ContentStack" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel"]
+[node name="ContentStack" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel" unique_id=1093197865]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+[node name="ChoicePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack" unique_id=793528418]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/ChoicePanel"]
+[node name="ChoiceList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/ChoicePanel" unique_id=302320460]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+[node name="MinePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack" unique_id=234565770]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MineLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel"]
+[node name="MineLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel" unique_id=1412534001]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="MineHeader" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout"]
+[node name="MineHeader" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout" unique_id=793252091]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader"]
+[node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader" unique_id=940355850]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "矿区状态"
 
-[node name="MineLegendLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader"]
+[node name="MineLegendLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader" unique_id=1498955915]
 layout_mode = 2
 text = "D=危险  R=奖励  右键=标记"
 
-[node name="MineBoardFrame" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout"]
+[node name="MineBoardFrame" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout" unique_id=2063832579]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MineBoardCenter" type="CenterContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame"]
+[node name="MineBoardCenter" type="CenterContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame" unique_id=1605910773]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MineGrid" type="GridContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter"]
+[node name="MineGrid" type="GridContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter" unique_id=2803960]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -134,185 +134,183 @@ theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 5
 
-[node name="BattlePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+[node name="BattlePanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack" unique_id=624467197]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BattleLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel"]
+[node name="BattleLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel" unique_id=265345992]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="CombatantRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+[node name="CombatantRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=423960944]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PlayerCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow"]
+[node name="PlayerCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow" unique_id=859247172]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PlayerCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel"]
+[node name="PlayerCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel" unique_id=1118590455]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="PlayerPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
-layout_mode = 2
+[node name="PlayerPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout" unique_id=722812402]
 custom_minimum_size = Vector2(0, 156)
+layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlayerCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+[node name="PlayerCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout" unique_id=1830784872]
 layout_mode = 2
-autowrap_mode = 3
 text = "玩家"
+autowrap_mode = 3
 
-[node name="PlayerHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+[node name="PlayerHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout" unique_id=190899594]
 layout_mode = 2
 show_percentage = false
 
-[node name="PlayerBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout"]
+[node name="PlayerBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel/PlayerCombatLayout" unique_id=2016044996]
 layout_mode = 2
 text = "格挡"
 
-[node name="EnemyCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow"]
+[node name="EnemyCombatPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow" unique_id=981445910]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="EnemyCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel"]
+[node name="EnemyCombatLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel" unique_id=289717276]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="EnemyPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
-layout_mode = 2
+[node name="EnemyPortrait" type="TextureRect" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout" unique_id=441824499]
 custom_minimum_size = Vector2(0, 156)
+layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="EnemyCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+[node name="EnemyCombatLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout" unique_id=1275755603]
 layout_mode = 2
-autowrap_mode = 3
 text = "敌人"
+autowrap_mode = 3
 
-[node name="EnemyHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+[node name="EnemyHpBar" type="ProgressBar" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout" unique_id=405028736]
 layout_mode = 2
 show_percentage = false
 
-[node name="EnemyBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout"]
+[node name="EnemyBlockLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout" unique_id=717089743]
 layout_mode = 2
 text = "格挡"
 
-[node name="BattleResourceLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+[node name="BattleResourceLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=1827034634]
 layout_mode = 2
 text = "战斗资源"
 
-[node name="IntentPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+[node name="IntentPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=110583663]
 layout_mode = 2
 
-[node name="IntentLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel"]
+[node name="IntentLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel" unique_id=2057250527]
 layout_mode = 2
-autowrap_mode = 3
 text = "敌人意图"
+autowrap_mode = 3
 
-[node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
-layout_mode = 2
+[node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=2049870311]
 custom_minimum_size = Vector2(0, 210)
+layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HandList" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel"]
+[node name="HandList" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel" unique_id=1998776206]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout"]
+[node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=2109643531]
 layout_mode = 2
 text = "结束回合"
 
-[node name="RewardPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+[node name="RewardPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack" unique_id=1399008630]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="RewardList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel"]
+[node name="RewardList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel" unique_id=820334773]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="EndPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack"]
+[node name="EndPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack" unique_id=141319595]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="EndLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel"]
+[node name="EndLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel" unique_id=711357749]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="EndTitleLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
+[node name="EndTitleLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout" unique_id=1640329282]
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "结算"
 
-[node name="EndSummaryLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
+[node name="EndSummaryLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout" unique_id=2099600147]
 layout_mode = 2
-autowrap_mode = 3
 text = "结算详情"
+autowrap_mode = 3
 
-[node name="EndButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout"]
+[node name="EndButtonRow" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout" unique_id=2127836186]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="RetryButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow"]
+[node name="RetryButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow" unique_id=663641029]
 layout_mode = 2
 text = "再来一局"
 
-[node name="EndMenuButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow"]
+[node name="EndMenuButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/EndPanel/EndLayout/EndButtonRow" unique_id=700810038]
 layout_mode = 2
 text = "返回主菜单"
 
-[node name="SidePanel" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit"]
-layout_mode = 2
+[node name="SidePanel" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit" unique_id=184026665]
 custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ItemPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+[node name="ItemPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel" unique_id=269771069]
 layout_mode = 2
 
-[node name="ItemList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ItemPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ActionPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
-layout_mode = 2
-
-[node name="ActionLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel"]
+[node name="ItemList" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ItemPanel" unique_id=1066399211]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
+[node name="ActionPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel" unique_id=1986805967]
+layout_mode = 2
+
+[node name="ActionLayout" type="VBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel" unique_id=2105834070]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout" unique_id=203519242]
 layout_mode = 2
 text = "模式：翻开"
 
-[node name="DeckButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
+[node name="DeckButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout" unique_id=1686958527]
 layout_mode = 2
 text = "查看牌组"
 
-[node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout"]
+[node name="ContinueButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout" unique_id=1225364560]
 visible = false
 layout_mode = 2
 text = "继续深入"
 
-[node name="DebugPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+[node name="DebugPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel" unique_id=917247668]
 visible = false
 layout_mode = 2
 
-[node name="DebugLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel"]
+[node name="DebugLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel" unique_id=1604398572]
 layout_mode = 2
-autowrap_mode = 3
 text = "Debug"
+autowrap_mode = 3
 
-[node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel"]
+[node name="LogPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/SidePanel" unique_id=109094356]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LogText" type="RichTextLabel" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel"]
+[node name="LogText" type="RichTextLabel" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/LogPanel" unique_id=255590708]
 layout_mode = 2
-bbcode_enabled = false
 scroll_following = true
-fit_content = false

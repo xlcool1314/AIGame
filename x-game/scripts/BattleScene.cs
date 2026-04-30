@@ -52,6 +52,8 @@ public partial class BattleScene : Control
     private Label _playerBlockLabel = null!;
     private Label _enemyBlockLabel = null!;
     private Label _battleResourceLabel = null!;
+    private PanelContainer _statusHelpPanel = null!;
+    private Label _statusHelpLabel = null!;
     private Label _intentLabel = null!;
     private HBoxContainer _handBox = null!;
     private Button _endTurnButton = null!;
@@ -156,6 +158,7 @@ public partial class BattleScene : Control
         _debugLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/SidePanel/DebugPanel/DebugLabel");
         BuildRunLayout();
         BuildModalHost();
+        BuildBattleStatusHelp();
         BuildEnemyTargetRow();
 
         AddChild(_gameData);
@@ -199,15 +202,17 @@ public partial class BattleScene : Control
         ShowNextRoomChoices();
     }
 
-    public override void _UnhandledInput(InputEvent @event)
+    public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Right)
+        if (_aimingCardIndex >= 0 && @event is InputEventMouseButton mouseEvent && mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Right)
         {
             CancelAimingCard();
             GetViewport().SetInputAsHandled();
-            return;
         }
+    }
 
+    public override void _UnhandledInput(InputEvent @event)
+    {
         if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo || keyEvent.Keycode != Key.F3)
         {
             return;
@@ -377,6 +382,27 @@ public partial class BattleScene : Control
         };
         _enemyTargetRow.AddThemeConstantOverride("separation", 10);
         _enemyCombatLayout.AddChild(_enemyTargetRow);
+    }
+
+    private void BuildBattleStatusHelp()
+    {
+        _statusHelpPanel = new PanelContainer
+        {
+            Name = "StatusHelpPanel",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+
+        _statusHelpLabel = new Label
+        {
+            Name = "StatusHelpLabel",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _statusHelpLabel.AddThemeFontSizeOverride("font_size", 15);
+        _statusHelpPanel.AddChild(_statusHelpLabel);
+
+        var battleLayout = _battleResourceLabel.GetParent();
+        battleLayout.AddChild(_statusHelpPanel);
+        battleLayout.MoveChild(_statusHelpPanel, _battleResourceLabel.GetIndex() + 1);
     }
 
     private void OnRetryPressed()
@@ -1548,9 +1574,11 @@ public partial class BattleScene : Control
         _playerHpBar.MaxValue = _battle.PlayerMaxHp;
         _playerHpBar.Value = Math.Max(0, _battle.PlayerHp);
         _playerCombatLabel.Text = $"玩家  HP {_battle.PlayerHp}/{_battle.PlayerMaxHp}\n能量 {_battle.Energy}{playerStatuses}";
+        _playerCombatPanel.TooltipText = BuildPlayerStatusTooltip();
         _enemyCombatLabel.Text = $"敌群  存活 {CountAliveEnemies()}/{_battle.Enemies.Count}\n威胁 {_battle.ThreatLevel} | 当前目标：{_battle.Enemy.DisplayName()}";
         _playerBlockLabel.Text = $"格挡 {_battle.PlayerBlock}";
         _battleResourceLabel.Text = $"抽牌堆 {_battle.DrawPile.Count} | 弃牌堆 {_battle.DiscardPile.Count} | 手牌 {_battle.Hand.Count}";
+        _statusHelpLabel.Text = BuildStatusHelpText();
         _intentLabel.Text = $"敌人下一步:\n{_battle.GetIntentPreview()}\n左键选中卡牌后会保留辅助线；点击目标释放，右键取消。";
 
         RenderEnemyTargets();
@@ -1567,6 +1595,7 @@ public partial class BattleScene : Control
                 AutowrapMode = TextServer.AutowrapMode.WordSmart
             };
             StyleCardButton(button, card, card.Cost <= _battle.Energy);
+            button.TooltipText = BuildCardTooltip(card);
             var captured = i;
             button.GuiInput += inputEvent => OnCardGuiInput(inputEvent, button, captured);
             _handBox.AddChild(button);
@@ -1606,6 +1635,7 @@ public partial class BattleScene : Control
                 Disabled = !enemy.IsAlive
             };
             StyleEnemyTargetButton(button, enemy, selected);
+            button.TooltipText = BuildEnemyStatusTooltip(enemy);
             var captured = i;
             button.Pressed += () => OnEnemyTargetPressed(captured);
             _enemyTargetButtons[captured] = button;
@@ -1619,6 +1649,79 @@ public partial class BattleScene : Control
         var intent = enemy.IsAlive ? _battle.GetCurrentEnemyIntent(index).DisplayName() : "击倒";
         var marker = selected ? "▶ " : string.Empty;
         return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}\n格挡 {enemy.Block}  破势 {enemy.Stagger}/{enemy.StaggerLimit}\n意图: {intent}{status}";
+    }
+
+    private string BuildStatusHelpText()
+    {
+        return Localization.Language == Localization.English
+            ? "Status: Weak reduces outgoing attack damage by 2. Vulnerable takes 50% more player attack damage. Status duration drops at the end of that unit's turn."
+            : "状态说明：虚弱会使造成的攻击伤害 -2；易伤会使受到的玩家攻击伤害 +50%。状态在其回合结束时减少 1。";
+    }
+
+    private string BuildPlayerStatusTooltip()
+    {
+        if (_battle.PlayerWeak <= 0)
+        {
+            return Localization.Language == Localization.English
+                ? "No active status."
+                : "当前没有状态。";
+        }
+
+        return Localization.Language == Localization.English
+            ? $"Weak {_battle.PlayerWeak}: your outgoing attack damage is reduced by 2. Duration drops at the end of your turn."
+            : $"虚弱 {_battle.PlayerWeak}：你造成的攻击伤害减少 2。持续回合在你的回合结束时减少。";
+    }
+
+    private string BuildEnemyStatusTooltip(BattleEnemyState enemy)
+    {
+        var lines = new List<string>();
+        if (enemy.Weak > 0)
+        {
+            lines.Add(Localization.Language == Localization.English
+                ? $"Weak {enemy.Weak}: outgoing attack damage is reduced by 2."
+                : $"虚弱 {enemy.Weak}：造成的攻击伤害减少 2。");
+        }
+
+        if (enemy.Vulnerable > 0)
+        {
+            lines.Add(Localization.Language == Localization.English
+                ? $"Vulnerable {enemy.Vulnerable}: takes 50% more attack damage from your cards."
+                : $"易伤 {enemy.Vulnerable}：受到你的卡牌攻击伤害提高 50%。");
+        }
+
+        if (enemy.IsAlive)
+        {
+            lines.Add(Localization.Language == Localization.English
+                ? "Status duration drops at the end of this enemy's turn."
+                : "状态持续回合在该敌人的回合结束时减少。");
+        }
+
+        return lines.Count == 0
+            ? Localization.Language == Localization.English ? "No active status." : "当前没有状态。"
+            : string.Join("\n", lines);
+    }
+
+    private string BuildCardTooltip(CardData card)
+    {
+        var lines = new List<string> { $"{card.DisplayName()} - {card.DisplayDescription()}" };
+        foreach (var action in card.Actions)
+        {
+            switch (action.Type)
+            {
+                case "weak":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Weak: reduces the target's outgoing attack damage by 2."
+                        : "虚弱：使目标造成的攻击伤害减少 2。");
+                    break;
+                case "vulnerable":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Vulnerable: target takes 50% more attack damage from your cards."
+                        : "易伤：使目标受到你的卡牌攻击伤害提高 50%。");
+                    break;
+            }
+        }
+
+        return string.Join("\n", lines);
     }
 
     private void OnEnemyTargetPressed(int enemyIndex)
@@ -2134,6 +2237,7 @@ public partial class BattleScene : Control
         ApplyLabelColor(_playerBlockLabel, "d8e2ee");
         ApplyLabelColor(_enemyBlockLabel, "ffd9df");
         ApplyLabelColor(_battleResourceLabel, "b8c7d5");
+        ApplyLabelColor(_statusHelpLabel, "d8e2ee");
         ApplyLabelColor(_intentLabel, "ead7f7");
         ApplyLabelColor(_endTitleLabel, "f4f0df");
         ApplyLabelColor(_endSummaryLabel, "d6e2ec");
@@ -2146,6 +2250,7 @@ public partial class BattleScene : Control
         MistTheme.StylePanel(_itemPanel, MistPanelVariant.Stone);
         MistTheme.StylePanel(_minePanel, MistPanelVariant.Stone);
         MistTheme.StylePanel(_battlePanel, MistPanelVariant.Stone);
+        MistTheme.StylePanel(_statusHelpPanel, MistPanelVariant.Inset);
         MistTheme.StylePanel(_intentPanel, MistPanelVariant.Purple);
         MistTheme.StylePanel(_mineBoardFrame, MistPanelVariant.Inset);
         MistTheme.StylePanel(_rewardPanel, MistPanelVariant.Purple);
