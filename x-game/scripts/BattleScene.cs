@@ -532,6 +532,7 @@ public partial class BattleScene : Control
 
         var availableRoute = BuildAvailableRouteSet();
         AddRouteLayerBands(mapCanvas);
+        AddRouteEntryGuide(mapCanvas, availableRoute);
         AddRouteConnections(mapCanvas, availableRoute);
         AddRouteNodes(mapCanvas, choices, availableRoute);
 
@@ -587,24 +588,80 @@ public partial class BattleScene : Control
                         continue;
                     }
 
-                    var from = GetRouteNodeCenter(room);
-                    var to = GetRouteNodeCenter(next);
                     var active = room.NodeId == _run.CurrentRoomNodeId || _run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId);
                     var forward = availableRoute.Contains(next.NodeId);
-                    var line = new Line2D
-                    {
-                        Width = active && forward ? 4f : 2.5f,
-                        DefaultColor = GetRouteLineColor(active && forward),
-                        Antialiased = true,
-                        ZIndex = -1
-                    };
-                    line.AddPoint(from);
-                    line.AddPoint((from + to) / 2f + new Vector2(0, -10));
-                    line.AddPoint(to);
-                    mapCanvas.AddChild(line);
+                    AddRouteConnectionLine(mapCanvas, room, next, active && forward);
                 }
             }
         }
+    }
+
+    private void AddRouteEntryGuide(Control mapCanvas, HashSet<string> availableRoute)
+    {
+        if (_run.MapLayers.Count == 0)
+        {
+            return;
+        }
+
+        var origin = new Vector2(RouteMapWidth / 2f, GetRouteMapHeight() - 24f);
+        foreach (var room in _run.MapLayers[0])
+        {
+            var active = _run.CurrentLayerIndex < 0 && (_run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId));
+            AddRouteGuideLine(mapCanvas, origin, GetRouteNodeEdgePoint(room, origin), active);
+        }
+
+        var marker = new Label
+        {
+            Text = Localization.Language == Localization.English ? "Entry" : "入口",
+            Position = origin - new Vector2(44, 20),
+            Size = new Vector2(88, 28),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore,
+            ZIndex = 1
+        };
+        marker.AddThemeColorOverride("font_color", _run.CurrentLayerIndex < 0 ? Color.FromHtml("f4f0df") : Color.FromHtml("71849a"));
+        marker.AddThemeFontSizeOverride("font_size", 14);
+        mapCanvas.AddChild(marker);
+    }
+
+    private void AddRouteConnectionLine(Control mapCanvas, RunRoom fromRoom, RunRoom toRoom, bool active)
+    {
+        var fromCenter = GetRouteNodeCenter(fromRoom);
+        var toCenter = GetRouteNodeCenter(toRoom);
+        AddRouteGuideLine(
+            mapCanvas,
+            GetRouteNodeEdgePoint(fromRoom, toCenter),
+            GetRouteNodeEdgePoint(toRoom, fromCenter),
+            active);
+    }
+
+    private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active)
+    {
+        var mid = (from + to) / 2f + new Vector2(0, active ? -14f : -8f);
+        var shadow = new Line2D
+        {
+            Width = active ? 8f : 5f,
+            DefaultColor = active ? new Color(0.14f, 0.48f, 0.36f, 0.34f) : new Color(0.08f, 0.12f, 0.17f, 0.58f),
+            Antialiased = true,
+            ZIndex = -1
+        };
+        shadow.AddPoint(from);
+        shadow.AddPoint(mid);
+        shadow.AddPoint(to);
+        mapCanvas.AddChild(shadow);
+
+        var line = new Line2D
+        {
+            Width = active ? 4f : 2.5f,
+            DefaultColor = GetRouteLineColor(active),
+            Antialiased = true,
+            ZIndex = 0
+        };
+        line.AddPoint(from);
+        line.AddPoint(mid);
+        line.AddPoint(to);
+        mapCanvas.AddChild(line);
     }
 
     private void AddRouteNodes(Control mapCanvas, IReadOnlyList<RunRoom> choices, HashSet<string> availableRoute)
@@ -669,9 +726,23 @@ public partial class BattleScene : Control
         return GetRouteNodePosition(room) + new Vector2(RouteNodeWidth / 2f, RouteNodeHeight / 2f);
     }
 
+    private Vector2 GetRouteNodeEdgePoint(RunRoom room, Vector2 toward)
+    {
+        var center = GetRouteNodeCenter(room);
+        var delta = toward - center;
+        if (delta.LengthSquared() <= 0.001f)
+        {
+            return center;
+        }
+
+        var xScale = Math.Abs(delta.X) < 0.001f ? float.PositiveInfinity : RouteNodeWidth / 2f / Math.Abs(delta.X);
+        var yScale = Math.Abs(delta.Y) < 0.001f ? float.PositiveInfinity : RouteNodeHeight / 2f / Math.Abs(delta.Y);
+        return center + delta * Math.Min(xScale, yScale);
+    }
+
     private static Color GetRouteLineColor(bool active)
     {
-        return active ? Color.FromHtml("7fc8a4") : new Color(0.33f, 0.42f, 0.52f, 0.46f);
+        return active ? Color.FromHtml("8df0bd") : new Color(0.44f, 0.55f, 0.67f, 0.64f);
     }
 
     private HashSet<string> BuildAvailableRouteSet()
