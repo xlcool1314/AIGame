@@ -20,6 +20,8 @@ public partial class BattleEngine : Node
     public int EnemyVulnerable => CurrentEnemy?.Vulnerable ?? 0;
     public int EnemyStagger => CurrentEnemy?.Stagger ?? 0;
     public int EnemyStaggerLimit => CurrentEnemy?.StaggerLimit ?? 18;
+    public bool AllEnemiesDefeated => GetAliveEnemyCount() == 0;
+
     public int TotalEnemyHp
     {
         get
@@ -33,6 +35,7 @@ public partial class BattleEngine : Node
             return total;
         }
     }
+
     public int TotalEnemyBlock
     {
         get
@@ -46,7 +49,6 @@ public partial class BattleEngine : Node
             return total;
         }
     }
-    public bool AllEnemiesDefeated => GetAliveEnemyCount() == 0;
 
     public readonly List<BattleEnemyState> Enemies = new();
     public readonly List<CardData> DrawPile = new();
@@ -55,6 +57,9 @@ public partial class BattleEngine : Node
     public readonly List<string> Log = new();
 
     private readonly Random _random = new();
+    private int _playerDamageBonus;
+    private int _playerBlockBonus;
+    private int _selfDamageReduction;
 
     private BattleEnemyState? CurrentEnemy
     {
@@ -83,18 +88,22 @@ public partial class BattleEngine : Node
     public void StartBattle(List<CardData> deck, IReadOnlyList<EnemyData> enemies, int playerMaxHp, int playerHp, int threatLevel)
     {
         ThreatLevel = Math.Clamp(threatLevel, 0, 12);
-        PlayerMaxHp = playerMaxHp;
+        PlayerMaxHp = Math.Max(1, playerMaxHp);
         PlayerHp = Math.Clamp(playerHp, 1, PlayerMaxHp);
         PlayerBlock = 0;
         PlayerWeak = 0;
         SelectedEnemyIndex = 0;
+        _playerDamageBonus = 0;
+        _playerBlockBonus = 0;
+        _selfDamageReduction = 0;
 
         Enemies.Clear();
-        var encounterEnemies = enemies.Count == 0 ? new List<EnemyData> { new() { Name = "未知敌人", NameEn = "Unknown Enemy", MaxHp = 1 } } : enemies;
+        var encounterEnemies = enemies.Count == 0
+            ? new List<EnemyData> { new() { Name = "未知敌人", NameEn = "Unknown Enemy", MaxHp = 1 } }
+            : enemies;
         var hpBonus = ThreatLevel * (encounterEnemies.Count > 1 ? 3 : 6);
-        for (var i = 0; i < encounterEnemies.Count; i++)
+        foreach (var enemy in encounterEnemies)
         {
-            var enemy = encounterEnemies[i];
             Enemies.Add(new BattleEnemyState
             {
                 Data = enemy,
@@ -123,8 +132,49 @@ public partial class BattleEngine : Node
         {
             PlayerWeak--;
         }
+
         DrawCards(5);
         Log.Add("你的回合开始。");
+    }
+
+    public void GainBlock(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        PlayerBlock += amount;
+        Log.Add($"遗物效果：获得 {amount} 点格挡。");
+    }
+
+    public void GainEnergy(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        Energy += amount;
+        Log.Add($"遗物效果：本回合获得 {amount} 点能量。");
+    }
+
+    public void DrawExtraCards(int count)
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+
+        DrawCards(count);
+        Log.Add($"遗物效果：额外抽 {count} 张牌。");
+    }
+
+    public void SetPlayerModifiers(int damageBonus, int blockBonus, int selfDamageReduction)
+    {
+        _playerDamageBonus = Math.Max(0, damageBonus);
+        _playerBlockBonus = Math.Max(0, blockBonus);
+        _selfDamageReduction = Math.Max(0, selfDamageReduction);
     }
 
     public bool SelectEnemy(int enemyIndex)
@@ -153,18 +203,15 @@ public partial class BattleEngine : Node
         var card = Hand[handIndex];
         if (card.Cost > Energy)
         {
-            Log.Add($"能量不足，无法使用 {card.DisplayName()}");
+            Log.Add($"能量不足，无法使用 {card.DisplayName()}。");
             return false;
         }
 
         var targetsEnemy = ActionsTargetEnemy(card.Actions);
-        if (targetsEnemy)
+        if (targetsEnemy && !SelectEnemy(targetEnemyIndex))
         {
-            if (!SelectEnemy(targetEnemyIndex))
-            {
-                Log.Add("需要选择一个仍在战斗中的敌人。");
-                return false;
-            }
+            Log.Add("需要选择一个仍在战斗中的敌人。");
+            return false;
         }
 
         Energy -= card.Cost;
@@ -212,15 +259,23 @@ public partial class BattleEngine : Node
         for (var i = 0; i < Enemies.Count; i++)
         {
             var enemy = Enemies[i];
-            if (!enemy.IsAlive)
+            if (enemy.IsAlive)
             {
-                continue;
+                parts.Add($"{enemy.Data.DisplayName()}: {FormatIntentPreview(i)}");
             }
-
-            parts.Add($"{enemy.Data.DisplayName()}: {FormatIntentPreview(i)}");
         }
 
         return parts.Count == 0 ? "无行动" : string.Join("\n", parts);
+    }
+
+    public string GetEnemyIntentPreview(int enemyIndex)
+    {
+        if (enemyIndex < 0 || enemyIndex >= Enemies.Count || !Enemies[enemyIndex].IsAlive)
+        {
+            return "无行动";
+        }
+
+        return FormatIntentPreview(enemyIndex);
     }
 
     private string FormatIntentPreview(int enemyIndex)
@@ -242,14 +297,26 @@ public partial class BattleEngine : Node
                     var damage = enemy.Weak > 0 ? Math.Max(0, scaled - 2) : scaled;
                     parts.Add($"伤害 {damage}");
                     break;
+                case "damage_all":
+                    parts.Add($"群体伤害 {action.Value}");
+                    break;
                 case "block":
                     parts.Add($"格挡 {ScaleEnemyValue(enemy, action.Value, "block")}");
+                    break;
+                case "block_per_enemy":
+                    parts.Add($"每敌人格挡 {action.Value}");
                     break;
                 case "weak":
                     parts.Add($"虚弱 {action.Duration}");
                     break;
+                case "weak_all":
+                    parts.Add($"全体虚弱 {action.Duration}");
+                    break;
                 case "vulnerable":
                     parts.Add($"易伤 {action.Duration}");
+                    break;
+                case "vulnerable_all":
+                    parts.Add($"全体易伤 {action.Duration}");
                     break;
                 case "heal":
                     parts.Add($"治疗 {ScaleEnemyValue(enemy, action.Value, "heal")}");
@@ -328,52 +395,39 @@ public partial class BattleEngine : Node
                 case "damage":
                     if (fromPlayer)
                     {
-                        if (targetEnemy == null || !targetEnemy.IsAlive)
-                        {
-                            Log.Add($"{source} 没有可攻击的目标。");
-                            break;
-                        }
-
-                        var incoming = targetEnemy.Vulnerable > 0 ? (int)Math.Ceiling(action.Value * 1.5f) : action.Value;
-                        var block = targetEnemy.Block;
-                        var damage = ResolveDamage(incoming, ref block);
-                        targetEnemy.Block = block;
-                        targetEnemy.Hp -= damage;
-                        AddEnemyStagger(targetEnemy, Math.Max(1, damage));
-                        Log.Add($"{source} 对 {targetEnemy.Data.DisplayName()} 造成 {damage} 点伤害。目标生命 {Math.Max(targetEnemy.Hp, 0)}");
-                        if (targetEnemy.Hp <= 0)
-                        {
-                            targetEnemy.Block = 0;
-                            Log.Add($"{targetEnemy.Data.DisplayName()} 被击倒。");
-                        }
+                        ApplyPlayerDamage(source, targetEnemy, action.Value);
                     }
-                    else
+                    else if (targetEnemy != null && targetEnemy.IsAlive)
                     {
-                        if (targetEnemy == null || !targetEnemy.IsAlive)
-                        {
-                            break;
-                        }
-
-                        var scaled = ScaleEnemyValue(targetEnemy, action.Value, "damage");
-                        var incoming = targetEnemy.Weak > 0 ? Math.Max(0, scaled - 2) : scaled;
-                        var playerBlock = PlayerBlock;
-                        var damage = ResolveDamage(incoming, ref playerBlock);
-                        PlayerBlock = playerBlock;
-                        PlayerHp -= damage;
-                        Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}");
+                        ApplyEnemyDamage(source, targetEnemy, action.Value);
+                    }
+                    break;
+                case "damage_all":
+                    if (fromPlayer)
+                    {
+                        ApplyPlayerAreaDamage(source, action.Value);
                     }
                     break;
                 case "block":
                     if (fromPlayer)
                     {
-                        PlayerBlock += action.Value;
-                        Log.Add($"{source} 获得 {action.Value} 点格挡。");
+                        var blockGain = Math.Max(0, action.Value + _playerBlockBonus);
+                        PlayerBlock += blockGain;
+                        Log.Add($"{source} 获得 {blockGain} 点格挡。");
                     }
                     else if (targetEnemy != null && targetEnemy.IsAlive)
                     {
                         var block = ScaleEnemyValue(targetEnemy, action.Value, "block");
                         targetEnemy.Block += block;
                         Log.Add($"{source} 获得 {block} 点格挡。");
+                    }
+                    break;
+                case "block_per_enemy":
+                    if (fromPlayer)
+                    {
+                        var blockGain = Math.Max(0, action.Value * Math.Max(1, GetAliveEnemyCount()) + _playerBlockBonus);
+                        PlayerBlock += blockGain;
+                        Log.Add($"{source} 根据敌人数量获得 {blockGain} 点格挡。");
                     }
                     break;
                 case "draw":
@@ -406,21 +460,15 @@ public partial class BattleEngine : Node
                 case "self_damage":
                     if (fromPlayer)
                     {
-                        PlayerHp = Math.Max(1, PlayerHp - Math.Max(0, action.Value));
-                        Log.Add($"{source} 反噬，失去 {action.Value} 点生命。");
+                        var selfDamage = Math.Max(0, action.Value - _selfDamageReduction);
+                        PlayerHp = Math.Max(1, PlayerHp - selfDamage);
+                        Log.Add($"{source} 反噬，失去 {selfDamage} 点生命。");
                     }
                     break;
                 case "weak":
                     if (fromPlayer)
                     {
-                        if (targetEnemy == null || !targetEnemy.IsAlive)
-                        {
-                            Log.Add($"{source} 没有可影响的目标。");
-                            break;
-                        }
-
-                        targetEnemy.Weak += Math.Max(1, action.Duration);
-                        Log.Add($"{source} 使 {targetEnemy.Data.DisplayName()} 虚弱 {Math.Max(1, action.Duration)} 回合。");
+                        ApplyEnemyStatus(source, targetEnemy, "weak", Math.Max(1, action.Duration));
                     }
                     else
                     {
@@ -428,17 +476,22 @@ public partial class BattleEngine : Node
                         Log.Add($"{source} 使你虚弱 {Math.Max(1, action.Duration)} 回合。");
                     }
                     break;
+                case "weak_all":
+                    if (fromPlayer)
+                    {
+                        ApplyAllEnemiesStatus(source, "weak", Math.Max(1, action.Duration));
+                    }
+                    break;
                 case "vulnerable":
                     if (fromPlayer)
                     {
-                        if (targetEnemy == null || !targetEnemy.IsAlive)
-                        {
-                            Log.Add($"{source} 没有可影响的目标。");
-                            break;
-                        }
-
-                        targetEnemy.Vulnerable += Math.Max(1, action.Duration);
-                        Log.Add($"{source} 使 {targetEnemy.Data.DisplayName()} 易伤 {Math.Max(1, action.Duration)} 回合。");
+                        ApplyEnemyStatus(source, targetEnemy, "vulnerable", Math.Max(1, action.Duration));
+                    }
+                    break;
+                case "vulnerable_all":
+                    if (fromPlayer)
+                    {
+                        ApplyAllEnemiesStatus(source, "vulnerable", Math.Max(1, action.Duration));
                     }
                     break;
                 default:
@@ -446,6 +499,111 @@ public partial class BattleEngine : Node
                     break;
             }
         }
+    }
+
+    private void ApplyPlayerDamage(string source, BattleEnemyState? targetEnemy, int value)
+    {
+        if (targetEnemy == null || !targetEnemy.IsAlive)
+        {
+            Log.Add($"{source} 没有可攻击的目标。");
+            return;
+        }
+
+        var baseDamage = Math.Max(0, value + _playerDamageBonus);
+        var incoming = targetEnemy.Vulnerable > 0 ? (int)Math.Ceiling(baseDamage * 1.5f) : baseDamage;
+        var block = targetEnemy.Block;
+        var damage = ResolveDamage(incoming, ref block);
+        targetEnemy.Block = block;
+        targetEnemy.Hp -= damage;
+        AddEnemyStagger(targetEnemy, Math.Max(1, damage));
+        Log.Add($"{source} 对 {targetEnemy.Data.DisplayName()} 造成 {damage} 点伤害。目标生命 {Math.Max(targetEnemy.Hp, 0)}");
+        if (targetEnemy.Hp <= 0)
+        {
+            targetEnemy.Block = 0;
+            Log.Add($"{targetEnemy.Data.DisplayName()} 被击倒。");
+        }
+    }
+
+    private void ApplyPlayerAreaDamage(string source, int value)
+    {
+        var totalDamage = 0;
+        foreach (var enemy in Enemies)
+        {
+            if (!enemy.IsAlive)
+            {
+                continue;
+            }
+
+            var baseDamage = Math.Max(0, value + _playerDamageBonus);
+            var incoming = enemy.Vulnerable > 0 ? (int)Math.Ceiling(baseDamage * 1.5f) : baseDamage;
+            var block = enemy.Block;
+            var damage = ResolveDamage(incoming, ref block);
+            enemy.Block = block;
+            enemy.Hp -= damage;
+            totalDamage += damage;
+            AddEnemyStagger(enemy, Math.Max(1, damage));
+            if (enemy.Hp <= 0)
+            {
+                enemy.Block = 0;
+                Log.Add($"{enemy.Data.DisplayName()} 被击倒。");
+            }
+        }
+
+        Log.Add($"{source} 对所有敌人合计造成 {totalDamage} 点伤害。");
+    }
+
+    private void ApplyEnemyDamage(string source, BattleEnemyState targetEnemy, int value)
+    {
+        var scaled = ScaleEnemyValue(targetEnemy, value, "damage");
+        var incoming = targetEnemy.Weak > 0 ? Math.Max(0, scaled - 2) : scaled;
+        var playerBlock = PlayerBlock;
+        var damage = ResolveDamage(incoming, ref playerBlock);
+        PlayerBlock = playerBlock;
+        PlayerHp -= damage;
+        Log.Add($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}");
+    }
+
+    private void ApplyEnemyStatus(string source, BattleEnemyState? targetEnemy, string status, int duration)
+    {
+        if (targetEnemy == null || !targetEnemy.IsAlive)
+        {
+            Log.Add($"{source} 没有可影响的目标。");
+            return;
+        }
+
+        if (status == "weak")
+        {
+            targetEnemy.Weak += duration;
+            Log.Add($"{source} 使 {targetEnemy.Data.DisplayName()} 虚弱 {duration} 回合。");
+        }
+        else if (status == "vulnerable")
+        {
+            targetEnemy.Vulnerable += duration;
+            Log.Add($"{source} 使 {targetEnemy.Data.DisplayName()} 易伤 {duration} 回合。");
+        }
+    }
+
+    private void ApplyAllEnemiesStatus(string source, string status, int duration)
+    {
+        foreach (var enemy in Enemies)
+        {
+            if (!enemy.IsAlive)
+            {
+                continue;
+            }
+
+            if (status == "weak")
+            {
+                enemy.Weak += duration;
+            }
+            else if (status == "vulnerable")
+            {
+                enemy.Vulnerable += duration;
+            }
+        }
+
+        var label = status == "weak" ? "虚弱" : "易伤";
+        Log.Add($"{source} 使所有敌人{label} {duration} 回合。");
     }
 
     private static int ResolveDamage(int incoming, ref int block)

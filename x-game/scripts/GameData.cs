@@ -15,6 +15,7 @@ public partial class GameData : Node
     public LayersConfig Layers { get; private set; } = new();
     public UnlocksConfig Unlocks { get; private set; } = new();
     public ObjectivesConfig Objectives { get; private set; } = new();
+    public RelicsConfig Relics { get; private set; } = new();
 
     public void LoadAll()
     {
@@ -28,6 +29,7 @@ public partial class GameData : Node
         Layers = LoadJson<LayersConfig>("res://data/layers.json");
         Unlocks = LoadJson<UnlocksConfig>("res://data/unlocks.json");
         Objectives = LoadJson<ObjectivesConfig>("res://data/objectives.json");
+        Relics = LoadJson<RelicsConfig>("res://data/relics.json");
     }
 
     public CardData GetCard(string cardId)
@@ -93,6 +95,19 @@ public partial class GameData : Node
         }
 
         throw new InvalidOperationException($"未找到委托: {objectiveId}");
+    }
+
+    public RelicData GetRelic(string relicId)
+    {
+        foreach (var relic in Relics.Relics)
+        {
+            if (relic.Id == relicId)
+            {
+                return relic;
+            }
+        }
+
+        throw new InvalidOperationException($"未找到遗物: {relicId}");
     }
 
     public CharacterData GetCharacter(string characterId)
@@ -191,6 +206,54 @@ public partial class GameData : Node
         return result;
     }
 
+    public List<RelicData> BuildRelicChoices(RewardData reward, IReadOnlyCollection<string> ownedRelics, int seed, int count = 2)
+    {
+        var candidates = new List<RelicData>();
+        foreach (var relicId in reward.RelicChoices)
+        {
+            var relic = GetRelic(relicId);
+            if (IsRelicEligibleForReward(relic, ownedRelics))
+            {
+                candidates.Add(relic);
+            }
+        }
+
+        foreach (var relic in Relics.Relics)
+        {
+            if (!ContainsRelicData(candidates, relic.Id) && IsRelicEligibleForReward(relic, ownedRelics))
+            {
+                candidates.Add(relic);
+            }
+        }
+
+        var result = new List<RelicData>();
+        var random = new Random(seed);
+        while (result.Count < count && candidates.Count > 0)
+        {
+            var totalWeight = 0;
+            foreach (var relic in candidates)
+            {
+                totalWeight += GetRarityWeight(relic.Rarity);
+            }
+
+            var roll = random.Next(Math.Max(1, totalWeight));
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                roll -= GetRarityWeight(candidates[i].Rarity);
+                if (roll >= 0)
+                {
+                    continue;
+                }
+
+                result.Add(candidates[i]);
+                candidates.RemoveAt(i);
+                break;
+            }
+        }
+
+        return result;
+    }
+
     private static bool IsCardEligibleForReward(CardData card, CharacterData character)
     {
         if (card.UpgradeOnly || !SaveManager.IsUnlocked(card.UnlockId))
@@ -206,6 +269,37 @@ public partial class GameData : Node
         foreach (var pool in card.Pools)
         {
             if (pool == "neutral" || pool == character.Id || character.CardPools.Contains(pool))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsRelicEligibleForReward(RelicData relic, IReadOnlyCollection<string> ownedRelics)
+    {
+        return !ContainsRelicId(ownedRelics, relic.Id) && SaveManager.IsUnlocked(relic.UnlockId);
+    }
+
+    private static bool ContainsRelicId(IReadOnlyCollection<string> relicIds, string relicId)
+    {
+        foreach (var ownedRelicId in relicIds)
+        {
+            if (ownedRelicId == relicId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsRelicData(List<RelicData> relics, string relicId)
+    {
+        foreach (var relic in relics)
+        {
+            if (relic.Id == relicId)
             {
                 return true;
             }
@@ -285,6 +379,11 @@ public class UnlocksConfig
 public class ObjectivesConfig
 {
     public List<ObjectiveData> Objectives { get; set; } = new();
+}
+
+public class RelicsConfig
+{
+    public List<RelicData> Relics { get; set; } = new();
 }
 
 public class ObjectiveData
@@ -431,6 +530,27 @@ public class EventChoiceData
     public string DisplayResult() => Localization.Pick(Result, ResultEn);
 }
 
+public class RelicData
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DescriptionEn { get; set; } = string.Empty;
+    public string Rarity { get; set; } = "common";
+    public string UnlockId { get; set; } = string.Empty;
+    public List<RelicEffectData> Effects { get; set; } = new();
+
+    public string DisplayName() => Localization.Pick(Name, NameEn);
+    public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
+public class RelicEffectData
+{
+    public string Type { get; set; } = string.Empty;
+    public int Value { get; set; }
+}
+
 public class RewardData
 {
     public string Id { get; set; } = string.Empty;
@@ -439,6 +559,7 @@ public class RewardData
     public int Shards { get; set; }
     public int Heal { get; set; }
     public List<string> CardChoices { get; set; } = new();
+    public List<string> RelicChoices { get; set; } = new();
 
     public string DisplayTitle() => Localization.Pick(Title, TitleEn);
 }
@@ -465,6 +586,7 @@ public class CharacterData
     public string DeckId { get; set; } = "starter";
     public List<string> CardPools { get; set; } = new();
     public List<ItemStackData> StartingItems { get; set; } = new();
+    public List<RelicEffectData> Effects { get; set; } = new();
 
     public string DisplayName() => Localization.Pick(Name, NameEn);
     public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);

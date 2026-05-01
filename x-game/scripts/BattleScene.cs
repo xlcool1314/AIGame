@@ -983,7 +983,7 @@ public partial class BattleScene : Control
         }
         else
         {
-            revealResult = _run.RevealMineCell(index);
+            revealResult = _run.RevealMineCell(index, _gameData);
         }
 
         if (_run.PlayerHp <= 0)
@@ -1016,6 +1016,7 @@ public partial class BattleScene : Control
         var enemyId = string.IsNullOrEmpty(_activeMineRoom?.EnemyId) ? "slime" : _activeMineRoom.EnemyId;
         var enemies = BuildEncounterEnemies(_activeMineRoom, true, enemyId);
         _battle.StartBattle(_run.PlayerDeck, enemies, _run.PlayerMaxHp, _run.PlayerHp, CalculateThreatLevel(_activeMineRoom, true));
+        ApplyBattleStartRelics();
         SetCombatPortraits();
         _returnToMineAfterBattle = true;
 
@@ -1165,7 +1166,7 @@ public partial class BattleScene : Control
 
     private void OnRestChoicePressed(string mode)
     {
-        _run.Rest(mode);
+        _run.Rest(mode, _gameData);
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
@@ -1184,6 +1185,12 @@ public partial class BattleScene : Control
             AddChoiceButton($"{string.Format(Localization.T("buy_card"), card.DisplayName(), 22)}\n{card.DisplayDescription()}", () => OnBuyCardPressed(card));
         }
 
+        var shopRelics = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, "shop_relic"), 2);
+        foreach (var relic in shopRelics)
+        {
+            AddChoiceButton($"{(Localization.Language == Localization.English ? "Buy relic" : "购买遗物")} {relic.DisplayName()} - 34 矿晶\n{relic.DisplayDescription()}", () => OnBuyRelicPressed(relic));
+        }
+
         AddChoiceButton("购买治疗 - 16 矿晶\n恢复 18 点生命。", OnBuyHealPressed);
         AddChoiceButton("升级一张牌 - 18 矿晶\n让已有卡牌变成强化版本。", () => RenderDeckUpgradeChoices(18));
         AddChoiceButton("移除一张牌 - 20 矿晶\n精简牌组，提高关键牌上手率。", () => RenderDeckRemoveChoices(20));
@@ -1193,6 +1200,17 @@ public partial class BattleScene : Control
     private void OnBuyCardPressed(CardData card)
     {
         if (_run.BuyCard(card, 22))
+        {
+            _choicePanel.Visible = false;
+            _continueButton.Visible = true;
+        }
+
+        RenderShared();
+    }
+
+    private void OnBuyRelicPressed(RelicData relic)
+    {
+        if (_run.BuyRelic(relic, 34))
         {
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
@@ -1227,12 +1245,24 @@ public partial class BattleScene : Control
         _returnToMineAfterBattle = false;
         var enemies = BuildEncounterEnemies(room, false, room.EnemyId);
         _battle.StartBattle(_run.PlayerDeck, enemies, _run.PlayerMaxHp, _run.PlayerHp, CalculateThreatLevel(room, false));
+        ApplyBattleStartRelics();
         SetCombatPortraits();
 
         _roomTitleLabel.Text = room.DisplayTitle();
         _roomDescriptionLabel.Text = $"战斗开始。威胁等级 {_battle.ThreatLevel}，敌群：{FormatEncounterNames(enemies)}。优先击杀目标会直接改变下一回合压力。";
         _battlePanel.Visible = true;
         RenderBattle();
+    }
+
+    private void ApplyBattleStartRelics()
+    {
+        _battle.SetPlayerModifiers(
+            _run.GetRunEffectValue(_gameData, "player_damage_bonus"),
+            _run.GetRunEffectValue(_gameData, "player_block_bonus"),
+            _run.GetRunEffectValue(_gameData, "self_damage_reduction"));
+        _battle.GainBlock(_run.GetRunEffectValue(_gameData, "battle_start_block"));
+        _battle.GainEnergy(_run.GetRunEffectValue(_gameData, "battle_start_energy"));
+        _battle.DrawExtraCards(_run.GetRunEffectValue(_gameData, "battle_start_draw"));
     }
 
     private List<EnemyData> BuildEncounterEnemies(RunRoom? room, bool fromMine, string fallbackEnemyId)
@@ -1590,6 +1620,97 @@ public partial class BattleScene : Control
 
         _battlePanel.Visible = false;
         _rewardPanel.Visible = true;
+        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Battle Won" : "战斗胜利";
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "Choose one spoil. Relics change the rest of this run."
+            : "选择一项战利品。遗物会改变本局后续路线、战斗与资源压力。";
+
+        var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
+        ClearBox(_rewardList);
+
+        var cardChoiceCount = 3 + Math.Max(0, _run.GetRunEffectValue(_gameData, "reward_card_bonus"));
+        var cardChoices = _gameData.BuildRewardChoices(
+            reward,
+            GameSession.SelectedCharacterId,
+            HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, reward.Id, _run.PlayerDeck.Count),
+            cardChoiceCount);
+
+        foreach (var card in cardChoices)
+        {
+            var button = new Button
+            {
+                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}",
+                CustomMinimumSize = new Vector2(0, 74),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart
+            };
+            StyleButton(button, Color.FromHtml("233548"), Color.FromHtml("d8e2ee"));
+            button.Pressed += () => OnRewardPickedV2(reward, card, null);
+            _rewardList.AddChild(button);
+        }
+
+        var relicChoices = _gameData.BuildRelicChoices(
+            reward,
+            _run.Relics,
+            HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, reward.Id, "relic"),
+            2);
+        foreach (var relic in relicChoices)
+        {
+            var button = new Button
+            {
+                Text = FormatRelicReward(relic),
+                CustomMinimumSize = new Vector2(0, 74),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart
+            };
+            StyleButton(button, Color.FromHtml("392d4b"), Color.FromHtml("f0e4ff"));
+            button.Pressed += () => OnRewardPickedV2(reward, null, relic);
+            _rewardList.AddChild(button);
+        }
+
+        var totalBonusPercent = (_activeBattleRoom?.RewardBonus ?? 0) + _run.GetRunEffectValue(_gameData, "reward_shards_percent");
+        var shardPreview = reward.Shards + (reward.Shards * Math.Max(0, totalBonusPercent) / 100);
+        var skipText = Localization.Language == Localization.English
+            ? $"Skip picks: gain {shardPreview} shards and heal {reward.Heal}."
+            : $"跳过选择：获得 {shardPreview} 矿晶并治疗 {reward.Heal} 点。";
+        var skipButton = new Button
+        {
+            Text = skipText,
+            CustomMinimumSize = new Vector2(0, 52),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        StyleButton(skipButton, Color.FromHtml("3a3140"), Color.FromHtml("ead7f7"));
+        skipButton.Pressed += () => OnRewardPickedV2(reward, null, null);
+        _rewardList.AddChild(skipButton);
+    }
+
+    private void OnRewardPickedV2(RewardData reward, CardData? card, RelicData? relic)
+    {
+        _run.ApplyRewardWithRelic(reward, card, relic, _gameData, _activeBattleRoom?.RewardBonus ?? 0);
+        _rewardPanel.Visible = false;
+        _continueButton.Visible = true;
+        RenderShared();
+    }
+
+    private static string FormatRelicReward(RelicData relic)
+    {
+        var rarity = relic.Rarity switch
+        {
+            "rare" => Localization.Language == Localization.English ? "Rare Relic" : "稀有遗物",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon Relic" : "罕见遗物",
+            _ => Localization.Language == Localization.English ? "Common Relic" : "普通遗物"
+        };
+
+        return $"{rarity} | {relic.DisplayName()}\n{relic.DisplayDescription()}";
+    }
+
+    private void ShowBattleRewardLegacy()
+    {
+        if (_activeBattleRoom == null)
+        {
+            return;
+        }
+
+        _battlePanel.Visible = false;
+        _rewardPanel.Visible = true;
         _roomTitleLabel.Text = "战斗胜利";
         _roomDescriptionLabel.Text = "从破碎矿壳里挑选战利品。";
 
@@ -1650,7 +1771,7 @@ public partial class BattleScene : Control
         _playerBlockLabel.Text = $"格挡 {_battle.PlayerBlock}";
         _battleResourceLabel.Text = $"抽牌堆 {_battle.DrawPile.Count} | 弃牌堆 {_battle.DiscardPile.Count} | 手牌 {_battle.Hand.Count}";
         _statusHelpLabel.Text = BuildStatusHelpText();
-        _intentLabel.Text = $"敌人下一步:\n{_battle.GetIntentPreview()}\n左键选中卡牌后会保留辅助线；点击目标释放，右键取消。";
+        _intentPanel.Visible = false;
 
         RenderEnemyTargets();
 
@@ -1700,7 +1821,7 @@ public partial class BattleScene : Control
             var button = new Button
             {
                 Text = FormatEnemyTargetText(enemy, i, selected),
-                CustomMinimumSize = new Vector2(154, 176),
+                CustomMinimumSize = new Vector2(176, 232),
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Disabled = !enemy.IsAlive
@@ -1716,10 +1837,85 @@ public partial class BattleScene : Control
 
     private string FormatEnemyTargetText(BattleEnemyState enemy, int index, bool selected)
     {
-        var status = $"{(enemy.Weak > 0 ? $" 虚弱{enemy.Weak}" : string.Empty)}{(enemy.Vulnerable > 0 ? $" 易伤{enemy.Vulnerable}" : string.Empty)}";
-        var intent = enemy.IsAlive ? _battle.GetCurrentEnemyIntent(index).DisplayName() : "击倒";
         var marker = selected ? "▶ " : string.Empty;
-        return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}\n格挡 {enemy.Block}  破势 {enemy.Stagger}/{enemy.StaggerLimit}\n意图: {intent}{status}";
+        if (!enemy.IsAlive)
+        {
+            return $"{enemy.Data.DisplayName()}\nHP 0/{enemy.MaxHp}\n已击倒";
+        }
+
+        var status = FormatEnemyStatusLine(enemy);
+        var intentPreview = _battle.GetEnemyIntentPreview(index);
+        var counterHint = BuildEnemyCounterHint(_battle.GetCurrentEnemyIntent(index));
+        return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}  格挡 {enemy.Block}\n破势 {enemy.Stagger}/{enemy.StaggerLimit}{status}\n下一步: {intentPreview}\n应对: {counterHint}";
+    }
+
+    private static string FormatEnemyStatusLine(BattleEnemyState enemy)
+    {
+        var parts = new List<string>();
+        if (enemy.Weak > 0)
+        {
+            parts.Add($"虚弱{enemy.Weak}");
+        }
+        if (enemy.Vulnerable > 0)
+        {
+            parts.Add($"易伤{enemy.Vulnerable}");
+        }
+
+        return parts.Count == 0 ? string.Empty : $"\n状态 {string.Join(" / ", parts)}";
+    }
+
+    private static string BuildEnemyCounterHint(IntentData intent)
+    {
+        var hasDamage = false;
+        var hasControl = false;
+        var hasDefense = false;
+        var hasHeal = false;
+        foreach (var action in intent.Actions)
+        {
+            switch (action.Type)
+            {
+                case "damage":
+                case "damage_all":
+                    hasDamage = true;
+                    break;
+                case "weak":
+                case "weak_all":
+                case "vulnerable":
+                case "vulnerable_all":
+                    hasControl = true;
+                    break;
+                case "block":
+                case "block_per_enemy":
+                    hasDefense = true;
+                    break;
+                case "heal":
+                    hasHeal = true;
+                    break;
+            }
+        }
+
+        if (hasDamage && hasControl)
+        {
+            return Localization.Language == Localization.English ? "Block first or burst it down." : "优先格挡，能击杀就先击杀。";
+        }
+        if (hasDamage)
+        {
+            return Localization.Language == Localization.English ? "Prepare block or finish it." : "准备格挡，或抢先击杀。";
+        }
+        if (hasHeal)
+        {
+            return Localization.Language == Localization.English ? "Focus fire before it recovers." : "优先集火，避免回血拖长战斗。";
+        }
+        if (hasDefense)
+        {
+            return Localization.Language == Localization.English ? "Consider switching target." : "它要防御，可考虑转火。";
+        }
+        if (hasControl)
+        {
+            return Localization.Language == Localization.English ? "Plan around the debuff." : "注意负面状态，保留解场节奏。";
+        }
+
+        return Localization.Language == Localization.English ? "Low immediate threat." : "当前威胁较低。";
     }
 
     private string BuildStatusHelpText()
@@ -2000,6 +2196,29 @@ public partial class BattleScene : Control
         RenderShared();
     }
 
+    private string FormatRelicList()
+    {
+        if (_run.Relics.Count == 0)
+        {
+            return Localization.Language == Localization.English ? "None" : "无";
+        }
+
+        var names = new List<string>();
+        foreach (var relicId in _run.Relics)
+        {
+            try
+            {
+                names.Add(_gameData.GetRelic(relicId).DisplayName());
+            }
+            catch (InvalidOperationException)
+            {
+                names.Add(relicId);
+            }
+        }
+
+        return string.Join(", ", names);
+    }
+
     private void ShowEndPanel(bool victory, string reason)
     {
         var meta = _metaRecorded ? SaveManager.LoadMeta() : SaveManager.RecordRun(_run, victory);
@@ -2009,7 +2228,7 @@ public partial class BattleScene : Control
         _roomTitleLabel.Text = victory ? "探索完成" : "探索失败";
         _roomDescriptionLabel.Text = reason;
         _endTitleLabel.Text = victory ? "本次探索完成" : "本次探索结束";
-        _endSummaryLabel.Text = $"抵达层数: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余 HP: {_run.PlayerHp}/{_run.PlayerMaxHp}\n灯油: {_run.LampOil}/{_run.MaxLampOil}  雾压: {_run.FogPressure}\n矿晶: {_run.Shards}  分数: {_run.Score}\n战斗胜利: {_run.BattlesWon}  清理矿区: {_run.MinesCleared}\n委托: {FormatObjectiveStatus()}  委托奖励: {meta.LastObjectiveBonus}\n本局获得余烬: {meta.LastEarnedEmbers}  总余烬: {meta.TotalEmbers}\n最佳深度: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n遗物: {(_run.Relics.Count == 0 ? "无" : string.Join(", ", _run.Relics))}";
+        _endSummaryLabel.Text = $"抵达层数: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余 HP: {_run.PlayerHp}/{_run.PlayerMaxHp}\n灯油: {_run.LampOil}/{_run.MaxLampOil}  雾压: {_run.FogPressure}\n矿晶: {_run.Shards}  分数: {_run.Score}\n战斗胜利: {_run.BattlesWon}  清理矿区: {_run.MinesCleared}\n委托: {FormatObjectiveStatus()}  委托奖励: {meta.LastObjectiveBonus}\n本局获得余烬: {meta.LastEarnedEmbers}  总余烬: {meta.TotalEmbers}\n最佳深度: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n遗物: {FormatRelicList()}";
         RenderShared();
     }
 

@@ -9,7 +9,10 @@
       "cardChoices": [
         "copper_hook", "guarded_swing", "echo_probe", "emergency_patch",
         "quick_scan", "lamp_guard", "ore_shot", "safe_route",
-        "braced_pick", "survey_notes", "capacitor"
+        "braced_pick", "survey_notes", "capacitor", "mapping_flare"
+      ],
+      "relicChoices": [
+        "calibrated_lamp", "safety_tether", "ore_charm", "survey_lens"
       ]
     },
     {
@@ -21,7 +24,11 @@
       "cardChoices": [
         "heavy_pick", "blast_charge", "reinforce", "signal_flare",
         "crack_finder", "chain_drill", "vent_pressure", "steady_breath",
-        "fuse_strike", "braced_pick", "survey_notes", "capacitor"
+        "fuse_strike", "braced_pick", "survey_notes", "capacitor",
+        "sweeping_pick", "mapping_flare", "barrier_grid", "powder_keg"
+      ],
+      "relicChoices": [
+        "skull_compass", "ember_cell", "deep_pouch", "survey_lens", "ore_charm"
       ]
     },
     {
@@ -32,7 +39,11 @@
       "heal": 8,
       "cardChoices": [
         "lamp_overdrive", "crystal_salve", "fault_line", "bulwark",
-        "chain_drill", "crack_finder", "blast_charge", "heavy_pick"
+        "chain_drill", "crack_finder", "blast_charge", "heavy_pick",
+        "sweeping_pick", "barrier_grid", "powder_keg"
+      ],
+      "relicChoices": [
+        "black_lantern", "ember_cell", "deep_pouch", "skull_compass"
       ]
     },
     {
@@ -43,7 +54,10 @@
       "heal": 12,
       "cardChoices": [
         "lamp_overdrive", "fault_line", "bulwark", "crystal_salve",
-        "chain_drill", "safe_route"
+        "chain_drill", "safe_route", "sweeping_pick", "barrier_grid", "powder_keg"
+      ],
+      "relicChoices": [
+        "black_lantern", "deep_pouch", "ember_cell", "skull_compass", "ore_charm"
       ]
     },
     {
@@ -55,7 +69,11 @@
       "cardChoices": [
         "quick_scan", "lamp_guard", "blast_charge", "reinforce",
         "battery_pack", "signal_flare", "emergency_patch", "crack_finder",
-        "braced_pick", "survey_notes", "fuse_strike", "capacitor"
+        "braced_pick", "survey_notes", "fuse_strike", "capacitor",
+        "sweeping_pick", "mapping_flare", "barrier_grid", "powder_keg"
+      ],
+      "relicChoices": [
+        "calibrated_lamp", "safety_tether", "survey_lens"
       ]
     }
   ]

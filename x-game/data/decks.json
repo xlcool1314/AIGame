@@ -3,33 +3,33 @@
     {
       "id": "starter",
       "cards": [
-        "strike", "strike", "strike", "strike",
+        "strike", "strike", "strike",
         "defend", "defend", "defend", "defend",
-        "insight", "braced_pick"
+        "insight", "braced_pick", "sweeping_pick"
       ]
     },
     {
       "id": "scout",
       "cards": [
-        "strike", "strike", "quick_scan", "quick_scan",
+        "strike", "quick_scan", "quick_scan",
         "defend", "defend", "safe_route",
-        "insight", "survey_notes", "signal_flare"
+        "insight", "survey_notes", "signal_flare", "mapping_flare"
       ]
     },
     {
       "id": "breaker",
       "cards": [
-        "strike", "strike", "copper_hook", "ore_shot",
+        "strike", "copper_hook", "ore_shot",
         "defend", "defend", "lamp_guard",
-        "heavy_pick", "blast_charge", "fuse_strike"
+        "heavy_pick", "blast_charge", "fuse_strike", "powder_keg"
       ]
     },
     {
       "id": "engineer",
       "cards": [
-        "strike", "strike", "defend", "defend", "defend",
+        "strike", "defend", "defend", "defend",
         "battery_pack", "capacitor", "reinforce",
-        "vent_pressure", "steady_breath"
+        "vent_pressure", "steady_breath", "barrier_grid"
       ]
     }
   ]

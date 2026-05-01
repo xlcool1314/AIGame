@@ -22,6 +22,7 @@ public partial class RunEngine : Node
     public string ObjectiveType { get; private set; } = string.Empty;
     public int ObjectiveTarget { get; private set; }
     public int ObjectiveEmberReward { get; private set; }
+    public string CharacterId { get; private set; } = string.Empty;
     public string CurrentRoomNodeId { get; private set; } = string.Empty;
     public RunRoom? CurrentRoom { get; private set; }
 
@@ -40,12 +41,14 @@ public partial class RunEngine : Node
     public void StartRun(GameData gameData, string characterId)
     {
         var character = gameData.GetCharacter(characterId);
+        CharacterId = character.Id;
         PlayerMaxHp = character.MaxHp;
         PlayerHp = PlayerMaxHp;
         Shards = character.Shards;
         CurrentLayerIndex = -1;
         RunSeed = Random.Shared.Next(1, int.MaxValue);
         MaxLampOil = SaveManager.IsUnlocked("start_lamp_plus") ? 115 : 100;
+        MaxLampOil += GetCharacterEffectValue(character, "max_lamp");
         LampOil = MaxLampOil;
         FogPressure = 0;
         RoomsCompleted = 0;
@@ -73,7 +76,7 @@ public partial class RunEngine : Node
 
     public void LoadFromSave(GameData gameData, RunSaveData saveData)
     {
-        StartRun(gameData);
+        StartRun(gameData, string.IsNullOrWhiteSpace(saveData.CharacterId) ? GameSession.SelectedCharacterId : saveData.CharacterId);
         RunSeed = saveData.RunSeed > 0 ? saveData.RunSeed : Random.Shared.Next(1, int.MaxValue);
         PlayerHp = Math.Clamp(saveData.PlayerHp, 0, saveData.PlayerMaxHp);
         PlayerMaxHp = Math.Max(1, saveData.PlayerMaxHp);
@@ -113,6 +116,8 @@ public partial class RunEngine : Node
 
         Relics.Clear();
         Relics.AddRange(saveData.Relics);
+        ApplyLoadedRelicStats(gameData);
+        LampOil = Math.Clamp(saveData.LampOil <= 0 ? LampOil : saveData.LampOil, 0, MaxLampOil);
 
         Items.Clear();
         foreach (var item in saveData.Items)
@@ -200,7 +205,7 @@ public partial class RunEngine : Node
         Log.Add($"开始探勘：{config.Width}x{config.Height} 矿区，疑似雷区 {dangerCount} 处。");
     }
 
-    public MineRevealResult RevealMineCell(int index)
+    public MineRevealResult RevealMineCell(int index, GameData? gameData = null)
     {
         if (Minefield == null)
         {
@@ -214,8 +219,14 @@ public partial class RunEngine : Node
         }
         else if (result == MineRevealResult.Trap)
         {
-            PlayerHp = Math.Max(0, PlayerHp - Minefield.TrapDamage);
-            Log.Add($"触发陷阱，失去 {Minefield.TrapDamage} 点生命。");
+            var trapDamage = Minefield.TrapDamage;
+            if (gameData != null)
+            {
+                trapDamage = Math.Max(1, trapDamage - GetRunEffectValue(gameData, "trap_damage_reduction"));
+            }
+
+            PlayerHp = Math.Max(0, PlayerHp - trapDamage);
+            Log.Add($"触发陷阱，失去 {trapDamage} 点生命。");
         }
         else if (result == MineRevealResult.Treasure)
         {
@@ -301,7 +312,80 @@ public partial class RunEngine : Node
         Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
     }
 
+    public bool HasRelic(string relicId)
+    {
+        foreach (var ownedRelicId in Relics)
+        {
+            if (ownedRelicId == relicId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public int GetRelicEffectValue(GameData gameData, string effectType)
+    {
+        var total = 0;
+        foreach (var relicId in Relics)
+        {
+            RelicData relic;
+            try
+            {
+                relic = gameData.GetRelic(relicId);
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            foreach (var effect in relic.Effects)
+            {
+                if (effect.Type == effectType)
+                {
+                    total += effect.Value;
+                }
+            }
+        }
+
+        return total;
+    }
+
+    public int GetRunEffectValue(GameData gameData, string effectType)
+    {
+        var total = GetRelicEffectValue(gameData, effectType);
+        try
+        {
+            total += GetCharacterEffectValue(gameData.GetCharacter(CharacterId), effectType);
+        }
+        catch (InvalidOperationException)
+        {
+            // Older saves may not have a valid character id; relics still keep the run playable.
+        }
+
+        return total;
+    }
+
+    public bool AddRelic(RelicData relic)
+    {
+        if (string.IsNullOrWhiteSpace(relic.Id) || HasRelic(relic.Id))
+        {
+            return false;
+        }
+
+        Relics.Add(relic.Id);
+        ApplyImmediateRelicEffects(relic);
+        Log.Add($"遗物入手：{relic.DisplayName()} - {relic.DisplayDescription()}");
+        return true;
+    }
+
     public void ApplyReward(RewardData reward, CardData? chosenCard, int bonusPercent = 0)
+    {
+        ApplyReward(reward, chosenCard, null, null, bonusPercent);
+    }
+
+    public void ApplyReward(RewardData reward, CardData? chosenCard, RelicData? chosenRelic, GameData? gameData, int bonusPercent = 0)
     {
         var shardReward = reward.Shards + (reward.Shards * Math.Max(0, bonusPercent) / 100);
         BattlesWon++;
@@ -318,6 +402,60 @@ public partial class RunEngine : Node
         {
             Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
         }
+    }
+
+    public void ApplyRewardWithRelic(RewardData reward, CardData? chosenCard, RelicData? chosenRelic, GameData gameData, int bonusPercent = 0)
+    {
+        var totalBonusPercent = Math.Max(0, bonusPercent) + GetRunEffectValue(gameData, "reward_shards_percent");
+        var shardReward = reward.Shards + (reward.Shards * totalBonusPercent / 100);
+        BattlesWon++;
+        Score += 25 + shardReward + totalBonusPercent;
+        Shards += shardReward;
+        Heal(reward.Heal);
+
+        if (chosenCard != null)
+        {
+            PlayerDeck.Add(chosenCard);
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
+        }
+
+        if (chosenRelic != null)
+        {
+            AddRelic(chosenRelic);
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，并带走遗物 {chosenRelic.DisplayName()}。");
+        }
+
+        if (chosenCard == null && chosenRelic == null)
+        {
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
+        }
+
+        var lampRestore = GetRunEffectValue(gameData, "post_battle_lamp");
+        if (lampRestore > 0)
+        {
+            RestoreLamp(lampRestore);
+            Log.Add($"遗物效果：战斗后恢复 {lampRestore} 点灯油。");
+        }
+    }
+
+    public bool BuyRelic(RelicData relic, int cost)
+    {
+        if (HasRelic(relic.Id))
+        {
+            Log.Add($"已经拥有遗物 {relic.DisplayName()}。");
+            return false;
+        }
+
+        if (Shards < cost)
+        {
+            Log.Add($"矿晶不足，无法购买遗物 {relic.DisplayName()}。");
+            return false;
+        }
+
+        Shards -= cost;
+        AddRelic(relic);
+        Log.Add($"花费 {cost} 矿晶购买遗物 {relic.DisplayName()}。");
+        return true;
     }
 
     public bool BuyCard(CardData card, int cost)
@@ -405,13 +543,16 @@ public partial class RunEngine : Node
         Log.Add(choice.DisplayResult());
     }
 
-    public void Rest(string mode)
+    public void Rest(string mode, GameData? gameData = null)
     {
         if (mode == "forge")
         {
             Shards += 12;
             RestoreLamp(18);
-            Relics.Add("校准矿灯");
+            if (gameData != null)
+            {
+                AddRelic(gameData.GetRelic("calibrated_lamp"));
+            }
             Log.Add("你校准矿灯并整理矿石，获得 12 矿晶、18 灯油和遗物：校准矿灯。");
             return;
         }
@@ -478,12 +619,64 @@ public partial class RunEngine : Node
                 PlayerDeck.Add(gameData.GetCard(action.CardId));
                 break;
             case "relic":
-                Relics.Add(action.RelicId);
+                AddRelic(gameData.GetRelic(action.RelicId));
                 break;
             default:
                 Log.Add($"未知跑局动作: {action.Type}");
                 break;
         }
+    }
+
+    private void ApplyImmediateRelicEffects(RelicData relic)
+    {
+        foreach (var effect in relic.Effects)
+        {
+            if (effect.Type != "max_lamp")
+            {
+                continue;
+            }
+
+            MaxLampOil += Math.Max(0, effect.Value);
+            LampOil = Math.Min(MaxLampOil, LampOil + Math.Max(0, effect.Value));
+        }
+    }
+
+    private void ApplyLoadedRelicStats(GameData gameData)
+    {
+        foreach (var relicId in Relics)
+        {
+            RelicData relic;
+            try
+            {
+                relic = gameData.GetRelic(relicId);
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            foreach (var effect in relic.Effects)
+            {
+                if (effect.Type == "max_lamp")
+                {
+                    MaxLampOil += Math.Max(0, effect.Value);
+                }
+            }
+        }
+    }
+
+    private static int GetCharacterEffectValue(CharacterData character, string effectType)
+    {
+        var total = 0;
+        foreach (var effect in character.Effects)
+        {
+            if (effect.Type == effectType)
+            {
+                total += effect.Value;
+            }
+        }
+
+        return total;
     }
 
     private void Heal(int amount)
@@ -625,7 +818,7 @@ public partial class RunEngine : Node
             return;
         }
 
-        var random = new Random(HashCode.Combine(RunSeed, GameSession.SelectedCharacterId));
+        var random = new Random(HashCode.Combine(RunSeed, CharacterId));
         var objective = gameData.Objectives.Objectives[random.Next(gameData.Objectives.Objectives.Count)];
         ObjectiveId = objective.Id;
         ObjectiveTitle = objective.Title;

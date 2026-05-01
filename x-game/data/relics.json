@@ -1,0 +1,94 @@
+{
+  "relics": [
+    {
+      "id": "calibrated_lamp",
+      "name": "\u6821\u51c6\u77ff\u706f",
+      "nameEn": "Calibrated Lamp",
+      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u83b7\u5f97 3 \u70b9\u683c\u6321\u3002",
+      "descriptionEn": "Gain 3 block at the start of each battle.",
+      "rarity": "common",
+      "effects": [
+        { "type": "battle_start_block", "value": 3 }
+      ]
+    },
+    {
+      "id": "safety_tether",
+      "name": "\u5b89\u5168\u7ef3",
+      "nameEn": "Safety Tether",
+      "description": "\u89e6\u53d1\u9677\u9631\u65f6\u53d7\u5230\u7684\u4f24\u5bb3\u964d\u4f4e 3 \u70b9\u3002",
+      "descriptionEn": "Trap damage is reduced by 3.",
+      "rarity": "common",
+      "effects": [
+        { "type": "trap_damage_reduction", "value": 3 }
+      ]
+    },
+    {
+      "id": "ore_charm",
+      "name": "\u77ff\u8109\u62a4\u7b26",
+      "nameEn": "Ore Charm",
+      "description": "\u6218\u6597\u5956\u52b1\u7684\u77ff\u6676\u63d0\u9ad8 20%\u3002",
+      "descriptionEn": "Battle reward shards are increased by 20%.",
+      "rarity": "common",
+      "effects": [
+        { "type": "reward_shards_percent", "value": 20 }
+      ]
+    },
+    {
+      "id": "survey_lens",
+      "name": "\u6d4b\u7ed8\u955c\u7247",
+      "nameEn": "Survey Lens",
+      "description": "\u6218\u6597\u5956\u52b1\u591a\u51fa\u73b0 1 \u5f20\u5361\u724c\u9009\u62e9\u3002",
+      "descriptionEn": "Card rewards offer 1 additional card.",
+      "rarity": "common",
+      "effects": [
+        { "type": "reward_card_bonus", "value": 1 }
+      ]
+    },
+    {
+      "id": "skull_compass",
+      "name": "\u9885\u9aa8\u7f57\u76d8",
+      "nameEn": "Skull Compass",
+      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u989d\u5916\u62bd 1 \u5f20\u724c\u3002",
+      "descriptionEn": "Draw 1 extra card at the start of each battle.",
+      "rarity": "uncommon",
+      "effects": [
+        { "type": "battle_start_draw", "value": 1 }
+      ]
+    },
+    {
+      "id": "ember_cell",
+      "name": "\u4f59\u70ec\u7535\u6c60",
+      "nameEn": "Ember Cell",
+      "description": "\u6bcf\u573a\u6218\u6597\u7b2c\u4e00\u56de\u5408\u83b7\u5f97 1 \u70b9\u989d\u5916\u80fd\u91cf\u3002",
+      "descriptionEn": "Gain 1 extra energy on the first turn of each battle.",
+      "rarity": "uncommon",
+      "effects": [
+        { "type": "battle_start_energy", "value": 1 }
+      ]
+    },
+    {
+      "id": "deep_pouch",
+      "name": "\u6df1\u5c42\u6cb9\u56ca",
+      "nameEn": "Deep Pouch",
+      "description": "\u706f\u6cb9\u4e0a\u9650\u63d0\u9ad8 15\uff0c\u6218\u6597\u540e\u6062\u590d 4 \u70b9\u706f\u6cb9\u3002",
+      "descriptionEn": "Max oil +15. Restore 4 oil after battles.",
+      "rarity": "uncommon",
+      "effects": [
+        { "type": "max_lamp", "value": 15 },
+        { "type": "post_battle_lamp", "value": 4 }
+      ]
+    },
+    {
+      "id": "black_lantern",
+      "name": "\u9ed1\u7130\u63d0\u706f",
+      "nameEn": "Black Lantern",
+      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u989d\u5916\u62bd 1 \u5f20\u724c\u5e76\u83b7\u5f97 1 \u70b9\u80fd\u91cf\u3002",
+      "descriptionEn": "At battle start, draw 1 extra card and gain 1 energy.",
+      "rarity": "rare",
+      "effects": [
+        { "type": "battle_start_draw", "value": 1 },
+        { "type": "battle_start_energy", "value": 1 }
+      ]
+    }
+  ]
+}

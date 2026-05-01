@@ -177,6 +177,7 @@ public class RunSaveData
     public string ObjectiveType { get; set; } = string.Empty;
     public int ObjectiveTarget { get; set; }
     public int ObjectiveEmberReward { get; set; }
+    public string CharacterId { get; set; } = string.Empty;
     public List<string> DeckCardIds { get; set; } = new();
     public List<ItemStackData> Items { get; set; } = new();
     public List<string> Relics { get; set; } = new();
@@ -204,6 +205,7 @@ public class RunSaveData
             ObjectiveType = run.ObjectiveType,
             ObjectiveTarget = run.ObjectiveTarget,
             ObjectiveEmberReward = run.ObjectiveEmberReward,
+            CharacterId = run.CharacterId,
             Relics = new List<string>(run.Relics),
             Log = new List<string>(run.Log)
         };
