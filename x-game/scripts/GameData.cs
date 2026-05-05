@@ -256,7 +256,7 @@ public partial class GameData : Node
 
     private static bool IsCardEligibleForReward(CardData card, CharacterData character)
     {
-        if (card.UpgradeOnly || !SaveManager.IsUnlocked(card.UnlockId))
+        if (card.UpgradeOnly || card.Type == "curse" || card.Rarity == "curse" || !SaveManager.IsUnlocked(card.UnlockId))
         {
             return false;
         }
@@ -570,6 +570,7 @@ public class RunAction
     public int Value { get; set; }
     public string CardId { get; set; } = string.Empty;
     public string RelicId { get; set; } = string.Empty;
+    public string ItemId { get; set; } = string.Empty;
 }
 
 public class CharacterData

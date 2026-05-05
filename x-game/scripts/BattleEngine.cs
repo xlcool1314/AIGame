@@ -215,6 +215,11 @@ public partial class BattleEngine : Node
         }
 
         Energy -= card.Cost;
+        if (card.Actions.Count == 0)
+        {
+            Log.Add($"{card.DisplayName()} drifts through your hand with no direct effect.");
+        }
+
         ApplyActions(card.Actions, true, card.DisplayName(), targetsEnemy ? SelectedEnemyIndex : -1);
         Hand.RemoveAt(handIndex);
         DiscardPile.Add(card);

@@ -37,11 +37,23 @@
       "id": "survey_lens",
       "name": "\u6d4b\u7ed8\u955c\u7247",
       "nameEn": "Survey Lens",
-      "description": "\u6218\u6597\u5956\u52b1\u591a\u51fa\u73b0 1 \u5f20\u5361\u724c\u9009\u62e9\u3002",
-      "descriptionEn": "Card rewards offer 1 additional card.",
+      "description": "\u6218\u6597\u5956\u52b1\u591a\u51fa\u73b0 1 \u5f20\u5361\u724c\u9009\u62e9\u3002\u8fdb\u5165\u77ff\u533a\u65f6\u9884\u89c8 1 \u4e2a\u9690\u85cf\u77ff\u683c\u3002",
+      "descriptionEn": "Card rewards offer 1 additional card. Preview 1 hidden tile when entering mine boards.",
       "rarity": "common",
       "effects": [
-        { "type": "reward_card_bonus", "value": 1 }
+        { "type": "reward_card_bonus", "value": 1 },
+        { "type": "mine_start_preview", "value": 1 }
+      ]
+    },
+    {
+      "id": "old_miner_tag",
+      "name": "\u65e7\u77ff\u5de5\u94dc\u724c",
+      "nameEn": "Old Miner Tag",
+      "description": "\u6bcf\u573a\u6218\u6597\u80dc\u5229\u540e\u989d\u5916\u964d\u4f4e 1 \u70b9\u96fe\u538b\u3002",
+      "descriptionEn": "After each battle victory, reduce fog pressure by 1 additional point.",
+      "rarity": "common",
+      "effects": [
+        { "type": "post_battle_fog_reduction", "value": 1 }
       ]
     },
     {

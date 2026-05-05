@@ -61,6 +61,20 @@
       ]
     },
     {
+      "id": "cache",
+      "title": "\u5c01\u5b58\u8865\u7ed9",
+      "titleEn": "Sealed Cache",
+      "shards": 10,
+      "heal": 0,
+      "cardChoices": [
+        "quick_scan", "guarded_swing", "echo_probe", "battery_pack",
+        "safe_route", "survey_notes", "capacitor", "braced_pick"
+      ],
+      "relicChoices": [
+        "calibrated_lamp", "safety_tether", "survey_lens", "ore_charm", "old_miner_tag"
+      ]
+    },
+    {
       "id": "shop",
       "title": "\u77ff\u706f\u5546\u961f\u8d27\u67b6",
       "titleEn": "Lamp Caravan Stock",

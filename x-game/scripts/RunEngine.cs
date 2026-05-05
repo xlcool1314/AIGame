@@ -196,13 +196,34 @@ public partial class RunEngine : Node
         return CurrentRoom;
     }
 
-    public void StartMinefield()
+    public void StartMinefield(GameData? gameData = null)
     {
         var config = CurrentRoom?.MineConfig ?? new MineRoomConfig();
         var seed = HashCode.Combine(RunSeed, CurrentLayerIndex, CurrentRoom?.Kind ?? string.Empty, CurrentRoom?.TitleEn ?? string.Empty);
         Minefield = MinefieldState.Create(config, seed);
         var dangerCount = config.Monsters + config.Traps;
+        ApplyMineStartPreview(gameData, seed);
         Log.Add($"开始探勘：{config.Width}x{config.Height} 矿区，疑似雷区 {dangerCount} 处。");
+    }
+
+    private void ApplyMineStartPreview(GameData? gameData, int seed)
+    {
+        if (Minefield == null || gameData == null)
+        {
+            return;
+        }
+
+        var previewCount = GetRunEffectValue(gameData, "mine_start_preview");
+        if (previewCount <= 0)
+        {
+            return;
+        }
+
+        var previewed = Minefield.PreviewRandomCells(previewCount, HashCode.Combine(seed, "preview"));
+        if (previewed > 0)
+        {
+            Log.Add($"Survey effect: previewed {previewed} hidden tiles.");
+        }
     }
 
     public MineRevealResult RevealMineCell(int index, GameData? gameData = null)
@@ -215,6 +236,7 @@ public partial class RunEngine : Node
         var result = Minefield.Reveal(index);
         if (result == MineRevealResult.Monster)
         {
+            FogPressure++;
             Log.Add("惊动矿穴怪物，战斗开始。");
         }
         else if (result == MineRevealResult.Trap)
@@ -226,6 +248,7 @@ public partial class RunEngine : Node
             }
 
             PlayerHp = Math.Max(0, PlayerHp - trapDamage);
+            FogPressure++;
             Log.Add($"触发陷阱，失去 {trapDamage} 点生命。");
         }
         else if (result == MineRevealResult.Treasure)
@@ -248,6 +271,7 @@ public partial class RunEngine : Node
             Shards += Minefield.RewardShards;
             MinesCleared++;
             Score += 18 + Minefield.RewardShards;
+            ReduceFogPressure(1);
             Log.Add($"矿区清理完成，获得 {Minefield.RewardShards} 矿晶。");
         }
 
@@ -295,6 +319,12 @@ public partial class RunEngine : Node
         }
 
         var result = Minefield.Preview(index);
+        if (item.Id == "smoke_marker" && Minefield.Cells[index].IsDanger)
+        {
+            Minefield.Cells[index].IsFlagged = true;
+            Log.Add($"Smoke marker locked a dangerous tile: {result}.");
+            return true;
+        }
         Log.Add($"探测灯照亮目标：{result}。");
         return true;
     }
@@ -304,12 +334,29 @@ public partial class RunEngine : Node
         PlayerHp = Math.Clamp(playerHp, 0, PlayerMaxHp);
     }
 
-    public void ResolveMineMonsterVictory()
+    public void ResolveMineMonsterVictory(GameData? gameData = null)
     {
+        var shardReward = 8 + Math.Max(CurrentLayerIndex, 0) * 2;
+        if (gameData != null)
+        {
+            var bonusPercent = (CurrentRoom?.RewardBonus ?? 0) + GetRunEffectValue(gameData, "reward_shards_percent");
+            shardReward += shardReward * Math.Max(0, bonusPercent) / 100;
+        }
+
         BattlesWon++;
         Score += 12 + Math.Max(CurrentLayerIndex, 0) * 4;
-        Shards += 8 + Math.Max(CurrentLayerIndex, 0) * 2;
+        Shards += shardReward;
+        ReduceFogPressure(1);
+        ApplyMineBattlePostEffects(gameData);
         Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
+    }
+
+    private void ApplyMineBattlePostEffects(GameData? gameData)
+    {
+        if (gameData != null)
+        {
+            ApplyPostBattleRunEffects(gameData);
+        }
     }
 
     public bool HasRelic(string relicId)
@@ -436,6 +483,13 @@ public partial class RunEngine : Node
             RestoreLamp(lampRestore);
             Log.Add($"遗物效果：战斗后恢复 {lampRestore} 点灯油。");
         }
+        ReduceFogPressure(1);
+        var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
+        if (fogReduction > 0)
+        {
+            ReduceFogPressure(fogReduction);
+            Log.Add($"Battle reward effect: fog pressure -{fogReduction}.");
+        }
     }
 
     public bool BuyRelic(RelicData relic, int cost)
@@ -533,6 +587,43 @@ public partial class RunEngine : Node
         return true;
     }
 
+    public bool BuyItem(ItemData item, int count, int cost)
+    {
+        if (Shards < cost)
+        {
+            Log.Add($"Not enough shards to buy {item.DisplayName()}.");
+            return false;
+        }
+
+        Shards -= cost;
+        AddItem(item.Id, Math.Max(1, count));
+        Log.Add($"Bought {item.DisplayName()} x{Math.Max(1, count)} for {cost} shards.");
+        return true;
+    }
+
+    public void GainShards(int amount, string reason)
+    {
+        var gained = Math.Max(0, amount);
+        Shards += gained;
+        if (gained > 0)
+        {
+            Log.Add($"{reason}: gained {gained} shards.");
+        }
+    }
+
+    public void AddCardReward(CardData card, string reason)
+    {
+        PlayerDeck.Add(card);
+        Log.Add($"{reason}: added {card.DisplayName()} to the deck.");
+    }
+
+    public void AddItemReward(ItemData item, int count, string reason)
+    {
+        var gained = Math.Max(1, count);
+        AddItem(item.Id, gained);
+        Log.Add($"{reason}: gained {item.DisplayName()} x{gained}.");
+    }
+
     public void ApplyEventChoice(EventChoiceData choice, GameData gameData)
     {
         foreach (var action in choice.Actions)
@@ -549,6 +640,7 @@ public partial class RunEngine : Node
         {
             Shards += 12;
             RestoreLamp(18);
+            ReduceFogPressure(1);
             if (gameData != null)
             {
                 AddRelic(gameData.GetRelic("calibrated_lamp"));
@@ -557,9 +649,18 @@ public partial class RunEngine : Node
             return;
         }
 
+        if (mode == "calibrate")
+        {
+            RestoreLamp(25);
+            ReduceFogPressure(3);
+            Log.Add("You recalibrated the lamp beam: oil +25, fog pressure -3.");
+            return;
+        }
+
         var amount = Math.Max(12, PlayerMaxHp / 3);
         Heal(amount);
         RestoreLamp(10);
+        ReduceFogPressure(2);
         Log.Add($"你在废弃升降机旁短暂休整，恢复 {amount} 点生命和 10 灯油。");
     }
 
@@ -615,11 +716,20 @@ public partial class RunEngine : Node
             case "shards":
                 Shards += action.Value;
                 break;
+            case "lamp":
+                LampOil = Math.Clamp(LampOil + action.Value, 0, MaxLampOil);
+                break;
+            case "fog":
+                FogPressure = Math.Max(0, FogPressure + action.Value);
+                break;
             case "add_card":
                 PlayerDeck.Add(gameData.GetCard(action.CardId));
                 break;
             case "relic":
                 AddRelic(gameData.GetRelic(action.RelicId));
+                break;
+            case "item":
+                AddItem(action.ItemId, action.Value <= 0 ? 1 : action.Value);
                 break;
             default:
                 Log.Add($"未知跑局动作: {action.Type}");
@@ -735,12 +845,14 @@ public partial class RunEngine : Node
                 var mapped = currentLayer.Count == 1
                     ? nextLayer.Count / 2
                     : (int)Math.Round(i * (nextLayer.Count - 1) / (float)Math.Max(1, currentLayer.Count - 1));
+                mapped = FindPreferredNextIndex(room, nextLayer, mapped, avoidSameKind: true);
                 AddConnection(room, nextLayer[Math.Clamp(mapped, 0, nextLayer.Count - 1)]);
 
                 if (nextLayer.Count > 1)
                 {
                     var branchDirection = random.Next(0, 2) == 0 ? -1 : 1;
                     var branchIndex = Math.Clamp(mapped + branchDirection, 0, nextLayer.Count - 1);
+                    branchIndex = FindPreferredNextIndex(room, nextLayer, branchIndex, avoidSameKind: true, excludedIndex: mapped);
                     if (branchIndex != mapped && random.NextDouble() < 0.72)
                     {
                         AddConnection(room, nextLayer[branchIndex]);
@@ -758,9 +870,81 @@ public partial class RunEngine : Node
                 var sourceIndex = nextLayer.Count == 1
                     ? 0
                     : (int)Math.Round(nextIndex * (currentLayer.Count - 1) / (float)Math.Max(1, nextLayer.Count - 1));
-                AddConnection(currentLayer[Math.Clamp(sourceIndex, 0, currentLayer.Count - 1)], nextLayer[nextIndex]);
+                var source = currentLayer[Math.Clamp(sourceIndex, 0, currentLayer.Count - 1)];
+                if (source.Kind == nextLayer[nextIndex].Kind && currentLayer.Count > 1)
+                {
+                    source = FindPreferredSourceRoom(currentLayer, sourceIndex, nextLayer[nextIndex].Kind);
+                }
+
+                AddConnection(source, nextLayer[nextIndex]);
             }
         }
+    }
+
+    private static int FindPreferredNextIndex(RunRoom from, List<RunRoom> nextLayer, int preferredIndex, bool avoidSameKind, int excludedIndex = -1)
+    {
+        var clamped = Math.Clamp(preferredIndex, 0, nextLayer.Count - 1);
+        if (!avoidSameKind || (clamped != excludedIndex && nextLayer[clamped].Kind != from.Kind))
+        {
+            return clamped;
+        }
+
+        var bestIndex = clamped;
+        var bestScore = int.MinValue;
+        for (var i = 0; i < nextLayer.Count; i++)
+        {
+            if (i == excludedIndex)
+            {
+                continue;
+            }
+
+            var room = nextLayer[i];
+            var score = -Math.Abs(i - preferredIndex) * 3;
+            if (room.Kind != from.Kind)
+            {
+                score += 12;
+            }
+            if (room.Kind is "rest" or "shop")
+            {
+                score += 2;
+            }
+            if (room.Kind == "event")
+            {
+                score -= 2;
+            }
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private static RunRoom FindPreferredSourceRoom(List<RunRoom> currentLayer, int preferredIndex, string targetKind)
+    {
+        var fallback = currentLayer[Math.Clamp(preferredIndex, 0, currentLayer.Count - 1)];
+        var best = fallback;
+        var bestScore = int.MinValue;
+        for (var i = 0; i < currentLayer.Count; i++)
+        {
+            var room = currentLayer[i];
+            var score = -Math.Abs(i - preferredIndex) * 3;
+            if (room.Kind != targetKind)
+            {
+                score += 10;
+            }
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = room;
+            }
+        }
+
+        return best;
     }
 
     private static void AddConnection(RunRoom from, RunRoom to)
@@ -845,6 +1029,32 @@ public partial class RunEngine : Node
         return false;
     }
 
+    public void ReduceFogPressure(int amount)
+    {
+        FogPressure = Math.Max(0, FogPressure - Math.Max(0, amount));
+    }
+
+    private void AddItem(string itemId, int count)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || count <= 0)
+        {
+            return;
+        }
+
+        foreach (var stack in Items)
+        {
+            if (stack.ItemId != itemId)
+            {
+                continue;
+            }
+
+            stack.Count += count;
+            return;
+        }
+
+        Items.Add(new ItemStackData { ItemId = itemId, Count = count });
+    }
+
     private void ApplyRoomPressure(RunRoom room)
     {
         RoomsCompleted++;
@@ -870,6 +1080,23 @@ public partial class RunEngine : Node
     private void RestoreLamp(int amount)
     {
         LampOil = Math.Min(MaxLampOil, LampOil + Math.Max(0, amount));
+    }
+
+    private void ApplyPostBattleRunEffects(GameData gameData)
+    {
+        var lampRestore = GetRunEffectValue(gameData, "post_battle_lamp");
+        if (lampRestore > 0)
+        {
+            RestoreLamp(lampRestore);
+            Log.Add($"Post-battle effect: oil +{lampRestore}.");
+        }
+
+        var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
+        if (fogReduction > 0)
+        {
+            ReduceFogPressure(fogReduction);
+            Log.Add($"Post-battle effect: fog pressure -{fogReduction}.");
+        }
     }
 }
 
@@ -1064,6 +1291,30 @@ public class MinefieldState
     public bool CanPreview(int index)
     {
         return index >= 0 && index < Cells.Count && !Cells[index].IsRevealed && !Cells[index].IsPreviewed;
+    }
+
+    public int PreviewRandomCells(int count, int seed)
+    {
+        var candidates = new List<int>();
+        for (var i = 0; i < Cells.Count; i++)
+        {
+            if (CanPreview(i))
+            {
+                candidates.Add(i);
+            }
+        }
+
+        var random = new Random(seed);
+        var previewed = 0;
+        while (previewed < count && candidates.Count > 0)
+        {
+            var pick = random.Next(candidates.Count);
+            Cells[candidates[pick]].IsPreviewed = true;
+            candidates.RemoveAt(pick);
+            previewed++;
+        }
+
+        return previewed;
     }
 
     public int CountType(MineTileType type)

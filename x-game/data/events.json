@@ -33,7 +33,7 @@
       "choices": [
         { "text": "\u7ffb\u627e\u5de5\u5177\u67b6", "textEn": "Search the tool rack", "result": "\u4f60\u627e\u5230\u4e00\u4efd\u7206\u7834\u836f\u5305\u3002", "resultEn": "You find a blast charge.", "actions": [ { "type": "add_card", "cardId": "blast_charge" } ] },
         { "text": "\u6574\u7406\u8425\u5730\u8865\u7ed9", "textEn": "Sort camp supplies", "result": "\u4f60\u6536\u597d\u7ef7\u5e26\u548c\u706f\u6cb9\uff0c\u72b6\u6001\u7a33\u5b9a\u4e86\u4e0d\u5c11\u3002", "resultEn": "You gather bandages and lamp oil.", "actions": [ { "type": "heal", "value": 14 }, { "type": "shards", "value": 8 } ] },
-        { "text": "\u5e26\u8d70\u523b\u540d\u94dc\u724c", "textEn": "Take the engraved tag", "result": "\u94dc\u724c\u88ab\u6302\u5728\u77ff\u706f\u65c1\uff0c\u50cf\u662f\u5728\u63d0\u9192\u4f60\u522b\u8d70\u5f97\u592a\u6025\u3002", "resultEn": "The tag hangs beside your lamp, reminding you not to rush.", "actions": [ { "type": "relic", "relicId": "\u65e7\u77ff\u5de5\u94dc\u724c" }, { "type": "max_hp", "value": 4 } ] }
+        { "text": "\u5e26\u8d70\u523b\u540d\u94dc\u724c", "textEn": "Take the engraved tag", "result": "\u94dc\u724c\u88ab\u6302\u5728\u77ff\u706f\u65c1\uff0c\u50cf\u662f\u5728\u63d0\u9192\u4f60\u522b\u8d70\u5f97\u592a\u6025\u3002", "resultEn": "The tag hangs beside your lamp, reminding you not to rush.", "actions": [ { "type": "relic", "relicId": "old_miner_tag" }, { "type": "max_hp", "value": 4 } ] }
       ]
     },
     {
