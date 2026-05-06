@@ -73,27 +73,33 @@ public partial class BattleScene : Control
     private PanelContainer _debugPanel = null!;
     private Label _debugLabel = null!;
     private Panel _modalOverlay = null!;
+    private Panel _loadingOverlay = null!;
     private PanelContainer _deckModalPanel = null!;
     private VBoxContainer _deckModalList = null!;
     private Button _deckModalCloseButton = null!;
+    private Label _loadingLabel = null!;
     private PanelContainer _dragHintPanel = null!;
     private Label _dragHintLabel = null!;
+    private PanelContainer _mineRevealTipPanel = null!;
+    private Label _mineRevealTipLabel = null!;
     private Line2D _dragLine = null!;
 
-    private const float RouteMapWidth = 940f;
-    private const float RouteNodeWidth = 148f;
-    private const float RouteNodeHeight = 102f;
-    private const float RouteLayerGap = 132f;
-    private const float RouteMapSidePadding = 96f;
-    private const float RouteMapTopPadding = 48f;
-    private const float RouteMapBottomPadding = 56f;
+    private const float RouteMapWidth = 960f;
+    private const float RouteNodeWidth = 126f;
+    private const float RouteNodeHeight = 78f;
+    private const float RouteLayerGap = 108f;
+    private const float RouteMapSidePadding = 136f;
+    private const float RouteMapTopPadding = 44f;
+    private const float RouteMapBottomPadding = 70f;
 
     private RunRoom? _activeBattleRoom;
     private RunRoom? _activeMineRoom;
+    private RunRoom? _activeCalibrationRoom;
     private bool _returnToMineAfterBattle;
     private bool _mineFlagMode;
     private bool _debugVisible;
     private bool _metaRecorded;
+    private bool _loadingActive;
     private string _selectedItemId = string.Empty;
     private readonly Dictionary<int, Button> _enemyTargetButtons = new();
     private Button? _aimingCardButton;
@@ -101,6 +107,10 @@ public partial class BattleScene : Control
     private Vector2 _dragLineStart;
     private bool _dragTargetsEnemy;
     private Container? _choiceButtonTarget;
+    private readonly List<CalibrationNode> _calibrationNodes = new();
+    private readonly HashSet<int> _selectedCalibrationNodes = new();
+    private Label? _calibrationSummaryLabel;
+    private GridContainer? _calibrationGrid;
 
     public override void _Ready()
     {
@@ -238,18 +248,22 @@ public partial class BattleScene : Control
 
     private void OnContinuePressed()
     {
-        if (_battlePanel.Visible || _modalOverlay.Visible)
+        if (_battlePanel.Visible || _modalOverlay.Visible || _loadingActive)
         {
             return;
         }
 
-        ShowNextRoomChoices();
+        RunLoadingTransition(
+            Localization.Language == Localization.English ? "Plotting the next route..." : "整理下一段路线……",
+            ShowNextRoomChoices);
     }
 
     private void OnMenuPressed()
     {
         SaveManager.SaveRun(_run);
-        GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/MainMenu.tscn",
+            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
     }
 
     private void OnDeckPressed()
@@ -307,7 +321,8 @@ public partial class BattleScene : Control
         _logPanel.SizeFlagsVertical = SizeFlags.ExpandFill;
         _debugPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         _roomHeaderPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        _itemPanel.CustomMinimumSize = new Vector2(0, 210);
+        _itemPanel.CustomMinimumSize = new Vector2(0, 330);
+        _itemList.AddThemeConstantOverride("separation", 8);
         _actionPanel.CustomMinimumSize = new Vector2(0, 180);
         _mineModeButton.CustomMinimumSize = new Vector2(0, 58);
         _deckButton.CustomMinimumSize = new Vector2(0, 58);
@@ -316,6 +331,26 @@ public partial class BattleScene : Control
         _roomTitleLabel.AddThemeFontSizeOverride("font_size", 24);
 
         BuildHudBar();
+        BuildInventoryScroll();
+    }
+
+    private void BuildInventoryScroll()
+    {
+        if (_itemList.GetParent() is not Container parent || parent is ScrollContainer)
+        {
+            return;
+        }
+
+        parent.RemoveChild(_itemList);
+        var scroll = new ScrollContainer
+        {
+            Name = "InventoryScroll",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        _itemList.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        scroll.AddChild(_itemList);
+        parent.AddChild(scroll);
     }
 
     private static void MoveToPanelColumn(Control node, Container target)
@@ -409,12 +444,16 @@ public partial class BattleScene : Control
     private void OnRetryPressed()
     {
         GameSession.LoadRequested = false;
-        GetTree().ChangeSceneToFile("res://scenes/CharacterSelect.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/CharacterSelect.tscn",
+            Localization.Language == Localization.English ? "Preparing a new expedition..." : "准备新的探索……");
     }
 
     private void OnEndMenuPressed()
     {
-        GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/MainMenu.tscn",
+            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
     }
 
     private void ShowNextRoomChoices()
@@ -444,6 +483,7 @@ public partial class BattleScene : Control
         var room = _run.EnterNextRoom(choiceIndex);
         _activeBattleRoom = null;
         _activeMineRoom = null;
+        _activeCalibrationRoom = null;
         _returnToMineAfterBattle = false;
         HideInteractivePanels();
 
@@ -468,6 +508,9 @@ public partial class BattleScene : Control
             case "shop":
                 RenderShopRoom(room);
                 break;
+            case "calibration":
+                RenderCalibrationRoom(room);
+                break;
             case "complete":
                 ShowEndPanel(true, "抵达矿井深处");
                 break;
@@ -487,6 +530,7 @@ public partial class BattleScene : Control
             "event" => Localization.T("room_event"),
             "rest" => Localization.T("room_rest"),
             "shop" => Localization.T("room_shop"),
+            "calibration" => Localization.Language == Localization.English ? "[Tune]" : "[校准]",
             "complete" => Localization.T("room_complete"),
             _ => "[未知]"
         };
@@ -503,6 +547,9 @@ public partial class BattleScene : Control
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
             "rest" => Localization.T("rest_summary"),
             "shop" => Localization.T("shop_summary"),
+            "calibration" => Localization.Language == Localization.English
+                ? "Tune a lamp array. Choose 3 nodes for a mix of supplies, oil, fog control, cards, and risk."
+                : "校准矿灯阵列。选择 3 个节点，组合矿晶、灯油、净雾、卡牌与过载风险。",
             "complete" => Localization.T("complete_summary"),
             _ => Localization.T("unknown_room")
         };
@@ -512,24 +559,18 @@ public partial class BattleScene : Control
     {
         ClearBox(_choiceList);
 
-        var legend = new Label
-        {
-            Text = Localization.T("route_map_legend"),
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
-        };
-        legend.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
-        _choiceList.AddChild(legend);
+        AddRouteMapHeader(choices);
 
         var mapFrame = new PanelContainer
         {
             SizeFlagsVertical = SizeFlags.ExpandFill
         };
-        mapFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("182432", "51677f", 1));
+        mapFrame.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "40566d", 1));
 
         var scroll = new ScrollContainer
         {
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, 600)
+            CustomMinimumSize = new Vector2(0, 640)
         };
 
         var mapCanvas = new Control
@@ -552,6 +593,55 @@ public partial class BattleScene : Control
         GetTree().CreateTimer(0.01).Timeout += () => scroll.ScrollVertical = scrollTarget;
     }
 
+    private void AddRouteMapHeader(IReadOnlyList<RunRoom> choices)
+    {
+        var header = new HBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        header.AddThemeConstantOverride("separation", 8);
+
+        var title = new Label
+        {
+            Text = Localization.Language == Localization.English
+                ? $"Route Map · choose 1 of {choices.Count}"
+                : $"路线图 · 从 {choices.Count} 条可进入路线中选择 1 条",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        title.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        title.AddThemeFontSizeOverride("font_size", 18);
+        header.AddChild(title);
+
+        AddRouteLegendChip(header, "战", "Battle", Color.FromHtml("b8505d"));
+        AddRouteLegendChip(header, "矿", "Survey", Color.FromHtml("5f89b8"));
+        AddRouteLegendChip(header, "宝", "Cache", Color.FromHtml("d7b45f"));
+        AddRouteLegendChip(header, "?", "Event", Color.FromHtml("9c8ec2"));
+        AddRouteLegendChip(header, "校", "Tune", Color.FromHtml("78d69b"));
+        _choiceList.AddChild(header);
+    }
+
+    private static void AddRouteLegendChip(Container parent, string zh, string en, Color color)
+    {
+        var chip = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(Localization.Language == Localization.English ? 70 : 44, 28)
+        };
+        chip.AddThemeStyleboxOverride("panel", MakeRouteLegendChipStyle(color));
+
+        var label = new Label
+        {
+            Text = Localization.Language == Localization.English ? en : zh,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        label.AddThemeColorOverride("font_color", color.Lightened(0.38f));
+        label.AddThemeFontSizeOverride("font_size", 13);
+        chip.AddChild(label);
+        parent.AddChild(chip);
+    }
+
     private void AddRouteLayerBands(Control mapCanvas)
     {
         for (var layerIndex = 0; layerIndex < _run.MapLayers.Count; layerIndex++)
@@ -559,9 +649,11 @@ public partial class BattleScene : Control
             var y = GetRouteLayerY(layerIndex);
             var band = new ColorRect
             {
-                Color = layerIndex % 2 == 0 ? new Color(0.09f, 0.15f, 0.20f, 0.42f) : new Color(0.07f, 0.11f, 0.16f, 0.32f),
-                Position = new Vector2(18, y - 16),
-                Size = new Vector2(RouteMapWidth - 36, RouteNodeHeight + 32),
+                Color = layerIndex == _run.CurrentLayerIndex + 1
+                    ? new Color(0.16f, 0.24f, 0.30f, 0.58f)
+                    : layerIndex % 2 == 0 ? new Color(0.08f, 0.13f, 0.18f, 0.36f) : new Color(0.06f, 0.10f, 0.15f, 0.28f),
+                Position = new Vector2(22, y - 14),
+                Size = new Vector2(RouteMapWidth - 44, RouteNodeHeight + 28),
                 MouseFilter = MouseFilterEnum.Ignore,
                 ZIndex = -2
             };
@@ -570,15 +662,15 @@ public partial class BattleScene : Control
             var label = new Label
             {
                 Text = FormatRouteLayerTitle(layerIndex),
-                Position = new Vector2(18, y + 30),
-                Size = new Vector2(116, 42),
+                Position = new Vector2(18, y + 18),
+                Size = new Vector2(106, 42),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 MouseFilter = MouseFilterEnum.Ignore,
                 ZIndex = 3
             };
-            label.AddThemeColorOverride("font_color", layerIndex == _run.CurrentLayerIndex + 1 ? Color.FromHtml("f4f0df") : Color.FromHtml("92a4b8"));
-            label.AddThemeFontSizeOverride("font_size", 14);
+            label.AddThemeColorOverride("font_color", layerIndex == _run.CurrentLayerIndex + 1 ? Color.FromHtml("f4f0df") : Color.FromHtml("71849a"));
+            label.AddThemeFontSizeOverride("font_size", 13);
             mapCanvas.AddChild(label);
         }
     }
@@ -647,11 +739,11 @@ public partial class BattleScene : Control
 
     private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active)
     {
-        var mid = (from + to) / 2f + new Vector2(0, active ? -14f : -8f);
+        var mid = (from + to) / 2f + new Vector2(0, active ? -10f : -6f);
         var shadow = new Line2D
         {
-            Width = active ? 8f : 5f,
-            DefaultColor = active ? new Color(0.14f, 0.48f, 0.36f, 0.34f) : new Color(0.08f, 0.12f, 0.17f, 0.58f),
+            Width = active ? 7f : 4f,
+            DefaultColor = active ? new Color(0.20f, 0.60f, 0.45f, 0.30f) : new Color(0.06f, 0.10f, 0.14f, 0.52f),
             Antialiased = true,
             ZIndex = -1
         };
@@ -662,7 +754,7 @@ public partial class BattleScene : Control
 
         var line = new Line2D
         {
-            Width = active ? 4f : 2.5f,
+            Width = active ? 3.5f : 2f,
             DefaultColor = GetRouteLineColor(active),
             Antialiased = true,
             ZIndex = 0
@@ -689,14 +781,17 @@ public partial class BattleScene : Control
                     Position = GetRouteNodePosition(room),
                     Size = new Vector2(RouteNodeWidth, RouteNodeHeight),
                     AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                    TooltipText = BuildRouteNodeTooltip(room, current, selectable, past, onRoute),
                     Disabled = !selectable,
                     ZIndex = 2
                 };
+                button.AddThemeFontSizeOverride("font_size", 13);
                 StyleRouteNodeButton(button, room, current, selectable, past, onRoute);
                 if (selectable)
                 {
                     var captured = FindChoiceIndex(choices, room.NodeId);
-                    button.Pressed += () => EnterNextRoom(captured);
+                    var loadingText = BuildRoomLoadingText(room);
+                    button.Pressed += () => RunLoadingTransition(loadingText, () => EnterNextRoom(captured));
                 }
 
                 mapCanvas.AddChild(button);
@@ -818,14 +913,44 @@ public partial class BattleScene : Control
 
     private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
     {
-        var state = current
+        var marker = current ? "●" : selectable ? "◆" : past || !onRoute ? "·" : "◇";
+        var title = TrimRouteTitle(room.DisplayTitle(), Localization.Language == Localization.English ? 13 : 8);
+        return $"{marker} {GetMapNodeIcon(room.Kind)}\n{title}\n{FormatCompactRouteCost(room)}";
+    }
+
+    private string BuildRouteNodeTooltip(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    {
+        var state = GetRouteNodeStateText(current, selectable, past, onRoute);
+        return $"{room.DisplayTitle()}\n{state}\n{FormatRouteCost(room)}\n{FormatRouteNodeSummary(room)}\n{FormatRouteNext(room)}";
+    }
+
+    private static string GetRouteNodeStateText(bool current, bool selectable, bool past, bool onRoute)
+    {
+        return current
             ? Localization.T("route_current")
             : selectable
                 ? Localization.T("route_available")
                 : past || !onRoute
                     ? Localization.T("route_lost")
                     : Localization.T("route_future");
-        return $"{GetMapNodeIcon(room.Kind)}  {room.DisplayTitle()}\n{state}\n{FormatRouteCost(room)}\n{FormatRouteNodeSummary(room)}";
+    }
+
+    private static string TrimRouteTitle(string title, int maxChars)
+    {
+        if (title.Length <= maxChars)
+        {
+            return title;
+        }
+
+        return $"{title[..Math.Max(1, maxChars - 1)]}…";
+    }
+
+    private static string FormatCompactRouteCost(RunRoom room)
+    {
+        var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%" : string.Empty;
+        return Localization.Language == Localization.English
+            ? $"R{room.Risk} / O-{room.LampCost}{bonus}"
+            : $"险{room.Risk} / 油-{room.LampCost}{bonus}";
     }
 
     private string FormatRouteNodeSummary(RunRoom room)
@@ -839,6 +964,7 @@ public partial class BattleScene : Control
             "event" => Localization.Language == Localization.English ? "Choice event" : "事件抉择",
             "rest" => Localization.Language == Localization.English ? "Recover / forge" : "恢复 / 锻造",
             "shop" => Localization.Language == Localization.English ? "Cards / healing" : "卡牌 / 治疗",
+            "calibration" => Localization.Language == Localization.English ? "Pick 3 lamp nodes" : "选择 3 个灯阵节点",
             "complete" => Localization.T("route_endpoint"),
             _ => Localization.T("unknown_room")
         };
@@ -898,6 +1024,7 @@ public partial class BattleScene : Control
                 "event" => "?",
                 "rest" => "R",
                 "shop" => "S",
+                "calibration" => "T",
                 "complete" => "END",
                 _ => "?"
             };
@@ -912,8 +1039,41 @@ public partial class BattleScene : Control
             "event" => "?",
             "rest" => "休",
             "shop" => "商",
+            "calibration" => "校",
             "complete" => "终",
             _ => "?"
+        };
+    }
+
+    private static string BuildRoomLoadingText(RunRoom room)
+    {
+        if (Localization.Language == Localization.English)
+        {
+            return room.Kind switch
+            {
+                "mine" => "Lighting the survey grid...",
+                "battle" or "elite" => "Entering combat...",
+                "treasure" => "Opening the cache...",
+                "event" => "Reading the tunnel signs...",
+                "rest" => "Securing a quiet stop...",
+                "shop" => "Finding the lamp caravan...",
+                "calibration" => "Warming the lamp array...",
+                "complete" => "Crossing the final gate...",
+                _ => "Moving deeper..."
+            };
+        }
+
+        return room.Kind switch
+        {
+            "mine" => "点亮勘探网格……",
+            "battle" or "elite" => "进入战斗……",
+            "treasure" => "开启补给箱……",
+            "event" => "辨认支道痕迹……",
+            "rest" => "抵达安全歇脚点……",
+            "shop" => "寻找矿灯商队……",
+            "calibration" => "预热矿灯阵列……",
+            "complete" => "穿过最终矿门……",
+            _ => "继续深入……"
         };
     }
 
@@ -989,6 +1149,10 @@ public partial class BattleScene : Control
         }
 
         var revealResult = MineRevealResult.NoChange;
+        var tipPosition = GetMineCellTipPosition(index);
+        var beforeHp = _run.PlayerHp;
+        var beforeShards = _run.Shards;
+        var beforeFog = _run.FogPressure;
         if (_mineFlagMode)
         {
             _run.ToggleMineFlag(index);
@@ -1002,6 +1166,11 @@ public partial class BattleScene : Control
         else
         {
             revealResult = _run.RevealMineCell(index, _gameData);
+        }
+
+        if (revealResult != MineRevealResult.NoChange)
+        {
+            ShowMineRevealTip(revealResult, index, tipPosition, beforeHp, beforeShards, beforeFog);
         }
 
         if (_run.PlayerHp <= 0)
@@ -1019,7 +1188,10 @@ public partial class BattleScene : Control
 
         if (revealResult == MineRevealResult.Monster)
         {
-            StartMineMonsterBattle();
+            RunLoadingTransition(
+                Localization.Language == Localization.English ? "A monster breaks from the dark..." : "暗处的怪物扑出……",
+                StartMineMonsterBattle);
+            RenderMinefield();
             RenderShared();
             return;
         }
@@ -1043,6 +1215,84 @@ public partial class BattleScene : Control
         _roomTitleLabel.Text = $"{Localization.T("room_battle")} {FormatEncounterNames(enemies)}";
         _roomDescriptionLabel.Text = $"矿格里的怪物拦住了去路。威胁等级 {_battle.ThreatLevel}，击退它后可以回到当前矿区继续探索。";
         RenderBattle();
+    }
+
+    private Vector2 GetMineCellTipPosition(int index)
+    {
+        if (index >= 0 && index < _mineGrid.GetChildCount() && _mineGrid.GetChild(index) is Control cell)
+        {
+            return cell.GlobalPosition + cell.Size / 2f;
+        }
+
+        return _mineBoardFrame.GlobalPosition + _mineBoardFrame.Size / 2f;
+    }
+
+    private void ShowMineRevealTip(MineRevealResult result, int index, Vector2 globalPosition, int beforeHp, int beforeShards, int beforeFog)
+    {
+        _mineRevealTipLabel.Text = BuildMineRevealTipText(result, index, beforeHp, beforeShards, beforeFog);
+        _mineRevealTipPanel.Modulate = Colors.White;
+        _mineRevealTipPanel.Visible = true;
+
+        var root = GetNode<Panel>("Root");
+        var local = globalPosition - root.GlobalPosition + new Vector2(-145, -88);
+        local.X = Math.Clamp(local.X, 18f, Math.Max(18f, root.Size.X - 310f));
+        local.Y = Math.Clamp(local.Y, 90f, Math.Max(90f, root.Size.Y - 130f));
+        _mineRevealTipPanel.Position = local;
+
+        var tween = CreateTween();
+        tween.TweenProperty(_mineRevealTipPanel, "position", local + new Vector2(0, -20), 0.9f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
+        tween.Parallel().TweenProperty(_mineRevealTipPanel, "modulate:a", 0.0f, 0.9f).SetDelay(0.35f);
+        tween.TweenCallback(Callable.From(() => _mineRevealTipPanel.Visible = false));
+    }
+
+    private string BuildMineRevealTipText(MineRevealResult result, int index, int beforeHp, int beforeShards, int beforeFog)
+    {
+        var title = result switch
+        {
+            MineRevealResult.Monster => Localization.Language == Localization.English ? "Monster!" : "惊动怪物！",
+            MineRevealResult.Trap => Localization.Language == Localization.English ? "Trap Triggered" : "触发陷阱",
+            MineRevealResult.Treasure => Localization.Language == Localization.English ? "Cache Opened" : "打开宝箱",
+            MineRevealResult.Ore => Localization.Language == Localization.English ? "Ore Collected" : "采集矿石",
+            MineRevealResult.Exit => Localization.Language == Localization.English ? "Exit Found" : "发现出口",
+            MineRevealResult.Cleared => Localization.Language == Localization.English ? "Survey Cleared" : "矿区清理完成",
+            _ => Localization.Language == Localization.English ? "Tile Revealed" : "翻开矿格"
+        };
+
+        var details = new List<string>();
+        var cell = _run.Minefield != null && index >= 0 && index < _run.Minefield.Cells.Count ? _run.Minefield.Cells[index] : null;
+        if (cell != null && result is MineRevealResult.Revealed or MineRevealResult.Cleared)
+        {
+            details.Add(Localization.Language == Localization.English
+                ? $"Clues: danger {cell.DangerClue}, resource {cell.RewardClue}."
+                : $"线索：危险 {cell.DangerClue}，资源 {cell.RewardClue}。");
+        }
+
+        var hpDelta = _run.PlayerHp - beforeHp;
+        var shardDelta = _run.Shards - beforeShards;
+        var fogDelta = _run.FogPressure - beforeFog;
+        if (hpDelta != 0)
+        {
+            details.Add($"HP {FormatSigned(hpDelta)}");
+        }
+        if (shardDelta != 0)
+        {
+            details.Add(Localization.Language == Localization.English ? $"Shards {FormatSigned(shardDelta)}" : $"矿晶 {FormatSigned(shardDelta)}");
+        }
+        if (fogDelta != 0)
+        {
+            details.Add(Localization.Language == Localization.English ? $"Fog {FormatSigned(fogDelta)}" : $"雾压 {FormatSigned(fogDelta)}");
+        }
+        if (_run.Minefield?.IsCleared == true && result != MineRevealResult.Cleared)
+        {
+            details.Add(Localization.Language == Localization.English ? "Board cleared bonus gained." : "已获得清理奖励。");
+        }
+
+        return details.Count == 0 ? title : $"{title}\n{string.Join("  ", details)}";
+    }
+
+    private static string FormatSigned(int value)
+    {
+        return value > 0 ? $"+{value}" : value.ToString();
     }
 
     private void RenderMinefield()
@@ -1235,7 +1485,9 @@ public partial class BattleScene : Control
 
         AddChoiceButton("休息\n恢复一大段生命。", () => OnRestChoicePressed("heal"));
         AddChoiceButton(Localization.Language == Localization.English ? "Calibrate lamp\nRestore 25 oil and reduce fog pressure by 3." : "校准矿灯\n恢复 25 灯油，并降低 3 点雾压。", () => OnRestChoicePressed("calibrate"));
-        AddChoiceButton("锻造一张牌\n免费升级牌组中一张可升级卡牌。", () => RenderDeckUpgradeChoices(0));
+        AddChoiceButton("锻造一张牌\n免费升级牌组中一张可升级卡牌。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Opening the forge..." : "展开锻造台……",
+            () => RenderDeckUpgradeChoices(0)));
         AddChoiceButton("整备\n获得 12 矿晶和遗物：校准矿灯。", () => OnRestChoicePressed("forge"));
     }
 
@@ -1273,8 +1525,12 @@ public partial class BattleScene : Control
         AddChoiceButton("购买治疗 - 16 矿晶\n恢复 18 点生命。", OnBuyHealPressed);
         AddChoiceButton(Localization.Language == Localization.English ? "Buy Probe Lamp x2 - 14 Shards\nPreview hidden mine tiles before committing." : "购买探测灯 x2 - 14 矿晶\n在翻开矿格前先预览隐藏内容。", () => OnBuyItemPressed("probe_lamp", 2, 14));
         AddChoiceButton(Localization.Language == Localization.English ? "Buy Smoke Marker - 12 Shards\nPreview a tile; dangerous tiles are flagged automatically." : "购买烟雾标记器 - 12 矿晶\n预览 1 个矿格；若为危险格会自动标记。", () => OnBuyItemPressed("smoke_marker", 1, 12));
-        AddChoiceButton("升级一张牌 - 18 矿晶\n让已有卡牌变成强化版本。", () => RenderDeckUpgradeChoices(18));
-        AddChoiceButton("移除一张牌 - 20 矿晶\n精简牌组，提高关键牌上手率。", () => RenderDeckRemoveChoices(20));
+        AddChoiceButton("升级一张牌 - 18 矿晶\n让已有卡牌变成强化版本。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Opening the forge..." : "展开锻造台……",
+            () => RenderDeckUpgradeChoices(18)));
+        AddChoiceButton("移除一张牌 - 20 矿晶\n精简牌组，提高关键牌上手率。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Sorting the deck..." : "整理牌组……",
+            () => RenderDeckRemoveChoices(20)));
         AddChoiceButton("离开商队\n保留矿晶继续深入。", OnLeaveShopPressed);
         _choiceButtonTarget = null;
     }
@@ -1329,6 +1585,262 @@ public partial class BattleScene : Control
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+    }
+
+    private void RenderCalibrationRoom(RunRoom room)
+    {
+        _activeCalibrationRoom = room;
+        _selectedCalibrationNodes.Clear();
+        BuildCalibrationNodes(room);
+        _roomTitleLabel.Text = room.DisplayTitle();
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "A cracked lamp array still hums. Select exactly 3 nodes to route power through. Stable sets are safe; greedy sets can surge."
+            : "一组裂纹矿灯阵仍在低鸣。选择 3 个节点接入回路。稳态组合更安全，贪心组合可能过载。";
+        _choicePanel.Visible = true;
+        RenderCalibrationChoices();
+    }
+
+    private void BuildCalibrationNodes(RunRoom room)
+    {
+        var templates = new List<CalibrationNode>
+        {
+            new("stable_crystal", "稳定晶灯", "Stable Crystal", "稳态 / 净雾", "Stable / Fog", shards: 8, fogReduction: 1, tags: new[] { "stable", "fog" }),
+            new("ore_prism", "富矿棱镜", "Ore Prism", "富矿 / 微量雾噪", "Ore / Minor fog", shards: 24, fogGain: 1, tags: new[] { "ore", "risk" }),
+            new("oil_wick", "储油灯芯", "Oil Wick", "灯油 / 稳态", "Oil / Stable", oil: 22, tags: new[] { "oil", "stable" }),
+            new("survey_map", "测绘星图", "Survey Map", "卡牌 / 稳态", "Card / Stable", cardId: "mapping_flare", tags: new[] { "card", "stable" }),
+            new("rift_resonator", "裂隙谐振器", "Rift Resonator", "富矿 / 过载", "Ore / Surge", shards: 16, damage: 5, cardId: "crack_finder", tags: new[] { "ore", "risk", "card" }),
+            new("mist_lens", "净雾透镜", "Mist Lens", "净雾 / 灯油", "Fog / Oil", oil: 8, fogReduction: 2, tags: new[] { "fog", "oil" })
+        };
+
+        _calibrationNodes.Clear();
+        var offset = Math.Abs(HashCode.Combine(_run.RunSeed, room.NodeId, room.LayerIndex)) % templates.Count;
+        for (var i = 0; i < templates.Count; i++)
+        {
+            _calibrationNodes.Add(templates[(i + offset) % templates.Count]);
+        }
+    }
+
+    private void RenderCalibrationChoices()
+    {
+        ClearBox(_choiceList);
+        _calibrationSummaryLabel = new Label
+        {
+            Text = BuildCalibrationPreviewText(),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        _calibrationSummaryLabel.AddThemeColorOverride("font_color", Color.FromHtml("d8e2ee"));
+        _choiceList.AddChild(_calibrationSummaryLabel);
+
+        _calibrationGrid = new GridContainer
+        {
+            Columns = 2,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        _calibrationGrid.AddThemeConstantOverride("h_separation", 12);
+        _calibrationGrid.AddThemeConstantOverride("v_separation", 12);
+        _choiceList.AddChild(_calibrationGrid);
+
+        for (var i = 0; i < _calibrationNodes.Count; i++)
+        {
+            var node = _calibrationNodes[i];
+            var selected = _selectedCalibrationNodes.Contains(i);
+            var button = new Button
+            {
+                Text = $"{(selected ? "◆ " : "◇ ")}{node.DisplayName()}\n{node.DisplayHint()}\n{FormatCalibrationNodePreview(node)}",
+                CustomMinimumSize = new Vector2(0, 118),
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                Disabled = !selected && _selectedCalibrationNodes.Count >= 3
+            };
+            StyleButton(button, selected ? Color.FromHtml("5b4a2a") : Color.FromHtml("263445"), selected ? Color.FromHtml("fff1d0") : Color.FromHtml("d8e2ee"));
+            var captured = i;
+            button.Pressed += () => ToggleCalibrationNode(captured);
+            _calibrationGrid.AddChild(button);
+        }
+
+        var confirm = new Button
+        {
+            Text = Localization.Language == Localization.English ? "Start Calibration" : "启动校准",
+            CustomMinimumSize = new Vector2(0, 58),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Disabled = _selectedCalibrationNodes.Count != 3
+        };
+        StyleButton(confirm, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
+        confirm.Pressed += CompleteCalibration;
+        _choiceList.AddChild(confirm);
+
+        AddChoiceButton(Localization.Language == Localization.English ? "Bypass\nLeave the lamp array untouched." : "绕过\n不触碰这组矿灯阵。", BypassCalibration);
+    }
+
+    private void ToggleCalibrationNode(int index)
+    {
+        if (_selectedCalibrationNodes.Contains(index))
+        {
+            _selectedCalibrationNodes.Remove(index);
+        }
+        else if (_selectedCalibrationNodes.Count < 3)
+        {
+            _selectedCalibrationNodes.Add(index);
+        }
+
+        RenderCalibrationChoices();
+    }
+
+    private void CompleteCalibration()
+    {
+        var outcome = CalculateCalibrationOutcome();
+        _run.ApplyCalibrationOutcome(outcome.Shards, outcome.Oil, outcome.FogReduction, outcome.Heal, outcome.CardId, outcome.Damage, outcome.FogGain, _gameData);
+        _roomDescriptionLabel.Text = BuildCalibrationResultText(outcome);
+        _choicePanel.Visible = false;
+        _continueButton.Visible = true;
+        RenderShared();
+    }
+
+    private void BypassCalibration()
+    {
+        _run.Log.Add(Localization.Language == Localization.English ? "You bypassed the lamp array." : "你绕过了矿灯阵。");
+        _choicePanel.Visible = false;
+        _continueButton.Visible = true;
+        RenderShared();
+    }
+
+    private CalibrationOutcome CalculateCalibrationOutcome()
+    {
+        var outcome = new CalibrationOutcome();
+        var tagCounts = new Dictionary<string, int>();
+        foreach (var index in _selectedCalibrationNodes)
+        {
+            var node = _calibrationNodes[index];
+            outcome.Shards += node.Shards;
+            outcome.Oil += node.Oil;
+            outcome.FogReduction += node.FogReduction;
+            outcome.Heal += node.Heal;
+            outcome.Damage += node.Damage;
+            outcome.FogGain += node.FogGain;
+            if (string.IsNullOrWhiteSpace(outcome.CardId) && !string.IsNullOrWhiteSpace(node.CardId))
+            {
+                outcome.CardId = node.CardId;
+            }
+
+            foreach (var tag in node.Tags)
+            {
+                tagCounts[tag] = tagCounts.TryGetValue(tag, out var count) ? count + 1 : 1;
+            }
+        }
+
+        if (tagCounts.GetValueOrDefault("stable") >= 2)
+        {
+            outcome.Oil += 8;
+            outcome.FogReduction += 1;
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Stable circuit: oil +8, fog -1." : "稳态回路：灯油 +8，雾压 -1。");
+        }
+        if (tagCounts.GetValueOrDefault("ore") >= 2)
+        {
+            outcome.Shards += 16;
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Ore resonance: shards +16." : "富矿共振：矿晶 +16。");
+        }
+        if (tagCounts.GetValueOrDefault("oil") >= 2)
+        {
+            outcome.Oil += 12;
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Oil loop: oil +12." : "储油回路：灯油 +12。");
+        }
+        if (tagCounts.GetValueOrDefault("fog") >= 2)
+        {
+            outcome.FogReduction += 1;
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Mist lock: fog -1." : "净雾锁定：雾压 -1。");
+        }
+        if (tagCounts.GetValueOrDefault("risk") >= 2)
+        {
+            outcome.Damage += 6;
+            outcome.FogGain += 1;
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Surge backlash: HP -6, fog +1." : "过载反震：生命 -6，雾压 +1。");
+        }
+
+        return outcome;
+    }
+
+    private string BuildCalibrationPreviewText()
+    {
+        var count = _selectedCalibrationNodes.Count;
+        var header = Localization.Language == Localization.English
+            ? $"Selected {count}/3. Combine tags for bonuses; two surge nodes cause backlash."
+            : $"已选择 {count}/3。组合同类节点可触发额外收益；两个过载节点会反震。";
+        if (count == 0)
+        {
+            return header;
+        }
+
+        var outcome = CalculateCalibrationOutcome();
+        return $"{header}\n{BuildCalibrationResultText(outcome)}";
+    }
+
+    private string BuildCalibrationResultText(CalibrationOutcome outcome)
+    {
+        var parts = new List<string>();
+        if (outcome.Shards > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"Shards +{outcome.Shards}" : $"矿晶 +{outcome.Shards}");
+        }
+        if (outcome.Oil > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"Oil +{outcome.Oil}" : $"灯油 +{outcome.Oil}");
+        }
+        if (outcome.FogReduction > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"Fog -{outcome.FogReduction}" : $"雾压 -{outcome.FogReduction}");
+        }
+        if (outcome.Heal > 0)
+        {
+            parts.Add($"HP +{outcome.Heal}");
+        }
+        if (!string.IsNullOrWhiteSpace(outcome.CardId))
+        {
+            parts.Add(Localization.Language == Localization.English ? $"Card: {_gameData.GetCard(outcome.CardId).DisplayName()}" : $"卡牌：{_gameData.GetCard(outcome.CardId).DisplayName()}");
+        }
+        if (outcome.Damage > 0)
+        {
+            parts.Add($"HP -{outcome.Damage}");
+        }
+        if (outcome.FogGain > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"Fog +{outcome.FogGain}" : $"雾压 +{outcome.FogGain}");
+        }
+
+        var summary = parts.Count == 0
+            ? Localization.Language == Localization.English ? "No output yet." : "暂无输出。"
+            : string.Join("  |  ", parts);
+        return outcome.Notes.Count == 0 ? summary : $"{summary}\n{string.Join("\n", outcome.Notes)}";
+    }
+
+    private static string FormatCalibrationNodePreview(CalibrationNode node)
+    {
+        var parts = new List<string>();
+        if (node.Shards > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"+{node.Shards} shards" : $"+{node.Shards} 矿晶");
+        }
+        if (node.Oil > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"+{node.Oil} oil" : $"+{node.Oil} 灯油");
+        }
+        if (node.FogReduction > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"-{node.FogReduction} fog" : $"-{node.FogReduction} 雾压");
+        }
+        if (!string.IsNullOrWhiteSpace(node.CardId))
+        {
+            parts.Add(Localization.Language == Localization.English ? "card signal" : "卡牌信号");
+        }
+        if (node.Damage > 0)
+        {
+            parts.Add($"-{node.Damage} HP");
+        }
+        if (node.FogGain > 0)
+        {
+            parts.Add(Localization.Language == Localization.English ? $"+{node.FogGain} fog" : $"+{node.FogGain} 雾压");
+        }
+
+        return string.Join("  ", parts);
     }
 
     private void StartBattleRoom(RunRoom room)
@@ -1438,10 +1950,11 @@ public partial class BattleScene : Control
     {
         var depth = Math.Max(0, _run.CurrentLayerIndex);
         var risk = Math.Max(1, room?.Risk ?? 1);
-        var fogThreat = _run.FogPressure / 2;
+        var depthThreat = depth / 2;
+        var fogThreat = _run.FogPressure / 3;
         var lowOilThreat = _run.LampOil <= Math.Max(1, _run.MaxLampOil / 4) ? 1 : 0;
         var eliteThreat = room?.Kind == "elite" ? 2 : 0;
-        var threat = depth + risk - 1 + fogThreat + lowOilThreat + eliteThreat;
+        var threat = depthThreat + risk - 1 + fogThreat + lowOilThreat + eliteThreat;
         if (fromMine)
         {
             threat = Math.Max(0, threat - 1);
@@ -1716,23 +2229,35 @@ public partial class BattleScene : Control
             _run.SyncAfterBattle(_battle.PlayerHp);
             if (_returnToMineAfterBattle)
             {
-                _run.ResolveMineMonsterVictory(_gameData);
-                _battlePanel.Visible = false;
-                _minePanel.Visible = true;
-                _returnToMineAfterBattle = false;
-                _roomTitleLabel.Text = _activeMineRoom?.DisplayTitle() ?? _roomTitleLabel.Text;
-                _roomDescriptionLabel.Text = "怪物被击退。你可以继续根据线索探索矿区，或在找到出口后深入下一层。";
-                RenderMinefield();
+                RunLoadingTransition(
+                    Localization.Language == Localization.English ? "Returning to the survey grid..." : "返回勘探网格……",
+                    () =>
+                    {
+                        _run.ResolveMineMonsterVictory(_gameData);
+                        _battlePanel.Visible = false;
+                        _minePanel.Visible = true;
+                        _returnToMineAfterBattle = false;
+                        _roomTitleLabel.Text = _activeMineRoom?.DisplayTitle() ?? _roomTitleLabel.Text;
+                        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+                            ? "The monster is driven off. Keep reading the clues, or move deeper after finding the exit."
+                            : "怪物被击退。你可以继续根据线索探索矿区，或在找到出口后深入下一层。";
+                        RenderMinefield();
+                        RenderShared();
+                    });
             }
             else
             {
-                ShowBattleReward();
+                RunLoadingTransition(
+                    Localization.Language == Localization.English ? "Sorting the spoils..." : "清点战利品……",
+                    ShowBattleReward);
             }
         }
         else if (_battle.PlayerHp <= 0)
         {
             _run.SyncAfterBattle(0);
-            ShowEndPanel(false, "你的矿灯熄灭了。下一次进入矿井前，最好再调整牌组与路线。");
+            RunLoadingTransition(
+                Localization.Language == Localization.English ? "Recording the failed expedition..." : "记录本次探索……",
+                () => ShowEndPanel(false, "你的矿灯熄灭了。下一次进入矿井前，最好再调整牌组与路线。"));
         }
     }
 
@@ -2285,6 +2810,21 @@ public partial class BattleScene : Control
     private void RenderItems()
     {
         ClearBox(_itemList);
+        AddInventoryHeader(Localization.Language == Localization.English ? "Relics" : "遗物");
+        if (_run.Relics.Count == 0)
+        {
+            AddInventoryEmpty(Localization.Language == Localization.English ? "No relics yet." : "暂无遗物。");
+        }
+        else
+        {
+            foreach (var relicId in _run.Relics)
+            {
+                AddRelicInfoButton(relicId);
+            }
+        }
+
+        AddInventoryHeader(Localization.Language == Localization.English ? "Items" : "道具");
+        var hasItems = false;
         foreach (var stack in _run.Items)
         {
             if (stack.Count <= 0)
@@ -2292,6 +2832,7 @@ public partial class BattleScene : Control
                 continue;
             }
 
+            hasItems = true;
             var item = _gameData.GetItem(stack.ItemId);
             var selected = _selectedItemId == item.Id;
             var button = new Button
@@ -2300,10 +2841,135 @@ public partial class BattleScene : Control
                 CustomMinimumSize = new Vector2(0, 70),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart
             };
+            button.TooltipText = $"{item.DisplayName()} x{stack.Count}\n{item.DisplayDescription()}\n{FormatItemUseHint(item)}";
             StyleButton(button, selected ? Color.FromHtml("5b4a2a") : Color.FromHtml("263445"), Color.FromHtml("eef5ff"));
             button.Pressed += () => OnItemPressed(item);
             _itemList.AddChild(button);
         }
+
+        if (!hasItems)
+        {
+            AddInventoryEmpty(Localization.Language == Localization.English ? "No usable items." : "暂无可用道具。");
+        }
+    }
+
+    private void AddInventoryHeader(string text)
+    {
+        var label = new Label
+        {
+            Text = text,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        label.AddThemeFontSizeOverride("font_size", 17);
+        label.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        _itemList.AddChild(label);
+    }
+
+    private void AddInventoryEmpty(string text)
+    {
+        var label = new Label
+        {
+            Text = text,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        label.AddThemeColorOverride("font_color", Color.FromHtml("8f9aa8"));
+        _itemList.AddChild(label);
+    }
+
+    private void AddRelicInfoButton(string relicId)
+    {
+        try
+        {
+            var relic = _gameData.GetRelic(relicId);
+            var button = new Button
+            {
+                Text = $"{FormatRelicRarity(relic)} | {relic.DisplayName()}\n{relic.DisplayDescription()}",
+                CustomMinimumSize = new Vector2(0, 78),
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                TooltipText = BuildRelicTooltip(relic)
+            };
+            StyleButton(button, GetRelicBackground(relic), Color.FromHtml("f0e4ff"));
+            button.Pressed += () => ShowRelicDetails(relic);
+            _itemList.AddChild(button);
+        }
+        catch (InvalidOperationException)
+        {
+            AddInventoryEmpty(relicId);
+        }
+    }
+
+    private void ShowRelicDetails(RelicData relic)
+    {
+        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Relic Details" : "遗物详情";
+        _roomDescriptionLabel.Text = BuildRelicTooltip(relic);
+    }
+
+    private static string FormatRelicRarity(RelicData relic)
+    {
+        return relic.Rarity switch
+        {
+            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "罕见",
+            _ => Localization.Language == Localization.English ? "Common" : "普通"
+        };
+    }
+
+    private static Color GetRelicBackground(RelicData relic)
+    {
+        return relic.Rarity switch
+        {
+            "rare" => Color.FromHtml("5b4a2a"),
+            "uncommon" => Color.FromHtml("392d4b"),
+            _ => Color.FromHtml("303946")
+        };
+    }
+
+    private string BuildRelicTooltip(RelicData relic)
+    {
+        var lines = new List<string>
+        {
+            $"{FormatRelicRarity(relic)} | {relic.DisplayName()}",
+            relic.DisplayDescription()
+        };
+
+        foreach (var effect in relic.Effects)
+        {
+            lines.Add(FormatRelicEffect(effect));
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private static string FormatRelicEffect(RelicEffectData effect)
+    {
+        var value = effect.Value;
+        return effect.Type switch
+        {
+            "battle_start_block" => Localization.Language == Localization.English ? $"Battle start: block +{value}." : $"战斗开始：格挡 +{value}。",
+            "battle_start_draw" => Localization.Language == Localization.English ? $"Battle start: draw +{value}." : $"战斗开始：抽牌 +{value}。",
+            "battle_start_energy" => Localization.Language == Localization.English ? $"First turn: energy +{value}." : $"首回合：能量 +{value}。",
+            "trap_damage_reduction" => Localization.Language == Localization.English ? $"Trap damage -{value}." : $"陷阱伤害 -{value}。",
+            "reward_shards_percent" => Localization.Language == Localization.English ? $"Battle reward shards +{value}%." : $"战斗奖励矿晶 +{value}%。",
+            "reward_card_bonus" => Localization.Language == Localization.English ? $"Card reward choices +{value}." : $"卡牌奖励选项 +{value}。",
+            "mine_start_preview" => Localization.Language == Localization.English ? $"Preview {value} mine tile at survey start." : $"进入矿区时预览 {value} 个矿格。",
+            "post_battle_fog_reduction" => Localization.Language == Localization.English ? $"After battle: fog pressure -{value}." : $"战斗后：雾压 -{value}。",
+            "post_battle_lamp" => Localization.Language == Localization.English ? $"After battle: oil +{value}." : $"战斗后：灯油 +{value}。",
+            "max_lamp" => Localization.Language == Localization.English ? $"Max oil +{value}." : $"灯油上限 +{value}。",
+            "player_damage_bonus" => Localization.Language == Localization.English ? $"Player attack damage +{value}." : $"玩家攻击伤害 +{value}。",
+            "player_block_bonus" => Localization.Language == Localization.English ? $"Player block from cards +{value}." : $"卡牌获得格挡 +{value}。",
+            "self_damage_reduction" => Localization.Language == Localization.English ? $"Self damage -{value}." : $"自伤 -{value}。",
+            _ => Localization.Language == Localization.English ? $"{effect.Type}: {value}" : $"{effect.Type}：{value}"
+        };
+    }
+
+    private static string FormatItemUseHint(ItemData item)
+    {
+        return item.UseMode switch
+        {
+            "instant_heal" => Localization.Language == Localization.English ? "Click to use immediately." : "点击后立即使用。",
+            "target_tile" => Localization.Language == Localization.English ? "Click to select, then choose a mine tile." : "点击选中后，再选择一个矿格。",
+            _ => Localization.Language == Localization.English ? "Item effect is passive or contextual." : "该道具效果会在特定场景中生效。"
+        };
     }
 
     private void OnItemPressed(ItemData item)
@@ -2482,7 +3148,9 @@ public partial class BattleScene : Control
         _roomTitleLabel.Text = cost <= 0 ? "锻造卡牌" : "升级卡牌";
         _roomDescriptionLabel.Text = "选择一张拥有强化版本的卡牌。强化后的卡牌会直接进入本局牌组。";
         RenderDeckList(true, cost, -1);
-        AddChoiceButton("返回\n暂时不调整牌组。", RenderCurrentRoom);
+        AddChoiceButton("返回\n暂时不调整牌组。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Returning to the room..." : "返回当前房间……",
+            RenderCurrentRoom));
         RenderShared();
     }
 
@@ -2493,7 +3161,9 @@ public partial class BattleScene : Control
         _roomTitleLabel.Text = "移除卡牌";
         _roomDescriptionLabel.Text = "删牌能让核心牌更稳定上手，但会消耗矿晶。";
         RenderDeckList(true, -1, cost);
-        AddChoiceButton("返回\n暂时不调整牌组。", RenderCurrentRoom);
+        AddChoiceButton("返回\n暂时不调整牌组。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Returning to the room..." : "返回当前房间……",
+            RenderCurrentRoom));
         RenderShared();
     }
 
@@ -2671,6 +3341,26 @@ public partial class BattleScene : Control
         _dragHintPanel.AddChild(_dragHintLabel);
         GetNode<Panel>("Root").AddChild(_dragHintPanel);
 
+        _mineRevealTipPanel = new PanelContainer
+        {
+            Name = "MineRevealTipPanel",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Ignore,
+            CustomMinimumSize = new Vector2(290, 70),
+            ZIndex = 120
+        };
+        _mineRevealTipLabel = new Label
+        {
+            Name = "MineRevealTipLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        _mineRevealTipLabel.AddThemeFontSizeOverride("font_size", 18);
+        _mineRevealTipPanel.AddChild(_mineRevealTipLabel);
+        GetNode<Panel>("Root").AddChild(_mineRevealTipPanel);
+
         _dragLine = new Line2D
         {
             Name = "DragAimLine",
@@ -2680,6 +3370,120 @@ public partial class BattleScene : Control
             ZIndex = 80
         };
         GetNode<Panel>("Root").AddChild(_dragLine);
+
+        BuildLoadingOverlay();
+    }
+
+    private void BuildLoadingOverlay()
+    {
+        _loadingOverlay = new Panel
+        {
+            Name = "LoadingOverlay",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Stop,
+            ZIndex = 220
+        };
+        _loadingOverlay.SetAnchorsPreset(LayoutPreset.FullRect);
+        _loadingOverlay.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.04f, 0.06f, 0.84f)
+        });
+
+        var center = new CenterContainer
+        {
+            Name = "LoadingCenter",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        var card = new PanelContainer
+        {
+            Name = "LoadingCard",
+            CustomMinimumSize = new Vector2(420, 132),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        card.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 2));
+
+        var layout = new VBoxContainer
+        {
+            Name = "LoadingLayout",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        layout.AddThemeConstantOverride("separation", 10);
+
+        var title = new Label
+        {
+            Text = Localization.Language == Localization.English ? "Loading" : "载入中",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+
+        _loadingLabel = new Label
+        {
+            Name = "LoadingLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        _loadingLabel.AddThemeFontSizeOverride("font_size", 17);
+        _loadingLabel.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+
+        layout.AddChild(title);
+        layout.AddChild(_loadingLabel);
+        card.AddChild(layout);
+        center.AddChild(card);
+        _loadingOverlay.AddChild(center);
+        GetNode<Panel>("Root").AddChild(_loadingOverlay);
+    }
+
+    private async void RunLoadingTransition(string text, Action action)
+    {
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        _loadingActive = true;
+        ShowLoading(text);
+        await ToSignal(GetTree().CreateTimer(0.28), SceneTreeTimer.SignalName.Timeout);
+        try
+        {
+            action();
+        }
+        finally
+        {
+            await ToSignal(GetTree().CreateTimer(0.18), SceneTreeTimer.SignalName.Timeout);
+            HideLoading();
+            _loadingActive = false;
+        }
+    }
+
+    private async void ChangeSceneWithLoading(string scenePath, string text)
+    {
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        _loadingActive = true;
+        ShowLoading(text);
+        await ToSignal(GetTree().CreateTimer(0.35), SceneTreeTimer.SignalName.Timeout);
+        GetTree().ChangeSceneToFile(scenePath);
+    }
+
+    private void ShowLoading(string text)
+    {
+        CancelAimingCard();
+        _loadingLabel.Text = text;
+        _loadingOverlay.Modulate = Colors.White;
+        _loadingOverlay.Visible = true;
+    }
+
+    private void HideLoading()
+    {
+        _loadingOverlay.Visible = false;
     }
 
     private void ApplyUiStyle()
@@ -2717,7 +3521,9 @@ public partial class BattleScene : Control
         MistTheme.StylePanel(_debugPanel, MistPanelVariant.Purple);
         MistTheme.StylePanel(_deckModalPanel, MistPanelVariant.Stone);
         MistTheme.StylePanel(_dragHintPanel, MistPanelVariant.Purple);
+        MistTheme.StylePanel(_mineRevealTipPanel, MistPanelVariant.Purple);
         _dragHintLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        _mineRevealTipLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         StyleCombatPanels(false, false);
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
@@ -2766,39 +3572,42 @@ public partial class BattleScene : Control
 
     private static void StyleRouteNodeButton(Button button, RunRoom room, bool current, bool selectable, bool past, bool onRoute)
     {
-        var background = Color.FromHtml("202a35");
-        var font = Color.FromHtml("8f9aa8");
+        var kindColor = GetRouteKindColor(room.Kind);
+        var background = kindColor.Darkened(0.66f);
+        var border = kindColor.Darkened(0.08f);
+        var font = kindColor.Lightened(0.45f);
+        var borderWidth = 2;
+
         if (past || !onRoute)
         {
-            background = Color.FromHtml("20242b");
+            background = Color.FromHtml("1b2027");
+            border = Color.FromHtml("303944");
             font = Color.FromHtml("667382");
         }
         else if (current)
         {
             background = Color.FromHtml("5b4a2a");
+            border = Color.FromHtml("f0cf87");
             font = Color.FromHtml("fff1d0");
+            borderWidth = 3;
         }
         else if (selectable)
         {
-            background = room.Risk >= 3 ? Color.FromHtml("6b3b4a") : Color.FromHtml("315f46");
+            background = kindColor.Darkened(room.Risk >= 3 ? 0.50f : 0.58f);
+            border = kindColor.Lightened(0.25f);
             font = Color.FromHtml("e7fff1");
+            borderWidth = 3;
         }
         else
         {
-            background = Color.FromHtml("263445");
-            font = Color.FromHtml("d8e2ee");
+            background = kindColor.Darkened(0.72f);
+            border = kindColor.Darkened(0.30f);
+            font = Color.FromHtml("b9c9d8");
         }
 
-        var border = selectable
-            ? Color.FromHtml("8ed8a8")
-            : current
-                ? Color.FromHtml("e0bd73")
-                : onRoute
-                    ? Color.FromHtml("57708d")
-                    : Color.FromHtml("384351");
-        var normal = MakeCardStyle(background, border);
-        var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
-        var pressed = MakeCardStyle(background.Darkened(0.08f), border);
+        var normal = MakeRouteNodeStyle(background, border, borderWidth);
+        var hover = MakeRouteNodeStyle(background.Lightened(0.08f), border.Lightened(0.12f), borderWidth);
+        var pressed = MakeRouteNodeStyle(background.Darkened(0.08f), border, borderWidth);
         button.AddThemeStyleboxOverride("normal", normal);
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("pressed", pressed);
@@ -2807,6 +3616,23 @@ public partial class BattleScene : Control
         button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
         button.AddThemeColorOverride("font_pressed_color", font);
         button.AddThemeColorOverride("font_disabled_color", font);
+    }
+
+    private static Color GetRouteKindColor(string kind)
+    {
+        return kind switch
+        {
+            "battle" => Color.FromHtml("d36a72"),
+            "elite" => Color.FromHtml("ff9aa8"),
+            "mine" => Color.FromHtml("72a7d8"),
+            "treasure" => Color.FromHtml("d7b45f"),
+            "event" => Color.FromHtml("a99bd3"),
+            "rest" => Color.FromHtml("78d69b"),
+            "shop" => Color.FromHtml("66d4df"),
+            "calibration" => Color.FromHtml("8df0bd"),
+            "complete" => Color.FromHtml("f4f0df"),
+            _ => Color.FromHtml("8f9aa8")
+        };
     }
 
     private static void StyleEnemyTargetButton(Button button, BattleEnemyState enemy, bool selected)
@@ -2893,6 +3719,46 @@ public partial class BattleScene : Control
         return style;
     }
 
+    private static StyleBoxFlat MakeRouteNodeStyle(Color background, Color border, int borderWidth)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomLeft = 7,
+            CornerRadiusBottomRight = 7,
+            ContentMarginLeft = 7,
+            ContentMarginTop = 7,
+            ContentMarginRight = 7,
+            ContentMarginBottom = 7,
+            ShadowColor = new Color(0, 0, 0, 0.26f),
+            ShadowSize = 3
+        };
+        style.SetBorderWidthAll(borderWidth);
+        return style;
+    }
+
+    private static StyleBoxFlat MakeRouteLegendChipStyle(Color color)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = color.Darkened(0.68f),
+            BorderColor = color.Darkened(0.12f),
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            ContentMarginLeft = 8,
+            ContentMarginTop = 4,
+            ContentMarginRight = 8,
+            ContentMarginBottom = 4
+        };
+        style.SetBorderWidthAll(1);
+        return style;
+    }
+
     private static void ApplyLabelColor(Label label, string color)
     {
         label.AddThemeColorOverride("font_color", Color.FromHtml(color));
@@ -2975,5 +3841,54 @@ public partial class BattleScene : Control
             MineTileType.Ore => "ORE?",
             _ => "?"
         };
+    }
+
+    private sealed class CalibrationNode
+    {
+        public CalibrationNode(string id, string name, string nameEn, string hint, string hintEn, int shards = 0, int oil = 0, int fogReduction = 0, int heal = 0, string cardId = "", int damage = 0, int fogGain = 0, string[]? tags = null)
+        {
+            Id = id;
+            Name = name;
+            NameEn = nameEn;
+            Hint = hint;
+            HintEn = hintEn;
+            Shards = shards;
+            Oil = oil;
+            FogReduction = fogReduction;
+            Heal = heal;
+            CardId = cardId;
+            Damage = damage;
+            FogGain = fogGain;
+            Tags = tags == null ? new List<string>() : new List<string>(tags);
+        }
+
+        public string Id { get; }
+        public string Name { get; }
+        public string NameEn { get; }
+        public string Hint { get; }
+        public string HintEn { get; }
+        public int Shards { get; }
+        public int Oil { get; }
+        public int FogReduction { get; }
+        public int Heal { get; }
+        public string CardId { get; }
+        public int Damage { get; }
+        public int FogGain { get; }
+        public List<string> Tags { get; }
+
+        public string DisplayName() => Localization.Pick(Name, NameEn);
+        public string DisplayHint() => Localization.Pick(Hint, HintEn);
+    }
+
+    private sealed class CalibrationOutcome
+    {
+        public int Shards { get; set; }
+        public int Oil { get; set; }
+        public int FogReduction { get; set; }
+        public int Heal { get; set; }
+        public string CardId { get; set; } = string.Empty;
+        public int Damage { get; set; }
+        public int FogGain { get; set; }
+        public List<string> Notes { get; } = new();
     }
 }

@@ -8,10 +8,13 @@ public partial class CharacterSelect : Control
     private Label _detailLabel = null!;
     private TextureRect _portraitTexture = null!;
     private PanelContainer _portraitFrame = null!;
+    private Panel _loadingOverlay = null!;
     private Button _startButton = null!;
     private Button _backButton = null!;
+    private Label _loadingLabel = null!;
     private Label _titleLabel = null!;
     private string _selectedCharacterId = "miner";
+    private bool _loadingActive;
     private readonly Dictionary<string, bool> _characterUnlocked = new();
     private readonly Dictionary<string, Button> _characterButtons = new();
 
@@ -30,9 +33,12 @@ public partial class CharacterSelect : Control
         _backButton = GetNode<Button>("Root/Margin/MainLayout/ButtonRow/BackButton");
 
         _startButton.Pressed += OnStartPressed;
-        _backButton.Pressed += () => GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
+        _backButton.Pressed += () => ChangeSceneWithLoading(
+            "res://scenes/MainMenu.tscn",
+            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
 
         ApplyUiStyle();
+        BuildLoadingOverlay();
         RenderCharacters();
         SelectCharacter(_selectedCharacterId);
     }
@@ -89,7 +95,9 @@ public partial class CharacterSelect : Control
     {
         GameSession.SelectedCharacterId = _selectedCharacterId;
         GameSession.LoadRequested = false;
-        GetTree().ChangeSceneToFile("res://scenes/BattleScene.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/BattleScene.tscn",
+            Localization.Language == Localization.English ? "Entering the mine..." : "进入矿井……");
     }
 
     private void ApplyUiStyle()
@@ -101,6 +109,84 @@ public partial class CharacterSelect : Control
         MistTheme.StylePanel(_portraitFrame, MistPanelVariant.Purple);
         MistTheme.StyleButton(_startButton, MistButtonVariant.Primary);
         MistTheme.StyleButton(_backButton, MistButtonVariant.Neutral);
+    }
+
+    private void BuildLoadingOverlay()
+    {
+        _loadingOverlay = new Panel
+        {
+            Name = "LoadingOverlay",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Stop,
+            ZIndex = 200
+        };
+        _loadingOverlay.SetAnchorsPreset(LayoutPreset.FullRect);
+        _loadingOverlay.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.04f, 0.06f, 0.84f)
+        });
+
+        var center = new CenterContainer
+        {
+            Name = "LoadingCenter",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        var card = new PanelContainer
+        {
+            Name = "LoadingCard",
+            CustomMinimumSize = new Vector2(420, 132),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        card.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 2));
+
+        var layout = new VBoxContainer
+        {
+            Name = "LoadingLayout",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        layout.AddThemeConstantOverride("separation", 10);
+
+        var title = new Label
+        {
+            Text = Localization.Language == Localization.English ? "Loading" : "载入中",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+
+        _loadingLabel = new Label
+        {
+            Name = "LoadingLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        _loadingLabel.AddThemeFontSizeOverride("font_size", 17);
+        _loadingLabel.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+
+        layout.AddChild(title);
+        layout.AddChild(_loadingLabel);
+        card.AddChild(layout);
+        center.AddChild(card);
+        _loadingOverlay.AddChild(center);
+        GetNode<Panel>("Root").AddChild(_loadingOverlay);
+    }
+
+    private async void ChangeSceneWithLoading(string scenePath, string text)
+    {
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        _loadingActive = true;
+        _loadingLabel.Text = text;
+        _loadingOverlay.Visible = true;
+        await ToSignal(GetTree().CreateTimer(0.35), SceneTreeTimer.SignalName.Timeout);
+        GetTree().ChangeSceneToFile(scenePath);
     }
 
     private static Texture2D? LoadTexture(string path)

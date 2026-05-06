@@ -18,13 +18,16 @@ public partial class MainMenu : Control
     private PanelContainer _unlocksPanel = null!;
     private PanelContainer _cardLibraryPanel = null!;
     private Panel _modalOverlay = null!;
+    private Panel _loadingOverlay = null!;
     private VBoxContainer _modalStack = null!;
     private Label _modalMessageLabel = null!;
+    private Label _loadingLabel = null!;
     private VBoxContainer _unlocksList = null!;
     private VBoxContainer _cardLibraryList = null!;
     private Label _languageLabel = null!;
     private OptionButton _languageOption = null!;
     private Label _messageLabel = null!;
+    private bool _loadingActive;
 
     public override void _Ready()
     {
@@ -75,7 +78,9 @@ public partial class MainMenu : Control
     private void OnNewGamePressed()
     {
         GameSession.LoadRequested = false;
-        GetTree().ChangeSceneToFile("res://scenes/CharacterSelect.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/CharacterSelect.tscn",
+            Localization.Language == Localization.English ? "Preparing the roster..." : "准备角色档案……");
     }
 
     private void OnContinuePressed()
@@ -87,7 +92,9 @@ public partial class MainMenu : Control
         }
 
         GameSession.LoadRequested = true;
-        GetTree().ChangeSceneToFile("res://scenes/BattleScene.tscn");
+        ChangeSceneWithLoading(
+            "res://scenes/BattleScene.tscn",
+            Localization.Language == Localization.English ? "Loading the current expedition..." : "读取当前探索……");
     }
 
     private void OnSettingsPressed()
@@ -309,6 +316,86 @@ public partial class MainMenu : Control
         center.AddChild(_modalStack);
         _modalOverlay.AddChild(center);
         GetNode<Panel>("Root").AddChild(_modalOverlay);
+
+        BuildLoadingOverlay();
+    }
+
+    private void BuildLoadingOverlay()
+    {
+        _loadingOverlay = new Panel
+        {
+            Name = "LoadingOverlay",
+            Visible = false,
+            MouseFilter = MouseFilterEnum.Stop,
+            ZIndex = 200
+        };
+        _loadingOverlay.SetAnchorsPreset(LayoutPreset.FullRect);
+        _loadingOverlay.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.02f, 0.04f, 0.06f, 0.84f)
+        });
+
+        var center = new CenterContainer
+        {
+            Name = "LoadingCenter",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        var card = new PanelContainer
+        {
+            Name = "LoadingCard",
+            CustomMinimumSize = new Vector2(420, 132),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        card.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 2));
+
+        var layout = new VBoxContainer
+        {
+            Name = "LoadingLayout",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        layout.AddThemeConstantOverride("separation", 10);
+
+        var title = new Label
+        {
+            Text = Localization.Language == Localization.English ? "Loading" : "载入中",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+
+        _loadingLabel = new Label
+        {
+            Name = "LoadingLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        _loadingLabel.AddThemeFontSizeOverride("font_size", 17);
+        _loadingLabel.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
+
+        layout.AddChild(title);
+        layout.AddChild(_loadingLabel);
+        card.AddChild(layout);
+        center.AddChild(card);
+        _loadingOverlay.AddChild(center);
+        GetNode<Panel>("Root").AddChild(_loadingOverlay);
+    }
+
+    private async void ChangeSceneWithLoading(string scenePath, string text)
+    {
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        _loadingActive = true;
+        _loadingLabel.Text = text;
+        _loadingOverlay.Visible = true;
+        await ToSignal(GetTree().CreateTimer(0.35), SceneTreeTimer.SignalName.Timeout);
+        GetTree().ChangeSceneToFile(scenePath);
     }
 
     private void MovePanelToModal(PanelContainer panel)

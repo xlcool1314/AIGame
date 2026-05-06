@@ -624,6 +624,40 @@ public partial class RunEngine : Node
         Log.Add($"{reason}: gained {item.DisplayName()} x{gained}.");
     }
 
+    public void ApplyCalibrationOutcome(int shards, int oil, int fogReduction, int heal, string cardId, int damage, int fogGain, GameData gameData)
+    {
+        if (damage > 0)
+        {
+            PlayerHp = Math.Max(1, PlayerHp - damage);
+        }
+
+        if (fogGain > 0)
+        {
+            FogPressure += fogGain;
+        }
+
+        if (shards > 0)
+        {
+            Shards += shards;
+        }
+
+        RestoreLamp(oil);
+        ReduceFogPressure(fogReduction);
+        Heal(heal);
+
+        if (!string.IsNullOrWhiteSpace(cardId))
+        {
+            PlayerDeck.Add(gameData.GetCard(cardId));
+        }
+
+        Score += Math.Max(0, shards / 2 + oil + fogReduction * 6 + heal);
+        Log.Add($"灯阵校准完成：矿晶 +{Math.Max(0, shards)}，灯油 +{Math.Max(0, oil)}，雾压 -{Math.Max(0, fogReduction)}，治疗 +{Math.Max(0, heal)}。");
+        if (damage > 0 || fogGain > 0)
+        {
+            Log.Add($"校准震荡：生命 -{damage}，雾压 +{fogGain}。");
+        }
+    }
+
     public void ApplyEventChoice(EventChoiceData choice, GameData gameData)
     {
         foreach (var action in choice.Actions)
@@ -1058,11 +1092,11 @@ public partial class RunEngine : Node
     private void ApplyRoomPressure(RunRoom room)
     {
         RoomsCompleted++;
-        var layerPressure = Math.Max(0, CurrentLayerIndex) * 2;
-        var riskPressure = Math.Max(1, room.Risk) * 3;
+        var layerPressure = Math.Max(0, CurrentLayerIndex);
+        var riskPressure = Math.Max(1, room.Risk) * 2;
         var lampCost = Math.Max(0, room.LampCost + layerPressure + riskPressure);
         LampOil -= lampCost;
-        FogPressure += Math.Max(0, room.Risk - 1) + Math.Max(0, CurrentLayerIndex / 2);
+        FogPressure += Math.Max(0, room.Risk - 1) + Math.Max(0, CurrentLayerIndex / 3);
         Score += Math.Max(1, room.Risk) * 6;
 
         if (LampOil >= 0)
