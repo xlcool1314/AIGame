@@ -100,7 +100,9 @@ public partial class BattleScene : Control
     private bool _debugVisible;
     private bool _metaRecorded;
     private bool _loadingActive;
+    private bool _tipPlaying;
     private string _selectedItemId = string.Empty;
+    private readonly Queue<string> _tipQueue = new();
     private readonly Dictionary<int, Button> _enemyTargetButtons = new();
     private Button? _aimingCardButton;
     private int _aimingCardIndex = -1;
@@ -476,6 +478,9 @@ public partial class BattleScene : Control
         RenderRouteMap(choices);
 
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Route ready: {choices.Count} reachable paths."
+            : $"路线已更新：{choices.Count} 条可进入路线。");
     }
 
     private void EnterNextRoom(int choiceIndex)
@@ -517,6 +522,9 @@ public partial class BattleScene : Control
         }
 
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"{GetMapNodeIcon(room.Kind)} {room.DisplayTitle()}\n{FormatRouteCost(room)}"
+            : $"{GetMapNodeIcon(room.Kind)} {room.DisplayTitle()}\n{FormatRouteCost(room)}");
     }
 
     private static string GetRoomIcon(string kind)
@@ -1133,6 +1141,9 @@ public partial class BattleScene : Control
         _roomDescriptionLabel.Text = FormatMineIntro(room.MineConfig);
         _minePanel.Visible = true;
         RenderMinefield();
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Survey started\n{room.MineConfig.Width}x{room.MineConfig.Height} grid, watch danger clues."
+            : $"开始勘探\n{room.MineConfig.Width}x{room.MineConfig.Height} 网格，留意危险线索。");
     }
 
     private void OnMineModePressed()
@@ -1229,20 +1240,7 @@ public partial class BattleScene : Control
 
     private void ShowMineRevealTip(MineRevealResult result, int index, Vector2 globalPosition, int beforeHp, int beforeShards, int beforeFog)
     {
-        _mineRevealTipLabel.Text = BuildMineRevealTipText(result, index, beforeHp, beforeShards, beforeFog);
-        _mineRevealTipPanel.Modulate = Colors.White;
-        _mineRevealTipPanel.Visible = true;
-
-        var root = GetNode<Panel>("Root");
-        var local = globalPosition - root.GlobalPosition + new Vector2(-145, -88);
-        local.X = Math.Clamp(local.X, 18f, Math.Max(18f, root.Size.X - 310f));
-        local.Y = Math.Clamp(local.Y, 90f, Math.Max(90f, root.Size.Y - 130f));
-        _mineRevealTipPanel.Position = local;
-
-        var tween = CreateTween();
-        tween.TweenProperty(_mineRevealTipPanel, "position", local + new Vector2(0, -20), 0.9f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
-        tween.Parallel().TweenProperty(_mineRevealTipPanel, "modulate:a", 0.0f, 0.9f).SetDelay(0.35f);
-        tween.TweenCallback(Callable.From(() => _mineRevealTipPanel.Visible = false));
+        ShowGameTip(BuildMineRevealTipText(result, index, beforeHp, beforeShards, beforeFog));
     }
 
     private string BuildMineRevealTipText(MineRevealResult result, int index, int beforeHp, int beforeShards, int beforeFog)
@@ -1415,10 +1413,13 @@ public partial class BattleScene : Control
 
     private void OnEventChoicePressed(EventChoiceData choice)
     {
+        var before = CaptureRunTipSnapshot();
         _run.ApplyEventChoice(choice, _gameData);
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English ? "Choice resolved." : "抉择已生效。");
+        ShowRunDeltaTips(before);
     }
 
     private void RenderTreasureRoom(RunRoom room)
@@ -1430,7 +1431,9 @@ public partial class BattleScene : Control
         _choicePanel.Visible = true;
 
         var reward = _gameData.GetReward(string.IsNullOrWhiteSpace(room.RewardId) ? "cache" : room.RewardId);
+        var before = CaptureRunTipSnapshot();
         _run.GainShards(reward.Shards, Localization.Language == Localization.English ? "Cache" : "宝藏");
+        ShowRunDeltaTips(before);
 
         var relicChoices = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, room.NodeId, "cache_relic"), 2);
         foreach (var relic in relicChoices)
@@ -1452,21 +1455,34 @@ public partial class BattleScene : Control
 
     private void OnTreasureRelicPicked(RelicData relic)
     {
+        var before = CaptureRunTipSnapshot();
         _run.AddRelic(relic);
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Relic acquired\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+            : $"获得遗物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+        ShowRunDeltaTips(before);
         FinishTreasureRoom();
     }
 
     private void OnTreasureCardPicked(CardData card)
     {
+        var before = CaptureRunTipSnapshot();
         _run.AddCardReward(card, Localization.Language == Localization.English ? "Cache" : "宝藏");
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Card recorded\n{card.DisplayName()}: {card.DisplayDescription()}"
+            : $"记录卡牌\n{card.DisplayName()}：{card.DisplayDescription()}");
+        ShowRunDeltaTips(before);
         FinishTreasureRoom();
     }
 
     private void OnTreasureSupplyPicked()
     {
+        var before = CaptureRunTipSnapshot();
         _run.AddItemReward(_gameData.GetItem("probe_lamp"), 2, Localization.Language == Localization.English ? "Cache" : "宝藏");
         _run.AddItemReward(_gameData.GetItem("bandage"), 1, Localization.Language == Localization.English ? "Cache" : "宝藏");
         _run.ReduceFogPressure(1);
+        ShowGameTip(Localization.Language == Localization.English ? "Supplies packed." : "补给已装入背包。");
+        ShowRunDeltaTips(before);
         FinishTreasureRoom();
     }
 
@@ -1493,10 +1509,19 @@ public partial class BattleScene : Control
 
     private void OnRestChoicePressed(string mode)
     {
+        var before = CaptureRunTipSnapshot();
         _run.Rest(mode, _gameData);
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+        ShowGameTip(mode switch
+        {
+            "heal" => Localization.Language == Localization.English ? "Rest complete." : "休息完成。",
+            "calibrate" => Localization.Language == Localization.English ? "Lamp calibrated." : "矿灯已校准。",
+            "forge" => Localization.Language == Localization.English ? "Field kit prepared." : "整备完成。",
+            _ => Localization.Language == Localization.English ? "Camp action complete." : "营地行动完成。"
+        });
+        ShowRunDeltaTips(before);
     }
 
     private void RenderShopRoom(RunRoom room)
@@ -1537,8 +1562,13 @@ public partial class BattleScene : Control
 
     private void OnBuyCardPressed(CardData card)
     {
+        var before = CaptureRunTipSnapshot();
         if (_run.BuyCard(card, 22))
         {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Purchased card\n{card.DisplayName()}"
+                : $"购买卡牌\n{card.DisplayName()}");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -1548,8 +1578,13 @@ public partial class BattleScene : Control
 
     private void OnBuyRelicPressed(RelicData relic)
     {
+        var before = CaptureRunTipSnapshot();
         if (_run.BuyRelic(relic, 34))
         {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Purchased relic\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+                : $"购买遗物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -1559,8 +1594,11 @@ public partial class BattleScene : Control
 
     private void OnBuyHealPressed()
     {
+        var before = CaptureRunTipSnapshot();
         if (_run.BuyHeal(18, 16))
         {
+            ShowGameTip(Localization.Language == Localization.English ? "Treatment complete." : "治疗完成。");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -1570,8 +1608,14 @@ public partial class BattleScene : Control
 
     private void OnBuyItemPressed(string itemId, int count, int cost)
     {
-        if (_run.BuyItem(_gameData.GetItem(itemId), count, cost))
+        var item = _gameData.GetItem(itemId);
+        var before = CaptureRunTipSnapshot();
+        if (_run.BuyItem(item, count, cost))
         {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Purchased item\n{item.DisplayName()} x{count}"
+                : $"购买道具\n{item.DisplayName()} x{count}");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -1585,6 +1629,7 @@ public partial class BattleScene : Control
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English ? "Left the caravan." : "已离开矿灯商队。");
     }
 
     private void RenderCalibrationRoom(RunRoom room)
@@ -1689,11 +1734,14 @@ public partial class BattleScene : Control
     private void CompleteCalibration()
     {
         var outcome = CalculateCalibrationOutcome();
+        var before = CaptureRunTipSnapshot();
         _run.ApplyCalibrationOutcome(outcome.Shards, outcome.Oil, outcome.FogReduction, outcome.Heal, outcome.CardId, outcome.Damage, outcome.FogGain, _gameData);
         _roomDescriptionLabel.Text = BuildCalibrationResultText(outcome);
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English ? "Calibration complete." : "校准完成。");
+        ShowRunDeltaTips(before);
     }
 
     private void BypassCalibration()
@@ -1702,6 +1750,7 @@ public partial class BattleScene : Control
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
+        ShowGameTip(Localization.Language == Localization.English ? "Lamp array bypassed." : "已绕过矿灯阵。");
     }
 
     private CalibrationOutcome CalculateCalibrationOutcome()
@@ -1857,6 +1906,9 @@ public partial class BattleScene : Control
         _roomDescriptionLabel.Text = $"战斗开始。威胁等级 {_battle.ThreatLevel}，敌群：{FormatEncounterNames(enemies)}。优先击杀目标会直接改变下一回合压力。";
         _battlePanel.Visible = true;
         RenderBattle();
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Combat started\nThreat {_battle.ThreatLevel}: {FormatEncounterNames(enemies)}"
+            : $"战斗开始\n威胁等级 {_battle.ThreatLevel}：{FormatEncounterNames(enemies)}");
     }
 
     private void ApplyBattleStartRelics()
@@ -2243,6 +2295,9 @@ public partial class BattleScene : Control
                             : "怪物被击退。你可以继续根据线索探索矿区，或在找到出口后深入下一层。";
                         RenderMinefield();
                         RenderShared();
+                        ShowGameTip(Localization.Language == Localization.English
+                            ? "Monster defeated\nSurvey route reopened."
+                            : "怪物已击退\n勘探路线恢复。");
                     });
             }
             else
@@ -2274,6 +2329,9 @@ public partial class BattleScene : Control
         _roomDescriptionLabel.Text = Localization.Language == Localization.English
             ? "Choose one spoil. Relics change the rest of this run."
             : "选择一项战利品。遗物会改变本局后续路线、战斗与资源压力。";
+        ShowGameTip(Localization.Language == Localization.English
+            ? "Battle won\nChoose a spoil."
+            : "战斗胜利\n选择一项战利品。");
 
         var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
         ClearBox(_rewardList);
@@ -2334,7 +2392,21 @@ public partial class BattleScene : Control
 
     private void OnRewardPickedV2(RewardData reward, CardData? card, RelicData? relic)
     {
+        var before = CaptureRunTipSnapshot();
         _run.ApplyRewardWithRelic(reward, card, relic, _gameData, _activeBattleRoom?.RewardBonus ?? 0);
+        if (card != null)
+        {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Card reward\n{card.DisplayName()}: {card.DisplayDescription()}"
+                : $"卡牌奖励\n{card.DisplayName()}：{card.DisplayDescription()}");
+        }
+        if (relic != null)
+        {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Relic reward\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+                : $"遗物奖励\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+        }
+        ShowRunDeltaTips(before);
         _rewardPanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
@@ -2394,7 +2466,15 @@ public partial class BattleScene : Control
 
     private void OnRewardPicked(RewardData reward, CardData? card)
     {
+        var before = CaptureRunTipSnapshot();
         _run.ApplyReward(reward, card, _activeBattleRoom?.RewardBonus ?? 0);
+        if (card != null)
+        {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Card reward\n{card.DisplayName()}: {card.DisplayDescription()}"
+                : $"卡牌奖励\n{card.DisplayName()}：{card.DisplayDescription()}");
+        }
+        ShowRunDeltaTips(before);
         _rewardPanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
@@ -3169,8 +3249,15 @@ public partial class BattleScene : Control
 
     private void OnUpgradeCardPicked(int deckIndex, int cost)
     {
+        var before = CaptureRunTipSnapshot();
+        var oldCard = _run.PlayerDeck[deckIndex];
         if (_run.UpgradeCard(deckIndex, _gameData, cost))
         {
+            var newCard = _run.PlayerDeck[Math.Clamp(deckIndex, 0, _run.PlayerDeck.Count - 1)];
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Card upgraded\n{oldCard.DisplayName()} -> {newCard.DisplayName()}"
+                : $"卡牌已强化\n{oldCard.DisplayName()} -> {newCard.DisplayName()}");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -3180,8 +3267,14 @@ public partial class BattleScene : Control
 
     private void OnRemoveCardPicked(int deckIndex, int cost)
     {
+        var before = CaptureRunTipSnapshot();
+        var removed = _run.PlayerDeck[deckIndex];
         if (_run.RemoveCard(deckIndex, cost))
         {
+            ShowGameTip(Localization.Language == Localization.English
+                ? $"Card removed\n{removed.DisplayName()}"
+                : $"卡牌已移除\n{removed.DisplayName()}");
+            ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
         }
@@ -3213,6 +3306,85 @@ public partial class BattleScene : Control
         }
 
         RenderShared();
+    }
+
+    private RunTipSnapshot CaptureRunTipSnapshot()
+    {
+        var items = new Dictionary<string, int>();
+        foreach (var stack in _run.Items)
+        {
+            items[stack.ItemId] = items.TryGetValue(stack.ItemId, out var count) ? count + stack.Count : stack.Count;
+        }
+
+        return new RunTipSnapshot
+        {
+            Hp = _run.PlayerHp,
+            Shards = _run.Shards,
+            LampOil = _run.LampOil,
+            FogPressure = _run.FogPressure,
+            Score = _run.Score,
+            DeckCount = _run.PlayerDeck.Count,
+            RelicCount = _run.Relics.Count,
+            Items = items
+        };
+    }
+
+    private void ShowRunDeltaTips(RunTipSnapshot before)
+    {
+        var lines = new List<string>();
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "HP" : "生命", _run.PlayerHp - before.Hp);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Shards" : "矿晶", _run.Shards - before.Shards);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Oil" : "灯油", _run.LampOil - before.LampOil);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Fog" : "雾压", _run.FogPressure - before.FogPressure);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Score" : "分数", _run.Score - before.Score);
+
+        if (lines.Count > 0)
+        {
+            ShowGameTip(string.Join("\n", lines));
+        }
+
+        if (_run.PlayerDeck.Count > before.DeckCount)
+        {
+            for (var i = before.DeckCount; i < _run.PlayerDeck.Count; i++)
+            {
+                var card = _run.PlayerDeck[i];
+                ShowGameTip(Localization.Language == Localization.English
+                    ? $"New card\n{card.DisplayName()}"
+                    : $"新增卡牌\n{card.DisplayName()}");
+            }
+        }
+
+        if (_run.Relics.Count > before.RelicCount)
+        {
+            for (var i = before.RelicCount; i < _run.Relics.Count; i++)
+            {
+                var relic = _gameData.GetRelic(_run.Relics[i]);
+                ShowGameTip(Localization.Language == Localization.English
+                    ? $"New relic\n{relic.DisplayName()}"
+                    : $"新增遗物\n{relic.DisplayName()}");
+            }
+        }
+
+        foreach (var stack in _run.Items)
+        {
+            var oldCount = before.Items.TryGetValue(stack.ItemId, out var count) ? count : 0;
+            var delta = stack.Count - oldCount;
+            if (delta > 0)
+            {
+                var item = _gameData.GetItem(stack.ItemId);
+                ShowGameTip(Localization.Language == Localization.English
+                    ? $"Item gained\n{item.DisplayName()} x{delta}"
+                    : $"获得道具\n{item.DisplayName()} x{delta}");
+            }
+        }
+    }
+
+    private static void AddDeltaLine(List<string> lines, string label, int delta)
+    {
+        if (delta != 0)
+        {
+            lines.Add($"{label} {FormatSigned(delta)}");
+        }
     }
 
     private static string FormatCardHeader(CardData card)
@@ -3484,6 +3656,72 @@ public partial class BattleScene : Control
     private void HideLoading()
     {
         _loadingOverlay.Visible = false;
+    }
+
+    private void ShowGameTip(string text)
+    {
+        _tipQueue.Enqueue(text);
+        if (!_tipPlaying)
+        {
+            PlayNextGameTip();
+        }
+    }
+
+    private async void PlayNextGameTip()
+    {
+        if (_tipPlaying || _tipQueue.Count == 0)
+        {
+            return;
+        }
+
+        _tipPlaying = true;
+        var text = _tipQueue.Dequeue();
+        var root = GetNode<Panel>("Root");
+        var tip = new PanelContainer
+        {
+            Name = "CenterTip",
+            MouseFilter = MouseFilterEnum.Ignore,
+            CustomMinimumSize = new Vector2(820, 58),
+            ZIndex = 190
+        };
+        tip.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 1));
+
+        var label = new Label
+        {
+            Text = text.Replace("\n", "    |    "),
+            MouseFilter = MouseFilterEnum.Ignore,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        label.AddThemeFontSizeOverride("font_size", 18);
+        label.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        tip.AddChild(label);
+
+        root.AddChild(tip);
+
+        var width = Math.Min(920f, Math.Max(520f, root.Size.X - 120f));
+        var height = 58f;
+        var target = new Vector2((root.Size.X - width) / 2f, Math.Clamp(root.Size.Y * 0.28f, 84f, Math.Max(84f, root.Size.Y - 170f)));
+        tip.Size = new Vector2(width, height);
+        tip.Position = target + new Vector2(0, -54f);
+        tip.Modulate = new Color(1f, 1f, 1f, 0f);
+
+        var tween = CreateTween();
+        tween.TweenProperty(tip, "position", target, 0.22f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
+        tween.Parallel().TweenProperty(tip, "modulate:a", 1.0f, 0.18f);
+        tween.TweenInterval(1.15f);
+        tween.TweenProperty(tip, "position", target + new Vector2(0, -16f), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.Parallel().TweenProperty(tip, "modulate:a", 0.0f, 0.45f);
+        tween.TweenCallback(Callable.From(tip.QueueFree));
+        await ToSignal(tween, Tween.SignalName.Finished);
+        _tipPlaying = false;
+        PlayNextGameTip();
+    }
+
+    private void ShowGameTipAt(string text, Vector2 globalPosition, bool centerOnPoint = true)
+    {
+        ShowGameTip(text);
     }
 
     private void ApplyUiStyle()
@@ -3890,5 +4128,17 @@ public partial class BattleScene : Control
         public int Damage { get; set; }
         public int FogGain { get; set; }
         public List<string> Notes { get; } = new();
+    }
+
+    private sealed class RunTipSnapshot
+    {
+        public int Hp { get; set; }
+        public int Shards { get; set; }
+        public int LampOil { get; set; }
+        public int FogPressure { get; set; }
+        public int Score { get; set; }
+        public int DeckCount { get; set; }
+        public int RelicCount { get; set; }
+        public Dictionary<string, int> Items { get; set; } = new();
     }
 }
