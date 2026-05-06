@@ -97,6 +97,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(420, 64)
 text = "卡牌库"
 
+[node name="ExitButton" type="Button" parent="Root/Margin/MenuLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(420, 64)
+text = "退出游戏"
+
 [node name="SettingsPanel" type="PanelContainer" parent="Root/Margin/MenuLayout"]
 visible = false
 layout_mode = 2

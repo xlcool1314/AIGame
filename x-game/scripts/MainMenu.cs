@@ -10,6 +10,7 @@ public partial class MainMenu : Control
     private Button _settingsButton = null!;
     private Button _unlocksButton = null!;
     private Button _cardLibraryButton = null!;
+    private Button _exitButton = null!;
     private Button _backButton = null!;
     private Button _unlocksBackButton = null!;
     private Button _cardLibraryBackButton = null!;
@@ -42,6 +43,7 @@ public partial class MainMenu : Control
         _settingsButton = GetNode<Button>("Root/Margin/MenuLayout/SettingsButton");
         _unlocksButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksButton");
         _cardLibraryButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryButton");
+        _exitButton = GetNode<Button>("Root/Margin/MenuLayout/ExitButton");
         _heroTexture = GetNode<TextureRect>("Root/HeroTexture");
         _settingsPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/SettingsPanel");
         _unlocksPanel = GetNode<PanelContainer>("Root/Margin/MenuLayout/UnlocksPanel");
@@ -67,6 +69,7 @@ public partial class MainMenu : Control
         _settingsButton.Pressed += OnSettingsPressed;
         _unlocksButton.Pressed += OnUnlocksPressed;
         _cardLibraryButton.Pressed += OnCardLibraryPressed;
+        _exitButton.Pressed += OnExitPressed;
         _backButton.Pressed += OnBackPressed;
         _unlocksBackButton.Pressed += OnUnlocksBackPressed;
         _cardLibraryBackButton.Pressed += OnCardLibraryBackPressed;
@@ -113,6 +116,11 @@ public partial class MainMenu : Control
     {
         ShowSubPage(_cardLibraryPanel);
         RenderCardLibrary();
+    }
+
+    private void OnExitPressed()
+    {
+        GetTree().Quit();
     }
 
     private void OnBackPressed()
@@ -162,6 +170,7 @@ public partial class MainMenu : Control
         _settingsButton.Visible = visible;
         _unlocksButton.Visible = visible;
         _cardLibraryButton.Visible = visible;
+        _exitButton.Visible = visible;
     }
 
     private void RenderText()
@@ -173,6 +182,7 @@ public partial class MainMenu : Control
         _settingsButton.Text = Localization.T("settings");
         _unlocksButton.Text = Localization.Language == Localization.English ? "Unlocks" : "解锁";
         _cardLibraryButton.Text = Localization.Language == Localization.English ? "Card Library" : "卡牌库";
+        _exitButton.Text = Localization.Language == Localization.English ? "Exit Game" : "退出游戏";
         _languageLabel.Text = Localization.T("language");
         var closeText = Localization.Language == Localization.English ? "Close" : "关闭";
         _backButton.Text = closeText;
@@ -420,6 +430,7 @@ public partial class MainMenu : Control
         MistTheme.StyleButton(_settingsButton, MistButtonVariant.Purple);
         MistTheme.StyleButton(_unlocksButton, MistButtonVariant.Gold);
         MistTheme.StyleButton(_cardLibraryButton, MistButtonVariant.Neutral);
+        MistTheme.StyleButton(_exitButton, MistButtonVariant.Neutral);
         MistTheme.StyleButton(_backButton, MistButtonVariant.Neutral);
         MistTheme.StyleButton(_unlocksBackButton, MistButtonVariant.Neutral);
         MistTheme.StyleButton(_cardLibraryBackButton, MistButtonVariant.Neutral);
