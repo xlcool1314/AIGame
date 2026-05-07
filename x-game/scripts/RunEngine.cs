@@ -4,8 +4,6 @@ using System.Collections.Generic;
 
 public partial class RunEngine : Node
 {
-    private static string L(string zh, string en) => Localization.Pick(zh, en);
-
     public int PlayerHp { get; private set; } = 70;
     public int PlayerMaxHp { get; private set; } = 70;
     public int Shards { get; private set; }
@@ -32,7 +30,6 @@ public partial class RunEngine : Node
     public readonly List<ItemStackData> Items = new();
     public readonly List<string> Relics = new();
     public readonly List<List<RunRoom>> MapLayers = new();
-    public readonly HashSet<string> VisitedRoomNodeIds = new();
     public MinefieldState? Minefield { get; private set; }
     public readonly List<string> Log = new();
 
@@ -60,7 +57,6 @@ public partial class RunEngine : Node
         Score = 0;
         CurrentRoomNodeId = string.Empty;
         CurrentRoom = null;
-        VisitedRoomNodeIds.Clear();
 
         PlayerDeck.Clear();
         PlayerDeck.AddRange(gameData.BuildStarterDeck(character.DeckId));
@@ -75,7 +71,7 @@ public partial class RunEngine : Node
         SelectObjective(gameData);
 
         Log.Clear();
-        Log.Add(L("你点亮手电，钻进怪奇小屋的床下暗门。", "You switch on the flashlight and slip through the trapdoor under the bed."));
+        Log.Add("你点亮矿灯，进入迷雾矿井。");
     }
 
     public void LoadFromSave(GameData gameData, RunSaveData saveData)
@@ -105,7 +101,6 @@ public partial class RunEngine : Node
         }
         BuildMapLayers(gameData);
         CurrentRoom = FindRoomByNodeId(CurrentRoomNodeId);
-        RebuildVisitedRooms();
         Minefield = null;
 
         PlayerDeck.Clear();
@@ -131,7 +126,8 @@ public partial class RunEngine : Node
         }
 
         Log.Clear();
-        Log.Add(L("读取探险记录，手电重新亮起。", "Adventure record loaded. The flashlight glows again."));
+        Log.AddRange(saveData.Log);
+        Log.Add("读取存档，矿灯重新亮起。");
     }
 
     public bool HasNextLayer()
@@ -187,17 +183,16 @@ public partial class RunEngine : Node
         var choices = GetNextRoomChoices();
         if (choices.Count == 0)
         {
-            throw new InvalidOperationException("已经没有可进入的地下房间。");
+            throw new InvalidOperationException("已经没有可进入的房间。");
         }
 
         var clampedIndex = Math.Clamp(choiceIndex, 0, choices.Count - 1);
         CurrentLayerIndex++;
         CurrentRoom = choices[clampedIndex];
         CurrentRoomNodeId = CurrentRoom.NodeId;
-        VisitedRoomNodeIds.Add(CurrentRoom.NodeId);
         Minefield = null;
         ApplyRoomPressure(CurrentRoom);
-        Log.Add(L($"进入地下第 {CurrentLayerIndex + 1} 间：{CurrentRoom.DisplayTitle()}", $"Enter underground room {CurrentLayerIndex + 1}: {CurrentRoom.DisplayTitle()}"));
+        Log.Add($"进入第 {CurrentLayerIndex + 1} 层：{CurrentRoom.DisplayTitle()}");
         return CurrentRoom;
     }
 
@@ -208,7 +203,7 @@ public partial class RunEngine : Node
         Minefield = MinefieldState.Create(config, seed);
         var dangerCount = config.Monsters + config.Traps;
         ApplyMineStartPreview(gameData, seed);
-        Log.Add(L($"开始翻找：{config.Width}x{config.Height} 房间棋盘，疑似惊吓格 {dangerCount} 处。", $"Search started: {config.Width}x{config.Height} room board with {dangerCount} suspected scare tiles."));
+        Log.Add($"开始探勘：{config.Width}x{config.Height} 矿区，疑似雷区 {dangerCount} 处。");
     }
 
     private void ApplyMineStartPreview(GameData? gameData, int seed)
@@ -227,7 +222,7 @@ public partial class RunEngine : Node
         var previewed = Minefield.PreviewRandomCells(previewCount, HashCode.Combine(seed, "preview"));
         if (previewed > 0)
         {
-            Log.Add(L($"侦探效果：预览 {previewed} 个隐藏房间格。", $"Detective effect: previewed {previewed} hidden room tile(s)."));
+            Log.Add($"Survey effect: previewed {previewed} hidden tiles.");
         }
     }
 
@@ -242,7 +237,7 @@ public partial class RunEngine : Node
         if (result == MineRevealResult.Monster)
         {
             FogPressure++;
-            Log.Add(L("惊动房间里的怪东西，战斗开始。", "A creepy thing in the room is startled. Battle starts."));
+            Log.Add("惊动矿穴怪物，战斗开始。");
         }
         else if (result == MineRevealResult.Trap)
         {
@@ -254,21 +249,21 @@ public partial class RunEngine : Node
 
             PlayerHp = Math.Max(0, PlayerHp - trapDamage);
             FogPressure++;
-            Log.Add(L($"触发吓人机关，失去 {trapDamage} 点勇气。", $"Scary trap triggered. Lose {trapDamage} courage."));
+            Log.Add($"触发陷阱，失去 {trapDamage} 点生命。");
         }
         else if (result == MineRevealResult.Treasure)
         {
             Shards += 18;
-            Log.Add(L("打开藏品盒，获得 18 枚纽扣。", "Opened a curio box. Gain 18 buttons."));
+            Log.Add("打开宝箱，获得 18 矿晶。");
         }
         else if (result == MineRevealResult.Ore)
         {
             Shards += 8;
-            Log.Add(L("捡起亮闪闪的纽扣，获得 8 枚纽扣。", "Picked up shiny buttons. Gain 8 buttons."));
+            Log.Add("采集矿石，获得 8 矿晶。");
         }
         else if (result == MineRevealResult.Exit)
         {
-            Log.Add(L("你找到了通往下一间房的门，可以继续翻找或立刻前进。", "You found the door to the next room. Keep searching or move on."));
+            Log.Add("你找到了通往下一层的出口，可以继续探索或立刻深入。");
         }
 
         if (Minefield.IsCleared)
@@ -277,7 +272,7 @@ public partial class RunEngine : Node
             MinesCleared++;
             Score += 18 + Minefield.RewardShards;
             ReduceFogPressure(1);
-            Log.Add(L($"房间清理完成，获得 {Minefield.RewardShards} 枚纽扣。", $"Room cleared. Gain {Minefield.RewardShards} buttons."));
+            Log.Add($"矿区清理完成，获得 {Minefield.RewardShards} 矿晶。");
         }
 
         return result;
@@ -298,7 +293,7 @@ public partial class RunEngine : Node
         if (item.UseMode == "instant_heal")
         {
             Heal(item.Value);
-            Log.Add(L($"使用 {item.DisplayName()}，恢复 {item.Value} 点生命。", $"Used {item.DisplayName()}. Restore {item.Value} courage."));
+            Log.Add($"使用 {item.DisplayName()}，恢复 {item.Value} 点生命。");
             return true;
         }
 
@@ -314,7 +309,7 @@ public partial class RunEngine : Node
 
         if (!Minefield.CanPreview(index))
         {
-            Log.Add(L("这个房间格不需要窥探。", "This room tile does not need previewing."));
+            Log.Add("这个矿格不需要探测。");
             return false;
         }
 
@@ -327,10 +322,10 @@ public partial class RunEngine : Node
         if (item.Id == "smoke_marker" && Minefield.Cells[index].IsDanger)
         {
             Minefield.Cells[index].IsFlagged = true;
-            Log.Add(L($"贴纸烟雾标记了危险格：{result}。", $"Sticker Smoke marked a dangerous tile: {result}."));
+            Log.Add($"Smoke marker locked a dangerous tile: {result}.");
             return true;
         }
-        Log.Add(L($"探测灯照亮目标：{result}。", $"Peek Light reveals the target: {result}."));
+        Log.Add($"探测灯照亮目标：{result}。");
         return true;
     }
 
@@ -353,7 +348,7 @@ public partial class RunEngine : Node
         Shards += shardReward;
         ReduceFogPressure(1);
         ApplyMineBattlePostEffects(gameData);
-        Log.Add(L("房间里的怪东西被赶跑，你获得一些纽扣并继续翻找。", "The creepy thing is chased off. You gain buttons and keep searching."));
+        Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
     }
 
     private void ApplyMineBattlePostEffects(GameData? gameData)
@@ -428,7 +423,7 @@ public partial class RunEngine : Node
 
         Relics.Add(relic.Id);
         ApplyImmediateRelicEffects(relic);
-        Log.Add(L($"纪念物入手：{relic.DisplayName()} - {relic.DisplayDescription()}", $"Keepsake acquired: {relic.DisplayName()} - {relic.DisplayDescription()}"));
+        Log.Add($"遗物入手：{relic.DisplayName()} - {relic.DisplayDescription()}");
         return true;
     }
 
@@ -448,11 +443,11 @@ public partial class RunEngine : Node
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add(L($"发现：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气，加入卡牌 {chosenCard.DisplayName()}。", $"Finds: gain {shardReward} buttons, restore {reward.Heal} courage, add card {chosenCard.DisplayName()}."));
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
         }
         else
         {
-            Log.Add(L($"发现：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气。", $"Finds: gain {shardReward} buttons and restore {reward.Heal} courage."));
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
         }
     }
 
@@ -468,32 +463,32 @@ public partial class RunEngine : Node
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add(L($"发现：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气，加入卡牌 {chosenCard.DisplayName()}。", $"Finds: gain {shardReward} buttons, restore {reward.Heal} courage, add card {chosenCard.DisplayName()}."));
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
         }
 
         if (chosenRelic != null)
         {
             AddRelic(chosenRelic);
-            Log.Add(L($"发现：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气，并带走纪念物 {chosenRelic.DisplayName()}。", $"Finds: gain {shardReward} buttons, restore {reward.Heal} courage, and take keepsake {chosenRelic.DisplayName()}."));
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，并带走遗物 {chosenRelic.DisplayName()}。");
         }
 
         if (chosenCard == null && chosenRelic == null)
         {
-            Log.Add(L($"发现：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气。", $"Finds: gain {shardReward} buttons and restore {reward.Heal} courage."));
+            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
         }
 
         var lampRestore = GetRunEffectValue(gameData, "post_battle_lamp");
         if (lampRestore > 0)
         {
             RestoreLamp(lampRestore);
-            Log.Add(L($"纪念物效果：战斗后恢复 {lampRestore} 点手电电量。", $"Keepsake effect: restore {lampRestore} flashlight battery after battle."));
+            Log.Add($"遗物效果：战斗后恢复 {lampRestore} 点灯油。");
         }
         ReduceFogPressure(1);
         var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
         if (fogReduction > 0)
         {
             ReduceFogPressure(fogReduction);
-            Log.Add(L($"纪念物效果：声响 -{fogReduction}。", $"Keepsake effect: noise -{fogReduction}."));
+            Log.Add($"Battle reward effect: fog pressure -{fogReduction}.");
         }
     }
 
@@ -501,19 +496,19 @@ public partial class RunEngine : Node
     {
         if (HasRelic(relic.Id))
         {
-            Log.Add(L($"已经拥有纪念物 {relic.DisplayName()}。", $"Already have keepsake {relic.DisplayName()}."));
+            Log.Add($"已经拥有遗物 {relic.DisplayName()}。");
             return false;
         }
 
         if (Shards < cost)
         {
-            Log.Add(L($"纽扣不足，无法交换纪念物 {relic.DisplayName()}。", $"Not enough buttons to trade for keepsake {relic.DisplayName()}."));
+            Log.Add($"矿晶不足，无法购买遗物 {relic.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         AddRelic(relic);
-        Log.Add(L($"花费 {cost} 枚纽扣交换纪念物 {relic.DisplayName()}。", $"Spent {cost} buttons to trade for keepsake {relic.DisplayName()}."));
+        Log.Add($"花费 {cost} 矿晶购买遗物 {relic.DisplayName()}。");
         return true;
     }
 
@@ -521,13 +516,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add(L($"纽扣不足，无法交换 {card.DisplayName()}。", $"Not enough buttons to trade for {card.DisplayName()}."));
+            Log.Add($"矿晶不足，无法购买 {card.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         PlayerDeck.Add(card);
-        Log.Add(L($"花费 {cost} 枚纽扣交换 {card.DisplayName()}。", $"Spent {cost} buttons to trade for {card.DisplayName()}."));
+        Log.Add($"花费 {cost} 矿晶购买 {card.DisplayName()}。");
         return true;
     }
 
@@ -541,20 +536,20 @@ public partial class RunEngine : Node
         var card = PlayerDeck[deckIndex];
         if (string.IsNullOrWhiteSpace(card.UpgradeTo))
         {
-            Log.Add(L($"{card.DisplayName()} 暂时没有可用强化。", $"{card.DisplayName()} has no available upgrade."));
+            Log.Add($"{card.DisplayName()} 暂时没有可用升级。");
             return false;
         }
 
         if (Shards < cost)
         {
-            Log.Add(L($"纽扣不足，无法强化 {card.DisplayName()}。", $"Not enough buttons to upgrade {card.DisplayName()}."));
+            Log.Add($"矿晶不足，无法升级 {card.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         var upgraded = gameData.GetCard(card.UpgradeTo);
         PlayerDeck[deckIndex] = upgraded;
-        Log.Add(L($"牌组整备：{card.DisplayName()} 强化为 {upgraded.DisplayName()}。", $"Deck tuned: {card.DisplayName()} upgraded to {upgraded.DisplayName()}."));
+        Log.Add($"牌组整备：{card.DisplayName()} 升级为 {upgraded.DisplayName()}。");
         return true;
     }
 
@@ -567,14 +562,14 @@ public partial class RunEngine : Node
 
         if (Shards < cost)
         {
-            Log.Add(L("纽扣不足，无法精简牌组。", "Not enough buttons to slim the deck."));
+            Log.Add("矿晶不足，无法精简牌组。");
             return false;
         }
 
         Shards -= cost;
         var removed = PlayerDeck[deckIndex];
         PlayerDeck.RemoveAt(deckIndex);
-        Log.Add(L($"牌组整备：移除 {removed.DisplayName()}。", $"Deck tuned: removed {removed.DisplayName()}."));
+        Log.Add($"牌组整备：移除 {removed.DisplayName()}。");
         return true;
     }
 
@@ -582,13 +577,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add(L("纽扣不足，无法交换零食。", "Not enough buttons to trade for a snack."));
+            Log.Add("矿晶不足，无法购买治疗。");
             return false;
         }
 
         Shards -= cost;
         Heal(amount);
-        Log.Add(L($"花费 {cost} 枚纽扣交换零食，恢复 {amount} 点勇气。", $"Spent {cost} buttons on a snack. Restore {amount} courage."));
+        Log.Add($"花费 {cost} 矿晶修理装备，恢复 {amount} 点生命。");
         return true;
     }
 
@@ -596,13 +591,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add(L($"纽扣不足，无法交换 {item.DisplayName()}。", $"Not enough buttons to trade for {item.DisplayName()}."));
+            Log.Add($"Not enough shards to buy {item.DisplayName()}.");
             return false;
         }
 
         Shards -= cost;
         AddItem(item.Id, Math.Max(1, count));
-        Log.Add(L($"花费 {cost} 枚纽扣交换 {item.DisplayName()} x{Math.Max(1, count)}。", $"Spent {cost} buttons to trade for {item.DisplayName()} x{Math.Max(1, count)}."));
+        Log.Add($"Bought {item.DisplayName()} x{Math.Max(1, count)} for {cost} shards.");
         return true;
     }
 
@@ -612,21 +607,21 @@ public partial class RunEngine : Node
         Shards += gained;
         if (gained > 0)
         {
-            Log.Add(L($"{reason}: 获得 {gained} 枚纽扣。", $"{reason}: gained {gained} buttons."));
+            Log.Add($"{reason}: gained {gained} shards.");
         }
     }
 
     public void AddCardReward(CardData card, string reason)
     {
         PlayerDeck.Add(card);
-        Log.Add(L($"{reason}: 将 {card.DisplayName()} 加入牌组。", $"{reason}: added {card.DisplayName()} to the deck."));
+        Log.Add($"{reason}: added {card.DisplayName()} to the deck.");
     }
 
     public void AddItemReward(ItemData item, int count, string reason)
     {
         var gained = Math.Max(1, count);
         AddItem(item.Id, gained);
-        Log.Add(L($"{reason}: 获得 {item.DisplayName()} x{gained}。", $"{reason}: gained {item.DisplayName()} x{gained}."));
+        Log.Add($"{reason}: gained {item.DisplayName()} x{gained}.");
     }
 
     public void ApplyCalibrationOutcome(int shards, int oil, int fogReduction, int heal, string cardId, int damage, int fogGain, GameData gameData)
@@ -656,70 +651,22 @@ public partial class RunEngine : Node
         }
 
         Score += Math.Max(0, shards / 2 + oil + fogReduction * 6 + heal);
-        Log.Add(L($"小屋机关调试完成：纽扣 +{Math.Max(0, shards)}，手电 +{Math.Max(0, oil)}，声响 -{Math.Max(0, fogReduction)}，勇气 +{Math.Max(0, heal)}。", $"House gadget tuned: buttons +{Math.Max(0, shards)}, battery +{Math.Max(0, oil)}, noise -{Math.Max(0, fogReduction)}, courage +{Math.Max(0, heal)}."));
+        Log.Add($"灯阵校准完成：矿晶 +{Math.Max(0, shards)}，灯油 +{Math.Max(0, oil)}，雾压 -{Math.Max(0, fogReduction)}，治疗 +{Math.Max(0, heal)}。");
         if (damage > 0 || fogGain > 0)
         {
-            Log.Add(L($"机关失控：勇气 -{damage}，声响 +{fogGain}。", $"Gadget surge: courage -{damage}, noise +{fogGain}."));
+            Log.Add($"校准震荡：生命 -{damage}，雾压 +{fogGain}。");
         }
     }
 
-    public bool SpendLamp(int amount, string reason)
+    public void ApplyMiniGameActions(IEnumerable<RunAction> actions, GameData gameData, string reason)
     {
-        var cost = Math.Max(0, amount);
-        if (cost <= 0)
+        foreach (var action in actions)
         {
-            return true;
+            ApplyRunAction(action, gameData);
         }
 
-        if (LampOil < cost)
-        {
-            Log.Add(L("手电电量不足，没法再仔细窥探。", "Not enough battery to peek carefully."));
-            return false;
-        }
-
-        LampOil -= cost;
-        Log.Add(L($"{reason}: 手电 -{cost}。", $"{reason}: battery -{cost}."));
-        return true;
-    }
-
-    public void ApplyStashOutcome(int shards, int lamp, int fogReduction, int heal, int damage, int fogGain, string cardId, string itemId, int itemCount, string relicId, GameData gameData, string reason)
-    {
-        if (damage > 0)
-        {
-            PlayerHp = Math.Max(1, PlayerHp - damage);
-        }
-
-        if (fogGain > 0)
-        {
-            FogPressure += fogGain;
-        }
-
-        if (shards > 0)
-        {
-            Shards += shards;
-        }
-
-        RestoreLamp(lamp);
-        ReduceFogPressure(fogReduction);
-        Heal(heal);
-
-        if (!string.IsNullOrWhiteSpace(cardId))
-        {
-            PlayerDeck.Add(gameData.GetCard(cardId));
-        }
-
-        if (!string.IsNullOrWhiteSpace(itemId))
-        {
-            AddItem(itemId, Math.Max(1, itemCount));
-        }
-
-        if (!string.IsNullOrWhiteSpace(relicId))
-        {
-            AddRelic(gameData.GetRelic(relicId));
-        }
-
-        Score += Math.Max(0, shards / 2 + lamp + fogReduction * 6 + heal + (!string.IsNullOrWhiteSpace(cardId) ? 10 : 0) + (!string.IsNullOrWhiteSpace(itemId) ? 6 : 0) + (!string.IsNullOrWhiteSpace(relicId) ? 18 : 0));
-        Log.Add(L($"{reason}: 藏品选择完成。", $"{reason}: stash choice resolved."));
+        Score += 10;
+        Log.Add(reason);
     }
 
     public void ApplyEventChoice(EventChoiceData choice, GameData gameData)
@@ -743,7 +690,7 @@ public partial class RunEngine : Node
             {
                 AddRelic(gameData.GetRelic("calibrated_lamp"));
             }
-            Log.Add(L("你校准手电并整理口袋，获得 12 枚纽扣、18 点手电电量和纪念物：校准手电。", "You tune the flashlight and sort your pockets: gain 12 buttons, 18 battery, and keepsake Tuned Flashlight."));
+            Log.Add("你校准矿灯并整理矿石，获得 12 矿晶、18 灯油和遗物：校准矿灯。");
             return;
         }
 
@@ -751,7 +698,7 @@ public partial class RunEngine : Node
         {
             RestoreLamp(25);
             ReduceFogPressure(3);
-            Log.Add(L("你检查了手电光束：手电 +25，声响 -3。", "You check the flashlight beam: battery +25, noise -3."));
+            Log.Add("You recalibrated the lamp beam: oil +25, fog pressure -3.");
             return;
         }
 
@@ -759,7 +706,7 @@ public partial class RunEngine : Node
         Heal(amount);
         RestoreLamp(10);
         ReduceFogPressure(2);
-        Log.Add(L($"你在柔软角落短暂躲藏，恢复 {amount} 点勇气和 10 点手电电量。", $"You hide in a soft corner for a moment: restore {amount} courage and 10 battery."));
+        Log.Add($"你在废弃升降机旁短暂休整，恢复 {amount} 点生命和 10 灯油。");
     }
 
     public int CalculateMetaEmbers(bool victory)
@@ -830,7 +777,7 @@ public partial class RunEngine : Node
                 AddItem(action.ItemId, action.Value <= 0 ? 1 : action.Value);
                 break;
             default:
-                Log.Add(L($"未知跑局动作: {action.Type}", $"Unknown run action: {action.Type}"));
+                Log.Add($"未知跑局动作: {action.Type}");
                 break;
         }
     }
@@ -901,7 +848,7 @@ public partial class RunEngine : Node
             var rooms = new List<RunRoom>();
             for (var roomIndex = 0; roomIndex < layer.Rooms.Count; roomIndex++)
             {
-                var room = layer.Rooms[roomIndex];
+                var room = ResolveRoomVariant(gameData, layer.Rooms[roomIndex], layerIndex, roomIndex);
                 rooms.Add(new RunRoom(
                     $"L{layerIndex}R{roomIndex}",
                     layerIndex,
@@ -913,6 +860,7 @@ public partial class RunEngine : Node
                     room.EnemyIds,
                     room.EventId,
                     room.RewardId,
+                    room.MiniGameId,
                     room.MineConfig,
                     room.Risk,
                     room.LampCost,
@@ -925,43 +873,118 @@ public partial class RunEngine : Node
         BuildMapConnections();
     }
 
-    private void RebuildVisitedRooms()
+    private RoomData ResolveRoomVariant(GameData gameData, RoomData source, int layerIndex, int roomIndex)
     {
-        VisitedRoomNodeIds.Clear();
-        if (CurrentLayerIndex < 0 || string.IsNullOrWhiteSpace(CurrentRoomNodeId) || MapLayers.Count == 0)
+        var result = new RoomData
         {
-            return;
+            Kind = source.Kind,
+            Title = source.Title,
+            TitleEn = source.TitleEn,
+            EnemyId = source.EnemyId,
+            EnemyIds = new List<string>(source.EnemyIds),
+            EventId = source.EventId,
+            RewardId = source.RewardId,
+            MiniGameId = source.MiniGameId,
+            MiniGamePool = new List<string>(source.MiniGamePool),
+            MiniGameChance = source.MiniGameChance,
+            Risk = source.Risk,
+            LampCost = source.LampCost,
+            RewardBonus = source.RewardBonus,
+            MineConfig = source.MineConfig
+        };
+
+        if (result.Kind == "calibration")
+        {
+            result.Kind = "minigame";
+            result.MiniGameId = PickMiniGameId(gameData, result, layerIndex, roomIndex, "calibration");
+            ApplyMiniGameRoomTitle(gameData, result);
+            return result;
         }
 
-        // Trace back from current room to find all visited rooms on the path
-        var currentRoom = CurrentRoom;
-        if (currentRoom == null)
+        if (result.Kind != "event" && result.Kind != "treasure")
         {
-            // If only CurrentRoomNodeId is known, at least mark it
-            VisitedRoomNodeIds.Add(CurrentRoomNodeId);
-            return;
+            return result;
         }
 
-        VisitedRoomNodeIds.Add(currentRoom.NodeId);
-
-        // Walk backwards through layers to find the visited path
-        for (var layerIndex = CurrentLayerIndex - 1; layerIndex >= 0; layerIndex--)
+        var random = new Random(HashCode.Combine(RunSeed, layerIndex, roomIndex, CharacterId, "mini_variant"));
+        var baseChance = result.MiniGameChance > 0
+            ? result.MiniGameChance
+            : result.Kind == "event"
+                ? Math.Clamp(18 + layerIndex * 4, 20, 42)
+                : Math.Clamp(8 + layerIndex * 2, 10, 24);
+        if (layerIndex <= 0 || random.Next(100) >= baseChance)
         {
-            if (layerIndex >= MapLayers.Count)
-            {
-                continue;
-            }
+            return result;
+        }
 
-            foreach (var room in MapLayers[layerIndex])
+        result.Kind = "minigame";
+        result.MiniGameId = PickMiniGameId(gameData, result, layerIndex, roomIndex, result.Kind);
+        result.Risk = Math.Max(1, result.Risk);
+        result.LampCost = Math.Max(4, result.LampCost);
+        ApplyMiniGameRoomTitle(gameData, result);
+        return result;
+    }
+
+    private string PickMiniGameId(GameData gameData, RoomData room, int layerIndex, int roomIndex, string salt)
+    {
+        var candidates = new List<MiniGameData>();
+        if (!string.IsNullOrWhiteSpace(room.MiniGameId))
+        {
+            candidates.Add(gameData.GetMiniGame(room.MiniGameId));
+        }
+
+        foreach (var id in room.MiniGamePool)
+        {
+            candidates.Add(gameData.GetMiniGame(id));
+        }
+
+        if (candidates.Count == 0)
+        {
+            foreach (var miniGame in gameData.MiniGames.MiniGames)
             {
-                if (room.NextNodeIds.Contains(currentRoom.NodeId))
+                var layerNumber = layerIndex + 1;
+                if (layerNumber >= miniGame.MinLayer && layerNumber <= miniGame.MaxLayer)
                 {
-                    VisitedRoomNodeIds.Add(room.NodeId);
-                    currentRoom = room;
-                    break;
+                    candidates.Add(miniGame);
                 }
             }
         }
+
+        if (candidates.Count == 0)
+        {
+            return "lamp_array";
+        }
+
+        var totalWeight = 0;
+        foreach (var miniGame in candidates)
+        {
+            totalWeight += Math.Max(1, miniGame.Weight);
+        }
+
+        var random = new Random(HashCode.Combine(RunSeed, layerIndex, roomIndex, salt));
+        var roll = random.Next(Math.Max(1, totalWeight));
+        foreach (var miniGame in candidates)
+        {
+            roll -= Math.Max(1, miniGame.Weight);
+            if (roll < 0)
+            {
+                return miniGame.Id;
+            }
+        }
+
+        return candidates[0].Id;
+    }
+
+    private static void ApplyMiniGameRoomTitle(GameData gameData, RoomData room)
+    {
+        if (string.IsNullOrWhiteSpace(room.MiniGameId))
+        {
+            return;
+        }
+
+        var miniGame = gameData.GetMiniGame(room.MiniGameId);
+        room.Title = miniGame.Title;
+        room.TitleEn = miniGame.TitleEn;
     }
 
     private void BuildMapConnections()
@@ -1162,19 +1185,13 @@ public partial class RunEngine : Node
             return true;
         }
 
-        Log.Add(L("没有可用道具。", "No usable item available."));
+        Log.Add("没有可用道具。");
         return false;
     }
 
     public void ReduceFogPressure(int amount)
     {
         FogPressure = Math.Max(0, FogPressure - Math.Max(0, amount));
-    }
-
-    public void ApplyTrapDamage(int damage, int fogGain)
-    {
-        PlayerHp = Math.Max(1, PlayerHp - damage);
-        FogPressure = Math.Max(0, FogPressure + fogGain);
     }
 
     private void AddItem(string itemId, int count)
@@ -1210,14 +1227,14 @@ public partial class RunEngine : Node
 
         if (LampOil >= 0)
         {
-            Log.Add(L($"手电消耗 {lampCost}。剩余电量 {LampOil}/{MaxLampOil}。", $"Flashlight battery -{lampCost}. Remaining {LampOil}/{MaxLampOil}."));
+            Log.Add($"矿灯消耗 {lampCost}。剩余灯油 {LampOil}/{MaxLampOil}。");
             return;
         }
 
         var damage = Math.Min(Math.Max(0, PlayerHp - 1), Math.Abs(LampOil) + FogPressure);
         PlayerHp = Math.Max(1, PlayerHp - damage);
         LampOil = 0;
-        Log.Add(L($"手电快没电了，声响造成 {damage} 点惊吓伤害。声响 {FogPressure}。", $"The flashlight is nearly out. Noise causes {damage} scare damage. Noise {FogPressure}."));
+        Log.Add($"灯油见底，雾压造成 {damage} 点伤害。雾压 {FogPressure}。");
     }
 
     private void RestoreLamp(int amount)
@@ -1231,14 +1248,14 @@ public partial class RunEngine : Node
         if (lampRestore > 0)
         {
             RestoreLamp(lampRestore);
-            Log.Add(L($"战斗后效果：手电 +{lampRestore}。", $"After-battle effect: battery +{lampRestore}."));
+            Log.Add($"Post-battle effect: oil +{lampRestore}.");
         }
 
         var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
         if (fogReduction > 0)
         {
             ReduceFogPressure(fogReduction);
-            Log.Add(L($"战斗后效果：声响 -{fogReduction}。", $"After-battle effect: noise -{fogReduction}."));
+            Log.Add($"Post-battle effect: fog pressure -{fogReduction}.");
         }
     }
 }
@@ -1254,6 +1271,7 @@ public class RunRoom
     public List<string> EnemyIds { get; }
     public string EventId { get; }
     public string RewardId { get; }
+    public string MiniGameId { get; }
     public string TitleEn { get; }
     public MineRoomConfig MineConfig { get; }
     public int Risk { get; }
@@ -1261,7 +1279,7 @@ public class RunRoom
     public int RewardBonus { get; }
     public List<string> NextNodeIds { get; } = new();
 
-    public RunRoom(string nodeId, int layerIndex, int columnIndex, string kind, string title, string titleEn = "", string enemyId = "", List<string>? enemyIds = null, string eventId = "", string rewardId = "", MineRoomConfig? mineConfig = null, int risk = 1, int lampCost = 8, int rewardBonus = 0)
+    public RunRoom(string nodeId, int layerIndex, int columnIndex, string kind, string title, string titleEn = "", string enemyId = "", List<string>? enemyIds = null, string eventId = "", string rewardId = "", string miniGameId = "", MineRoomConfig? mineConfig = null, int risk = 1, int lampCost = 8, int rewardBonus = 0)
     {
         NodeId = nodeId;
         LayerIndex = layerIndex;
@@ -1273,6 +1291,7 @@ public class RunRoom
         EnemyIds = enemyIds == null ? new List<string>() : new List<string>(enemyIds);
         EventId = eventId;
         RewardId = rewardId;
+        MiniGameId = miniGameId;
         MineConfig = mineConfig ?? new MineRoomConfig();
         Risk = Math.Clamp(risk, 1, 4);
         LampCost = Math.Max(0, lampCost);
@@ -1413,21 +1432,21 @@ public class MinefieldState
     {
         if (index < 0 || index >= Cells.Count)
         {
-            return Localization.Pick("未知", "Unknown");
+            return "未知";
         }
 
         var cell = Cells[index];
         cell.IsPreviewed = true;
         return cell.Type switch
         {
-            MineTileType.Empty => Localization.Pick($"安全格 惊{cell.DangerClue}/找{cell.RewardClue}", $"Safe tile Scare {cell.DangerClue}/Find {cell.RewardClue}"),
-            MineTileType.Entrance => Localization.Pick("入口", "Entrance"),
-            MineTileType.Exit => Localization.Pick("出口", "Exit"),
-            MineTileType.Monster => Localization.Pick("怪物", "Monster"),
-            MineTileType.Trap => Localization.Pick("陷阱", "Trap"),
-            MineTileType.Treasure => Localization.Pick("宝箱", "Curio box"),
-            MineTileType.Ore => Localization.Pick("纽扣", "Buttons"),
-            _ => Localization.Pick("未知", "Unknown")
+            MineTileType.Empty => $"安全格 D{cell.DangerClue}/R{cell.RewardClue}",
+            MineTileType.Entrance => "入口",
+            MineTileType.Exit => "出口",
+            MineTileType.Monster => "怪物",
+            MineTileType.Trap => "陷阱",
+            MineTileType.Treasure => "宝箱",
+            MineTileType.Ore => "矿石",
+            _ => "未知"
         };
     }
 

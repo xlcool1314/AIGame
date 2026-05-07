@@ -16,6 +16,7 @@ public partial class GameData : Node
 	public UnlocksConfig Unlocks { get; private set; } = new();
 	public ObjectivesConfig Objectives { get; private set; } = new();
 	public RelicsConfig Relics { get; private set; } = new();
+	public MiniGamesConfig MiniGames { get; private set; } = new();
 
 	public void LoadAll()
 	{
@@ -30,6 +31,7 @@ public partial class GameData : Node
 		Unlocks = LoadJson<UnlocksConfig>("res://data/unlocks.json");
 		Objectives = LoadJson<ObjectivesConfig>("res://data/objectives.json");
 		Relics = LoadJson<RelicsConfig>("res://data/relics.json");
+		MiniGames = LoadJson<MiniGamesConfig>("res://data/minigames.json");
 	}
 
 	public CardData GetCard(string cardId)
@@ -134,6 +136,19 @@ public partial class GameData : Node
 		}
 
 		throw new InvalidOperationException($"未找到道具: {itemId}");
+	}
+
+	public MiniGameData GetMiniGame(string miniGameId)
+	{
+		foreach (var miniGame in MiniGames.MiniGames)
+		{
+			if (miniGame.Id == miniGameId)
+			{
+				return miniGame;
+			}
+		}
+
+		throw new InvalidOperationException($"Mini game not found: {miniGameId}");
 	}
 
 	public List<CardData> BuildStarterDeck(string deckId)
@@ -386,6 +401,11 @@ public class RelicsConfig
 	public List<RelicData> Relics { get; set; } = new();
 }
 
+public class MiniGamesConfig
+{
+	public List<MiniGameData> MiniGames { get; set; } = new();
+}
+
 public class ObjectiveData
 {
 	public string Id { get; set; } = string.Empty;
@@ -432,6 +452,9 @@ public class RoomData
 	public List<string> EnemyIds { get; set; } = new();
 	public string EventId { get; set; } = string.Empty;
 	public string RewardId { get; set; } = string.Empty;
+	public string MiniGameId { get; set; } = string.Empty;
+	public List<string> MiniGamePool { get; set; } = new();
+	public int MiniGameChance { get; set; }
 	public int Risk { get; set; } = 1;
 	public int LampCost { get; set; } = 8;
 	public int RewardBonus { get; set; }
@@ -572,6 +595,50 @@ public class RunAction
 	public string CardId { get; set; } = string.Empty;
 	public string RelicId { get; set; } = string.Empty;
 	public string ItemId { get; set; } = string.Empty;
+}
+
+public class MiniGameData
+{
+	public string Id { get; set; } = string.Empty;
+	public string Type { get; set; } = "choice";
+	public string Title { get; set; } = string.Empty;
+	public string TitleEn { get; set; } = string.Empty;
+	public string Description { get; set; } = string.Empty;
+	public string DescriptionEn { get; set; } = string.Empty;
+	public int PickCount { get; set; } = 1;
+	public int Weight { get; set; } = 10;
+	public int MinLayer { get; set; }
+	public int MaxLayer { get; set; } = 99;
+	public List<MiniGameOptionData> Options { get; set; } = new();
+	public List<MiniGameComboData> Combos { get; set; } = new();
+
+	public string DisplayTitle() => Localization.Pick(Title, TitleEn);
+	public string DisplayDescription() => Localization.Pick(Description, DescriptionEn);
+}
+
+public class MiniGameOptionData
+{
+	public string Id { get; set; } = string.Empty;
+	public string Text { get; set; } = string.Empty;
+	public string TextEn { get; set; } = string.Empty;
+	public string Hint { get; set; } = string.Empty;
+	public string HintEn { get; set; } = string.Empty;
+	public List<string> Tags { get; set; } = new();
+	public List<RunAction> Actions { get; set; } = new();
+
+	public string DisplayText() => Localization.Pick(Text, TextEn);
+	public string DisplayHint() => Localization.Pick(Hint, HintEn);
+}
+
+public class MiniGameComboData
+{
+	public string Tag { get; set; } = string.Empty;
+	public int Count { get; set; } = 2;
+	public string Result { get; set; } = string.Empty;
+	public string ResultEn { get; set; } = string.Empty;
+	public List<RunAction> Actions { get; set; } = new();
+
+	public string DisplayResult() => Localization.Pick(Result, ResultEn);
 }
 
 public class CharacterData
