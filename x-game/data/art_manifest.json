@@ -1,11 +1,11 @@
 {
   "backgrounds": {
-    "main_menu": "res://art/placeholders/ui/menu_hero.svg",
-    "character_select": "res://art/placeholders/ui/menu_hero.svg",
-    "run": "res://art/placeholders/ui/menu_hero.svg",
-    "battle": "res://art/placeholders/ui/menu_hero.svg",
-    "map": "res://art/placeholders/ui/menu_hero.svg",
-    "library": "res://art/placeholders/ui/menu_hero.svg"
+    "main_menu": "res://art/ui/backgrounds/odd_house_cutaway.png",
+    "character_select": "res://art/ui/backgrounds/odd_house_top_house.png",
+    "run": "res://art/ui/backgrounds/odd_house_underground.png",
+    "battle": "res://art/ui/backgrounds/odd_house_underground.png",
+    "map": "res://art/ui/backgrounds/odd_house_cutaway.png",
+    "library": "res://art/ui/backgrounds/odd_house_top_house.png"
   },
   "frames": {
     "panel_stone": "",
@@ -14,7 +14,7 @@
     "button_primary": "",
     "card_attack": "",
     "card_skill": "",
-    "route_node": "",
+    "route_node": "res://art/ui/nodes/odd_house_room_row_1.png",
     "mine_tile": ""
   },
   "icons": {

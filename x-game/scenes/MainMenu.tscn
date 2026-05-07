@@ -65,7 +65,7 @@ theme_override_constants/separation = 18
 [node name="TitleLabel" type="Label" parent="Root/Margin/MenuLayout"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 68
-text = "迷雾矿井"
+text = "怪奇小屋"
 
 [node name="SubtitleLabel" type="Label" parent="Root/Margin/MenuLayout"]
 layout_mode = 2

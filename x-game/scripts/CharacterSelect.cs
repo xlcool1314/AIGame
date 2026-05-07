@@ -35,7 +35,7 @@ public partial class CharacterSelect : Control
         _startButton.Pressed += OnStartPressed;
         _backButton.Pressed += () => ChangeSceneWithLoading(
             "res://scenes/MainMenu.tscn",
-            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
+            Localization.Language == Localization.English ? "Returning to the bedroom..." : "返回卧室……");
 
         ApplyUiStyle();
         BuildLoadingOverlay();
@@ -97,7 +97,7 @@ public partial class CharacterSelect : Control
         GameSession.LoadRequested = false;
         ChangeSceneWithLoading(
             "res://scenes/BattleScene.tscn",
-            Localization.Language == Localization.English ? "Entering the mine..." : "进入矿井……");
+            Localization.Language == Localization.English ? "Climbing through the trapdoor..." : "钻进床下暗门……");
     }
 
     private void ApplyUiStyle()

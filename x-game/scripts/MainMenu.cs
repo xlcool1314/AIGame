@@ -83,7 +83,7 @@ public partial class MainMenu : Control
         GameSession.LoadRequested = false;
         ChangeSceneWithLoading(
             "res://scenes/CharacterSelect.tscn",
-            Localization.Language == Localization.English ? "Preparing the roster..." : "准备角色档案……");
+            Localization.T("loading_choose_kid"));
     }
 
     private void OnContinuePressed()
@@ -97,7 +97,7 @@ public partial class MainMenu : Control
         GameSession.LoadRequested = true;
         ChangeSceneWithLoading(
             "res://scenes/BattleScene.tscn",
-            Localization.Language == Localization.English ? "Loading the current expedition..." : "读取当前探索……");
+            Localization.T("loading_reopen_trapdoor"));
     }
 
     private void OnSettingsPressed()
@@ -180,28 +180,24 @@ public partial class MainMenu : Control
         _newGameButton.Text = Localization.T("new_game");
         _continueButton.Text = Localization.T("continue_game");
         _settingsButton.Text = Localization.T("settings");
-        _unlocksButton.Text = Localization.Language == Localization.English ? "Unlocks" : "解锁";
-        _cardLibraryButton.Text = Localization.Language == Localization.English ? "Card Library" : "卡牌库";
-        _exitButton.Text = Localization.Language == Localization.English ? "Exit Game" : "退出游戏";
+        _unlocksButton.Text = Localization.T("unlocks");
+        _cardLibraryButton.Text = Localization.T("card_library");
+        _exitButton.Text = Localization.T("exit_game");
         _languageLabel.Text = Localization.T("language");
-        var closeText = Localization.Language == Localization.English ? "Close" : "关闭";
+        var closeText = Localization.T("close");
         _backButton.Text = closeText;
         _unlocksBackButton.Text = closeText;
         _cardLibraryBackButton.Text = closeText;
         _languageOption.Select(Localization.Language == Localization.English ? 1 : 0);
         var meta = SaveManager.LoadMeta();
-        _messageLabel.Text = Localization.Language == Localization.English
-            ? $"Embers {meta.TotalEmbers} | Best depth {meta.BestDepth} | Best score {meta.BestScore} | Commissions {meta.CompletedObjectiveIds.Count}"
-            : $"余烬 {meta.TotalEmbers} | 最深层数 {meta.BestDepth} | 最高分 {meta.BestScore} | 完成委托 {meta.CompletedObjectiveIds.Count}";
+        _messageLabel.Text = Localization.T("main_meta", meta.TotalEmbers, meta.BestDepth, meta.BestScore, meta.CompletedObjectiveIds.Count);
     }
 
     private void RenderUnlocks()
     {
         ClearBox(_unlocksList);
         var meta = SaveManager.LoadMeta();
-        _modalMessageLabel.Text = Localization.Language == Localization.English
-            ? $"Available embers: {meta.TotalEmbers}"
-            : $"可用余烬：{meta.TotalEmbers}";
+        _modalMessageLabel.Text = Localization.T("available_stardust", meta.TotalEmbers);
 
         foreach (var unlock in _gameData.Unlocks.Unlocks)
         {
@@ -211,8 +207,8 @@ public partial class MainMenu : Control
             var button = new Button
             {
                 Text = unlocked
-                    ? $"{unlock.DisplayTitle()}\n{unlock.DisplayDescription()}\n{(Localization.Language == Localization.English ? "Unlocked" : "已解锁")}"
-                    : $"{unlock.DisplayTitle()} - {unlock.Cost} {(Localization.Language == Localization.English ? "Embers" : "余烬")}\n{unlock.DisplayDescription()}{FormatRequirementLine(requirementText)}",
+                    ? $"{unlock.DisplayTitle()}\n{unlock.DisplayDescription()}\n{Localization.T("unlocked")}"
+                    : $"{unlock.DisplayTitle()} - {unlock.Cost} {Localization.T("stardust")}\n{unlock.DisplayDescription()}{FormatRequirementLine(requirementText)}",
                 CustomMinimumSize = new Vector2(0, 76),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Disabled = unlocked || !canBuy
@@ -241,9 +237,7 @@ public partial class MainMenu : Control
     private void RenderCardLibrary()
     {
         ClearBox(_cardLibraryList);
-        _modalMessageLabel.Text = Localization.Language == Localization.English
-            ? "Cards are data-driven. Pools decide which heroes can find them."
-            : "卡牌由数据配置驱动。牌池决定哪些英雄能在奖励和商店中遇到它们。";
+        _modalMessageLabel.Text = Localization.T("card_library_desc");
 
         foreach (var card in _gameData.Cards.Cards)
         {
@@ -253,17 +247,17 @@ public partial class MainMenu : Control
             }
 
             var pools = card.Pools.Count == 0
-                ? (Localization.Language == Localization.English ? "All heroes" : "全职业")
+                ? Localization.T("all_heroes")
                 : string.Join(", ", card.Pools);
             var upgrade = string.IsNullOrWhiteSpace(card.UpgradeTo)
-                ? (Localization.Language == Localization.English ? "No upgrade" : "无升级")
-                : $"{(Localization.Language == Localization.English ? "Upgrades to" : "升级为")} {_gameData.GetCard(card.UpgradeTo).DisplayName()}";
+                ? Localization.T("no_upgrade")
+                : $"{Localization.T("upgrades_to")} {_gameData.GetCard(card.UpgradeTo).DisplayName()}";
             var unlock = SaveManager.IsUnlocked(card.UnlockId)
                 ? string.Empty
-                : $"\n{(Localization.Language == Localization.English ? "Locked by" : "解锁需求")} {card.UnlockId}";
+                : $"\n{Localization.T("locked_by")} {card.UnlockId}";
             var button = new Button
             {
-                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}\n{(Localization.Language == Localization.English ? "Pool" : "牌池")}: {pools} | {upgrade}{unlock}",
+                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}\n{Localization.T("pool")}: {pools} | {upgrade}{unlock}",
                 CustomMinimumSize = new Vector2(0, 118),
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Disabled = true
@@ -277,9 +271,9 @@ public partial class MainMenu : Control
     {
         var rarity = card.Rarity switch
         {
-            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
-            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
-            _ => Localization.Language == Localization.English ? "Common" : "普通"
+            "rare" => Localization.T("rarity_rare"),
+            "uncommon" => Localization.T("rarity_uncommon"),
+            _ => Localization.T("rarity_common")
         };
         return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
     }
@@ -369,7 +363,7 @@ public partial class MainMenu : Control
 
         var title = new Label
         {
-            Text = Localization.Language == Localization.English ? "Loading" : "载入中",
+            Text = Localization.T("loading"),
             HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore
         };

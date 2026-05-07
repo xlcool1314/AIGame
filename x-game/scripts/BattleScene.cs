@@ -208,7 +208,7 @@ public partial class BattleScene : Control
         _endMenuButton.Pressed += OnEndMenuPressed;
         _playerCombatPanel.GuiInput += OnPlayerCombatGuiInput;
         _continueButton.Text = Localization.T("continue_deeper");
-        _deckButton.Text = Localization.Language == Localization.English ? "View Deck" : "查看牌组";
+        _deckButton.Text = Localization.T("view_cards");
         _menuButton.Text = Localization.T("back_menu");
         ApplyUiStyle();
 
@@ -256,7 +256,7 @@ public partial class BattleScene : Control
         }
 
         RunLoadingTransition(
-            Localization.Language == Localization.English ? "Plotting the next route..." : "整理下一段路线……",
+            Localization.T("loading_check_next_room"),
             ShowNextRoomChoices);
     }
 
@@ -265,7 +265,7 @@ public partial class BattleScene : Control
         SaveManager.SaveRun(_run);
         ChangeSceneWithLoading(
             "res://scenes/MainMenu.tscn",
-            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
+            Localization.T("loading_return_bedroom"));
     }
 
     private void OnDeckPressed()
@@ -448,14 +448,14 @@ public partial class BattleScene : Control
         GameSession.LoadRequested = false;
         ChangeSceneWithLoading(
             "res://scenes/CharacterSelect.tscn",
-            Localization.Language == Localization.English ? "Preparing a new expedition..." : "准备新的探索……");
+            Localization.T("loading_choose_kid"));
     }
 
     private void OnEndMenuPressed()
     {
         ChangeSceneWithLoading(
             "res://scenes/MainMenu.tscn",
-            Localization.Language == Localization.English ? "Returning to camp..." : "返回营地……");
+            Localization.T("loading_return_bedroom"));
     }
 
     private void ShowNextRoomChoices()
@@ -517,7 +517,7 @@ public partial class BattleScene : Control
                 RenderCalibrationRoom(room);
                 break;
             case "complete":
-                ShowEndPanel(true, "抵达矿井深处");
+                ShowEndPanel(true, "天快亮了，你悄悄爬回床上。");
                 break;
         }
 
@@ -532,13 +532,13 @@ public partial class BattleScene : Control
         return kind switch
         {
             "battle" => Localization.T("room_battle"),
-            "elite" => Localization.Language == Localization.English ? "[Elite]" : "[精英]",
-            "treasure" => Localization.Language == Localization.English ? "[Cache]" : "[宝藏]",
+            "elite" => Localization.T("room_elite"),
+            "treasure" => Localization.T("room_treasure"),
             "mine" => Localization.T("room_mine"),
             "event" => Localization.T("room_event"),
             "rest" => Localization.T("room_rest"),
             "shop" => Localization.T("room_shop"),
-            "calibration" => Localization.Language == Localization.English ? "[Tune]" : "[校准]",
+            "calibration" => Localization.T("room_calibration"),
             "complete" => Localization.T("room_complete"),
             _ => "[未知]"
         };
@@ -549,15 +549,13 @@ public partial class BattleScene : Control
         return room.Kind switch
         {
             "battle" => $"{string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName())} {FormatThreatPreview(room)}",
-            "elite" => $"{(Localization.Language == Localization.English ? "Elite battle. Higher pressure, stronger spoils." : "精英战。压力更高，但战利品更强。")} {FormatThreatPreview(room)}",
-            "treasure" => Localization.Language == Localization.English ? "Choose a cache reward: relic, card, or supplies." : "选择一份宝藏补给：遗物、卡牌或工具。",
+            "elite" => $"{Localization.T("elite_summary")} {FormatThreatPreview(room)}",
+            "treasure" => Localization.T("treasure_summary"),
             "mine" => FormatMineSummary(room.MineConfig),
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
             "rest" => Localization.T("rest_summary"),
             "shop" => Localization.T("shop_summary"),
-            "calibration" => Localization.Language == Localization.English
-                ? "Tune a lamp array. Choose 3 nodes for a mix of supplies, oil, fog control, cards, and risk."
-                : "校准矿灯阵列。选择 3 个节点，组合矿晶、灯油、净雾、卡牌与过载风险。",
+            "calibration" => Localization.T("calibration_summary"),
             "complete" => Localization.T("complete_summary"),
             _ => Localization.T("unknown_room")
         };
@@ -589,6 +587,7 @@ public partial class BattleScene : Control
         };
 
         var availableRoute = BuildAvailableRouteSet();
+        AddRouteMapBackdrop(mapCanvas);
         AddRouteLayerBands(mapCanvas);
         AddRouteEntryGuide(mapCanvas, availableRoute);
         AddRouteConnections(mapCanvas, availableRoute);
@@ -599,6 +598,38 @@ public partial class BattleScene : Control
         _choiceList.AddChild(mapFrame);
         var scrollTarget = GetRouteScrollTarget();
         GetTree().CreateTimer(0.01).Timeout += () => scroll.ScrollVertical = scrollTarget;
+    }
+
+    private void AddRouteMapBackdrop(Control mapCanvas)
+    {
+        var texture = UiArt.LoadBackground("map");
+        if (texture == null)
+        {
+            return;
+        }
+
+        var backdrop = new TextureRect
+        {
+            Texture = texture,
+            Position = Vector2.Zero,
+            Size = new Vector2(RouteMapWidth, GetRouteMapHeight()),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            MouseFilter = MouseFilterEnum.Ignore,
+            Modulate = new Color(0.70f, 0.70f, 0.70f, 0.42f),
+            ZIndex = -6
+        };
+        mapCanvas.AddChild(backdrop);
+
+        var shade = new ColorRect
+        {
+            Color = new Color(0.02f, 0.03f, 0.04f, 0.48f),
+            Position = Vector2.Zero,
+            Size = new Vector2(RouteMapWidth, GetRouteMapHeight()),
+            MouseFilter = MouseFilterEnum.Ignore,
+            ZIndex = -5
+        };
+        mapCanvas.AddChild(shade);
     }
 
     private void AddRouteMapHeader(IReadOnlyList<RunRoom> choices)
@@ -612,8 +643,8 @@ public partial class BattleScene : Control
         var title = new Label
         {
             Text = Localization.Language == Localization.English
-                ? $"Route Map · choose 1 of {choices.Count}"
-                : $"路线图 · 从 {choices.Count} 条可进入路线中选择 1 条",
+                ? $"House Cutaway · choose 1 of {choices.Count} doors"
+                : $"小屋剖面图 · 从 {choices.Count} 扇可进入的门里选择 1 扇",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart
@@ -622,11 +653,11 @@ public partial class BattleScene : Control
         title.AddThemeFontSizeOverride("font_size", 18);
         header.AddChild(title);
 
-        AddRouteLegendChip(header, "战", "Battle", Color.FromHtml("b8505d"));
-        AddRouteLegendChip(header, "矿", "Survey", Color.FromHtml("5f89b8"));
-        AddRouteLegendChip(header, "宝", "Cache", Color.FromHtml("d7b45f"));
-        AddRouteLegendChip(header, "?", "Event", Color.FromHtml("9c8ec2"));
-        AddRouteLegendChip(header, "校", "Tune", Color.FromHtml("78d69b"));
+        AddRouteLegendChip(header, "怪", "Monster", Color.FromHtml("b8505d"));
+        AddRouteLegendChip(header, "探", "Explore", Color.FromHtml("5f89b8"));
+        AddRouteLegendChip(header, "藏", "Curio", Color.FromHtml("d7b45f"));
+        AddRouteLegendChip(header, "?", "Oddity", Color.FromHtml("9c8ec2"));
+        AddRouteLegendChip(header, "机", "Gadget", Color.FromHtml("78d69b"));
         _choiceList.AddChild(header);
     }
 
@@ -712,7 +743,7 @@ public partial class BattleScene : Control
             return;
         }
 
-        var origin = new Vector2(RouteMapWidth / 2f, GetRouteMapHeight() - 24f);
+        var origin = new Vector2(RouteMapWidth / 2f, 24f);
         foreach (var room in _run.MapLayers[0])
         {
             var active = _run.CurrentLayerIndex < 0 && (_run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId));
@@ -721,7 +752,7 @@ public partial class BattleScene : Control
 
         var marker = new Label
         {
-            Text = Localization.Language == Localization.English ? "Entry" : "入口",
+            Text = Localization.T("bedroom"),
             Position = origin - new Vector2(44, 20),
             Size = new Vector2(88, 28),
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -747,7 +778,7 @@ public partial class BattleScene : Control
 
     private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active)
     {
-        var mid = (from + to) / 2f + new Vector2(0, active ? -10f : -6f);
+        var mid = (from + to) / 2f + new Vector2(0, active ? 10f : 6f);
         var shadow = new Line2D
         {
             Width = active ? 7f : 4f,
@@ -815,12 +846,12 @@ public partial class BattleScene : Control
     private int GetRouteScrollTarget()
     {
         var focusLayer = Math.Clamp(_run.CurrentLayerIndex < 0 ? 0 : _run.CurrentLayerIndex, 0, Math.Max(0, _run.MapLayers.Count - 1));
-        return Math.Max(0, (int)(GetRouteLayerY(focusLayer) - 360f));
+        return Math.Max(0, (int)(GetRouteLayerY(focusLayer) - 140f));
     }
 
     private float GetRouteLayerY(int layerIndex)
     {
-        return GetRouteMapHeight() - RouteMapBottomPadding - RouteNodeHeight - layerIndex * RouteLayerGap;
+        return RouteMapTopPadding + layerIndex * RouteLayerGap;
     }
 
     private Vector2 GetRouteNodePosition(RunRoom room)
@@ -957,8 +988,8 @@ public partial class BattleScene : Control
     {
         var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%" : string.Empty;
         return Localization.Language == Localization.English
-            ? $"R{room.Risk} / O-{room.LampCost}{bonus}"
-            : $"险{room.Risk} / 油-{room.LampCost}{bonus}";
+            ? $"Scare {room.Risk} / Battery -{room.LampCost}{bonus}"
+            : $"惊{room.Risk} / 电-{room.LampCost}{bonus}";
     }
 
     private string FormatRouteNodeSummary(RunRoom room)
@@ -967,12 +998,14 @@ public partial class BattleScene : Control
         {
             "battle" => _gameData.GetEnemy(room.EnemyId).DisplayName(),
             "elite" => Localization.Language == Localization.English ? $"Elite: {_gameData.GetEnemy(room.EnemyId).DisplayName()}" : $"精英：{_gameData.GetEnemy(room.EnemyId).DisplayName()}",
-            "treasure" => Localization.Language == Localization.English ? "Relic / card / supplies" : "遗物 / 卡牌 / 补给",
-            "mine" => $"{room.MineConfig.Width}x{room.MineConfig.Height} D{room.MineConfig.Monsters + room.MineConfig.Traps}/R{room.MineConfig.Treasures + room.MineConfig.Ores}",
-            "event" => Localization.Language == Localization.English ? "Choice event" : "事件抉择",
-            "rest" => Localization.Language == Localization.English ? "Recover / forge" : "恢复 / 锻造",
-            "shop" => Localization.Language == Localization.English ? "Cards / healing" : "卡牌 / 治疗",
-            "calibration" => Localization.Language == Localization.English ? "Pick 3 lamp nodes" : "选择 3 个灯阵节点",
+            "treasure" => Localization.Language == Localization.English ? "Keepsake / card / pocket supplies" : "纪念物 / 卡牌 / 口袋补给",
+            "mine" => Localization.Language == Localization.English
+                ? $"{room.MineConfig.Width}x{room.MineConfig.Height} Scare {room.MineConfig.Monsters + room.MineConfig.Traps}/Find {room.MineConfig.Treasures + room.MineConfig.Ores}"
+                : $"{room.MineConfig.Width}x{room.MineConfig.Height} 惊{room.MineConfig.Monsters + room.MineConfig.Traps}/找{room.MineConfig.Treasures + room.MineConfig.Ores}",
+            "event" => Localization.Language == Localization.English ? "Odd choice" : "怪事抉择",
+            "rest" => Localization.Language == Localization.English ? "Recover courage / craft" : "恢复勇气 / 手作",
+            "shop" => Localization.Language == Localization.English ? "Cards / snacks" : "卡牌 / 零食",
+            "calibration" => Localization.Language == Localization.English ? "Pick 3 gadget nodes" : "选择 3 个机关节点",
             "complete" => Localization.T("route_endpoint"),
             _ => Localization.T("unknown_room")
         };
@@ -982,8 +1015,8 @@ public partial class BattleScene : Control
     {
         var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%" : string.Empty;
         return Localization.Language == Localization.English
-            ? $"R{room.Risk}  Oil -{room.LampCost}{bonus}"
-            : $"险{room.Risk}  灯油 -{room.LampCost}{bonus}";
+            ? $"Scare {room.Risk}  Battery -{room.LampCost}{bonus}"
+            : $"惊吓 {room.Risk}  手电 -{room.LampCost}{bonus}";
     }
 
     private string FormatRouteNext(RunRoom room)
@@ -1028,11 +1061,11 @@ public partial class BattleScene : Control
                 "battle" => "B",
                 "elite" => "E",
                 "treasure" => "$",
-                "mine" => "M",
+                "mine" => "E",
                 "event" => "?",
                 "rest" => "R",
                 "shop" => "S",
-                "calibration" => "T",
+                "calibration" => "G",
                 "complete" => "END",
                 _ => "?"
             };
@@ -1041,14 +1074,14 @@ public partial class BattleScene : Control
         return kind switch
         {
             "battle" => "战",
-            "mine" => "矿",
+            "mine" => "探",
             "elite" => "精",
-            "treasure" => "宝",
+            "treasure" => "藏",
             "event" => "?",
-            "rest" => "休",
-            "shop" => "商",
-            "calibration" => "校",
-            "complete" => "终",
+            "rest" => "躲",
+            "shop" => "换",
+            "calibration" => "机",
+            "complete" => "晨",
             _ => "?"
         };
     }
@@ -1059,29 +1092,29 @@ public partial class BattleScene : Control
         {
             return room.Kind switch
             {
-                "mine" => "Lighting the survey grid...",
+                "mine" => "Opening the room search grid...",
                 "battle" or "elite" => "Entering combat...",
-                "treasure" => "Opening the cache...",
-                "event" => "Reading the tunnel signs...",
-                "rest" => "Securing a quiet stop...",
-                "shop" => "Finding the lamp caravan...",
-                "calibration" => "Warming the lamp array...",
-                "complete" => "Crossing the final gate...",
-                _ => "Moving deeper..."
+                "treasure" => "Opening the curio box...",
+                "event" => "Listening at the strange door...",
+                "rest" => "Finding a hiding spot...",
+                "shop" => "Visiting the trade nook...",
+                "calibration" => "Waking the house gadget...",
+                "complete" => "Sneaking back to bed...",
+                _ => "Going downstairs..."
             };
         }
 
         return room.Kind switch
         {
-            "mine" => "点亮勘探网格……",
+            "mine" => "打开房间探索网格……",
             "battle" or "elite" => "进入战斗……",
-            "treasure" => "开启补给箱……",
-            "event" => "辨认支道痕迹……",
-            "rest" => "抵达安全歇脚点……",
-            "shop" => "寻找矿灯商队……",
-            "calibration" => "预热矿灯阵列……",
-            "complete" => "穿过最终矿门……",
-            _ => "继续深入……"
+            "treasure" => "打开藏品盒……",
+            "event" => "贴近那扇奇怪的门……",
+            "rest" => "寻找可以躲一下的角落……",
+            "shop" => "拜访地下交换站……",
+            "calibration" => "唤醒小屋机关……",
+            "complete" => "悄悄爬回床上……",
+            _ => "继续下楼……"
         };
     }
 
@@ -1090,8 +1123,8 @@ public partial class BattleScene : Control
         var threat = CalculateThreatLevel(room, false);
         var fogCards = GetBattleFogCardCount();
         return Localization.Language == Localization.English
-            ? $"Threat {threat}. Fog cards: {fogCards}."
-            : $"威胁 {threat}。浓雾卡 {fogCards}。";
+            ? $"Scare {threat}. Noise cards: {fogCards}."
+            : $"惊吓 {threat}。声响卡 {fogCards}。";
     }
 
     private static string FormatRoomRisk(RunRoom room)
@@ -1109,27 +1142,29 @@ public partial class BattleScene : Control
             bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%奖励" : string.Empty;
         }
 
-        return $"[{risk} | 灯油-{room.LampCost}{bonus}]";
+        return Localization.Language == Localization.English
+            ? $"[{risk} | Battery -{room.LampCost}{bonus}]"
+            : $"[{risk} | 手电-{room.LampCost}{bonus}]";
     }
 
     private static string FormatMineSummary(MineRoomConfig config)
     {
         if (Localization.Language == Localization.English)
         {
-            return $"{config.Width}x{config.Height} survey board. Threats: {config.Monsters + config.Traps}; rewards: {config.Treasures + config.Ores}; clear reward: {config.ClearReward} shards.";
+            return $"{config.Width}x{config.Height} room search board. Creepy things: {config.Monsters + config.Traps}; finds: {config.Treasures + config.Ores}; clear reward: {config.ClearReward} buttons.";
         }
 
-        return $"{config.Width}x{config.Height} 探勘棋盘。危险：{config.Monsters + config.Traps}；资源：{config.Treasures + config.Ores}；清理奖励：{config.ClearReward} 矿晶。";
+        return $"{config.Width}x{config.Height} 房间探索棋盘。怪东西：{config.Monsters + config.Traps}；可翻找物：{config.Treasures + config.Ores}；清理奖励：{config.ClearReward} 纽扣。";
     }
 
     private static string FormatMineIntro(MineRoomConfig config)
     {
         if (Localization.Language == Localization.English)
         {
-            return $"Survey started. Numbers show nearby danger and reward clues. Board {config.Width}x{config.Height}, monsters {config.Monsters}, traps {config.Traps}, resources {config.Treasures + config.Ores}.";
+            return $"Room search started. Numbers hint at nearby scares and useful finds. Board {config.Width}x{config.Height}, monsters {config.Monsters}, traps {config.Traps}, finds {config.Treasures + config.Ores}.";
         }
 
-        return $"扫雷探勘开始。数字同时提示周围危险与资源。棋盘 {config.Width}x{config.Height}，怪物 {config.Monsters}，陷阱 {config.Traps}，资源 {config.Treasures + config.Ores}。";
+        return $"房间探索开始。数字同时提示周围的惊吓和可翻找物。棋盘 {config.Width}x{config.Height}，怪物 {config.Monsters}，陷阱 {config.Traps}，可翻找物 {config.Treasures + config.Ores}。";
     }
 
     private void RenderMineRoom(RunRoom room)
@@ -1137,13 +1172,14 @@ public partial class BattleScene : Control
         _activeMineRoom = room;
         _run.StartMinefield(_gameData);
         _mineFlagMode = false;
+        _mineModeButton.Visible = true;
         _roomTitleLabel.Text = room.DisplayTitle();
         _roomDescriptionLabel.Text = FormatMineIntro(room.MineConfig);
         _minePanel.Visible = true;
         RenderMinefield();
         ShowGameTip(Localization.Language == Localization.English
-            ? $"Survey started\n{room.MineConfig.Width}x{room.MineConfig.Height} grid, watch danger clues."
-            : $"开始勘探\n{room.MineConfig.Width}x{room.MineConfig.Height} 网格，留意危险线索。");
+            ? $"Room search started\n{room.MineConfig.Width}x{room.MineConfig.Height} grid, watch scare clues."
+            : $"开始探索房间\n{room.MineConfig.Width}x{room.MineConfig.Height} 网格，留意惊吓线索。");
     }
 
     private void OnMineModePressed()
@@ -1186,7 +1222,7 @@ public partial class BattleScene : Control
 
         if (_run.PlayerHp <= 0)
         {
-            ShowEndPanel(false, "暗雷耗尽了最后的灯油和体力。");
+            ShowEndPanel(false, "房间里的怪东西把你的勇气吓光了。");
         }
         else if (_run.Minefield.IsCleared)
         {
@@ -1224,7 +1260,9 @@ public partial class BattleScene : Control
         _minePanel.Visible = false;
         _battlePanel.Visible = true;
         _roomTitleLabel.Text = $"{Localization.T("room_battle")} {FormatEncounterNames(enemies)}";
-        _roomDescriptionLabel.Text = $"矿格里的怪物拦住了去路。威胁等级 {_battle.ThreatLevel}，击退它后可以回到当前矿区继续探索。";
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? $"A room monster blocks the way. Scare level {_battle.ThreatLevel}. Drive it off to keep searching this room."
+            : $"房间里的怪物拦住了去路。惊吓等级 {_battle.ThreatLevel}，击退它后可以回到当前房间继续探索。";
         RenderBattle();
     }
 
@@ -1249,11 +1287,11 @@ public partial class BattleScene : Control
         {
             MineRevealResult.Monster => Localization.Language == Localization.English ? "Monster!" : "惊动怪物！",
             MineRevealResult.Trap => Localization.Language == Localization.English ? "Trap Triggered" : "触发陷阱",
-            MineRevealResult.Treasure => Localization.Language == Localization.English ? "Cache Opened" : "打开宝箱",
-            MineRevealResult.Ore => Localization.Language == Localization.English ? "Ore Collected" : "采集矿石",
-            MineRevealResult.Exit => Localization.Language == Localization.English ? "Exit Found" : "发现出口",
-            MineRevealResult.Cleared => Localization.Language == Localization.English ? "Survey Cleared" : "矿区清理完成",
-            _ => Localization.Language == Localization.English ? "Tile Revealed" : "翻开矿格"
+            MineRevealResult.Treasure => Localization.Language == Localization.English ? "Curio Found" : "发现藏品",
+            MineRevealResult.Ore => Localization.Language == Localization.English ? "Buttons Collected" : "捡到纽扣",
+            MineRevealResult.Exit => Localization.Language == Localization.English ? "Door Found" : "发现下一扇门",
+            MineRevealResult.Cleared => Localization.Language == Localization.English ? "Room Cleared" : "房间清理完成",
+            _ => Localization.Language == Localization.English ? "Tile Searched" : "翻找格子"
         };
 
         var details = new List<string>();
@@ -1261,8 +1299,8 @@ public partial class BattleScene : Control
         if (cell != null && result is MineRevealResult.Revealed or MineRevealResult.Cleared)
         {
             details.Add(Localization.Language == Localization.English
-                ? $"Clues: danger {cell.DangerClue}, resource {cell.RewardClue}."
-                : $"线索：危险 {cell.DangerClue}，资源 {cell.RewardClue}。");
+                ? $"Clues: scare {cell.DangerClue}, find {cell.RewardClue}."
+                : $"线索：惊吓 {cell.DangerClue}，可翻找物 {cell.RewardClue}。");
         }
 
         var hpDelta = _run.PlayerHp - beforeHp;
@@ -1274,15 +1312,15 @@ public partial class BattleScene : Control
         }
         if (shardDelta != 0)
         {
-            details.Add(Localization.Language == Localization.English ? $"Shards {FormatSigned(shardDelta)}" : $"矿晶 {FormatSigned(shardDelta)}");
+            details.Add(Localization.Language == Localization.English ? $"Buttons {FormatSigned(shardDelta)}" : $"纽扣 {FormatSigned(shardDelta)}");
         }
         if (fogDelta != 0)
         {
-            details.Add(Localization.Language == Localization.English ? $"Fog {FormatSigned(fogDelta)}" : $"雾压 {FormatSigned(fogDelta)}");
+            details.Add(Localization.Language == Localization.English ? $"Noise {FormatSigned(fogDelta)}" : $"声响 {FormatSigned(fogDelta)}");
         }
         if (_run.Minefield?.IsCleared == true && result != MineRevealResult.Cleared)
         {
-            details.Add(Localization.Language == Localization.English ? "Board cleared bonus gained." : "已获得清理奖励。");
+            details.Add(Localization.Language == Localization.English ? "Room cleared bonus gained." : "已获得房间清理奖励。");
         }
 
         return details.Count == 0 ? title : $"{title}\n{string.Join("  ", details)}";
@@ -1356,7 +1394,7 @@ public partial class BattleScene : Control
             }
             else if (cell.IsRevealed && cell.Type == MineTileType.Ore)
             {
-                text = "ORE";
+                text = "BTN";
             }
             else if (cell.IsRevealed)
             {
@@ -1432,13 +1470,13 @@ public partial class BattleScene : Control
 
         var reward = _gameData.GetReward(string.IsNullOrWhiteSpace(room.RewardId) ? "cache" : room.RewardId);
         var before = CaptureRunTipSnapshot();
-        _run.GainShards(reward.Shards, Localization.Language == Localization.English ? "Cache" : "宝藏");
+        _run.GainShards(reward.Shards, Localization.Language == Localization.English ? "Curio box" : "藏品盒");
         ShowRunDeltaTips(before);
 
         var relicChoices = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, room.NodeId, "cache_relic"), 2);
         foreach (var relic in relicChoices)
         {
-            AddChoiceButton($"{(Localization.Language == Localization.English ? "Take relic" : "带走遗物")}：{relic.DisplayName()}\n{relic.DisplayDescription()}", () => OnTreasureRelicPicked(relic));
+            AddChoiceButton($"{(Localization.Language == Localization.English ? "Take keepsake" : "带走纪念物")}：{relic.DisplayName()}\n{relic.DisplayDescription()}", () => OnTreasureRelicPicked(relic));
         }
 
         var cardChoices = _gameData.BuildRewardChoices(reward, _run.CharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, room.NodeId, "cache_card"), 2);
@@ -1448,8 +1486,8 @@ public partial class BattleScene : Control
         }
 
         AddChoiceButton(Localization.Language == Localization.English
-            ? "Take survey supplies\nGain Probe Lamp x2, Bandage x1, and reduce fog pressure by 1."
-            : "拿走勘探补给\n获得探测灯 x2、绷带 x1，并降低 1 点雾压。",
+            ? "Take room supplies\nGain Peek Light x2, Bandage x1, and reduce noise by 1."
+            : "拿走房间补给\n获得窥探灯 x2、绷带 x1，并降低 1 点声响。",
             OnTreasureSupplyPicked);
     }
 
@@ -1458,8 +1496,8 @@ public partial class BattleScene : Control
         var before = CaptureRunTipSnapshot();
         _run.AddRelic(relic);
         ShowGameTip(Localization.Language == Localization.English
-            ? $"Relic acquired\n{relic.DisplayName()}: {relic.DisplayDescription()}"
-            : $"获得遗物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+            ? $"Keepsake acquired\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+            : $"获得纪念物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
         ShowRunDeltaTips(before);
         FinishTreasureRoom();
     }
@@ -1467,7 +1505,7 @@ public partial class BattleScene : Control
     private void OnTreasureCardPicked(CardData card)
     {
         var before = CaptureRunTipSnapshot();
-        _run.AddCardReward(card, Localization.Language == Localization.English ? "Cache" : "宝藏");
+        _run.AddCardReward(card, Localization.Language == Localization.English ? "Curio box" : "藏品盒");
         ShowGameTip(Localization.Language == Localization.English
             ? $"Card recorded\n{card.DisplayName()}: {card.DisplayDescription()}"
             : $"记录卡牌\n{card.DisplayName()}：{card.DisplayDescription()}");
@@ -1478,8 +1516,8 @@ public partial class BattleScene : Control
     private void OnTreasureSupplyPicked()
     {
         var before = CaptureRunTipSnapshot();
-        _run.AddItemReward(_gameData.GetItem("probe_lamp"), 2, Localization.Language == Localization.English ? "Cache" : "宝藏");
-        _run.AddItemReward(_gameData.GetItem("bandage"), 1, Localization.Language == Localization.English ? "Cache" : "宝藏");
+        _run.AddItemReward(_gameData.GetItem("probe_lamp"), 2, Localization.Language == Localization.English ? "Curio box" : "藏品盒");
+        _run.AddItemReward(_gameData.GetItem("bandage"), 1, Localization.Language == Localization.English ? "Curio box" : "藏品盒");
         _run.ReduceFogPressure(1);
         ShowGameTip(Localization.Language == Localization.English ? "Supplies packed." : "补给已装入背包。");
         ShowRunDeltaTips(before);
@@ -1496,15 +1534,17 @@ public partial class BattleScene : Control
     private void RenderRestRoom(RunRoom room)
     {
         _roomTitleLabel.Text = room.DisplayTitle();
-        _roomDescriptionLabel.Text = "矿灯在锈蚀铁轨旁轻轻摇晃，你终于有片刻能把呼吸放慢。";
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "A soft, hidden corner under the house gives you a moment to breathe before the next room."
+            : "小屋地下有个软乎乎的隐蔽角落，你终于能在进入下一间房前喘口气。";
         _choicePanel.Visible = true;
 
-        AddChoiceButton("休息\n恢复一大段生命。", () => OnRestChoicePressed("heal"));
-        AddChoiceButton(Localization.Language == Localization.English ? "Calibrate lamp\nRestore 25 oil and reduce fog pressure by 3." : "校准矿灯\n恢复 25 灯油，并降低 3 点雾压。", () => OnRestChoicePressed("calibrate"));
-        AddChoiceButton("锻造一张牌\n免费升级牌组中一张可升级卡牌。", () => RunLoadingTransition(
-            Localization.Language == Localization.English ? "Opening the forge..." : "展开锻造台……",
+        AddChoiceButton(Localization.Language == Localization.English ? "Hide for a bit\nRecover a large amount of courage." : "躲一会儿\n恢复一大段勇气。", () => OnRestChoicePressed("heal"));
+        AddChoiceButton(Localization.Language == Localization.English ? "Shake the flashlight\nRestore 25 battery and reduce noise by 3." : "摇一摇手电\n恢复 25 手电电量，并降低 3 点声响。", () => OnRestChoicePressed("calibrate"));
+        AddChoiceButton(Localization.Language == Localization.English ? "Make a card\nUpgrade one upgradeable card for free." : "手作一张卡\n免费升级牌组中一张可升级卡牌。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Opening the craft table..." : "展开手作台……",
             () => RenderDeckUpgradeChoices(0)));
-        AddChoiceButton("整备\n获得 12 矿晶和遗物：校准矿灯。", () => OnRestChoicePressed("forge"));
+        AddChoiceButton(Localization.Language == Localization.English ? "Sort pockets\nGain 12 buttons and a flashlight keepsake." : "整理口袋\n获得 12 纽扣和纪念物：校准手电。", () => OnRestChoicePressed("forge"));
     }
 
     private void OnRestChoicePressed(string mode)
@@ -1517,9 +1557,9 @@ public partial class BattleScene : Control
         ShowGameTip(mode switch
         {
             "heal" => Localization.Language == Localization.English ? "Rest complete." : "休息完成。",
-            "calibrate" => Localization.Language == Localization.English ? "Lamp calibrated." : "矿灯已校准。",
+            "calibrate" => Localization.Language == Localization.English ? "Flashlight checked." : "手电已检查。",
             "forge" => Localization.Language == Localization.English ? "Field kit prepared." : "整备完成。",
-            _ => Localization.Language == Localization.English ? "Camp action complete." : "营地行动完成。"
+            _ => Localization.Language == Localization.English ? "Hideout action complete." : "躲藏行动完成。"
         });
         ShowRunDeltaTips(before);
     }
@@ -1527,7 +1567,9 @@ public partial class BattleScene : Control
     private void RenderShopRoom(RunRoom room)
     {
         _roomTitleLabel.Text = room.DisplayTitle();
-        _roomDescriptionLabel.Text = "一盏挂满铜铃的矿灯在轨道旁摇晃。商队愿意收矿晶，也愿意卖一点生路。";
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "A tiny cart creaks in the dark. Underground friends trade snacks, cards, and tools for shiny buttons."
+            : "黑暗里有辆小推车吱呀作响。地下朋友愿意用零食、卡牌和道具交换亮晶晶的纽扣。";
         _choicePanel.Visible = true;
 
         var shopGrid = CreateShopGrid();
@@ -1544,19 +1586,19 @@ public partial class BattleScene : Control
         var shopRelics = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, "shop_relic"), 2);
         foreach (var relic in shopRelics)
         {
-            AddChoiceButton($"{(Localization.Language == Localization.English ? "Buy relic" : "购买遗物")} {relic.DisplayName()} - 34 矿晶\n{relic.DisplayDescription()}", () => OnBuyRelicPressed(relic));
+            AddChoiceButton($"{(Localization.Language == Localization.English ? "Trade keepsake" : "交换纪念物")} {relic.DisplayName()} - 34 纽扣\n{relic.DisplayDescription()}", () => OnBuyRelicPressed(relic));
         }
 
-        AddChoiceButton("购买治疗 - 16 矿晶\n恢复 18 点生命。", OnBuyHealPressed);
-        AddChoiceButton(Localization.Language == Localization.English ? "Buy Probe Lamp x2 - 14 Shards\nPreview hidden mine tiles before committing." : "购买探测灯 x2 - 14 矿晶\n在翻开矿格前先预览隐藏内容。", () => OnBuyItemPressed("probe_lamp", 2, 14));
-        AddChoiceButton(Localization.Language == Localization.English ? "Buy Smoke Marker - 12 Shards\nPreview a tile; dangerous tiles are flagged automatically." : "购买烟雾标记器 - 12 矿晶\n预览 1 个矿格；若为危险格会自动标记。", () => OnBuyItemPressed("smoke_marker", 1, 12));
-        AddChoiceButton("升级一张牌 - 18 矿晶\n让已有卡牌变成强化版本。", () => RunLoadingTransition(
-            Localization.Language == Localization.English ? "Opening the forge..." : "展开锻造台……",
+        AddChoiceButton(Localization.Language == Localization.English ? "Trade snack - 16 Buttons\nRecover 18 courage." : "交换零食 - 16 纽扣\n恢复 18 点勇气。", OnBuyHealPressed);
+        AddChoiceButton(Localization.Language == Localization.English ? "Trade Peek Light x2 - 14 Buttons\nPreview hidden room tiles before committing." : "交换窥探灯 x2 - 14 纽扣\n在翻找格子前先预览隐藏内容。", () => OnBuyItemPressed("probe_lamp", 2, 14));
+        AddChoiceButton(Localization.Language == Localization.English ? "Trade Sticker Smoke - 12 Buttons\nPreview a tile; dangerous tiles are stickered automatically." : "交换贴纸烟雾 - 12 纽扣\n预览 1 个格子；若为危险格会自动贴上贴纸。", () => OnBuyItemPressed("smoke_marker", 1, 12));
+        AddChoiceButton(Localization.Language == Localization.English ? "Upgrade a card - 18 Buttons\nTurn an existing card into its stronger version." : "升级一张牌 - 18 纽扣\n让已有卡牌变成强化版本。", () => RunLoadingTransition(
+            Localization.Language == Localization.English ? "Opening the craft table..." : "展开手作台……",
             () => RenderDeckUpgradeChoices(18)));
-        AddChoiceButton("移除一张牌 - 20 矿晶\n精简牌组，提高关键牌上手率。", () => RunLoadingTransition(
+        AddChoiceButton(Localization.Language == Localization.English ? "Remove a card - 20 Buttons\nSlim the deck so key cards appear more often." : "移除一张牌 - 20 纽扣\n精简牌组，提高关键牌上手率。", () => RunLoadingTransition(
             Localization.Language == Localization.English ? "Sorting the deck..." : "整理牌组……",
             () => RenderDeckRemoveChoices(20)));
-        AddChoiceButton("离开商队\n保留矿晶继续深入。", OnLeaveShopPressed);
+        AddChoiceButton(Localization.Language == Localization.English ? "Leave the trade nook\nKeep your buttons and go downstairs." : "离开交换站\n保留纽扣继续下楼。", OnLeaveShopPressed);
         _choiceButtonTarget = null;
     }
 
@@ -1582,8 +1624,8 @@ public partial class BattleScene : Control
         if (_run.BuyRelic(relic, 34))
         {
             ShowGameTip(Localization.Language == Localization.English
-                ? $"Purchased relic\n{relic.DisplayName()}: {relic.DisplayDescription()}"
-                : $"购买遗物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+                ? $"Traded keepsake\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+                : $"交换纪念物\n{relic.DisplayName()}：{relic.DisplayDescription()}");
             ShowRunDeltaTips(before);
             _choicePanel.Visible = false;
             _continueButton.Visible = true;
@@ -1625,11 +1667,11 @@ public partial class BattleScene : Control
 
     private void OnLeaveShopPressed()
     {
-        _run.Log.Add("你离开矿灯商队，继续向下。");
+        _run.Log.Add(Localization.Language == Localization.English ? "You leave the trade nook and keep going." : "你离开地下交换站，继续往下。");
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
-        ShowGameTip(Localization.Language == Localization.English ? "Left the caravan." : "已离开矿灯商队。");
+        ShowGameTip(Localization.Language == Localization.English ? "Left the trade nook." : "已离开地下交换站。");
     }
 
     private void RenderCalibrationRoom(RunRoom room)
@@ -1639,8 +1681,8 @@ public partial class BattleScene : Control
         BuildCalibrationNodes(room);
         _roomTitleLabel.Text = room.DisplayTitle();
         _roomDescriptionLabel.Text = Localization.Language == Localization.English
-            ? "A cracked lamp array still hums. Select exactly 3 nodes to route power through. Stable sets are safe; greedy sets can surge."
-            : "一组裂纹矿灯阵仍在低鸣。选择 3 个节点接入回路。稳态组合更安全，贪心组合可能过载。";
+            ? "A strange house gadget ticks in the dark. Select exactly 3 nodes to route power through. Stable sets are safe; greedy sets can surge."
+            : "一台奇怪的小屋机关在黑暗里滴答作响。选择 3 个节点接入回路。稳态组合更安全，贪心组合可能失控。";
         _choicePanel.Visible = true;
         RenderCalibrationChoices();
     }
@@ -1649,12 +1691,12 @@ public partial class BattleScene : Control
     {
         var templates = new List<CalibrationNode>
         {
-            new("stable_crystal", "稳定晶灯", "Stable Crystal", "稳态 / 净雾", "Stable / Fog", shards: 8, fogReduction: 1, tags: new[] { "stable", "fog" }),
-            new("ore_prism", "富矿棱镜", "Ore Prism", "富矿 / 微量雾噪", "Ore / Minor fog", shards: 24, fogGain: 1, tags: new[] { "ore", "risk" }),
-            new("oil_wick", "储油灯芯", "Oil Wick", "灯油 / 稳态", "Oil / Stable", oil: 22, tags: new[] { "oil", "stable" }),
-            new("survey_map", "测绘星图", "Survey Map", "卡牌 / 稳态", "Card / Stable", cardId: "mapping_flare", tags: new[] { "card", "stable" }),
-            new("rift_resonator", "裂隙谐振器", "Rift Resonator", "富矿 / 过载", "Ore / Surge", shards: 16, damage: 5, cardId: "crack_finder", tags: new[] { "ore", "risk", "card" }),
-            new("mist_lens", "净雾透镜", "Mist Lens", "净雾 / 灯油", "Fog / Oil", oil: 8, fogReduction: 2, tags: new[] { "fog", "oil" })
+            new("stable_crystal", "稳定齿轮", "Stable Gear", "稳态 / 安静", "Stable / Quiet", shards: 8, fogReduction: 1, tags: new[] { "stable", "fog" }),
+            new("ore_prism", "纽扣棱镜", "Button Prism", "纽扣 / 微量声响", "Buttons / Minor noise", shards: 24, fogGain: 1, tags: new[] { "ore", "risk" }),
+            new("oil_wick", "备用电池", "Spare Battery", "手电 / 稳态", "Battery / Stable", oil: 22, tags: new[] { "oil", "stable" }),
+            new("survey_map", "蜡笔星图", "Crayon Star Map", "卡牌 / 稳态", "Card / Stable", cardId: "mapping_flare", tags: new[] { "card", "stable" }),
+            new("rift_resonator", "裂缝收音机", "Crack Radio", "纽扣 / 失控", "Buttons / Surge", shards: 16, damage: 5, cardId: "crack_finder", tags: new[] { "ore", "risk", "card" }),
+            new("mist_lens", "安静透镜", "Quiet Lens", "安静 / 手电", "Quiet / Battery", oil: 8, fogReduction: 2, tags: new[] { "fog", "oil" })
         };
 
         _calibrationNodes.Clear();
@@ -1714,7 +1756,7 @@ public partial class BattleScene : Control
         confirm.Pressed += CompleteCalibration;
         _choiceList.AddChild(confirm);
 
-        AddChoiceButton(Localization.Language == Localization.English ? "Bypass\nLeave the lamp array untouched." : "绕过\n不触碰这组矿灯阵。", BypassCalibration);
+        AddChoiceButton(Localization.Language == Localization.English ? "Bypass\nLeave the gadget untouched." : "绕过\n不触碰这台小屋机关。", BypassCalibration);
     }
 
     private void ToggleCalibrationNode(int index)
@@ -1746,11 +1788,11 @@ public partial class BattleScene : Control
 
     private void BypassCalibration()
     {
-        _run.Log.Add(Localization.Language == Localization.English ? "You bypassed the lamp array." : "你绕过了矿灯阵。");
+        _run.Log.Add(Localization.Language == Localization.English ? "You bypassed the house gadget." : "你绕过了小屋机关。");
         _choicePanel.Visible = false;
         _continueButton.Visible = true;
         RenderShared();
-        ShowGameTip(Localization.Language == Localization.English ? "Lamp array bypassed." : "已绕过矿灯阵。");
+        ShowGameTip(Localization.Language == Localization.English ? "House gadget bypassed." : "已绕过小屋机关。");
     }
 
     private CalibrationOutcome CalculateCalibrationOutcome()
@@ -1781,28 +1823,28 @@ public partial class BattleScene : Control
         {
             outcome.Oil += 8;
             outcome.FogReduction += 1;
-            outcome.Notes.Add(Localization.Language == Localization.English ? "Stable circuit: oil +8, fog -1." : "稳态回路：灯油 +8，雾压 -1。");
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Stable circuit: battery +8, noise -1." : "稳态回路：手电 +8，声响 -1。");
         }
         if (tagCounts.GetValueOrDefault("ore") >= 2)
         {
             outcome.Shards += 16;
-            outcome.Notes.Add(Localization.Language == Localization.English ? "Ore resonance: shards +16." : "富矿共振：矿晶 +16。");
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Button resonance: buttons +16." : "纽扣共振：纽扣 +16。");
         }
         if (tagCounts.GetValueOrDefault("oil") >= 2)
         {
             outcome.Oil += 12;
-            outcome.Notes.Add(Localization.Language == Localization.English ? "Oil loop: oil +12." : "储油回路：灯油 +12。");
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Battery loop: battery +12." : "电池回路：手电 +12。");
         }
         if (tagCounts.GetValueOrDefault("fog") >= 2)
         {
             outcome.FogReduction += 1;
-            outcome.Notes.Add(Localization.Language == Localization.English ? "Mist lock: fog -1." : "净雾锁定：雾压 -1。");
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Quiet lock: noise -1." : "安静锁定：声响 -1。");
         }
         if (tagCounts.GetValueOrDefault("risk") >= 2)
         {
             outcome.Damage += 6;
             outcome.FogGain += 1;
-            outcome.Notes.Add(Localization.Language == Localization.English ? "Surge backlash: HP -6, fog +1." : "过载反震：生命 -6，雾压 +1。");
+            outcome.Notes.Add(Localization.Language == Localization.English ? "Surge scare: courage -6, noise +1." : "失控惊吓：勇气 -6，声响 +1。");
         }
 
         return outcome;
@@ -1812,8 +1854,8 @@ public partial class BattleScene : Control
     {
         var count = _selectedCalibrationNodes.Count;
         var header = Localization.Language == Localization.English
-            ? $"Selected {count}/3. Combine tags for bonuses; two surge nodes cause backlash."
-            : $"已选择 {count}/3。组合同类节点可触发额外收益；两个过载节点会反震。";
+            ? $"Selected {count}/3. Combine tags for bonuses; two surge nodes cause a scare."
+            : $"已选择 {count}/3。组合同类节点可触发额外收益；两个失控节点会造成惊吓。";
         if (count == 0)
         {
             return header;
@@ -1828,15 +1870,15 @@ public partial class BattleScene : Control
         var parts = new List<string>();
         if (outcome.Shards > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"Shards +{outcome.Shards}" : $"矿晶 +{outcome.Shards}");
+            parts.Add(Localization.Language == Localization.English ? $"Buttons +{outcome.Shards}" : $"纽扣 +{outcome.Shards}");
         }
         if (outcome.Oil > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"Oil +{outcome.Oil}" : $"灯油 +{outcome.Oil}");
+            parts.Add(Localization.Language == Localization.English ? $"Battery +{outcome.Oil}" : $"手电 +{outcome.Oil}");
         }
         if (outcome.FogReduction > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"Fog -{outcome.FogReduction}" : $"雾压 -{outcome.FogReduction}");
+            parts.Add(Localization.Language == Localization.English ? $"Noise -{outcome.FogReduction}" : $"声响 -{outcome.FogReduction}");
         }
         if (outcome.Heal > 0)
         {
@@ -1852,7 +1894,7 @@ public partial class BattleScene : Control
         }
         if (outcome.FogGain > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"Fog +{outcome.FogGain}" : $"雾压 +{outcome.FogGain}");
+            parts.Add(Localization.Language == Localization.English ? $"Noise +{outcome.FogGain}" : $"声响 +{outcome.FogGain}");
         }
 
         var summary = parts.Count == 0
@@ -1866,15 +1908,15 @@ public partial class BattleScene : Control
         var parts = new List<string>();
         if (node.Shards > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"+{node.Shards} shards" : $"+{node.Shards} 矿晶");
+            parts.Add(Localization.Language == Localization.English ? $"+{node.Shards} buttons" : $"+{node.Shards} 纽扣");
         }
         if (node.Oil > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"+{node.Oil} oil" : $"+{node.Oil} 灯油");
+            parts.Add(Localization.Language == Localization.English ? $"+{node.Oil} battery" : $"+{node.Oil} 手电");
         }
         if (node.FogReduction > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"-{node.FogReduction} fog" : $"-{node.FogReduction} 雾压");
+            parts.Add(Localization.Language == Localization.English ? $"-{node.FogReduction} noise" : $"-{node.FogReduction} 声响");
         }
         if (!string.IsNullOrWhiteSpace(node.CardId))
         {
@@ -1886,7 +1928,7 @@ public partial class BattleScene : Control
         }
         if (node.FogGain > 0)
         {
-            parts.Add(Localization.Language == Localization.English ? $"+{node.FogGain} fog" : $"+{node.FogGain} 雾压");
+            parts.Add(Localization.Language == Localization.English ? $"+{node.FogGain} noise" : $"+{node.FogGain} 声响");
         }
 
         return string.Join("  ", parts);
@@ -2282,7 +2324,7 @@ public partial class BattleScene : Control
             if (_returnToMineAfterBattle)
             {
                 RunLoadingTransition(
-                    Localization.Language == Localization.English ? "Returning to the survey grid..." : "返回勘探网格……",
+                    Localization.Language == Localization.English ? "Returning to the room grid..." : "返回房间探索网格……",
                     () =>
                     {
                         _run.ResolveMineMonsterVictory(_gameData);
@@ -2292,18 +2334,18 @@ public partial class BattleScene : Control
                         _roomTitleLabel.Text = _activeMineRoom?.DisplayTitle() ?? _roomTitleLabel.Text;
                         _roomDescriptionLabel.Text = Localization.Language == Localization.English
                             ? "The monster is driven off. Keep reading the clues, or move deeper after finding the exit."
-                            : "怪物被击退。你可以继续根据线索探索矿区，或在找到出口后深入下一层。";
+                            : "怪物被击退。你可以继续根据线索探索房间，或在找到门后进入下一间。";
                         RenderMinefield();
                         RenderShared();
                         ShowGameTip(Localization.Language == Localization.English
-                            ? "Monster defeated\nSurvey route reopened."
-                            : "怪物已击退\n勘探路线恢复。");
+                            ? "Monster defeated\nRoom search reopened."
+                            : "怪物已击退\n房间探索恢复。");
                     });
             }
             else
             {
                 RunLoadingTransition(
-                    Localization.Language == Localization.English ? "Sorting the spoils..." : "清点战利品……",
+                    Localization.Language == Localization.English ? "Sorting the finds..." : "清点发现……",
                     ShowBattleReward);
             }
         }
@@ -2312,7 +2354,7 @@ public partial class BattleScene : Control
             _run.SyncAfterBattle(0);
             RunLoadingTransition(
                 Localization.Language == Localization.English ? "Recording the failed expedition..." : "记录本次探索……",
-                () => ShowEndPanel(false, "你的矿灯熄灭了。下一次进入矿井前，最好再调整牌组与路线。"));
+                () => ShowEndPanel(false, "你的勇气用光了。下一次等父母睡熟以后，再带上更合适的卡牌和小道具。"));
         }
     }
 
@@ -2327,11 +2369,11 @@ public partial class BattleScene : Control
         _rewardPanel.Visible = true;
         _roomTitleLabel.Text = Localization.Language == Localization.English ? "Battle Won" : "战斗胜利";
         _roomDescriptionLabel.Text = Localization.Language == Localization.English
-            ? "Choose one spoil. Relics change the rest of this run."
-            : "选择一项战利品。遗物会改变本局后续路线、战斗与资源压力。";
+            ? "Choose one find. Keepsakes change the rest of this run."
+            : "选择一项发现。纪念物会改变本局后续路线、战斗与资源压力。";
         ShowGameTip(Localization.Language == Localization.English
-            ? "Battle won\nChoose a spoil."
-            : "战斗胜利\n选择一项战利品。");
+            ? "Battle won\nChoose a find."
+            : "战斗胜利\n选择一项发现。");
 
         var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
         ClearBox(_rewardList);
@@ -2377,8 +2419,8 @@ public partial class BattleScene : Control
         var totalBonusPercent = (_activeBattleRoom?.RewardBonus ?? 0) + _run.GetRunEffectValue(_gameData, "reward_shards_percent");
         var shardPreview = reward.Shards + (reward.Shards * Math.Max(0, totalBonusPercent) / 100);
         var skipText = Localization.Language == Localization.English
-            ? $"Skip picks: gain {shardPreview} shards and heal {reward.Heal}."
-            : $"跳过选择：获得 {shardPreview} 矿晶并治疗 {reward.Heal} 点。";
+            ? $"Skip picks: gain {shardPreview} buttons and recover {reward.Heal} courage."
+            : $"跳过选择：获得 {shardPreview} 纽扣并恢复 {reward.Heal} 点勇气。";
         var skipButton = new Button
         {
             Text = skipText,
@@ -2403,8 +2445,8 @@ public partial class BattleScene : Control
         if (relic != null)
         {
             ShowGameTip(Localization.Language == Localization.English
-                ? $"Relic reward\n{relic.DisplayName()}: {relic.DisplayDescription()}"
-                : $"遗物奖励\n{relic.DisplayName()}：{relic.DisplayDescription()}");
+                ? $"Keepsake reward\n{relic.DisplayName()}: {relic.DisplayDescription()}"
+                : $"纪念物奖励\n{relic.DisplayName()}：{relic.DisplayDescription()}");
         }
         ShowRunDeltaTips(before);
         _rewardPanel.Visible = false;
@@ -2416,9 +2458,9 @@ public partial class BattleScene : Control
     {
         var rarity = relic.Rarity switch
         {
-            "rare" => Localization.Language == Localization.English ? "Rare Relic" : "稀有遗物",
-            "uncommon" => Localization.Language == Localization.English ? "Uncommon Relic" : "罕见遗物",
-            _ => Localization.Language == Localization.English ? "Common Relic" : "普通遗物"
+            "rare" => Localization.Language == Localization.English ? "Rare Keepsake" : "稀有纪念物",
+            "uncommon" => Localization.Language == Localization.English ? "Uncommon Keepsake" : "罕见纪念物",
+            _ => Localization.Language == Localization.English ? "Common Keepsake" : "普通纪念物"
         };
 
         return $"{rarity} | {relic.DisplayName()}\n{relic.DisplayDescription()}";
@@ -2434,7 +2476,7 @@ public partial class BattleScene : Control
         _battlePanel.Visible = false;
         _rewardPanel.Visible = true;
         _roomTitleLabel.Text = "战斗胜利";
-        _roomDescriptionLabel.Text = "从破碎矿壳里挑选战利品。";
+        _roomDescriptionLabel.Text = "从散落的小屋碎片里挑选一项发现。";
 
         var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
         ClearBox(_rewardList);
@@ -2455,7 +2497,7 @@ public partial class BattleScene : Control
 
         var skipButton = new Button
         {
-            Text = $"跳过卡牌，只获得 {reward.Shards} 矿晶并治疗 {reward.Heal} 点",
+            Text = $"跳过卡牌，只获得 {reward.Shards} 纽扣并恢复 {reward.Heal} 点勇气",
             CustomMinimumSize = new Vector2(0, 52),
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
@@ -2814,12 +2856,12 @@ public partial class BattleScene : Control
     {
         var currentLayer = Math.Max(_run.CurrentLayerIndex + 1, 0);
         var isEnglish = Localization.Language == Localization.English;
-        _hudLayerLabel.Text = $"{(isEnglish ? "Layer" : "层数")}\n{currentLayer}/{_run.MapLayers.Count}";
-        _hudHpLabel.Text = $"HP\n{displayedHp}/{displayedMaxHp}";
-        _hudShardsLabel.Text = $"{(isEnglish ? "Shards" : "矿晶")}\n{_run.Shards}";
+        _hudLayerLabel.Text = $"{(isEnglish ? "Room" : "房间")}\n{currentLayer}/{_run.MapLayers.Count}";
+        _hudHpLabel.Text = $"{(isEnglish ? "Courage" : "勇气")}\n{displayedHp}/{displayedMaxHp}";
+        _hudShardsLabel.Text = $"{(isEnglish ? "Buttons" : "纽扣")}\n{_run.Shards}";
         _hudDeckLabel.Text = $"{(isEnglish ? "Deck" : "牌组")}\n{_run.PlayerDeck.Count}";
-        _hudLampLabel.Text = $"{(isEnglish ? "Oil" : "灯油")}\n{_run.LampOil}/{_run.MaxLampOil}";
-        _hudFogLabel.Text = $"{(isEnglish ? "Fog" : "雾压")}\n{FormatFogDots()}";
+        _hudLampLabel.Text = $"{(isEnglish ? "Battery" : "手电")}\n{_run.LampOil}/{_run.MaxLampOil}";
+        _hudFogLabel.Text = $"{(isEnglish ? "Noise" : "声响")}\n{FormatFogDots()}";
         _hudScoreLabel.Text = $"{(isEnglish ? "Score" : "分数")}\n{_run.Score}";
         _hudObjectiveLabel.Text = $"{(isEnglish ? "Objective" : "目标")}\n{FormatObjectiveStatus()}";
 
@@ -2846,21 +2888,21 @@ public partial class BattleScene : Control
         var sb = new StringBuilder();
         sb.AppendLine("Debug");
         sb.AppendLine($"Run seed: {_run.RunSeed}");
-        sb.AppendLine($"Layer: {Math.Max(_run.CurrentLayerIndex + 1, 0)}/{_run.MapLayers.Count}");
+        sb.AppendLine($"Room: {Math.Max(_run.CurrentLayerIndex + 1, 0)}/{_run.MapLayers.Count}");
         sb.AppendLine($"Room: {_run.CurrentRoom?.Kind ?? "-"} / {_run.CurrentRoom?.DisplayTitle() ?? "-"}");
-        sb.AppendLine($"HP: {_run.PlayerHp}/{_run.PlayerMaxHp}  Shards: {_run.Shards}");
-        sb.AppendLine($"Lamp: {_run.LampOil}/{_run.MaxLampOil}  Fog: {_run.FogPressure}  Score: {_run.Score}");
+        sb.AppendLine($"Courage: {_run.PlayerHp}/{_run.PlayerMaxHp}  Buttons: {_run.Shards}");
+        sb.AppendLine($"Battery: {_run.LampOil}/{_run.MaxLampOil}  Noise: {_run.FogPressure}  Score: {_run.Score}");
         sb.AppendLine($"Deck: {_run.PlayerDeck.Count}  Items: {_run.Items.Count}");
 
         if (_run.Minefield != null)
         {
             var mine = _run.Minefield;
             sb.AppendLine();
-            sb.AppendLine($"Mine seed: {mine.Seed}");
+            sb.AppendLine($"Room-search seed: {mine.Seed}");
             sb.AppendLine($"Board: {mine.Width}x{mine.Height}");
             sb.AppendLine($"Visible: {mine.CountRevealed()}/{mine.Cells.Count}  Flags: {mine.CountFlags()}");
             sb.AppendLine($"Monster: {mine.CountType(MineTileType.Monster)}  Trap: {mine.CountType(MineTileType.Trap)}");
-            sb.AppendLine($"Treasure: {mine.CountType(MineTileType.Treasure)}  Ore: {mine.CountType(MineTileType.Ore)}");
+            sb.AppendLine($"Curios: {mine.CountType(MineTileType.Treasure)}  Buttons: {mine.CountType(MineTileType.Ore)}");
             sb.AppendLine($"Clear reward: {mine.RewardShards}  Trap dmg: {mine.TrapDamage}");
         }
 
@@ -2890,10 +2932,10 @@ public partial class BattleScene : Control
     private void RenderItems()
     {
         ClearBox(_itemList);
-        AddInventoryHeader(Localization.Language == Localization.English ? "Relics" : "遗物");
+        AddInventoryHeader(Localization.Language == Localization.English ? "Keepsakes" : "纪念物");
         if (_run.Relics.Count == 0)
         {
-            AddInventoryEmpty(Localization.Language == Localization.English ? "No relics yet." : "暂无遗物。");
+            AddInventoryEmpty(Localization.Language == Localization.English ? "No keepsakes yet." : "暂无纪念物。");
         }
         else
         {
@@ -2980,7 +3022,7 @@ public partial class BattleScene : Control
 
     private void ShowRelicDetails(RelicData relic)
     {
-        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Relic Details" : "遗物详情";
+        _roomTitleLabel.Text = Localization.Language == Localization.English ? "Keepsake Details" : "纪念物详情";
         _roomDescriptionLabel.Text = BuildRelicTooltip(relic);
     }
 
@@ -3029,12 +3071,12 @@ public partial class BattleScene : Control
             "battle_start_draw" => Localization.Language == Localization.English ? $"Battle start: draw +{value}." : $"战斗开始：抽牌 +{value}。",
             "battle_start_energy" => Localization.Language == Localization.English ? $"First turn: energy +{value}." : $"首回合：能量 +{value}。",
             "trap_damage_reduction" => Localization.Language == Localization.English ? $"Trap damage -{value}." : $"陷阱伤害 -{value}。",
-            "reward_shards_percent" => Localization.Language == Localization.English ? $"Battle reward shards +{value}%." : $"战斗奖励矿晶 +{value}%。",
+            "reward_shards_percent" => Localization.Language == Localization.English ? $"Battle reward buttons +{value}%." : $"战斗奖励纽扣 +{value}%。",
             "reward_card_bonus" => Localization.Language == Localization.English ? $"Card reward choices +{value}." : $"卡牌奖励选项 +{value}。",
-            "mine_start_preview" => Localization.Language == Localization.English ? $"Preview {value} mine tile at survey start." : $"进入矿区时预览 {value} 个矿格。",
-            "post_battle_fog_reduction" => Localization.Language == Localization.English ? $"After battle: fog pressure -{value}." : $"战斗后：雾压 -{value}。",
-            "post_battle_lamp" => Localization.Language == Localization.English ? $"After battle: oil +{value}." : $"战斗后：灯油 +{value}。",
-            "max_lamp" => Localization.Language == Localization.English ? $"Max oil +{value}." : $"灯油上限 +{value}。",
+            "mine_start_preview" => Localization.Language == Localization.English ? $"Preview {value} room tile at search start." : $"进入房间时预览 {value} 个格子。",
+            "post_battle_fog_reduction" => Localization.Language == Localization.English ? $"After battle: noise -{value}." : $"战斗后：声响 -{value}。",
+            "post_battle_lamp" => Localization.Language == Localization.English ? $"After battle: battery +{value}." : $"战斗后：手电 +{value}。",
+            "max_lamp" => Localization.Language == Localization.English ? $"Max battery +{value}." : $"手电上限 +{value}。",
             "player_damage_bonus" => Localization.Language == Localization.English ? $"Player attack damage +{value}." : $"玩家攻击伤害 +{value}。",
             "player_block_bonus" => Localization.Language == Localization.English ? $"Player block from cards +{value}." : $"卡牌获得格挡 +{value}。",
             "self_damage_reduction" => Localization.Language == Localization.English ? $"Self damage -{value}." : $"自伤 -{value}。",
@@ -3047,7 +3089,7 @@ public partial class BattleScene : Control
         return item.UseMode switch
         {
             "instant_heal" => Localization.Language == Localization.English ? "Click to use immediately." : "点击后立即使用。",
-            "target_tile" => Localization.Language == Localization.English ? "Click to select, then choose a mine tile." : "点击选中后，再选择一个矿格。",
+            "target_tile" => Localization.Language == Localization.English ? "Click to select, then choose a room tile." : "点击选中后，再选择一个房间格子。",
             _ => Localization.Language == Localization.English ? "Item effect is passive or contextual." : "该道具效果会在特定场景中生效。"
         };
     }
@@ -3096,10 +3138,10 @@ public partial class BattleScene : Control
         _metaRecorded = true;
         HideInteractivePanels();
         _endPanel.Visible = true;
-        _roomTitleLabel.Text = victory ? "探索完成" : "探索失败";
+        _roomTitleLabel.Text = victory ? "今晚冒险完成" : "今晚冒险中断";
         _roomDescriptionLabel.Text = reason;
-        _endTitleLabel.Text = victory ? "本次探索完成" : "本次探索结束";
-        _endSummaryLabel.Text = $"抵达层数: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余 HP: {_run.PlayerHp}/{_run.PlayerMaxHp}\n灯油: {_run.LampOil}/{_run.MaxLampOil}  雾压: {_run.FogPressure}\n矿晶: {_run.Shards}  分数: {_run.Score}\n战斗胜利: {_run.BattlesWon}  清理矿区: {_run.MinesCleared}\n委托: {FormatObjectiveStatus()}  委托奖励: {meta.LastObjectiveBonus}\n本局获得余烬: {meta.LastEarnedEmbers}  总余烬: {meta.TotalEmbers}\n最佳深度: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n遗物: {FormatRelicList()}";
+        _endTitleLabel.Text = victory ? "你在天亮前回到了床上" : "你只好提前钻回被窝";
+        _endSummaryLabel.Text = $"抵达房间: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余勇气: {_run.PlayerHp}/{_run.PlayerMaxHp}\n手电: {_run.LampOil}/{_run.MaxLampOil}  声响: {_run.FogPressure}\n纽扣: {_run.Shards}  分数: {_run.Score}\n打跑怪物: {_run.BattlesWon}  清理房间: {_run.MinesCleared}\n挑战: {FormatObjectiveStatus()}  挑战奖励: {meta.LastObjectiveBonus}\n本局获得星屑: {meta.LastEarnedEmbers}  总星屑: {meta.TotalEmbers}\n最深房间: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n纪念物: {FormatRelicList()}";
         RenderShared();
     }
 
@@ -3111,6 +3153,7 @@ public partial class BattleScene : Control
         _rewardPanel.Visible = false;
         _endPanel.Visible = false;
         _continueButton.Visible = false;
+        _mineModeButton.Visible = false;
         ClearBox(_choiceList);
         ClearBox(_mineGrid);
         ClearBox(_handBox);
@@ -3192,11 +3235,11 @@ public partial class BattleScene : Control
             {
                 text += string.IsNullOrWhiteSpace(card.UpgradeTo)
                     ? "\n已到当前最高等级。"
-                    : $"\n升级费用：{upgradeCost} 矿晶";
+                    : $"\n升级费用：{upgradeCost} 纽扣";
             }
             else if (interactive && removeCost >= 0)
             {
-                text += $"\n移除费用：{removeCost} 矿晶";
+                text += $"\n移除费用：{removeCost} 纽扣";
             }
 
             var button = new Button
@@ -3239,7 +3282,7 @@ public partial class BattleScene : Control
         HideInteractivePanels();
         _choicePanel.Visible = true;
         _roomTitleLabel.Text = "移除卡牌";
-        _roomDescriptionLabel.Text = "删牌能让核心牌更稳定上手，但会消耗矿晶。";
+        _roomDescriptionLabel.Text = "删牌能让核心牌更稳定上手，但会消耗纽扣。";
         RenderDeckList(true, -1, cost);
         AddChoiceButton("返回\n暂时不调整牌组。", () => RunLoadingTransition(
             Localization.Language == Localization.English ? "Returning to the room..." : "返回当前房间……",
@@ -3332,10 +3375,10 @@ public partial class BattleScene : Control
     private void ShowRunDeltaTips(RunTipSnapshot before)
     {
         var lines = new List<string>();
-        AddDeltaLine(lines, Localization.Language == Localization.English ? "HP" : "生命", _run.PlayerHp - before.Hp);
-        AddDeltaLine(lines, Localization.Language == Localization.English ? "Shards" : "矿晶", _run.Shards - before.Shards);
-        AddDeltaLine(lines, Localization.Language == Localization.English ? "Oil" : "灯油", _run.LampOil - before.LampOil);
-        AddDeltaLine(lines, Localization.Language == Localization.English ? "Fog" : "雾压", _run.FogPressure - before.FogPressure);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Courage" : "勇气", _run.PlayerHp - before.Hp);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Buttons" : "纽扣", _run.Shards - before.Shards);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Battery" : "手电", _run.LampOil - before.LampOil);
+        AddDeltaLine(lines, Localization.Language == Localization.English ? "Noise" : "声响", _run.FogPressure - before.FogPressure);
         AddDeltaLine(lines, Localization.Language == Localization.English ? "Score" : "分数", _run.Score - before.Score);
 
         if (lines.Count > 0)
@@ -3360,8 +3403,8 @@ public partial class BattleScene : Control
             {
                 var relic = _gameData.GetRelic(_run.Relics[i]);
                 ShowGameTip(Localization.Language == Localization.English
-                    ? $"New relic\n{relic.DisplayName()}"
-                    : $"新增遗物\n{relic.DisplayName()}");
+                    ? $"New keepsake\n{relic.DisplayName()}"
+                    : $"新增纪念物\n{relic.DisplayName()}");
             }
         }
 
@@ -3459,8 +3502,8 @@ public partial class BattleScene : Control
         var description = new Label
         {
             Text = Localization.Language == Localization.English
-                ? "This is your current run deck. Upgrade and removal happen at camps and shops."
-                : "这里展示当前跑局牌组。升级和删牌会在营地、商店中进行。",
+                ? "This is your current run deck. Upgrade and removal happen at hideouts and trade rooms."
+                : "这里展示当前跑局牌组。强化和删牌会在躲藏点、交换房中进行。",
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
         description.AddThemeColorOverride("font_color", Color.FromHtml("b8c7d5"));
@@ -3681,10 +3724,10 @@ public partial class BattleScene : Control
         {
             Name = "CenterTip",
             MouseFilter = MouseFilterEnum.Ignore,
-            CustomMinimumSize = new Vector2(820, 58),
+            CustomMinimumSize = new Vector2(0, 25),
             ZIndex = 190
         };
-        tip.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 1));
+        tip.AddThemeStyleboxOverride("panel", MakeTipBannerStyle());
 
         var label = new Label
         {
@@ -3692,26 +3735,27 @@ public partial class BattleScene : Control
             MouseFilter = MouseFilterEnum.Ignore,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
+            AutowrapMode = TextServer.AutowrapMode.Off,
+            ClipText = true
         };
-        label.AddThemeFontSizeOverride("font_size", 18);
+        label.AddThemeFontSizeOverride("font_size", 14);
         label.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         tip.AddChild(label);
 
         root.AddChild(tip);
 
-        var width = Math.Min(920f, Math.Max(520f, root.Size.X - 120f));
-        var height = 58f;
-        var target = new Vector2((root.Size.X - width) / 2f, Math.Clamp(root.Size.Y * 0.28f, 84f, Math.Max(84f, root.Size.Y - 170f)));
+        var width = root.Size.X;
+        var height = 25f;
+        var target = new Vector2(0, Math.Clamp(root.Size.Y * 0.28f, 84f, Math.Max(84f, root.Size.Y - 170f)));
         tip.Size = new Vector2(width, height);
-        tip.Position = target + new Vector2(0, -54f);
+        tip.Position = target + new Vector2(0, -32f);
         tip.Modulate = new Color(1f, 1f, 1f, 0f);
 
         var tween = CreateTween();
         tween.TweenProperty(tip, "position", target, 0.22f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
         tween.Parallel().TweenProperty(tip, "modulate:a", 1.0f, 0.18f);
         tween.TweenInterval(1.15f);
-        tween.TweenProperty(tip, "position", target + new Vector2(0, -16f), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.TweenProperty(tip, "position", target + new Vector2(0, -10f), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
         tween.Parallel().TweenProperty(tip, "modulate:a", 0.0f, 0.45f);
         tween.TweenCallback(Callable.From(tip.QueueFree));
         await ToSignal(tween, Tween.SignalName.Finished);
@@ -3722,6 +3766,18 @@ public partial class BattleScene : Control
     private void ShowGameTipAt(string text, Vector2 globalPosition, bool centerOnPoint = true)
     {
         ShowGameTip(text);
+    }
+
+    private static StyleBoxFlat MakeTipBannerStyle()
+    {
+        return new StyleBoxFlat
+        {
+            BgColor = new Color(0f, 0f, 0f, 0.55f),
+            ContentMarginLeft = 8,
+            ContentMarginTop = 0,
+            ContentMarginRight = 8,
+            ContentMarginBottom = 0
+        };
     }
 
     private void ApplyUiStyle()
@@ -4076,7 +4132,7 @@ public partial class BattleScene : Control
             MineTileType.Monster => "M?",
             MineTileType.Trap => "T?",
             MineTileType.Treasure => "BOX?",
-            MineTileType.Ore => "ORE?",
+            MineTileType.Ore => "BTN?",
             _ => "?"
         };
     }

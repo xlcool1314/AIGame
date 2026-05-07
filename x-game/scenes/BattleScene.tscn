@@ -111,7 +111,7 @@ theme_override_constants/separation = 12
 [node name="MineStatusLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader" unique_id=940355850]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "矿区状态"
+text = "房间状态"
 
 [node name="MineLegendLabel" type="Label" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineHeader" unique_id=1498955915]
 layout_mode = 2
@@ -287,7 +287,7 @@ theme_override_constants/separation = 8
 
 [node name="MineModeButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout" unique_id=203519242]
 layout_mode = 2
-text = "模式：翻开"
+text = "Mode: Search"
 
 [node name="DeckButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout" unique_id=1686958527]
 layout_mode = 2

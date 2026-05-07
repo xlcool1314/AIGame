@@ -2,9 +2,9 @@
   "relics": [
     {
       "id": "calibrated_lamp",
-      "name": "\u6821\u51c6\u77ff\u706f",
-      "nameEn": "Calibrated Lamp",
-      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u83b7\u5f97 3 \u70b9\u683c\u6321\u3002",
+      "name": "校准手电",
+      "nameEn": "Tuned Flashlight",
+      "description": "每场战斗开始时获得 3 点格挡。",
       "descriptionEn": "Gain 3 block at the start of each battle.",
       "rarity": "common",
       "effects": [
@@ -13,10 +13,10 @@
     },
     {
       "id": "safety_tether",
-      "name": "\u5b89\u5168\u7ef3",
-      "nameEn": "Safety Tether",
-      "description": "\u89e6\u53d1\u9677\u9631\u65f6\u53d7\u5230\u7684\u4f24\u5bb3\u964d\u4f4e 3 \u70b9\u3002",
-      "descriptionEn": "Trap damage is reduced by 3.",
+      "name": "被单绳",
+      "nameEn": "Bedsheet Rope",
+      "description": "触发吓人机关时受到的伤害降低 3 点。",
+      "descriptionEn": "Scary trap damage is reduced by 3.",
       "rarity": "common",
       "effects": [
         { "type": "trap_damage_reduction", "value": 3 }
@@ -24,10 +24,10 @@
     },
     {
       "id": "ore_charm",
-      "name": "\u77ff\u8109\u62a4\u7b26",
-      "nameEn": "Ore Charm",
-      "description": "\u6218\u6597\u5956\u52b1\u7684\u77ff\u6676\u63d0\u9ad8 20%\u3002",
-      "descriptionEn": "Battle reward shards are increased by 20%.",
+      "name": "幸运纽扣",
+      "nameEn": "Lucky Button",
+      "description": "战斗奖励的纽扣提高 20%。",
+      "descriptionEn": "Battle reward buttons are increased by 20%.",
       "rarity": "common",
       "effects": [
         { "type": "reward_shards_percent", "value": 20 }
@@ -35,10 +35,10 @@
     },
     {
       "id": "survey_lens",
-      "name": "\u6d4b\u7ed8\u955c\u7247",
-      "nameEn": "Survey Lens",
-      "description": "\u6218\u6597\u5956\u52b1\u591a\u51fa\u73b0 1 \u5f20\u5361\u724c\u9009\u62e9\u3002\u8fdb\u5165\u77ff\u533a\u65f6\u9884\u89c8 1 \u4e2a\u9690\u85cf\u77ff\u683c\u3002",
-      "descriptionEn": "Card rewards offer 1 additional card. Preview 1 hidden tile when entering mine boards.",
+      "name": "玻璃弹珠镜",
+      "nameEn": "Marble Lens",
+      "description": "战斗奖励多出现 1 张卡牌选择。进入房间棋盘时预览 1 个隐藏格。",
+      "descriptionEn": "Card rewards offer 1 additional card. Preview 1 hidden tile when entering room boards.",
       "rarity": "common",
       "effects": [
         { "type": "reward_card_bonus", "value": 1 },
@@ -47,10 +47,10 @@
     },
     {
       "id": "old_miner_tag",
-      "name": "\u65e7\u77ff\u5de5\u94dc\u724c",
-      "nameEn": "Old Miner Tag",
-      "description": "\u6bcf\u573a\u6218\u6597\u80dc\u5229\u540e\u989d\u5916\u964d\u4f4e 1 \u70b9\u96fe\u538b\u3002",
-      "descriptionEn": "After each battle victory, reduce fog pressure by 1 additional point.",
+      "name": "旧姓名牌",
+      "nameEn": "Old Name Tag",
+      "description": "每场战斗胜利后额外降低 1 点声响。",
+      "descriptionEn": "After each battle victory, reduce noise by 1 additional point.",
       "rarity": "common",
       "effects": [
         { "type": "post_battle_fog_reduction", "value": 1 }
@@ -58,9 +58,9 @@
     },
     {
       "id": "skull_compass",
-      "name": "\u9885\u9aa8\u7f57\u76d8",
-      "nameEn": "Skull Compass",
-      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u989d\u5916\u62bd 1 \u5f20\u724c\u3002",
+      "name": "玩具骷髅罗盘",
+      "nameEn": "Toy Skull Compass",
+      "description": "每场战斗开始时额外抽 1 张牌。",
       "descriptionEn": "Draw 1 extra card at the start of each battle.",
       "rarity": "uncommon",
       "effects": [
@@ -69,9 +69,9 @@
     },
     {
       "id": "ember_cell",
-      "name": "\u4f59\u70ec\u7535\u6c60",
-      "nameEn": "Ember Cell",
-      "description": "\u6bcf\u573a\u6218\u6597\u7b2c\u4e00\u56de\u5408\u83b7\u5f97 1 \u70b9\u989d\u5916\u80fd\u91cf\u3002",
+      "name": "余光电池",
+      "nameEn": "Glow Battery",
+      "description": "每场战斗第一回合获得 1 点额外能量。",
       "descriptionEn": "Gain 1 extra energy on the first turn of each battle.",
       "rarity": "uncommon",
       "effects": [
@@ -80,10 +80,10 @@
     },
     {
       "id": "deep_pouch",
-      "name": "\u6df1\u5c42\u6cb9\u56ca",
-      "nameEn": "Deep Pouch",
-      "description": "\u706f\u6cb9\u4e0a\u9650\u63d0\u9ad8 15\uff0c\u6218\u6597\u540e\u6062\u590d 4 \u70b9\u706f\u6cb9\u3002",
-      "descriptionEn": "Max oil +15. Restore 4 oil after battles.",
+      "name": "深夜口袋",
+      "nameEn": "Midnight Pocket",
+      "description": "手电电量上限提高 15，战斗后恢复 4 点手电电量。",
+      "descriptionEn": "Max flashlight battery +15. Restore 4 battery after battles.",
       "rarity": "uncommon",
       "effects": [
         { "type": "max_lamp", "value": 15 },
@@ -92,9 +92,9 @@
     },
     {
       "id": "black_lantern",
-      "name": "\u9ed1\u7130\u63d0\u706f",
-      "nameEn": "Black Lantern",
-      "description": "\u6bcf\u573a\u6218\u6597\u5f00\u59cb\u65f6\u989d\u5916\u62bd 1 \u5f20\u724c\u5e76\u83b7\u5f97 1 \u70b9\u80fd\u91cf\u3002",
+      "name": "黑焰夜灯",
+      "nameEn": "Black Night-Light",
+      "description": "每场战斗开始时额外抽 1 张牌并获得 1 点能量。",
       "descriptionEn": "At battle start, draw 1 extra card and gain 1 energy.",
       "rarity": "rare",
       "effects": [

@@ -2,8 +2,8 @@
   "rewards": [
     {
       "id": "basic",
-      "title": "\u666e\u901a\u6218\u5229\u54c1",
-      "titleEn": "Basic Spoils",
+      "title": "普通发现",
+      "titleEn": "Small Finds",
       "shards": 12,
       "heal": 4,
       "cardChoices": [
@@ -17,8 +17,8 @@
     },
     {
       "id": "advanced",
-      "title": "\u6df1\u5c42\u6218\u5229\u54c1",
-      "titleEn": "Deep Spoils",
+      "title": "深夜发现",
+      "titleEn": "Midnight Finds",
       "shards": 18,
       "heal": 5,
       "cardChoices": [
@@ -33,8 +33,8 @@
     },
     {
       "id": "elite",
-      "title": "\u7cbe\u82f1\u6218\u5229\u54c1",
-      "titleEn": "Elite Spoils",
+      "title": "稀奇发现",
+      "titleEn": "Rare Finds",
       "shards": 32,
       "heal": 8,
       "cardChoices": [
@@ -48,8 +48,8 @@
     },
     {
       "id": "boss",
-      "title": "\u6838\u5fc3\u5956\u52b1",
-      "titleEn": "Core Reward",
+      "title": "小屋心脏奖励",
+      "titleEn": "Heart Reward",
       "shards": 48,
       "heal": 12,
       "cardChoices": [
@@ -62,8 +62,8 @@
     },
     {
       "id": "cache",
-      "title": "\u5c01\u5b58\u8865\u7ed9",
-      "titleEn": "Sealed Cache",
+      "title": "封存藏品",
+      "titleEn": "Sealed Curios",
       "shards": 10,
       "heal": 0,
       "cardChoices": [
@@ -76,8 +76,8 @@
     },
     {
       "id": "shop",
-      "title": "\u77ff\u706f\u5546\u961f\u8d27\u67b6",
-      "titleEn": "Lamp Caravan Stock",
+      "title": "地下交换架",
+      "titleEn": "Underground Trade Shelf",
       "shards": 0,
       "heal": 0,
       "cardChoices": [

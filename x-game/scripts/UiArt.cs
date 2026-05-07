@@ -45,14 +45,14 @@ public static class UiArt
             MouseFilter = Control.MouseFilterEnum.Ignore,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-            Modulate = new Color(0.42f, 0.42f, 0.42f, 1f)
+            Modulate = new Color(0.72f, 0.72f, 0.72f, 1f)
         };
         backdrop.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
         var shade = new ColorRect
         {
             Name = "ArtBackdropShade",
-            Color = new Color(0.02f, 0.02f, 0.02f, 0.66f),
+            Color = new Color(0.02f, 0.02f, 0.025f, 0.48f),
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         shade.SetAnchorsPreset(Control.LayoutPreset.FullRect);

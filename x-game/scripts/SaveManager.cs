@@ -99,7 +99,7 @@ public static class SaveManager
 
         if (meta.TotalEmbers < unlock.Cost)
         {
-            message = Localization.Language == Localization.English ? "Not enough embers." : "余烬不足。";
+            message = Localization.Language == Localization.English ? "Not enough stardust." : "星屑不足。";
             return false;
         }
 

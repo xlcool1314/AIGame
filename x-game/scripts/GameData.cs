@@ -94,7 +94,7 @@ public partial class GameData : Node
 			}
 		}
 
-		throw new InvalidOperationException($"未找到委托: {objectiveId}");
+		throw new InvalidOperationException($"未找到挑战: {objectiveId}");
 	}
 
 	public RelicData GetRelic(string relicId)
@@ -107,7 +107,7 @@ public partial class GameData : Node
 			}
 		}
 
-		throw new InvalidOperationException($"未找到遗物: {relicId}");
+		throw new InvalidOperationException($"未找到纪念物: {relicId}");
 	}
 
 	public CharacterData GetCharacter(string characterId)
