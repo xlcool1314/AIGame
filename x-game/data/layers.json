@@ -4,7 +4,7 @@
       "rooms": [
         {
           "kind": "mine",
-          "title": "\u5e8a\u4e0b\u6697\u683c",
+          "title": "床下暗格",
           "titleEn": "Under-Bed Crawlspace",
           "enemyId": "slime",
           "risk": 1,
@@ -12,15 +12,16 @@
           "rewardBonus": 0,
           "mineConfig": { "width": 5, "height": 5, "monsters": 2, "traps": 2, "treasures": 2, "ores": 5, "clearReward": 14, "trapDamage": 8 }
         },
-        { "kind": "battle", "title": "\u889c\u5b50\u602a\u7684\u7a9d", "titleEn": "Sock Thing Nest", "enemyId": "slime", "rewardId": "basic", "risk": 1, "lampCost": 5 },
-        { "kind": "event", "title": "\u5899\u91cc\u7684\u6084\u6084\u8bdd", "titleEn": "Whispers in the Wall", "eventId": "echo_ore", "risk": 1, "lampCost": 4 }
+        { "kind": "battle", "title": "袜子怪的窝", "titleEn": "Sock Thing Nest", "enemyId": "slime", "rewardId": "basic", "risk": 1, "lampCost": 5 },
+        { "kind": "event", "title": "墙里的悄悄话", "titleEn": "Whispers in the Wall", "eventId": "echo_ore", "risk": 1, "lampCost": 4 }
       ]
     },
     {
       "rooms": [
+        { "kind": "battle", "title": "灰尘兔出没", "titleEn": "Dust Bunny Corner", "enemyId": "dust_bunny", "rewardId": "basic", "risk": 1, "lampCost": 6 },
         {
           "kind": "mine",
-          "title": "\u65e7\u73a9\u5177\u4ed3\u5e93",
+          "title": "旧玩具仓库",
           "titleEn": "Old Toy Storage",
           "enemyId": "crystal_bat",
           "risk": 2,
@@ -28,19 +29,26 @@
           "rewardBonus": 10,
           "mineConfig": { "width": 5, "height": 6, "monsters": 3, "traps": 3, "treasures": 2, "ores": 6, "clearReward": 20, "trapDamage": 9 }
         },
-        { "kind": "battle", "title": "\u7eb8\u7ffc\u5c0f\u9b3c", "titleEn": "Paper-Wing Imp", "enemyId": "crystal_bat", "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
-        { "kind": "treasure", "title": "\u4e0a\u9501\u7684\u94c1\u76d2", "titleEn": "Locked Tin Box", "rewardId": "cache", "risk": 1, "lampCost": 6 },
-        { "kind": "event", "title": "\u4f1a\u79fb\u52a8\u7684\u697c\u68af", "titleEn": "The Moving Stairs", "eventId": "collapsed_tunnel", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
-        { "kind": "shop", "title": "\u9f20\u9f20\u4ea4\u6362\u7ad9", "titleEn": "Mousey Trade Nook", "rewardId": "shop", "risk": 1, "lampCost": 5 }
+        { "kind": "event", "title": "塞满的衣柜", "titleEn": "Stuffed Closet", "eventId": "stuffed_closet", "risk": 1, "lampCost": 5 },
+        { "kind": "treasure", "title": "上锁的铁盒", "titleEn": "Locked Tin Box", "rewardId": "cache", "risk": 1, "lampCost": 6 },
+        { "kind": "stash", "title": "玩具抽屉暗格", "titleEn": "Toy Drawer Stash", "rewardId": "cache", "risk": 1, "lampCost": 5 }
       ]
     },
     {
       "rooms": [
-        { "kind": "rest", "title": "\u6bdb\u6bef\u5c0f\u5821", "titleEn": "Blanket Fort", "risk": 1, "lampCost": 4 },
-        { "kind": "treasure", "title": "\u591c\u706f\u5de5\u4f5c\u53f0", "titleEn": "Night-Light Workbench", "rewardId": "cache", "risk": 1, "lampCost": 5 },
+        { "kind": "rest", "title": "毛毯小堡", "titleEn": "Blanket Fort", "risk": 1, "lampCost": 4 },
+        { "kind": "battle", "title": "纸翼小鬼", "titleEn": "Paper-Wing Imp", "enemyId": "crystal_bat", "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
+        { "kind": "event", "title": "会移动的楼梯", "titleEn": "The Moving Stairs", "eventId": "collapsed_tunnel", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
+        { "kind": "shop", "title": "鼠鼠交换站", "titleEn": "Mousey Trade Nook", "rewardId": "shop", "risk": 1, "lampCost": 5 },
+        { "kind": "treasure", "title": "夜灯工作台", "titleEn": "Night-Light Workbench", "rewardId": "cache", "risk": 1, "lampCost": 5 },
+        { "kind": "stash", "title": "床脚铁盒谜藏", "titleEn": "Bedpost Tin Stash", "rewardId": "cache", "risk": 1, "lampCost": 5, "rewardBonus": 10 }
+      ]
+    },
+    {
+      "rooms": [
         {
           "kind": "mine",
-          "title": "\u79d8\u5bc6\u6d17\u8863\u95f4",
+          "title": "秘密洗衣间",
           "titleEn": "Secret Laundry Room",
           "enemyId": "crystal_bat",
           "risk": 2,
@@ -48,16 +56,25 @@
           "rewardBonus": 10,
           "mineConfig": { "width": 5, "height": 6, "monsters": 2, "traps": 3, "treasures": 2, "ores": 7, "clearReward": 22, "trapDamage": 9 }
         },
-        { "kind": "event", "title": "\u53cd\u7740\u753b\u7684\u5730\u56fe", "titleEn": "Upside-Down Map", "eventId": "fault_map", "risk": 1, "lampCost": 5 },
-        { "kind": "shop", "title": "\u94c1\u7f50\u96f6\u98df\u67b6", "titleEn": "Tin Snack Shelf", "rewardId": "shop", "risk": 1, "lampCost": 5 }
+        { "kind": "trap", "title": "影子伏击", "titleEn": "Shadow Ambush", "enemyId": "dust_bunny", "enemyIds": ["dust_bunny", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 20 },
+        { "kind": "event", "title": "反着画的地图", "titleEn": "Upside-Down Map", "eventId": "fault_map", "risk": 1, "lampCost": 5 },
+        { "kind": "battle", "title": "弹跳惊吓盒", "titleEn": "Jack-in-the-Box", "enemyId": "jack_in_box", "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 }
       ]
     },
     {
       "rooms": [
-        { "kind": "rest", "title": "\u8863\u67dc\u6697\u95f4", "titleEn": "Wardrobe Hideaway" },
+        { "kind": "rest", "title": "衣柜暗间", "titleEn": "Wardrobe Hideaway", "risk": 1, "lampCost": 4 },
+        { "kind": "event", "title": "影子木偶戏", "titleEn": "Shadow Puppet Show", "eventId": "shadow_puppet", "risk": 1, "lampCost": 5 },
+        { "kind": "shop", "title": "铁罐零食架", "titleEn": "Tin Snack Shelf", "rewardId": "shop", "risk": 1, "lampCost": 5 },
+        { "kind": "treasure", "title": "玻璃弹珠泉", "titleEn": "Marble Spring Cache", "rewardId": "cache", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
+        { "kind": "calibration", "title": "手电筒调试间", "titleEn": "Flashlight Tuning Room", "risk": 1, "lampCost": 6, "rewardBonus": 10 }
+      ]
+    },
+    {
+      "rooms": [
         {
           "kind": "mine",
-          "title": "\u4f1a\u547c\u5438\u7684\u5730\u6bef",
+          "title": "会呼吸的地毯",
           "titleEn": "Breathing Carpet Room",
           "enemyId": "ore_leecher",
           "risk": 2,
@@ -65,26 +82,45 @@
           "rewardBonus": 15,
           "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 8, "clearReward": 28, "trapDamage": 10 }
         },
-        { "kind": "battle", "title": "\u6a61\u76ae\u6ce5\u8d2a\u5403\u9b3c", "titleEn": "Putty Nibbler", "enemyId": "ore_leecher", "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
-        { "kind": "event", "title": "\u65e7\u73a9\u5076\u636e\u70b9", "titleEn": "Old Doll Hideout", "eventId": "old_camp", "risk": 1, "lampCost": 6 },
-        { "kind": "calibration", "title": "\u624b\u7535\u7b52\u8c03\u8bd5\u95f4", "titleEn": "Flashlight Tuning Room", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
+        { "kind": "elite", "title": "玻璃眼守卫", "titleEn": "Glass-Eye Guard", "enemyId": "crystal_guard", "enemyIds": ["crystal_guard", "lamp_mite"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "battle", "title": "橡皮泥贪吃鬼", "titleEn": "Putty Nibbler", "enemyId": "ore_leecher", "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
+        { "kind": "event", "title": "旧玩偶据点", "titleEn": "Old Doll Hideout", "eventId": "old_camp", "risk": 1, "lampCost": 6 },
+        { "kind": "trap", "title": "地板陷阱", "titleEn": "Floor Trap", "enemyId": "ore_leecher", "enemyIds": ["ore_leecher", "dust_bunny"], "rewardId": "advanced", "risk": 3, "lampCost": 10, "rewardBonus": 25 }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "rest", "title": "软垫中转站", "titleEn": "Pillow Relay Nook", "risk": 1, "lampCost": 5 },
+        { "kind": "shop", "title": "深夜零食推车", "titleEn": "Midnight Snack Cart", "rewardId": "shop", "risk": 1, "lampCost": 6 },
+        { "kind": "event", "title": "会唱歌的水管", "titleEn": "Singing Pipe", "eventId": "singing_pipe", "risk": 1, "lampCost": 5 },
+        { "kind": "calibration", "title": "月光调谐室", "titleEn": "Moonlight Tuning Room", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
+        { "kind": "treasure", "title": "发条藏品柜", "titleEn": "Clockwork Curio Cabinet", "rewardId": "cache", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
+        { "kind": "stash", "title": "影子零食抽屉", "titleEn": "Shadow Snack Drawer", "rewardId": "advanced", "risk": 2, "lampCost": 7, "rewardBonus": 15 }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "battle", "title": "发条士兵", "titleEn": "Wind-Up Soldier", "enemyId": "windup_soldier", "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
         {
           "kind": "mine",
-          "title": "\u88c2\u5f00\u7684\u5730\u677f\u4e0b",
+          "title": "裂开的地板下",
           "titleEn": "Under the Cracked Floor",
           "enemyId": "ore_leecher",
           "risk": 3,
           "lampCost": 11,
           "rewardBonus": 20,
           "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 9, "clearReward": 32, "trapDamage": 10 }
-        }
+        },
+        { "kind": "event", "title": "玩具游行", "titleEn": "Toy Parade", "eventId": "toy_parade", "risk": 2, "lampCost": 7, "rewardBonus": 10 },
+        { "kind": "trap", "title": "暗门背后", "titleEn": "Behind the Hidden Door", "enemyId": "jack_in_box", "enemyIds": ["jack_in_box", "crystal_bat"], "rewardId": "advanced", "risk": 3, "lampCost": 10, "rewardBonus": 25 }
       ]
     },
     {
       "rooms": [
+        { "kind": "rest", "title": "枕头角落", "titleEn": "Pillow Corner", "risk": 1, "lampCost": 5 },
         {
           "kind": "mine",
-          "title": "\u6e7f\u6f09\u6f09\u7684\u83cc\u83c7\u623f",
+          "title": "湿漉漉的蘑菇房",
           "titleEn": "Mushroom Drip Room",
           "enemyId": "spore_mason",
           "risk": 3,
@@ -92,27 +128,51 @@
           "rewardBonus": 25,
           "mineConfig": { "width": 6, "height": 7, "monsters": 5, "traps": 5, "treasures": 3, "ores": 9, "clearReward": 34, "trapDamage": 11 }
         },
-        { "kind": "elite", "title": "\u73bb\u7483\u773c\u5b88\u536b", "titleEn": "Glass-Eye Guard", "enemyId": "crystal_guard", "enemyIds": ["crystal_guard", "lamp_mite"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
-        { "kind": "battle", "title": "\u83cc\u83c7\u6728\u5320", "titleEn": "Mushroom Mason", "enemyId": "spore_mason", "enemyIds": ["spore_mason", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
-        { "kind": "shop", "title": "\u574f\u6389\u7684\u5c0f\u7535\u68af", "titleEn": "Broken Tiny Lift", "rewardId": "shop", "risk": 2, "lampCost": 9, "rewardBonus": 10 },
-        { "kind": "treasure", "title": "\u5730\u4e0b\u85cf\u54c1\u7bb1", "titleEn": "Underground Curio Chest", "rewardId": "cache", "risk": 2, "lampCost": 8, "rewardBonus": 10 }
+        { "kind": "elite", "title": "发条士兵长", "titleEn": "Wind-Up Sergeant", "enemyId": "windup_soldier", "enemyIds": ["windup_soldier", "spore_mason"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "event", "title": "丢失的日记", "titleEn": "Lost Diary", "eventId": "lost_diary", "risk": 1, "lampCost": 6 },
+        { "kind": "shop", "title": "坏掉的小电梯", "titleEn": "Broken Tiny Lift", "rewardId": "shop", "risk": 2, "lampCost": 9, "rewardBonus": 10 }
       ]
     },
     {
       "rooms": [
-        { "kind": "rest", "title": "\u8f6f\u57ab\u4e2d\u8f6c\u7ad9", "titleEn": "Pillow Relay Nook", "risk": 1, "lampCost": 6 },
-        { "kind": "shop", "title": "\u6df1\u591c\u96f6\u98df\u63a8\u8f66", "titleEn": "Midnight Snack Cart", "rewardId": "shop", "risk": 1, "lampCost": 6 },
-        { "kind": "calibration", "title": "\u6708\u5149\u8c03\u8c10\u5ba4", "titleEn": "Moonlight Tuning Room", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
-        { "kind": "treasure", "title": "\u73bb\u7483\u5f39\u73e0\u6cc9", "titleEn": "Marble Spring Cache", "rewardId": "cache", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
-        { "kind": "event", "title": "\u5361\u4f4f\u7684\u6728\u68af", "titleEn": "Jammed Wooden Ladder", "eventId": "broken_lift", "risk": 2, "lampCost": 7, "rewardBonus": 10 }
+        { "kind": "rest", "title": "毯子迷宫深处", "titleEn": "Deep in the Blanket Maze", "risk": 1, "lampCost": 6 },
+        { "kind": "treasure", "title": "地下藏品箱", "titleEn": "Underground Curio Chest", "rewardId": "cache", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
+        { "kind": "event", "title": "卡住的木梯", "titleEn": "Jammed Wooden Ladder", "eventId": "broken_lift", "risk": 2, "lampCost": 7, "rewardBonus": 10 },
+        { "kind": "calibration", "title": "齿轮调节室", "titleEn": "Gear Tuning Chamber", "risk": 2, "lampCost": 8, "rewardBonus": 15 }
       ]
     },
     {
       "rooms": [
-        { "kind": "rest", "title": "\u9ed1\u6697\u524d\u7684\u62b1\u6795\u89d2\u843d", "titleEn": "Pillow Corner Before the Dark" },
+        { "kind": "battle", "title": "影子斗篷", "titleEn": "Shadow Cloak", "enemyId": "shadow_cloak", "rewardId": "advanced", "risk": 3, "lampCost": 11, "rewardBonus": 20 },
         {
           "kind": "mine",
-          "title": "\u5927\u949f\u5fc3\u5916\u5708",
+          "title": "钟摆大厅",
+          "titleEn": "Pendulum Hall",
+          "enemyId": "spore_mason",
+          "risk": 3,
+          "lampCost": 12,
+          "rewardBonus": 25,
+          "mineConfig": { "width": 7, "height": 7, "monsters": 5, "traps": 5, "treasures": 4, "ores": 10, "clearReward": 38, "trapDamage": 12 }
+        },
+        { "kind": "trap", "title": "镜中伏兵", "titleEn": "Mirror Ambush", "enemyId": "shadow_cloak", "enemyIds": ["shadow_cloak", "lamp_mite"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 30 },
+        { "kind": "event", "title": "发条鸟", "titleEn": "Clockwork Bird", "eventId": "clockwork_bird", "risk": 1, "lampCost": 6 },
+        { "kind": "shop", "title": "地下室旧货摊", "titleEn": "Basement Flea Shelf", "rewardId": "shop", "risk": 1, "lampCost": 7, "rewardBonus": 10 }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "rest", "title": "黑暗前的枕头角", "titleEn": "Pillow Corner Before the Dark", "risk": 1, "lampCost": 6 },
+        { "kind": "elite", "title": "小屋管家", "titleEn": "House Butler", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "spore_mason"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "event", "title": "镜子走廊", "titleEn": "Mirror Hallway", "eventId": "mirror_hallway", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
+        { "kind": "treasure", "title": "管风琴暗格", "titleEn": "Organ Pipe Cache", "rewardId": "cache", "risk": 2, "lampCost": 8, "rewardBonus": 15 },
+        { "kind": "calibration", "title": "钟摆机关室", "titleEn": "Pendulum Gadget Room", "risk": 2, "lampCost": 8, "rewardBonus": 15 }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "kind": "mine",
+          "title": "大钟心外圈",
           "titleEn": "Grand Clock Outer Ring",
           "enemyId": "fog_core",
           "risk": 4,
@@ -120,27 +180,29 @@
           "rewardBonus": 35,
           "mineConfig": { "width": 7, "height": 7, "monsters": 6, "traps": 6, "treasures": 4, "ores": 10, "clearReward": 42, "trapDamage": 12 }
         },
-        { "kind": "elite", "title": "\u5c0f\u5c4b\u7ba1\u5bb6", "titleEn": "House Butler", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "spore_mason"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
-        { "kind": "calibration", "title": "\u949f\u6446\u673a\u5173\u5ba4", "titleEn": "Pendulum Gadget Room", "risk": 2, "lampCost": 8, "rewardBonus": 15 },
-        { "kind": "rest", "title": "\u73bb\u7483\u5f39\u73e0\u6c60", "titleEn": "Marble Pool", "risk": 1, "lampCost": 7 }
+        { "kind": "battle", "title": "影子军师", "titleEn": "Shadow Advisor", "enemyId": "shadow_cloak", "enemyIds": ["shadow_cloak", "windup_soldier"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "trap", "title": "最后的机关", "titleEn": "The Last Trap", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "shadow_cloak"], "rewardId": "elite", "risk": 4, "lampCost": 13, "rewardBonus": 35 },
+        { "kind": "rest", "title": "玻璃弹珠池", "titleEn": "Marble Pool", "risk": 1, "lampCost": 7 }
       ]
     },
     {
       "rooms": [
-        { "kind": "calibration", "title": "\u5c0f\u5c4b\u673a\u5173\u4e2d\u67a2", "titleEn": "House Gadget Nexus", "risk": 2, "lampCost": 9, "rewardBonus": 20 },
-        { "kind": "treasure", "title": "\u5929\u4eae\u524d\u7684\u8865\u7ed9\u7bb1", "titleEn": "Before-Dawn Cache", "rewardId": "cache", "risk": 1, "lampCost": 7, "rewardBonus": 15 },
-        { "kind": "shop", "title": "\u6700\u540e\u7684\u96f6\u98df\u63a8\u8f66", "titleEn": "Last Snack Cart", "rewardId": "shop", "risk": 1, "lampCost": 7, "rewardBonus": 10 },
-        { "kind": "rest", "title": "\u5929\u4eae\u524d\u9759\u5ba4", "titleEn": "Quiet Room Before Dawn", "risk": 1, "lampCost": 6 }
+        { "kind": "calibration", "title": "小屋机关中枢", "titleEn": "House Gadget Nexus", "risk": 2, "lampCost": 9, "rewardBonus": 20 },
+        { "kind": "treasure", "title": "天亮前的补给箱", "titleEn": "Before-Dawn Cache", "rewardId": "cache", "risk": 1, "lampCost": 7, "rewardBonus": 15 },
+        { "kind": "stash", "title": "黎明前的秘密抽屉", "titleEn": "Before-Dawn Secret Drawer", "rewardId": "elite", "risk": 2, "lampCost": 8, "rewardBonus": 20 },
+        { "kind": "shop", "title": "最后的零食推车", "titleEn": "Last Snack Cart", "rewardId": "shop", "risk": 1, "lampCost": 7, "rewardBonus": 10 },
+        { "kind": "event", "title": "毯子迷宫", "titleEn": "Blanket Maze", "eventId": "blanket_maze", "risk": 1, "lampCost": 6, "rewardBonus": 10 },
+        { "kind": "rest", "title": "天亮前静室", "titleEn": "Quiet Room Before Dawn", "risk": 1, "lampCost": 6 }
       ]
     },
     {
       "rooms": [
-        { "kind": "battle", "title": "\u602a\u5947\u5c0f\u5c4b\u7684\u5fc3\u810f", "titleEn": "Heart of the Odd House", "enemyId": "fog_core", "enemyIds": ["fog_core", "crystal_guard"], "rewardId": "boss", "risk": 4, "lampCost": 16, "rewardBonus": 50 }
+        { "kind": "battle", "title": "怪奇小屋的心脏", "titleEn": "Heart of the Odd House", "enemyId": "fog_core", "enemyIds": ["fog_core", "crystal_guard"], "rewardId": "boss", "risk": 4, "lampCost": 16, "rewardBonus": 50 }
       ]
     },
     {
       "rooms": [
-        { "kind": "complete", "title": "\u5929\u4eae\u56de\u5230\u5e8a\u4e0a", "titleEn": "Back in Bed at Dawn" }
+        { "kind": "complete", "title": "天亮回到床上", "titleEn": "Back in Bed at Dawn" }
       ]
     }
   ]

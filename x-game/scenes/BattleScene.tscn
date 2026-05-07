@@ -26,10 +26,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
 
 [node name="MainLayout" type="VBoxContainer" parent="Root/Margin" unique_id=240208447]
 layout_mode = 2
@@ -214,13 +214,12 @@ text = "敌人意图"
 autowrap_mode = 3
 
 [node name="HandPanel" type="PanelContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=2049870311]
-custom_minimum_size = Vector2(0, 210)
+custom_minimum_size = Vector2(0, 230)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HandList" type="HBoxContainer" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel" unique_id=1998776206]
+[node name="HandList" type="Control" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel" unique_id=1998776206]
 layout_mode = 2
-theme_override_constants/separation = 10
 
 [node name="EndTurnButton" type="Button" parent="Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout" unique_id=2109643531]
 layout_mode = 2

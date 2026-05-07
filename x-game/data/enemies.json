@@ -34,6 +34,18 @@
       ]
     },
     {
+      "id": "dust_bunny",
+      "name": "灰尘兔",
+      "nameEn": "Dust Bunny",
+      "artPath": "res://art/placeholders/enemies/slime.svg",
+      "maxHp": 38,
+      "intents": [
+        { "name": "扑面灰云", "nameEn": "Dust Cloud", "actions": [ { "type": "damage", "value": 5 }, { "type": "weak", "duration": 1 } ] },
+        { "name": "蜷缩成团", "nameEn": "Roll Into a Ball", "actions": [ { "type": "block", "value": 8 } ] },
+        { "name": "软绵绵撞击", "nameEn": "Soft Bounce", "actions": [ { "type": "damage", "value": 4 } ] }
+      ]
+    },
+    {
       "id": "ore_leecher",
       "name": "橡皮泥贪吃鬼",
       "nameEn": "Putty Nibbler",
@@ -42,6 +54,18 @@
       "intents": [
         { "name": "黏上来", "nameEn": "Latch On", "actions": [ { "type": "damage", "value": 8 } ] },
         { "name": "吞下糖纸", "nameEn": "Candy Wrapper Snack", "actions": [ { "type": "heal", "value": 6 }, { "type": "block", "value": 4 } ] }
+      ]
+    },
+    {
+      "id": "jack_in_box",
+      "name": "弹跳惊吓盒",
+      "nameEn": "Jack-in-the-Box",
+      "artPath": "res://art/placeholders/enemies/bat.svg",
+      "maxHp": 44,
+      "intents": [
+        { "name": "突然弹出", "nameEn": "Pop Out", "actions": [ { "type": "damage", "value": 10 } ] },
+        { "name": "缩回盒里", "nameEn": "Hide in Box", "actions": [ { "type": "block", "value": 10 } ] },
+        { "name": "弹簧连打", "nameEn": "Spring Combo", "actions": [ { "type": "damage", "value": 5 }, { "type": "damage", "value": 5 } ] }
       ]
     },
     {
@@ -69,6 +93,18 @@
       ]
     },
     {
+      "id": "windup_soldier",
+      "name": "发条士兵",
+      "nameEn": "Wind-Up Soldier",
+      "artPath": "res://art/placeholders/enemies/guard.svg",
+      "maxHp": 60,
+      "intents": [
+        { "name": "行军踩踏", "nameEn": "March Stomp", "actions": [ { "type": "damage", "value": 9 } ] },
+        { "name": "举盾防御", "nameEn": "Shield Guard", "actions": [ { "type": "block", "value": 11 } ] },
+        { "name": "发条冲锋", "nameEn": "Clockwork Charge", "actions": [ { "type": "damage", "value": 7 }, { "type": "block", "value": 5 } ] }
+      ]
+    },
+    {
       "id": "mine_overseer",
       "name": "小屋管家",
       "nameEn": "House Butler",
@@ -78,6 +114,18 @@
         { "name": "巡夜重击", "nameEn": "Night Patrol Smash", "actions": [ { "type": "damage", "value": 10 } ] },
         { "name": "举起托盘", "nameEn": "Tray Guard", "actions": [ { "type": "block", "value": 12 } ] },
         { "name": "连环训话", "nameEn": "Scolding Combo", "actions": [ { "type": "damage", "value": 5 }, { "type": "damage", "value": 5 } ] }
+      ]
+    },
+    {
+      "id": "shadow_cloak",
+      "name": "影子斗篷",
+      "nameEn": "Shadow Cloak",
+      "artPath": "res://art/placeholders/enemies/fog_core.svg",
+      "maxHp": 65,
+      "intents": [
+        { "name": "黑暗缠绕", "nameEn": "Dark Embrace", "actions": [ { "type": "damage", "value": 7 }, { "type": "weak", "duration": 2 } ] },
+        { "name": "消散成雾", "nameEn": "Dissipate", "actions": [ { "type": "block", "value": 15 } ] },
+        { "name": "影袭", "nameEn": "Shadow Strike", "actions": [ { "type": "damage", "value": 12 } ] }
       ]
     },
     {

@@ -68,6 +68,102 @@
         { "text": "清洗擦伤", "textEn": "Wash your scratches", "result": "刺痛很快退去。", "resultEn": "The sting quickly fades.", "actions": [ { "type": "heal", "value": 18 } ] },
         { "text": "调成糖水药膏", "textEn": "Mix fizzy salve", "result": "你把泉水调成了可携带的药膏。", "resultEn": "You mix the spring water into portable salve.", "actions": [ { "type": "add_card", "cardId": "crystal_salve" } ] }
       ]
+    },
+    {
+      "id": "stuffed_closet",
+      "title": "塞满的衣柜",
+      "titleEn": "Stuffed Closet",
+      "description": "衣柜塞得太满了，随手一拉就会哗啦掉一堆东西出来。",
+      "descriptionEn": "The closet is so crammed that one yank will send everything tumbling out.",
+      "choices": [
+        { "text": "小心翻找（纽扣 +18）", "textEn": "Search carefully (buttons +18)", "result": "你慢慢掏出一小堆纽扣。", "resultEn": "You slowly fish out a small pile of buttons.", "actions": [ { "type": "shards", "value": 18 } ] },
+        { "text": "猛力拉开（-5 勇气，随机卡牌）", "textEn": "Yank it open (-5 courage, random card)", "result": "东西哗啦掉出来，但你捡到了一张有用的卡牌。", "resultEn": "Things come crashing down, but you grab a useful card.", "actions": [ { "type": "damage", "value": 5 }, { "type": "add_card", "cardId": "guarded_swing" } ] },
+        { "text": "整理衣物角落（+8 勇气，手电 +12）", "textEn": "Sort the clothes corner (+8 courage, battery +12)", "result": "你找到了一条暖和的毯子和半截电池。", "resultEn": "You find a warm blanket and a half-used battery.", "actions": [ { "type": "heal", "value": 8 }, { "type": "lamp", "value": 12 } ] }
+      ]
+    },
+    {
+      "id": "singing_pipe",
+      "title": "会唱歌的水管",
+      "titleEn": "Singing Pipe",
+      "description": "水管里传来哼唱声，像是小东西在洗澡时自娱自乐。",
+      "descriptionEn": "A humming sound drifts from the pipes, as if a little thing is singing in the bath.",
+      "choices": [
+        { "text": "跟着哼一段", "textEn": "Hum along", "result": "水管里的声音变大了，你的手电也跟着亮了点。", "resultEn": "The pipe hums louder and your flashlight perks up.", "actions": [ { "type": "lamp", "value": 20 }, { "type": "fog", "value": -2 } ] },
+        { "text": "敲水管打招呼", "textEn": "Knock to say hello", "result": "一个小东西从管口探出脑袋，送了你一枚特别纽扣。", "resultEn": "A little thing pokes its head out and hands you a special button.", "actions": [ { "type": "relic", "relicId": "ore_charm" } ] },
+        { "text": "用纸杯偷听（声响 +1，纽扣 +15）", "textEn": "Eavesdrop with a paper cup (noise +1, buttons +15)", "result": "你偷听到了藏纽扣的秘密地点。", "resultEn": "You overhear the secret button stash location.", "actions": [ { "type": "fog", "value": 1 }, { "type": "shards", "value": 15 } ] }
+      ]
+    },
+    {
+      "id": "shadow_puppet",
+      "title": "影子木偶戏",
+      "titleEn": "Shadow Puppet Show",
+      "description": "墙上的影子突然开始表演一出小戏，看起来很有趣。",
+      "descriptionEn": "The shadows on the wall suddenly start a little show. It looks quite entertaining.",
+      "choices": [
+        { "text": "加入表演（-4 勇气，获得卡牌）", "textEn": "Join the show (-4 courage, gain card)", "result": "你手忙脚乱地加入，换来了一张珍贵的卡牌。", "resultEn": "You clumsily join in and earn a precious card.", "actions": [ { "type": "damage", "value": 4 }, { "type": "add_card", "cardId": "signal_flare" } ] },
+        { "text": "安静观看", "textEn": "Watch quietly", "result": "你看得入迷，心跳也平稳了不少。", "resultEn": "You are mesmerized. Your heartbeat steadies.", "actions": [ { "type": "heal", "value": 12 }, { "type": "fog", "value": -1 } ] },
+        { "text": "偷走影子的纽扣", "textEn": "Steal the shadow's buttons", "result": "影子生气地缩回去了，但你拿到了纽扣。", "resultEn": "The shadow angrily shrinks away, but you got the buttons.", "actions": [ { "type": "shards", "value": 25 }, { "type": "fog", "value": 2 } ] }
+      ]
+    },
+    {
+      "id": "toy_parade",
+      "title": "玩具游行",
+      "titleEn": "Toy Parade",
+      "description": "一群小玩具排着队在走廊里行进，领头的是一只穿靴子的猫。",
+      "descriptionEn": "A line of tiny toys marches down the corridor, led by a cat in boots.",
+      "choices": [
+        { "text": "跟着游行（手电 +15，声响 +1）", "textEn": "Follow the parade (battery +15, noise +1)", "result": "你踩着节拍前进，手电也充了点电，但动静有点大。", "resultEn": "You march to the beat, recharging your flashlight a bit, but making some noise.", "actions": [ { "type": "lamp", "value": 15 }, { "type": "fog", "value": 1 } ] },
+        { "text": "向猫头领致敬（纪念物）", "textEn": "Salute the cat captain (keepsake)", "result": "猫头领给你戴上一枚旧姓名牌。", "resultEn": "The cat captain pins an old name tag on you.", "actions": [ { "type": "relic", "relicId": "old_miner_tag" } ] },
+        { "text": "拦路收过路费（纽扣 +22，-6 勇气）", "textEn": "Block the way for toll (buttons +22, -6 courage)", "result": "玩具们七手八脚地把你推开，但留下了不少纽扣。", "resultEn": "The toys push you aside, but leave plenty of buttons.", "actions": [ { "type": "shards", "value": 22 }, { "type": "damage", "value": 6 } ] }
+      ]
+    },
+    {
+      "id": "lost_diary",
+      "title": "丢失的日记",
+      "titleEn": "Lost Diary",
+      "description": "一本翻开到一半的日记本，上面的字迹歪歪扭扭的。",
+      "descriptionEn": "A diary left open to a random page, with wobbly handwriting.",
+      "choices": [
+        { "text": "读关于地图的那页", "textEn": "Read the map page", "result": "你学会了更快地发现裂缝。", "resultEn": "You learn to spot cracks more quickly.", "actions": [ { "type": "add_card", "cardId": "crack_finder" } ] },
+        { "text": "读关于纽扣的那页", "textEn": "Read the button page", "result": "日记里藏着不少纽扣。", "resultEn": "There are many buttons hidden in the diary.", "actions": [ { "type": "shards", "value": 24 } ] },
+        { "text": "把日记还给主人（+10 勇气，声响 -1）", "textEn": "Return the diary (+10 courage, noise -1)", "result": "日记主人感谢了你，还帮你把声音压低了。", "resultEn": "The diary owner thanks you and helps you stay quiet.", "actions": [ { "type": "heal", "value": 10 }, { "type": "fog", "value": -1 } ] }
+      ]
+    },
+    {
+      "id": "clockwork_bird",
+      "title": "发条鸟",
+      "titleEn": "Clockwork Bird",
+      "description": "一只发条鸟蹲在窗台上，翅膀咔哒咔哒地转动。",
+      "descriptionEn": "A clockwork bird perches on the windowsill, its wings clicking as they turn.",
+      "choices": [
+        { "text": "给发条鸟上弦（手电 +18）", "textEn": "Wind up the bird (battery +18)", "result": "发条鸟开心地转了起来，手电也亮了不少。", "resultEn": "The bird happily spins, and your flashlight brightens.", "actions": [ { "type": "lamp", "value": 18 } ] },
+        { "text": "和发条鸟交换纽扣（-12 纽扣，纪念物）", "textEn": "Trade buttons with the bird (-12 buttons, keepsake)", "result": "发条鸟叼来了一件奇怪的东西。", "resultEn": "The bird brings back something curious.", "actions": [ { "type": "shards", "value": -12 }, { "type": "relic", "relicId": "survey_lens" } ] },
+        { "text": "拆下发条零件（获得卡牌，声响 +2）", "textEn": "Salvage clockwork parts (gain card, noise +2)", "result": "你把零件改装成了一支信号火花。", "resultEn": "You convert the parts into a Signal Spark.", "actions": [ { "type": "add_card", "cardId": "signal_flare" }, { "type": "fog", "value": 2 } ] }
+      ]
+    },
+    {
+      "id": "mirror_hallway",
+      "title": "镜子走廊",
+      "titleEn": "Mirror Hallway",
+      "description": "走廊两边全是镜子，每个镜子里都有不同的东西在动。",
+      "descriptionEn": "Mirrors line both sides of the hallway, each reflecting something different moving.",
+      "choices": [
+        { "text": "盯着自己的倒影（+6 最大勇气）", "textEn": "Stare at your reflection (+6 max courage)", "result": "你看到镜中的自己变得更加坚定了。", "resultEn": "You see your reflection grow more resolute.", "actions": [ { "type": "max_hp", "value": 6 } ] },
+        { "text": "打破一面镜子（纽扣 +30，-8 勇气，声响 +2）", "textEn": "Break a mirror (buttons +30, -8 courage, noise +2)", "result": "碎片飞溅，但镜框后面藏着纽扣！", "resultEn": "Shards fly, but buttons are hidden behind the frame!", "actions": [ { "type": "shards", "value": 30 }, { "type": "damage", "value": 8 }, { "type": "fog", "value": 2 } ] },
+        { "text": "对着镜子做鬼脸（声响 -2）", "textEn": "Make a face at the mirror (noise -2)", "result": "镜子里的你也做鬼脸回敬，气氛轻松了不少。", "resultEn": "Your reflection makes a face back, lightening the mood.", "actions": [ { "type": "fog", "value": -2 } ] }
+      ]
+    },
+    {
+      "id": "blanket_maze",
+      "title": "毯子迷宫",
+      "titleEn": "Blanket Maze",
+      "description": "悬挂的毯子围成了一个微型迷宫，里面隐约有亮光。",
+      "descriptionEn": "Hanging blankets form a mini maze, with a faint glow inside.",
+      "choices": [
+        { "text": "走进去探索（纽扣 +16）", "textEn": "Go inside and explore (buttons +16)", "result": "你在毯子迷宫里找到了散落的纽扣。", "resultEn": "You find scattered buttons in the blanket maze.", "actions": [ { "type": "shards", "value": 16 } ] },
+        { "text": "从外面掀开毯子（获得卡牌）", "textEn": "Lift the blankets from outside (gain card)", "result": "毯子下面藏着一个书本堡垒。", "resultEn": "A Book Fort kit was hiding under the blankets.", "actions": [ { "type": "add_card", "cardId": "reinforce" } ] },
+        { "text": "把毯子裹在身上休息（+12 勇气，手电 +8）", "textEn": "Wrap up and rest (+12 courage, battery +8)", "result": "毯子很暖和，你恢复了些勇气和手电电量。", "resultEn": "The blankets are warm. You recover some courage and battery.", "actions": [ { "type": "heal", "value": 12 }, { "type": "lamp", "value": 8 } ] }
+      ]
     }
   ]
 }

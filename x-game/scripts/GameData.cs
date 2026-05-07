@@ -467,6 +467,7 @@ public class CardData
 	public string DescriptionEn { get; set; } = string.Empty;
 	public string Rarity { get; set; } = "common";
 	public string Type { get; set; } = "skill";
+	public string StyleId { get; set; } = string.Empty;
 	public string UpgradeTo { get; set; } = string.Empty;
 	public bool UpgradeOnly { get; set; }
 	public List<string> Pools { get; set; } = new();

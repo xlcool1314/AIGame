@@ -32,6 +32,7 @@ public partial class RunEngine : Node
     public readonly List<ItemStackData> Items = new();
     public readonly List<string> Relics = new();
     public readonly List<List<RunRoom>> MapLayers = new();
+    public readonly HashSet<string> VisitedRoomNodeIds = new();
     public MinefieldState? Minefield { get; private set; }
     public readonly List<string> Log = new();
 
@@ -59,6 +60,7 @@ public partial class RunEngine : Node
         Score = 0;
         CurrentRoomNodeId = string.Empty;
         CurrentRoom = null;
+        VisitedRoomNodeIds.Clear();
 
         PlayerDeck.Clear();
         PlayerDeck.AddRange(gameData.BuildStarterDeck(character.DeckId));
@@ -103,6 +105,7 @@ public partial class RunEngine : Node
         }
         BuildMapLayers(gameData);
         CurrentRoom = FindRoomByNodeId(CurrentRoomNodeId);
+        RebuildVisitedRooms();
         Minefield = null;
 
         PlayerDeck.Clear();
@@ -191,6 +194,7 @@ public partial class RunEngine : Node
         CurrentLayerIndex++;
         CurrentRoom = choices[clampedIndex];
         CurrentRoomNodeId = CurrentRoom.NodeId;
+        VisitedRoomNodeIds.Add(CurrentRoom.NodeId);
         Minefield = null;
         ApplyRoomPressure(CurrentRoom);
         Log.Add(L($"进入地下第 {CurrentLayerIndex + 1} 间：{CurrentRoom.DisplayTitle()}", $"Enter underground room {CurrentLayerIndex + 1}: {CurrentRoom.DisplayTitle()}"));
@@ -659,6 +663,65 @@ public partial class RunEngine : Node
         }
     }
 
+    public bool SpendLamp(int amount, string reason)
+    {
+        var cost = Math.Max(0, amount);
+        if (cost <= 0)
+        {
+            return true;
+        }
+
+        if (LampOil < cost)
+        {
+            Log.Add(L("手电电量不足，没法再仔细窥探。", "Not enough battery to peek carefully."));
+            return false;
+        }
+
+        LampOil -= cost;
+        Log.Add(L($"{reason}: 手电 -{cost}。", $"{reason}: battery -{cost}."));
+        return true;
+    }
+
+    public void ApplyStashOutcome(int shards, int lamp, int fogReduction, int heal, int damage, int fogGain, string cardId, string itemId, int itemCount, string relicId, GameData gameData, string reason)
+    {
+        if (damage > 0)
+        {
+            PlayerHp = Math.Max(1, PlayerHp - damage);
+        }
+
+        if (fogGain > 0)
+        {
+            FogPressure += fogGain;
+        }
+
+        if (shards > 0)
+        {
+            Shards += shards;
+        }
+
+        RestoreLamp(lamp);
+        ReduceFogPressure(fogReduction);
+        Heal(heal);
+
+        if (!string.IsNullOrWhiteSpace(cardId))
+        {
+            PlayerDeck.Add(gameData.GetCard(cardId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(itemId))
+        {
+            AddItem(itemId, Math.Max(1, itemCount));
+        }
+
+        if (!string.IsNullOrWhiteSpace(relicId))
+        {
+            AddRelic(gameData.GetRelic(relicId));
+        }
+
+        Score += Math.Max(0, shards / 2 + lamp + fogReduction * 6 + heal + (!string.IsNullOrWhiteSpace(cardId) ? 10 : 0) + (!string.IsNullOrWhiteSpace(itemId) ? 6 : 0) + (!string.IsNullOrWhiteSpace(relicId) ? 18 : 0));
+        Log.Add(L($"{reason}: 藏品选择完成。", $"{reason}: stash choice resolved."));
+    }
+
     public void ApplyEventChoice(EventChoiceData choice, GameData gameData)
     {
         foreach (var action in choice.Actions)
@@ -860,6 +923,45 @@ public partial class RunEngine : Node
         }
 
         BuildMapConnections();
+    }
+
+    private void RebuildVisitedRooms()
+    {
+        VisitedRoomNodeIds.Clear();
+        if (CurrentLayerIndex < 0 || string.IsNullOrWhiteSpace(CurrentRoomNodeId) || MapLayers.Count == 0)
+        {
+            return;
+        }
+
+        // Trace back from current room to find all visited rooms on the path
+        var currentRoom = CurrentRoom;
+        if (currentRoom == null)
+        {
+            // If only CurrentRoomNodeId is known, at least mark it
+            VisitedRoomNodeIds.Add(CurrentRoomNodeId);
+            return;
+        }
+
+        VisitedRoomNodeIds.Add(currentRoom.NodeId);
+
+        // Walk backwards through layers to find the visited path
+        for (var layerIndex = CurrentLayerIndex - 1; layerIndex >= 0; layerIndex--)
+        {
+            if (layerIndex >= MapLayers.Count)
+            {
+                continue;
+            }
+
+            foreach (var room in MapLayers[layerIndex])
+            {
+                if (room.NextNodeIds.Contains(currentRoom.NodeId))
+                {
+                    VisitedRoomNodeIds.Add(room.NodeId);
+                    currentRoom = room;
+                    break;
+                }
+            }
+        }
     }
 
     private void BuildMapConnections()
@@ -1067,6 +1169,12 @@ public partial class RunEngine : Node
     public void ReduceFogPressure(int amount)
     {
         FogPressure = Math.Max(0, FogPressure - Math.Max(0, amount));
+    }
+
+    public void ApplyTrapDamage(int damage, int fogGain)
+    {
+        PlayerHp = Math.Max(1, PlayerHp - damage);
+        FogPressure = Math.Max(0, FogPressure + fogGain);
     }
 
     private void AddItem(string itemId, int count)

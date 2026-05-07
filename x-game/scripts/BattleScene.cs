@@ -13,7 +13,7 @@ public partial class BattleScene : Control
     private HBoxContainer _contentSplit = null!;
     private HBoxContainer _topBarLayout = null!;
     private VBoxContainer _sidePanel = null!;
-    private VBoxContainer _rightPanel = null!;
+
     private PanelContainer _topBarPanel = null!;
     private PanelContainer _roomHeaderPanel = null!;
     private PanelContainer _mainPanel = null!;
@@ -55,7 +55,8 @@ public partial class BattleScene : Control
     private PanelContainer _statusHelpPanel = null!;
     private Label _statusHelpLabel = null!;
     private Label _intentLabel = null!;
-    private HBoxContainer _handBox = null!;
+    private Control _handBox = null!;
+    private PanelContainer _handPanel = null!;
     private Button _endTurnButton = null!;
     private Button _deckButton = null!;
     private PanelContainer _rewardPanel = null!;
@@ -75,7 +76,7 @@ public partial class BattleScene : Control
     private Panel _modalOverlay = null!;
     private Panel _loadingOverlay = null!;
     private PanelContainer _deckModalPanel = null!;
-    private VBoxContainer _deckModalList = null!;
+    private GridContainer _deckModalList = null!;
     private Button _deckModalCloseButton = null!;
     private Label _loadingLabel = null!;
     private PanelContainer _dragHintPanel = null!;
@@ -104,7 +105,7 @@ public partial class BattleScene : Control
     private string _selectedItemId = string.Empty;
     private readonly Queue<string> _tipQueue = new();
     private readonly Dictionary<int, Button> _enemyTargetButtons = new();
-    private Button? _aimingCardButton;
+    private Control? _aimingCardButton;
     private int _aimingCardIndex = -1;
     private Vector2 _dragLineStart;
     private bool _dragTargetsEnemy;
@@ -113,6 +114,11 @@ public partial class BattleScene : Control
     private readonly HashSet<int> _selectedCalibrationNodes = new();
     private Label? _calibrationSummaryLabel;
     private GridContainer? _calibrationGrid;
+    private RunRoom? _activeStashRoom;
+    private readonly List<StashSlot> _stashSlots = new();
+    private readonly HashSet<int> _peekedStashSlots = new();
+    private bool _stashPeekMode;
+    private int _stashPeekCount;
 
     public override void _Ready()
     {
@@ -151,7 +157,8 @@ public partial class BattleScene : Control
         _battleResourceLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/BattleResourceLabel");
         _intentPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel");
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
-        _handBox = GetNode<HBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
+        _handBox = GetNode<Control>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
+        _handPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel");
         _endTurnButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/EndTurnButton");
         _deckButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/DeckButton");
         _rewardPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel");
@@ -281,15 +288,8 @@ public partial class BattleScene : Control
         for (var i = 0; i < _run.PlayerDeck.Count; i++)
         {
             var card = _run.PlayerDeck[i];
-            var button = new Button
-            {
-                Text = $"{i + 1}. {FormatBattleCardText(card)}",
-                CustomMinimumSize = new Vector2(0, 112),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                Disabled = true
-            };
-            StyleCardButton(button, card, true);
-            _deckModalList.AddChild(button);
+            var cell = CardCell.Create(card, CardCellMode.Deck, true, index: i);
+            _deckModalList.AddChild(cell);
         }
     }
 
@@ -300,40 +300,38 @@ public partial class BattleScene : Control
 
     private void BuildRunLayout()
     {
-        _mainLayout.AddThemeConstantOverride("separation", 10);
-        _contentSplit.AddThemeConstantOverride("separation", 12);
+        _mainLayout.AddThemeConstantOverride("separation", 8);
+        _contentSplit.AddThemeConstantOverride("separation", 10);
 
-        _sidePanel.CustomMinimumSize = new Vector2(286, 0);
+        _sidePanel.CustomMinimumSize = new Vector2(340, 0);
+        _sidePanel.AddThemeConstantOverride("separation", 8);
         _sidePanel.SizeFlagsVertical = SizeFlags.ExpandFill;
         _contentSplit.MoveChild(_sidePanel, 0);
         _mainPanel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
-        _rightPanel = new VBoxContainer
-        {
-            Name = "RightPanel",
-            CustomMinimumSize = new Vector2(372, 0),
-            SizeFlagsVertical = SizeFlags.ExpandFill
-        };
-        _rightPanel.AddThemeConstantOverride("separation", 10);
-        _contentSplit.AddChild(_rightPanel);
+        // Merge RightPanel content into SidePanel (2-column layout)
+        MoveToPanelColumn(_roomHeaderPanel, _sidePanel);
+        _sidePanel.MoveChild(_roomHeaderPanel, 0);
+        _sidePanel.MoveChild(_itemPanel, 1);
+        _sidePanel.MoveChild(_actionPanel, 2);
+        _sidePanel.MoveChild(_logPanel, 3);
+        _sidePanel.MoveChild(_debugPanel, 4);
 
-        MoveToPanelColumn(_roomHeaderPanel, _rightPanel);
-        MoveToPanelColumn(_debugPanel, _rightPanel);
-        MoveToPanelColumn(_logPanel, _rightPanel);
+        _roomHeaderPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         _logPanel.SizeFlagsVertical = SizeFlags.ExpandFill;
         _debugPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        _roomHeaderPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        _itemPanel.CustomMinimumSize = new Vector2(0, 330);
-        _itemList.AddThemeConstantOverride("separation", 8);
-        _actionPanel.CustomMinimumSize = new Vector2(0, 180);
-        _mineModeButton.CustomMinimumSize = new Vector2(0, 58);
-        _deckButton.CustomMinimumSize = new Vector2(0, 58);
-        _continueButton.CustomMinimumSize = new Vector2(0, 64);
-        _logLabel.CustomMinimumSize = new Vector2(0, 360);
-        _roomTitleLabel.AddThemeFontSizeOverride("font_size", 24);
+        _itemPanel.CustomMinimumSize = new Vector2(0, 240);
+        _itemList.AddThemeConstantOverride("separation", 6);
+        _actionPanel.CustomMinimumSize = new Vector2(0, 170);
+        _mineModeButton.CustomMinimumSize = new Vector2(0, 52);
+        _deckButton.CustomMinimumSize = new Vector2(0, 52);
+        _continueButton.CustomMinimumSize = new Vector2(0, 58);
+        _logLabel.CustomMinimumSize = new Vector2(0, 240);
+        _roomTitleLabel.AddThemeFontSizeOverride("font_size", 22);
 
         BuildHudBar();
         BuildInventoryScroll();
+        BuildBattleLayout();
     }
 
     private void BuildInventoryScroll()
@@ -355,6 +353,40 @@ public partial class BattleScene : Control
         parent.AddChild(scroll);
     }
 
+    private void BuildBattleLayout()
+    {
+        // Reduce portrait height to save vertical space
+        _playerPortrait.CustomMinimumSize = new Vector2(0, 120);
+
+        // Restructure: HandPanel + EndTurnButton side by side (saves vertical space)
+        var battleLayout = _handPanel.GetParent() as VBoxContainer;
+        if (battleLayout == null) return;
+
+        battleLayout.AddThemeConstantOverride("separation", 8);
+        var handRowIndex = _handPanel.GetIndex();
+
+        var handRow = new HBoxContainer
+        {
+            Name = "HandRow",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        handRow.AddThemeConstantOverride("separation", 8);
+
+        battleLayout.RemoveChild(_handPanel);
+        battleLayout.RemoveChild(_endTurnButton);
+
+		_handPanel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+		_handPanel.CustomMinimumSize = new Vector2(0, 220);
+        handRow.AddChild(_handPanel);
+
+        _endTurnButton.CustomMinimumSize = new Vector2(120, 0);
+        _endTurnButton.SizeFlagsVertical = SizeFlags.ExpandFill;
+        handRow.AddChild(_endTurnButton);
+
+        battleLayout.AddChild(handRow);
+        battleLayout.MoveChild(handRow, handRowIndex);
+    }
+
     private static void MoveToPanelColumn(Control node, Container target)
     {
         node.GetParent()?.RemoveChild(node);
@@ -363,21 +395,21 @@ public partial class BattleScene : Control
 
     private void BuildHudBar()
     {
-        _topBarPanel.CustomMinimumSize = new Vector2(0, 76);
-        _topBarLayout.AddThemeConstantOverride("separation", 8);
+        _topBarPanel.CustomMinimumSize = new Vector2(0, 64);
+        _topBarLayout.AddThemeConstantOverride("separation", 6);
         _runStatusLabel.Visible = false;
 
         _topBarLayout.RemoveChild(_menuButton);
-        _hudLayerLabel = AddHudCell("HudLayer", 96);
-        _hudHpLabel = AddHudCell("HudHp", 150);
-        _hudShardsLabel = AddHudCell("HudShards", 132);
-        _hudDeckLabel = AddHudCell("HudDeck", 112);
-        _hudLampLabel = AddHudCell("HudLamp", 124);
-        _hudFogLabel = AddHudCell("HudFog", 144);
-        _hudScoreLabel = AddHudCell("HudScore", 134);
-        _hudObjectiveLabel = AddHudCell("HudObjective", 300, true);
+        _hudLayerLabel = AddHudCell("HudLayer", 72);
+        _hudHpLabel = AddHudCell("HudHp", 120);
+        _hudShardsLabel = AddHudCell("HudShards", 96);
+        _hudDeckLabel = AddHudCell("HudDeck", 80);
+        _hudLampLabel = AddHudCell("HudLamp", 100);
+        _hudFogLabel = AddHudCell("HudFog", 108);
+        _hudScoreLabel = AddHudCell("HudScore", 96);
+        _hudObjectiveLabel = AddHudCell("HudObjective", 240, true);
         _topBarLayout.AddChild(_menuButton);
-        _menuButton.CustomMinimumSize = new Vector2(72, 52);
+        _menuButton.CustomMinimumSize = new Vector2(72, 44);
     }
 
     private Label AddHudCell(string name, float minWidth, bool expand = false)
@@ -385,7 +417,7 @@ public partial class BattleScene : Control
         var cell = new PanelContainer
         {
             Name = $"{name}Cell",
-            CustomMinimumSize = new Vector2(minWidth, 56),
+            CustomMinimumSize = new Vector2(minWidth, 44),
             SizeFlagsVertical = SizeFlags.ExpandFill
         };
         if (expand)
@@ -400,7 +432,7 @@ public partial class BattleScene : Control
             VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
-        label.AddThemeFontSizeOverride("font_size", 16);
+        label.AddThemeFontSizeOverride("font_size", 14);
         label.AddThemeColorOverride("font_color", MistTheme.TextMain);
         cell.AddChild(label);
         _topBarLayout.AddChild(cell);
@@ -489,6 +521,7 @@ public partial class BattleScene : Control
         _activeBattleRoom = null;
         _activeMineRoom = null;
         _activeCalibrationRoom = null;
+        _activeStashRoom = null;
         _returnToMineAfterBattle = false;
         HideInteractivePanels();
 
@@ -500,8 +533,15 @@ public partial class BattleScene : Control
             case "event":
                 RenderEventRoom(room);
                 break;
+            case "stash":
+                RenderStashRoom(room);
+                break;
             case "battle":
             case "elite":
+                StartBattleRoom(room);
+                break;
+            case "trap":
+                ApplyTrapPenalty(room);
                 StartBattleRoom(room);
                 break;
             case "treasure":
@@ -517,7 +557,7 @@ public partial class BattleScene : Control
                 RenderCalibrationRoom(room);
                 break;
             case "complete":
-                ShowEndPanel(true, "天快亮了，你悄悄爬回床上。");
+                ShowEndPanel(true, Localization.T("complete_arrive"));
                 break;
         }
 
@@ -533,14 +573,16 @@ public partial class BattleScene : Control
         {
             "battle" => Localization.T("room_battle"),
             "elite" => Localization.T("room_elite"),
+            "trap" => Localization.T("room_trap"),
             "treasure" => Localization.T("room_treasure"),
             "mine" => Localization.T("room_mine"),
             "event" => Localization.T("room_event"),
+            "stash" => Localization.T("room_stash"),
             "rest" => Localization.T("room_rest"),
             "shop" => Localization.T("room_shop"),
             "calibration" => Localization.T("room_calibration"),
             "complete" => Localization.T("room_complete"),
-            _ => "[未知]"
+            _ => Localization.T("unknown")
         };
     }
 
@@ -550,9 +592,11 @@ public partial class BattleScene : Control
         {
             "battle" => $"{string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName())} {FormatThreatPreview(room)}",
             "elite" => $"{Localization.T("elite_summary")} {FormatThreatPreview(room)}",
+            "trap" => $"{Localization.T("trap_summary")} {FormatThreatPreview(room)}",
             "treasure" => Localization.T("treasure_summary"),
             "mine" => FormatMineSummary(room.MineConfig),
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
+            "stash" => Localization.T("stash_summary"),
             "rest" => Localization.T("rest_summary"),
             "shop" => Localization.T("shop_summary"),
             "calibration" => Localization.T("calibration_summary"),
@@ -656,6 +700,7 @@ public partial class BattleScene : Control
         AddRouteLegendChip(header, "怪", "Monster", Color.FromHtml("b8505d"));
         AddRouteLegendChip(header, "探", "Explore", Color.FromHtml("5f89b8"));
         AddRouteLegendChip(header, "藏", "Curio", Color.FromHtml("d7b45f"));
+        AddRouteLegendChip(header, "猜", "Stash", Color.FromHtml("f0c36a"));
         AddRouteLegendChip(header, "?", "Oddity", Color.FromHtml("9c8ec2"));
         AddRouteLegendChip(header, "机", "Gadget", Color.FromHtml("78d69b"));
         _choiceList.AddChild(header);
@@ -720,6 +765,7 @@ public partial class BattleScene : Control
         {
             foreach (var room in _run.MapLayers[layerIndex])
             {
+                var sourceVisited = _run.VisitedRoomNodeIds.Contains(room.NodeId);
                 foreach (var nextNodeId in room.NextNodeIds)
                 {
                     var next = FindMapRoom(nextNodeId);
@@ -730,7 +776,8 @@ public partial class BattleScene : Control
 
                     var active = room.NodeId == _run.CurrentRoomNodeId || _run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId);
                     var forward = availableRoute.Contains(next.NodeId);
-                    AddRouteConnectionLine(mapCanvas, room, next, active && forward);
+                    var dimPast = sourceVisited && !active;
+                    AddRouteConnectionLine(mapCanvas, room, next, active && forward, dimPast);
                 }
             }
         }
@@ -765,7 +812,7 @@ public partial class BattleScene : Control
         mapCanvas.AddChild(marker);
     }
 
-    private void AddRouteConnectionLine(Control mapCanvas, RunRoom fromRoom, RunRoom toRoom, bool active)
+    private void AddRouteConnectionLine(Control mapCanvas, RunRoom fromRoom, RunRoom toRoom, bool active, bool dimPast = false)
     {
         var fromCenter = GetRouteNodeCenter(fromRoom);
         var toCenter = GetRouteNodeCenter(toRoom);
@@ -773,16 +820,22 @@ public partial class BattleScene : Control
             mapCanvas,
             GetRouteNodeEdgePoint(fromRoom, toCenter),
             GetRouteNodeEdgePoint(toRoom, fromCenter),
-            active);
+            active,
+            dimPast);
     }
 
-    private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active)
+    private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active, bool dimPast = false)
     {
         var mid = (from + to) / 2f + new Vector2(0, active ? 10f : 6f);
+        var shadowColor = dimPast
+            ? new Color(0.03f, 0.05f, 0.07f, 0.36f)
+            : active
+                ? new Color(0.20f, 0.60f, 0.45f, 0.30f)
+                : new Color(0.06f, 0.10f, 0.14f, 0.52f);
         var shadow = new Line2D
         {
-            Width = active ? 7f : 4f,
-            DefaultColor = active ? new Color(0.20f, 0.60f, 0.45f, 0.30f) : new Color(0.06f, 0.10f, 0.14f, 0.52f),
+            Width = active ? 7f : dimPast ? 3f : 4f,
+            DefaultColor = shadowColor,
             Antialiased = true,
             ZIndex = -1
         };
@@ -791,10 +844,13 @@ public partial class BattleScene : Control
         shadow.AddPoint(to);
         mapCanvas.AddChild(shadow);
 
+        var lineColor = dimPast
+            ? new Color(0.15f, 0.18f, 0.22f, 0.40f)
+            : GetRouteLineColor(active);
         var line = new Line2D
         {
-            Width = active ? 3.5f : 2f,
-            DefaultColor = GetRouteLineColor(active),
+            Width = active ? 3.5f : dimPast ? 1.5f : 2f,
+            DefaultColor = lineColor,
             Antialiased = true,
             ZIndex = 0
         };
@@ -812,20 +868,24 @@ public partial class BattleScene : Control
             {
                 var selectable = _run.IsRoomReachable(room);
                 var current = room.NodeId == _run.CurrentRoomNodeId;
-                var past = room.LayerIndex < _run.CurrentLayerIndex || (room.LayerIndex == _run.CurrentLayerIndex && !current);
+                var visited = _run.VisitedRoomNodeIds.Contains(room.NodeId);
                 var onRoute = current || selectable || availableRoute.Contains(room.NodeId);
                 var button = new Button
                 {
-                    Text = FormatRouteNodeText(room, current, selectable, past, onRoute),
+                    Text = FormatRouteNodeText(room, current, selectable, visited, onRoute),
                     Position = GetRouteNodePosition(room),
                     Size = new Vector2(RouteNodeWidth, RouteNodeHeight),
                     AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                    TooltipText = BuildRouteNodeTooltip(room, current, selectable, past, onRoute),
+                    TooltipText = BuildRouteNodeTooltip(room, current, selectable, visited, onRoute),
                     Disabled = !selectable,
                     ZIndex = 2
                 };
                 button.AddThemeFontSizeOverride("font_size", 13);
-                StyleRouteNodeButton(button, room, current, selectable, past, onRoute);
+                StyleRouteNodeButton(button, room, current, selectable, visited, onRoute);
+                if (visited && !selectable)
+                {
+                    button.Modulate = new Color(1f, 1f, 1f, 0.45f);
+                }
                 if (selectable)
                 {
                     var captured = FindChoiceIndex(choices, room.NodeId);
@@ -950,28 +1010,34 @@ public partial class BattleScene : Control
         return title;
     }
 
-    private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool visited, bool onRoute)
     {
-        var marker = current ? "●" : selectable ? "◆" : past || !onRoute ? "·" : "◇";
+        var marker = selectable ? "◆" : visited ? "✓" : current ? "●" : !onRoute ? "·" : "◇";
         var title = TrimRouteTitle(room.DisplayTitle(), Localization.Language == Localization.English ? 13 : 8);
         return $"{marker} {GetMapNodeIcon(room.Kind)}\n{title}\n{FormatCompactRouteCost(room)}";
     }
 
-    private string BuildRouteNodeTooltip(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    private string BuildRouteNodeTooltip(RunRoom room, bool current, bool selectable, bool visited, bool onRoute)
     {
-        var state = GetRouteNodeStateText(current, selectable, past, onRoute);
+        var state = GetRouteNodeStateText(current, selectable, visited, onRoute);
         return $"{room.DisplayTitle()}\n{state}\n{FormatRouteCost(room)}\n{FormatRouteNodeSummary(room)}\n{FormatRouteNext(room)}";
     }
 
-    private static string GetRouteNodeStateText(bool current, bool selectable, bool past, bool onRoute)
+    private static string GetRouteNodeStateText(bool current, bool selectable, bool visited, bool onRoute)
     {
-        return current
-            ? Localization.T("route_current")
-            : selectable
-                ? Localization.T("route_available")
-                : past || !onRoute
-                    ? Localization.T("route_lost")
-                    : Localization.T("route_future");
+        if (visited && !selectable)
+        {
+            return Localization.T("route_visited");
+        }
+        if (selectable)
+        {
+            return Localization.T("route_available");
+        }
+        if (current)
+        {
+            return Localization.T("route_current");
+        }
+        return !onRoute ? Localization.T("route_lost") : Localization.T("route_future");
     }
 
     private static string TrimRouteTitle(string title, int maxChars)
@@ -998,10 +1064,12 @@ public partial class BattleScene : Control
         {
             "battle" => _gameData.GetEnemy(room.EnemyId).DisplayName(),
             "elite" => Localization.Language == Localization.English ? $"Elite: {_gameData.GetEnemy(room.EnemyId).DisplayName()}" : $"精英：{_gameData.GetEnemy(room.EnemyId).DisplayName()}",
+            "trap" => Localization.Language == Localization.English ? $"Ambush: {_gameData.GetEnemy(room.EnemyId).DisplayName()}" : $"伏击：{_gameData.GetEnemy(room.EnemyId).DisplayName()}",
             "treasure" => Localization.Language == Localization.English ? "Keepsake / card / pocket supplies" : "纪念物 / 卡牌 / 口袋补给",
             "mine" => Localization.Language == Localization.English
                 ? $"{room.MineConfig.Width}x{room.MineConfig.Height} Scare {room.MineConfig.Monsters + room.MineConfig.Traps}/Find {room.MineConfig.Treasures + room.MineConfig.Ores}"
                 : $"{room.MineConfig.Width}x{room.MineConfig.Height} 惊{room.MineConfig.Monsters + room.MineConfig.Traps}/找{room.MineConfig.Treasures + room.MineConfig.Ores}",
+            "stash" => Localization.Language == Localization.English ? "Guess a hiding spot; peek with battery." : "猜一个藏位；可消耗手电窥探。",
             "event" => Localization.Language == Localization.English ? "Odd choice" : "怪事抉择",
             "rest" => Localization.Language == Localization.English ? "Recover courage / craft" : "恢复勇气 / 手作",
             "shop" => Localization.Language == Localization.English ? "Cards / snacks" : "卡牌 / 零食",
@@ -1060,8 +1128,10 @@ public partial class BattleScene : Control
             {
                 "battle" => "B",
                 "elite" => "E",
+                "trap" => "!",
                 "treasure" => "$",
                 "mine" => "E",
+                "stash" => "H",
                 "event" => "?",
                 "rest" => "R",
                 "shop" => "S",
@@ -1076,7 +1146,9 @@ public partial class BattleScene : Control
             "battle" => "战",
             "mine" => "探",
             "elite" => "精",
+            "trap" => "险",
             "treasure" => "藏",
+            "stash" => "猜",
             "event" => "?",
             "rest" => "躲",
             "shop" => "换",
@@ -1094,7 +1166,9 @@ public partial class BattleScene : Control
             {
                 "mine" => "Opening the room search grid...",
                 "battle" or "elite" => "Entering combat...",
+                "trap" => "Ambushed! Preparing to fight...",
                 "treasure" => "Opening the curio box...",
+                "stash" => "Checking the hidden stash...",
                 "event" => "Listening at the strange door...",
                 "rest" => "Finding a hiding spot...",
                 "shop" => "Visiting the trade nook...",
@@ -1108,6 +1182,7 @@ public partial class BattleScene : Control
         {
             "mine" => "打开房间探索网格……",
             "battle" or "elite" => "进入战斗……",
+            "trap" => "被伏击了！准备战斗……",
             "treasure" => "打开藏品盒……",
             "event" => "贴近那扇奇怪的门……",
             "rest" => "寻找可以躲一下的角落……",
@@ -1222,7 +1297,7 @@ public partial class BattleScene : Control
 
         if (_run.PlayerHp <= 0)
         {
-            ShowEndPanel(false, "房间里的怪东西把你的勇气吓光了。");
+            ShowEndPanel(false, Localization.T("mine_death"));
         }
         else if (_run.Minefield.IsCleared)
         {
@@ -1460,6 +1535,245 @@ public partial class BattleScene : Control
         ShowRunDeltaTips(before);
     }
 
+    private void RenderStashRoom(RunRoom room)
+    {
+        _activeStashRoom = room;
+        _stashPeekMode = false;
+        _stashPeekCount = 0;
+        _peekedStashSlots.Clear();
+        BuildStashSlots(room);
+
+        _roomTitleLabel.Text = room.DisplayTitle();
+        _roomDescriptionLabel.Text = Localization.Language == Localization.English
+            ? "Six hiding spots wait in the room. Pick one, or spend flashlight battery to peek before choosing."
+            : "房间里有 6 个藏位。你可以直接猜一个，也可以先消耗手电电量窥探一个藏位再决定。";
+        _choicePanel.Visible = true;
+        RenderStashChoices();
+        ShowGameTip(Localization.Language == Localization.English ? "Stash room: guess or peek." : "藏品房：猜位置，或先窥探。");
+    }
+
+    private void BuildStashSlots(RunRoom room)
+    {
+        _stashSlots.Clear();
+        var rewardId = string.IsNullOrWhiteSpace(room.RewardId) ? (room.Risk >= 3 ? "advanced" : "cache") : room.RewardId;
+        var reward = _gameData.GetReward(rewardId);
+        var cardChoices = _gameData.BuildRewardChoices(reward, _run.CharacterId, HashCode.Combine(_run.RunSeed, room.NodeId, "stash_card"), 1);
+        var relicChoices = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, room.NodeId, "stash_relic"), 1);
+        var cardId = cardChoices.Count > 0 ? cardChoices[0].Id : "quick_scan";
+        var relicId = relicChoices.Count > 0 && room.Risk >= 2 ? relicChoices[0].Id : string.Empty;
+        var bonus = Math.Max(0, room.RewardBonus);
+
+        _stashSlots.Add(new StashSlot("button_cache", "纽扣罐", "Button Jar", "听起来叮当作响。", "It clinks softly.", shards: 22 + bonus / 5));
+        _stashSlots.Add(new StashSlot("battery_box", "备用电池盒", "Spare Battery Box", "有一点温热。", "It feels faintly warm.", lamp: 20 + bonus / 4));
+        _stashSlots.Add(new StashSlot("snack_wrap", "零食纸包", "Snack Wrap", "闻起来甜甜的。", "It smells sweet.", heal: 12 + room.Risk * 2));
+        _stashSlots.Add(new StashSlot("card_note", "折好的纸片", "Folded Note", "纸角露出一行字。", "A line of writing peeks out.", cardId: cardId));
+        _stashSlots.Add(string.IsNullOrWhiteSpace(relicId)
+            ? new StashSlot("tool_bundle", "小工具包", "Little Tool Bundle", "里面像是有小灯。", "Something tiny glows inside.", itemId: "probe_lamp", itemCount: 2, fogReduction: 1)
+            : new StashSlot("keepsake_case", "旧纪念盒", "Old Keepsake Case", "盒盖上刻着名字。", "A name is carved on the lid.", relicId: relicId));
+        _stashSlots.Add(new StashSlot("scare", "会动的影子", "Moving Shadow", "它一动不动，反而更可疑。", "It is too still to trust.", damage: 6 + room.Risk * 2, fogGain: 1 + room.Risk / 2));
+
+        var random = new Random(HashCode.Combine(_run.RunSeed, room.NodeId, room.LayerIndex, "stash_shuffle"));
+        for (var i = _stashSlots.Count - 1; i > 0; i--)
+        {
+            var swap = random.Next(i + 1);
+            (_stashSlots[i], _stashSlots[swap]) = (_stashSlots[swap], _stashSlots[i]);
+        }
+    }
+
+    private void RenderStashChoices()
+    {
+        ClearBox(_choiceList);
+
+        var hint = new Label
+        {
+            Text = BuildStashHintText(),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        hint.AddThemeFontSizeOverride("font_size", 16);
+        hint.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
+        _choiceList.AddChild(hint);
+
+        var grid = new GridContainer
+        {
+            Columns = 3,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        grid.AddThemeConstantOverride("h_separation", 12);
+        grid.AddThemeConstantOverride("v_separation", 12);
+        _choiceList.AddChild(grid);
+
+        for (var i = 0; i < _stashSlots.Count; i++)
+        {
+            var slot = _stashSlots[i];
+            var peeked = _peekedStashSlots.Contains(i);
+            var label = $"{(char)('A' + i)}";
+            var button = new Button
+            {
+                Text = peeked
+                    ? $"{label}\n{slot.DisplayName()}\n{slot.DisplayPeekHint()}"
+                    : $"{label}\n???\n{(Localization.Language == Localization.English ? "Covered" : "盖着")}",
+                CustomMinimumSize = new Vector2(0, 128),
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                TooltipText = _stashPeekMode
+                    ? (Localization.Language == Localization.English ? "Peek this spot." : "窥探这个藏位。")
+                    : (Localization.Language == Localization.English ? "Choose this spot as your final pick." : "把这个藏位作为最终选择。")
+            };
+            StyleButton(button, GetStashSlotColor(slot, peeked), peeked ? Color.FromHtml("fff7df") : Color.FromHtml("d8e2ee"));
+            var captured = i;
+            button.Pressed += () => OnStashSlotPressed(captured);
+            grid.AddChild(button);
+        }
+
+        var peekCost = GetStashPeekCost();
+        var peekButton = new Button
+        {
+            Text = _stashPeekMode
+                ? (Localization.Language == Localization.English ? "Peek mode active: choose a spot" : "窥探模式中：选择一个藏位")
+                : string.Format(Localization.Language == Localization.English ? "Spend {0} battery to peek once ({1}/1)" : "消耗 {0} 手电窥探一次（{1}/1）", peekCost, _stashPeekCount),
+            CustomMinimumSize = new Vector2(0, 56),
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Disabled = _stashPeekCount >= 1 || _run.LampOil < peekCost
+        };
+        StyleButton(peekButton, _stashPeekMode ? Color.FromHtml("5b4a2a") : Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));
+        peekButton.Pressed += ToggleStashPeekMode;
+        _choiceList.AddChild(peekButton);
+
+        AddChoiceButton(Localization.Language == Localization.English
+            ? "Leave quietly\nTake no stash, reduce noise by 1."
+            : "安静离开\n不拿藏品，声响 -1。",
+            LeaveStashRoomQuietly);
+    }
+
+    private string BuildStashHintText()
+    {
+        var dangerIndex = _stashSlots.FindIndex(slot => slot.IsDanger);
+        var bestIndex = 0;
+        var bestScore = int.MinValue;
+        for (var i = 0; i < _stashSlots.Count; i++)
+        {
+            if (_stashSlots[i].ValueScore > bestScore)
+            {
+                bestScore = _stashSlots[i].ValueScore;
+                bestIndex = i;
+            }
+        }
+
+        var dangerColumn = dangerIndex % 3 + 1;
+        var bestRow = bestIndex < 3 ? 1 : 2;
+        return Localization.Language == Localization.English
+            ? $"Clue: the scary rustle comes from column {dangerColumn}. The strongest sparkle is on row {bestRow}."
+            : $"线索：吓人的响动来自第 {dangerColumn} 列；最亮的反光在第 {bestRow} 行。";
+    }
+
+    private void ToggleStashPeekMode()
+    {
+        if (_stashPeekCount >= 1)
+        {
+            ShowGameTip(Localization.Language == Localization.English ? "No peeks left." : "没有剩余窥探次数。");
+            return;
+        }
+
+        if (_run.LampOil < GetStashPeekCost())
+        {
+            ShowGameTip(Localization.Language == Localization.English ? "Not enough battery." : "手电电量不足。");
+            return;
+        }
+
+        _stashPeekMode = !_stashPeekMode;
+        RenderStashChoices();
+    }
+
+    private void OnStashSlotPressed(int index)
+    {
+        if (index < 0 || index >= _stashSlots.Count)
+        {
+            return;
+        }
+
+        if (_stashPeekMode)
+        {
+            PeekStashSlot(index);
+            return;
+        }
+
+        ResolveStashSlot(index);
+    }
+
+    private void PeekStashSlot(int index)
+    {
+        if (_peekedStashSlots.Contains(index))
+        {
+            ShowGameTip(Localization.Language == Localization.English ? "You already peeked there." : "这个藏位已经窥探过了。");
+            return;
+        }
+
+        var before = CaptureRunTipSnapshot();
+        if (!_run.SpendLamp(GetStashPeekCost(), Localization.Language == Localization.English ? "Careful peek" : "仔细窥探"))
+        {
+            RenderShared();
+            ShowRunDeltaTips(before);
+            return;
+        }
+
+        _peekedStashSlots.Add(index);
+        _stashPeekCount++;
+        _stashPeekMode = false;
+        RenderStashChoices();
+        RenderShared();
+        ShowGameTip(Localization.Language == Localization.English
+            ? $"Peeked: {_stashSlots[index].DisplayName()}"
+            : $"窥探结果：{_stashSlots[index].DisplayName()}");
+        ShowRunDeltaTips(before);
+    }
+
+    private void ResolveStashSlot(int index)
+    {
+        var slot = _stashSlots[index];
+        var before = CaptureRunTipSnapshot();
+        _run.ApplyStashOutcome(slot.Shards, slot.Lamp, slot.FogReduction, slot.Heal, slot.Damage, slot.FogGain, slot.CardId, slot.ItemId, slot.ItemCount, slot.RelicId, _gameData, slot.DisplayName());
+        _choicePanel.Visible = false;
+        _continueButton.Visible = true;
+        RenderShared();
+        ShowGameTip(slot.BuildResultText());
+        ShowRunDeltaTips(before);
+    }
+
+    private void LeaveStashRoomQuietly()
+    {
+        var before = CaptureRunTipSnapshot();
+        _run.ReduceFogPressure(1);
+        _run.Log.Add(Localization.Language == Localization.English ? "You leave the hidden stash untouched and move quietly." : "你没有翻动藏品，安静地离开了。");
+        _choicePanel.Visible = false;
+        _continueButton.Visible = true;
+        RenderShared();
+        ShowGameTip(Localization.Language == Localization.English ? "Left quietly." : "安静离开。");
+        ShowRunDeltaTips(before);
+    }
+
+    private static int GetStashPeekCost()
+    {
+        return 7;
+    }
+
+    private static Color GetStashSlotColor(StashSlot slot, bool peeked)
+    {
+        if (!peeked)
+        {
+            return Color.FromHtml("263445");
+        }
+
+        return slot.Id switch
+        {
+            "scare" => Color.FromHtml("6b2d35"),
+            "button_cache" => Color.FromHtml("5b4a2a"),
+            "battery_box" => Color.FromHtml("2f4c54"),
+            "snack_wrap" => Color.FromHtml("315f46"),
+            "keepsake_case" => Color.FromHtml("392d4b"),
+            _ => Color.FromHtml("334e68")
+        };
+    }
+
     private void RenderTreasureRoom(RunRoom room)
     {
         _roomTitleLabel.Text = room.DisplayTitle();
@@ -1482,7 +1796,9 @@ public partial class BattleScene : Control
         var cardChoices = _gameData.BuildRewardChoices(reward, _run.CharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, room.NodeId, "cache_card"), 2);
         foreach (var card in cardChoices)
         {
-            AddChoiceButton($"{(Localization.Language == Localization.English ? "Take card" : "记录卡牌")}：{FormatCardHeader(card)}\n{card.DisplayDescription()}", () => OnTreasureCardPicked(card));
+            var cell = CardCell.Create(card, CardCellMode.Treasure);
+            cell.CardClicked += _ => OnTreasureCardPicked(card);
+            _choiceList.AddChild(cell);
         }
 
         AddChoiceButton(Localization.Language == Localization.English
@@ -1580,13 +1896,16 @@ public partial class BattleScene : Control
         var shopCards = _gameData.BuildRewardChoices(reward, _run.CharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, "shop"), 4);
         foreach (var card in shopCards)
         {
-            AddShopChoiceButton(shopGrid, $"{string.Format(Localization.T("buy_card"), card.DisplayName(), 22)}\n{card.DisplayDescription()}", () => OnBuyCardPressed(card), "card");
+            var footerText = string.Format(Localization.T("buy_card"), card.DisplayName(), 22);
+            var cell = CardCell.Create(card, CardCellMode.Shop, footerText: footerText);
+            cell.CardClicked += _ => OnBuyCardPressed(card);
+            shopGrid.AddChild(cell);
         }
 
         var shopRelics = _gameData.BuildRelicChoices(reward, _run.Relics, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, "shop_relic"), 2);
         foreach (var relic in shopRelics)
         {
-            AddChoiceButton($"{(Localization.Language == Localization.English ? "Trade keepsake" : "交换纪念物")} {relic.DisplayName()} - 34 纽扣\n{relic.DisplayDescription()}", () => OnBuyRelicPressed(relic));
+            AddChoiceButton($"{(Localization.Language == Localization.English ? "Trade keepsake" : "交换纪念物")} {relic.DisplayName()} - 34 {Localization.T("shards")}\n{relic.DisplayDescription()}", () => OnBuyRelicPressed(relic));
         }
 
         AddChoiceButton(Localization.Language == Localization.English ? "Trade snack - 16 Buttons\nRecover 18 courage." : "交换零食 - 16 纽扣\n恢复 18 点勇气。", OnBuyHealPressed);
@@ -1934,6 +2253,13 @@ public partial class BattleScene : Control
         return string.Join("  ", parts);
     }
 
+    private void ApplyTrapPenalty(RunRoom room)
+    {
+        var trapDamage = 4 + room.Risk * 2;
+        _run.ApplyTrapDamage(trapDamage, 1);
+        _run.Log.Add(Localization.Pick($"你触发了陷阱，受到 {trapDamage} 点惊吓伤害！", $"You triggered a trap! Take {trapDamage} scare damage!"));
+    }
+
     private void StartBattleRoom(RunRoom room)
     {
         _continueButton.Visible = false;
@@ -1983,7 +2309,7 @@ public partial class BattleScene : Control
             enemies.Add(_gameData.GetEnemy(fallbackEnemyId));
         }
 
-        if (!fromMine && enemies.Count == 1 && room != null && room.Kind == "elite")
+        if (!fromMine && enemies.Count == 1 && room != null && (room.Kind == "elite" || room.Kind == "trap"))
         {
             enemies.Add(_gameData.GetEnemy(room.Risk >= 4 ? "crystal_guard" : "lamp_mite"));
         }
@@ -2047,7 +2373,7 @@ public partial class BattleScene : Control
         var depthThreat = depth / 2;
         var fogThreat = _run.FogPressure / 3;
         var lowOilThreat = _run.LampOil <= Math.Max(1, _run.MaxLampOil / 4) ? 1 : 0;
-        var eliteThreat = room?.Kind == "elite" ? 2 : 0;
+        var eliteThreat = room?.Kind == "elite" || room?.Kind == "trap" ? 2 : 0;
         var threat = depthThreat + risk - 1 + fogThreat + lowOilThreat + eliteThreat;
         if (fromMine)
         {
@@ -2063,6 +2389,8 @@ public partial class BattleScene : Control
         {
             return;
         }
+
+        CancelAimingCard(false);
 
         var beforePlayerHp = _battle.PlayerHp;
         var beforeEnemyHp = _battle.TotalEnemyHp;
@@ -2122,7 +2450,7 @@ public partial class BattleScene : Control
         RenderShared();
     }
 
-    private void OnCardGuiInput(InputEvent inputEvent, Button button, int handIndex)
+    private void OnCardGuiInput(InputEvent inputEvent, Control cardControl, int handIndex)
     {
         if (IsBattleFinished() || handIndex < 0 || handIndex >= _battle.Hand.Count)
         {
@@ -2131,20 +2459,20 @@ public partial class BattleScene : Control
 
         if (inputEvent is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
         {
-            SelectAimingCard(button, handIndex);
+            SelectAimingCard(cardControl, handIndex);
         }
     }
 
-    private void SelectAimingCard(Button button, int handIndex)
+    private void SelectAimingCard(Control cardControl, int handIndex)
     {
         CancelAimingCard(false);
-        _aimingCardButton = button;
+        _aimingCardButton = cardControl;
         _aimingCardIndex = handIndex;
         _dragTargetsEnemy = CardTargetsEnemy(_battle.Hand[handIndex]);
-        _dragLineStart = button.GlobalPosition + button.Size * new Vector2(0.5f, 0.06f);
-        button.ZIndex = 100;
-        button.Scale = new Vector2(1.08f, 1.08f);
-        button.Modulate = Color.FromHtml("ffffff");
+        _dragLineStart = cardControl.GlobalPosition + cardControl.Size * new Vector2(0.5f, 0.06f);
+        cardControl.ZIndex = 100;
+        cardControl.Scale = new Vector2(1.08f, 1.08f);
+        cardControl.Modulate = Color.FromHtml("ffffff");
         ShowAimingFeedback(_battle.Hand[handIndex]);
         UpdateAimingLine(GetGlobalMousePosition());
         UpdateAimingFeedback(GetGlobalMousePosition());
@@ -2354,7 +2682,7 @@ public partial class BattleScene : Control
             _run.SyncAfterBattle(0);
             RunLoadingTransition(
                 Localization.Language == Localization.English ? "Recording the failed expedition..." : "记录本次探索……",
-                () => ShowEndPanel(false, "你的勇气用光了。下一次等父母睡熟以后，再带上更合适的卡牌和小道具。"));
+                () => ShowEndPanel(false, Localization.T("battle_death")));
         }
     }
 
@@ -2387,15 +2715,9 @@ public partial class BattleScene : Control
 
         foreach (var card in cardChoices)
         {
-            var button = new Button
-            {
-                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}",
-                CustomMinimumSize = new Vector2(0, 74),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
-            };
-            StyleButton(button, Color.FromHtml("233548"), Color.FromHtml("d8e2ee"));
-            button.Pressed += () => OnRewardPickedV2(reward, card, null);
-            _rewardList.AddChild(button);
+            var cell = CardCell.Create(card, CardCellMode.Reward);
+            cell.CardClicked += _ => OnRewardPickedV2(reward, card, null);
+            _rewardList.AddChild(cell);
         }
 
         var relicChoices = _gameData.BuildRelicChoices(
@@ -2475,8 +2797,8 @@ public partial class BattleScene : Control
 
         _battlePanel.Visible = false;
         _rewardPanel.Visible = true;
-        _roomTitleLabel.Text = "战斗胜利";
-        _roomDescriptionLabel.Text = "从散落的小屋碎片里挑选一项发现。";
+        _roomTitleLabel.Text = Localization.T("battle_won");
+        _roomDescriptionLabel.Text = Localization.T("battle_reward_desc");
 
         var reward = _gameData.GetReward(_activeBattleRoom.RewardId);
         ClearBox(_rewardList);
@@ -2484,20 +2806,14 @@ public partial class BattleScene : Control
         var cardChoices = _gameData.BuildRewardChoices(reward, _run.CharacterId, HashCode.Combine(_run.RunSeed, _run.CurrentLayerIndex, reward.Id, _run.PlayerDeck.Count), 3);
         foreach (var card in cardChoices)
         {
-            var button = new Button
-            {
-                Text = $"{FormatCardHeader(card)}\n{card.DisplayDescription()}",
-                CustomMinimumSize = new Vector2(0, 72),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
-            };
-            StyleButton(button, Color.FromHtml("233548"), Color.FromHtml("d8e2ee"));
-            button.Pressed += () => OnRewardPicked(reward, card);
-            _rewardList.AddChild(button);
+            var cell = CardCell.Create(card, CardCellMode.Reward);
+            cell.CardClicked += _ => OnRewardPicked(reward, card);
+            _rewardList.AddChild(cell);
         }
 
         var skipButton = new Button
         {
-            Text = $"跳过卡牌，只获得 {reward.Shards} 纽扣并恢复 {reward.Heal} 点勇气",
+            Text = string.Format(Localization.T("skip_card_reward"), reward.Shards, reward.Heal),
             CustomMinimumSize = new Vector2(0, 52),
             AutowrapMode = TextServer.AutowrapMode.WordSmart
         };
@@ -2534,35 +2850,29 @@ public partial class BattleScene : Control
             return;
         }
 
-        var playerStatuses = _battle.PlayerWeak > 0 ? $" | 虚弱 {_battle.PlayerWeak}" : string.Empty;
+        var playerStatuses = _battle.PlayerWeak > 0 ? $" | {Localization.T("combat_weak_short")} {_battle.PlayerWeak}" : string.Empty;
         _playerHpBar.MaxValue = _battle.PlayerMaxHp;
         _playerHpBar.Value = Math.Max(0, _battle.PlayerHp);
-        _playerCombatLabel.Text = $"玩家  HP {_battle.PlayerHp}/{_battle.PlayerMaxHp}\n能量 {_battle.Energy}{playerStatuses}";
+        _playerCombatLabel.Text = $"{Localization.T("combat_player")}  {Localization.T("combat_hp")} {_battle.PlayerHp}/{_battle.PlayerMaxHp}\n{Localization.T("combat_energy")} {_battle.Energy}{playerStatuses}";
         _playerCombatPanel.TooltipText = BuildPlayerStatusTooltip();
-        _enemyCombatLabel.Text = $"敌群  存活 {CountAliveEnemies()}/{_battle.Enemies.Count}\n威胁 {_battle.ThreatLevel} | 当前目标：{_battle.Enemy.DisplayName()}";
-        _playerBlockLabel.Text = $"格挡 {_battle.PlayerBlock}";
-        _battleResourceLabel.Text = $"抽牌堆 {_battle.DrawPile.Count} | 弃牌堆 {_battle.DiscardPile.Count} | 手牌 {_battle.Hand.Count}";
+        _enemyCombatLabel.Text = $"{Localization.T("combat_enemies")}  {Localization.T("combat_alive")} {CountAliveEnemies()}/{_battle.Enemies.Count}\n{Localization.T("combat_threat")} {_battle.ThreatLevel} | {Localization.T("combat_current_target")}：{_battle.Enemy.DisplayName()}";
+        _playerBlockLabel.Text = $"{Localization.T("combat_block")} {_battle.PlayerBlock}";
+        _battleResourceLabel.Text = $"{Localization.T("combat_draw_pile")} {_battle.DrawPile.Count} | {Localization.T("combat_discard_pile")} {_battle.DiscardPile.Count} | {Localization.T("combat_hand")} {_battle.Hand.Count}";
         _statusHelpLabel.Text = BuildStatusHelpText();
         _intentPanel.Visible = false;
 
         RenderEnemyTargets();
 
-        ClearBox(_handBox);
+        ClearControl(_handBox);
         for (var i = 0; i < _battle.Hand.Count; i++)
         {
             var card = _battle.Hand[i];
-            var button = new Button
-            {
-                Text = FormatBattleCardText(card),
-                CustomMinimumSize = new Vector2(150, 188),
-                SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
-            };
-            StyleCardButton(button, card, card.Cost <= _battle.Energy);
-            button.TooltipText = BuildCardTooltip(card);
+            var cell = CardCell.Create(card, CardCellMode.Hand, card.Cost <= _battle.Energy, index: i);
+            cell.TooltipText = BuildCardTooltip(card);
             var captured = i;
-            button.GuiInput += inputEvent => OnCardGuiInput(inputEvent, button, captured);
-            _handBox.AddChild(button);
+            var capturedCell = cell;
+            cell.CardGuiInput += (c, ev) => OnCardGuiInput(ev, capturedCell, captured);
+            _handBox.AddChild(cell);
         }
 
         CallDeferred(nameof(LayoutHandFan));
@@ -2593,7 +2903,7 @@ public partial class BattleScene : Control
             var button = new Button
             {
                 Text = FormatEnemyTargetText(enemy, i, selected),
-                CustomMinimumSize = new Vector2(176, 232),
+                CustomMinimumSize = new Vector2(0, 200),
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 Disabled = !enemy.IsAlive
@@ -2612,13 +2922,13 @@ public partial class BattleScene : Control
         var marker = selected ? "▶ " : string.Empty;
         if (!enemy.IsAlive)
         {
-            return $"{enemy.Data.DisplayName()}\nHP 0/{enemy.MaxHp}\n已击倒";
+            return $"{enemy.Data.DisplayName()}\n{Localization.T("combat_hp")} 0/{enemy.MaxHp}\n{Localization.T("combat_defeated")}";
         }
 
         var status = FormatEnemyStatusLine(enemy);
         var intentPreview = _battle.GetEnemyIntentPreview(index);
         var counterHint = BuildEnemyCounterHint(_battle.GetCurrentEnemyIntent(index));
-        return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}  格挡 {enemy.Block}\n破势 {enemy.Stagger}/{enemy.StaggerLimit}{status}\n下一步: {intentPreview}\n应对: {counterHint}";
+        return $"{marker}{enemy.Data.DisplayName()}\n{Localization.T("combat_hp")} {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}  {Localization.T("combat_block")} {enemy.Block}\n{Localization.T("combat_stagger")} {enemy.Stagger}/{enemy.StaggerLimit}{status}\n{Localization.T("combat_next_step")}: {intentPreview}\n{Localization.T("combat_counter")}: {counterHint}";
     }
 
     private static string FormatEnemyStatusLine(BattleEnemyState enemy)
@@ -2626,14 +2936,14 @@ public partial class BattleScene : Control
         var parts = new List<string>();
         if (enemy.Weak > 0)
         {
-            parts.Add($"虚弱{enemy.Weak}");
+            parts.Add($"{Localization.T("combat_weak_short")}{enemy.Weak}");
         }
         if (enemy.Vulnerable > 0)
         {
-            parts.Add($"易伤{enemy.Vulnerable}");
+            parts.Add($"{Localization.T("combat_vulnerable_short")}{enemy.Vulnerable}");
         }
 
-        return parts.Count == 0 ? string.Empty : $"\n状态 {string.Join(" / ", parts)}";
+        return parts.Count == 0 ? string.Empty : $"\n{Localization.T("combat_status")} {string.Join(" / ", parts)}";
     }
 
     private static string BuildEnemyCounterHint(IntentData intent)
@@ -2799,24 +3109,36 @@ public partial class BattleScene : Control
     private void LayoutHandFan()
     {
         var count = _handBox.GetChildCount();
-        if (count <= 0)
-        {
-            return;
-        }
+        if (count <= 0) return;
+
+        var panelWidth = _handBox.Size.X;
+        var cardWidth = 146f;   // matches CardCell Hand mode CustomMinimumSize.X
+        var cardHeight = 190f;  // matches CardCell Hand mode CustomMinimumSize.Y
+        var maxSpacing = cardWidth + 8f;
+        // Calculate overlap so cards fit within panel
+        var totalWidth = count * maxSpacing;
+        var spacing = totalWidth > panelWidth
+            ? Math.Max((panelWidth - cardWidth) / Math.Max(count - 1, 1), 40f)
+            : maxSpacing;
+        var actualTotalWidth = (count - 1) * spacing + cardWidth;
+        var startX = (panelWidth - actualTotalWidth) / 2f;
 
         var middle = (count - 1) / 2f;
         for (var i = 0; i < count; i++)
         {
-            if (_handBox.GetChild(i) is not Control cardControl)
-            {
-                continue;
-            }
+            if (_handBox.GetChild(i) is not Control cardControl) continue;
 
             var offsetFromMiddle = i - middle;
             var normalized = middle <= 0 ? 0 : offsetFromMiddle / middle;
-            cardControl.PivotOffset = cardControl.Size / 2f;
-            cardControl.RotationDegrees = normalized * 9f;
-            cardControl.Position += new Vector2(0, Math.Abs(normalized) * 24f);
+
+            // Position: center-aligned, with arc Y offset
+            var x = startX + i * spacing;
+            var arcY = Math.Abs(normalized) * 20f;
+
+            cardControl.Position = new Vector2(x, arcY);
+            cardControl.Size = new Vector2(cardWidth, cardHeight);
+            cardControl.PivotOffset = new Vector2(cardWidth / 2f, cardHeight);
+            cardControl.RotationDegrees = normalized * 8f;
         }
     }
 
@@ -2855,15 +3177,14 @@ public partial class BattleScene : Control
     private void RenderHud(int displayedHp, int displayedMaxHp)
     {
         var currentLayer = Math.Max(_run.CurrentLayerIndex + 1, 0);
-        var isEnglish = Localization.Language == Localization.English;
-        _hudLayerLabel.Text = $"{(isEnglish ? "Room" : "房间")}\n{currentLayer}/{_run.MapLayers.Count}";
-        _hudHpLabel.Text = $"{(isEnglish ? "Courage" : "勇气")}\n{displayedHp}/{displayedMaxHp}";
-        _hudShardsLabel.Text = $"{(isEnglish ? "Buttons" : "纽扣")}\n{_run.Shards}";
-        _hudDeckLabel.Text = $"{(isEnglish ? "Deck" : "牌组")}\n{_run.PlayerDeck.Count}";
-        _hudLampLabel.Text = $"{(isEnglish ? "Battery" : "手电")}\n{_run.LampOil}/{_run.MaxLampOil}";
-        _hudFogLabel.Text = $"{(isEnglish ? "Noise" : "声响")}\n{FormatFogDots()}";
-        _hudScoreLabel.Text = $"{(isEnglish ? "Score" : "分数")}\n{_run.Score}";
-        _hudObjectiveLabel.Text = $"{(isEnglish ? "Objective" : "目标")}\n{FormatObjectiveStatus()}";
+        _hudLayerLabel.Text = $"{Localization.T("route_layer", currentLayer)}\n{currentLayer}/{_run.MapLayers.Count}";
+        _hudHpLabel.Text = $"{Localization.T("hp")}\n{displayedHp}/{displayedMaxHp}";
+        _hudShardsLabel.Text = $"{Localization.T("shards")}\n{_run.Shards}";
+        _hudDeckLabel.Text = $"{Localization.T("deck")}\n{_run.PlayerDeck.Count}";
+        _hudLampLabel.Text = $"{Localization.T("battery")}\n{_run.LampOil}/{_run.MaxLampOil}";
+        _hudFogLabel.Text = $"{Localization.T("noise")}\n{FormatFogDots()}";
+        _hudScoreLabel.Text = $"{Localization.T("score")}\n{_run.Score}";
+        _hudObjectiveLabel.Text = $"{Localization.T("objective")}\n{FormatObjectiveStatus()}";
 
         _hudHpLabel.AddThemeColorOverride("font_color", displayedHp <= displayedMaxHp / 3 ? Color.FromHtml("ff9aa8") : MistTheme.TextMain);
         _hudShardsLabel.AddThemeColorOverride("font_color", Color.FromHtml("b58aff"));
@@ -3138,10 +3459,10 @@ public partial class BattleScene : Control
         _metaRecorded = true;
         HideInteractivePanels();
         _endPanel.Visible = true;
-        _roomTitleLabel.Text = victory ? "今晚冒险完成" : "今晚冒险中断";
+        _roomTitleLabel.Text = victory ? Localization.T("run_victory_title") : Localization.T("run_defeat_title");
         _roomDescriptionLabel.Text = reason;
-        _endTitleLabel.Text = victory ? "你在天亮前回到了床上" : "你只好提前钻回被窝";
-        _endSummaryLabel.Text = $"抵达房间: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n剩余勇气: {_run.PlayerHp}/{_run.PlayerMaxHp}\n手电: {_run.LampOil}/{_run.MaxLampOil}  声响: {_run.FogPressure}\n纽扣: {_run.Shards}  分数: {_run.Score}\n打跑怪物: {_run.BattlesWon}  清理房间: {_run.MinesCleared}\n挑战: {FormatObjectiveStatus()}  挑战奖励: {meta.LastObjectiveBonus}\n本局获得星屑: {meta.LastEarnedEmbers}  总星屑: {meta.TotalEmbers}\n最深房间: {meta.BestDepth}  最佳分数: {meta.BestScore}\n牌组: {_run.PlayerDeck.Count} 张\n纪念物: {FormatRelicList()}";
+        _endTitleLabel.Text = victory ? Localization.T("run_victory_subtitle") : Localization.T("run_defeat_subtitle");
+        _endSummaryLabel.Text = $"{Localization.T("end_rooms")}: {Math.Max(_run.CurrentLayerIndex + 1, 0)}\n{Localization.T("end_courage_left")}: {_run.PlayerHp}/{_run.PlayerMaxHp}\n{Localization.T("battery")}: {_run.LampOil}/{_run.MaxLampOil}  {Localization.T("noise")}: {_run.FogPressure}\n{Localization.T("shards")}: {_run.Shards}  {Localization.T("score")}: {_run.Score}\n{Localization.T("end_monsters_defeated")}: {_run.BattlesWon}  {Localization.T("end_rooms_cleared")}: {_run.MinesCleared}\n{Localization.T("end_challenge")}: {FormatObjectiveStatus()}  {Localization.T("end_challenge_reward")}: {meta.LastObjectiveBonus}\n{Localization.T("end_embers_earned")}: {meta.LastEarnedEmbers}  {Localization.T("end_total_stardust")}: {meta.TotalEmbers}\n{Localization.T("end_deepest_room")}: {meta.BestDepth}  {Localization.T("end_best_score")}: {meta.BestScore}\n{Localization.T("deck")}: {_run.PlayerDeck.Count} {Localization.T("end_deck_count")}\n{Localization.T("end_relics")}: {FormatRelicList()}";
         RenderShared();
     }
 
@@ -3154,9 +3475,10 @@ public partial class BattleScene : Control
         _endPanel.Visible = false;
         _continueButton.Visible = false;
         _mineModeButton.Visible = false;
+        _stashPeekMode = false;
         ClearBox(_choiceList);
         ClearBox(_mineGrid);
-        ClearBox(_handBox);
+        ClearControl(_handBox);
         ClearBox(_rewardList);
     }
 
@@ -3165,6 +3487,15 @@ public partial class BattleScene : Control
         foreach (var child in container.GetChildren())
         {
             container.RemoveChild(child);
+            child.QueueFree();
+        }
+    }
+
+    private static void ClearControl(Control control)
+    {
+        foreach (var child in control.GetChildren())
+        {
+            control.RemoveChild(child);
             child.QueueFree();
         }
     }
@@ -3230,37 +3561,39 @@ public partial class BattleScene : Control
         for (var i = 0; i < _run.PlayerDeck.Count; i++)
         {
             var card = _run.PlayerDeck[i];
-            var text = $"{i + 1}. {FormatCardHeader(card)}\n{card.DisplayDescription()}";
-            if (interactive && upgradeCost >= 0)
+            var isUpgradeMode = interactive && upgradeCost >= 0;
+            var isRemoveMode = interactive && removeCost >= 0;
+            var mode = isUpgradeMode ? CardCellMode.Upgrade : isRemoveMode ? CardCellMode.Remove : CardCellMode.Deck;
+            var canAct = interactive && (isUpgradeMode || isRemoveMode);
+            var playable = !(isUpgradeMode && string.IsNullOrWhiteSpace(card.UpgradeTo));
+
+            string footer = "";
+            if (isUpgradeMode)
             {
-                text += string.IsNullOrWhiteSpace(card.UpgradeTo)
-                    ? "\n已到当前最高等级。"
-                    : $"\n升级费用：{upgradeCost} 纽扣";
+                footer = string.IsNullOrWhiteSpace(card.UpgradeTo)
+                    ? Localization.T("max_level_reached")
+                    : string.Format(Localization.T("upgrade_cost_format"), upgradeCost);
             }
-            else if (interactive && removeCost >= 0)
+            else if (isRemoveMode)
             {
-                text += $"\n移除费用：{removeCost} 纽扣";
+                footer = string.Format(Localization.T("remove_cost_format"), removeCost);
             }
 
-            var button = new Button
-            {
-                Text = text,
-                CustomMinimumSize = new Vector2(0, 82),
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                Disabled = !interactive || (upgradeCost >= 0 && string.IsNullOrWhiteSpace(card.UpgradeTo))
-            };
-            StyleButton(button, Color.FromHtml("263445"), Color.FromHtml("d8e2ee"));
+            var cell = CardCell.Create(card, mode, playable, footer, i);
             var captured = i;
-            if (interactive && upgradeCost >= 0)
+            if (canAct && playable)
             {
-                button.Pressed += () => OnUpgradeCardPicked(captured, upgradeCost);
-            }
-            else if (interactive && removeCost >= 0)
-            {
-                button.Pressed += () => OnRemoveCardPicked(captured, removeCost);
+                if (isUpgradeMode)
+                {
+                    cell.CardClicked += _ => OnUpgradeCardPicked(captured, upgradeCost);
+                }
+                else if (isRemoveMode)
+                {
+                    cell.CardClicked += _ => OnRemoveCardPicked(captured, removeCost);
+                }
             }
 
-            _choiceList.AddChild(button);
+            _choiceList.AddChild(cell);
         }
     }
 
@@ -3268,10 +3601,10 @@ public partial class BattleScene : Control
     {
         HideInteractivePanels();
         _choicePanel.Visible = true;
-        _roomTitleLabel.Text = cost <= 0 ? "锻造卡牌" : "升级卡牌";
-        _roomDescriptionLabel.Text = "选择一张拥有强化版本的卡牌。强化后的卡牌会直接进入本局牌组。";
+        _roomTitleLabel.Text = cost <= 0 ? Localization.T("forge_card") : Localization.T("upgrade_card");
+        _roomDescriptionLabel.Text = Localization.T("upgrade_card_desc");
         RenderDeckList(true, cost, -1);
-        AddChoiceButton("返回\n暂时不调整牌组。", () => RunLoadingTransition(
+        AddChoiceButton(Localization.T("back_no_adjust"), () => RunLoadingTransition(
             Localization.Language == Localization.English ? "Returning to the room..." : "返回当前房间……",
             RenderCurrentRoom));
         RenderShared();
@@ -3281,10 +3614,10 @@ public partial class BattleScene : Control
     {
         HideInteractivePanels();
         _choicePanel.Visible = true;
-        _roomTitleLabel.Text = "移除卡牌";
-        _roomDescriptionLabel.Text = "删牌能让核心牌更稳定上手，但会消耗纽扣。";
+        _roomTitleLabel.Text = Localization.T("remove_card");
+        _roomDescriptionLabel.Text = Localization.T("remove_card_desc");
         RenderDeckList(true, -1, cost);
-        AddChoiceButton("返回\n暂时不调整牌组。", () => RunLoadingTransition(
+        AddChoiceButton(Localization.T("back_no_adjust"), () => RunLoadingTransition(
             Localization.Language == Localization.English ? "Returning to the room..." : "返回当前房间……",
             RenderCurrentRoom));
         RenderShared();
@@ -3430,34 +3763,6 @@ public partial class BattleScene : Control
         }
     }
 
-    private static string FormatCardHeader(CardData card)
-    {
-        var rarity = card.Rarity switch
-        {
-            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
-            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
-            _ => Localization.Language == Localization.English ? "Common" : "普通"
-        };
-        return $"{card.DisplayName()} [{rarity}/{card.Type}] ({Localization.T("cost")} {card.Cost})";
-    }
-
-    private static string FormatBattleCardText(CardData card)
-    {
-        var rarity = card.Rarity switch
-        {
-            "rare" => Localization.Language == Localization.English ? "Rare" : "稀有",
-            "uncommon" => Localization.Language == Localization.English ? "Uncommon" : "进阶",
-            _ => Localization.Language == Localization.English ? "Common" : "普通"
-        };
-        var type = card.Type switch
-        {
-            "attack" => Localization.Language == Localization.English ? "Attack" : "攻击",
-            "skill" => Localization.Language == Localization.English ? "Skill" : "技能",
-            _ => card.Type
-        };
-        return $"[{card.Cost}] {card.DisplayName()}\n{type} / {rarity}\n{card.DisplayDescription()}";
-    }
-
     private void BuildModalHost()
     {
         _modalOverlay = new Panel
@@ -3514,12 +3819,14 @@ public partial class BattleScene : Control
             CustomMinimumSize = new Vector2(0, 460),
             SizeFlagsVertical = SizeFlags.ExpandFill
         };
-        _deckModalList = new VBoxContainer
+        _deckModalList = new GridContainer
         {
             Name = "DeckModalList",
+            Columns = 4,
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
-        _deckModalList.AddThemeConstantOverride("separation", 8);
+        _deckModalList.AddThemeConstantOverride("h_separation", 14);
+        _deckModalList.AddThemeConstantOverride("v_separation", 14);
 
         _deckModalCloseButton = new Button
         {
@@ -3820,6 +4127,7 @@ public partial class BattleScene : Control
         _mineRevealTipLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         StyleCombatPanels(false, false);
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
+        StyleButton(_endTurnButton, Color.FromHtml("3b3120"), Color.FromHtml("fff1c8"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_mineModeButton, Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));
         StyleButton(_deckButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
@@ -3864,36 +4172,48 @@ public partial class BattleScene : Control
         button.AddThemeColorOverride("font_disabled_color", fontColor.Darkened(0.35f));
     }
 
-    private static void StyleRouteNodeButton(Button button, RunRoom room, bool current, bool selectable, bool past, bool onRoute)
+    private static void StyleRouteNodeButton(Button button, RunRoom room, bool current, bool selectable, bool visited, bool onRoute)
     {
         var kindColor = GetRouteKindColor(room.Kind);
-        var background = kindColor.Darkened(0.66f);
-        var border = kindColor.Darkened(0.08f);
-        var font = kindColor.Lightened(0.45f);
+        Color background;
+        Color border;
+        Color font;
         var borderWidth = 2;
 
-        if (past || !onRoute)
+        if (visited && !selectable)
         {
-            background = Color.FromHtml("1b2027");
-            border = Color.FromHtml("303944");
-            font = Color.FromHtml("667382");
-        }
-        else if (current)
-        {
-            background = Color.FromHtml("5b4a2a");
-            border = Color.FromHtml("f0cf87");
-            font = Color.FromHtml("fff1d0");
-            borderWidth = 3;
+            // Completed / already visited rooms — dark with subtle gold border
+            background = Color.FromHtml("1a1e24");
+            border = Color.FromHtml("6b5d3a");
+            font = Color.FromHtml("8a7e65");
+            borderWidth = 2;
         }
         else if (selectable)
         {
+            // Rooms the player can choose right now — vibrant
             background = kindColor.Darkened(room.Risk >= 3 ? 0.50f : 0.58f);
             border = kindColor.Lightened(0.25f);
             font = Color.FromHtml("e7fff1");
             borderWidth = 3;
         }
+        else if (current)
+        {
+            // Current room (already completed, selecting next) — muted gold
+            background = Color.FromHtml("2a2518");
+            border = Color.FromHtml("8a7a4a");
+            font = Color.FromHtml("c8b88a");
+            borderWidth = 2;
+        }
+        else if (!onRoute)
+        {
+            // Off-route rooms — very dim
+            background = Color.FromHtml("141820");
+            border = Color.FromHtml("28303a");
+            font = Color.FromHtml("4a5565");
+        }
         else
         {
+            // Future on-route but not selectable — dimmed version of room kind
             background = kindColor.Darkened(0.72f);
             border = kindColor.Darkened(0.30f);
             font = Color.FromHtml("b9c9d8");
@@ -3918,8 +4238,10 @@ public partial class BattleScene : Control
         {
             "battle" => Color.FromHtml("d36a72"),
             "elite" => Color.FromHtml("ff9aa8"),
+            "trap" => Color.FromHtml("e8874d"),
             "mine" => Color.FromHtml("72a7d8"),
             "treasure" => Color.FromHtml("d7b45f"),
+            "stash" => Color.FromHtml("f0c36a"),
             "event" => Color.FromHtml("a99bd3"),
             "rest" => Color.FromHtml("78d69b"),
             "shop" => Color.FromHtml("66d4df"),
@@ -3941,35 +4263,6 @@ public partial class BattleScene : Control
         var normal = MakeCardStyle(background, border);
         var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
         var pressed = MakeCardStyle(background.Darkened(0.08f), border);
-        button.AddThemeStyleboxOverride("normal", normal);
-        button.AddThemeStyleboxOverride("hover", hover);
-        button.AddThemeStyleboxOverride("pressed", pressed);
-        button.AddThemeStyleboxOverride("disabled", normal);
-        button.AddThemeColorOverride("font_color", font);
-        button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
-        button.AddThemeColorOverride("font_pressed_color", font);
-        button.AddThemeColorOverride("font_disabled_color", font);
-    }
-
-    private static void StyleCardButton(Button button, CardData card, bool playable)
-    {
-        var border = card.Rarity switch
-        {
-            "rare" => Color.FromHtml("d7b45f"),
-            "uncommon" => Color.FromHtml("78a8d8"),
-            _ => Color.FromHtml("7d8a96")
-        };
-        var background = card.Type == "attack" ? Color.FromHtml("2b2324") : Color.FromHtml("1d2b35");
-        if (!playable)
-        {
-            background = Color.FromHtml("252b32");
-            border = Color.FromHtml("4a5664");
-        }
-
-        var normal = MakeCardStyle(background, border);
-        var hover = MakeCardStyle(background.Lightened(0.08f), border.Lightened(0.12f));
-        var pressed = MakeCardStyle(background.Darkened(0.08f), border);
-        var font = playable ? Color.FromHtml("f3ead7") : Color.FromHtml("8f9aa8");
         button.AddThemeStyleboxOverride("normal", normal);
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("pressed", pressed);
@@ -4135,6 +4428,94 @@ public partial class BattleScene : Control
             MineTileType.Ore => "BTN?",
             _ => "?"
         };
+    }
+
+    private sealed class StashSlot
+    {
+        public StashSlot(string id, string name, string nameEn, string hint, string hintEn, int shards = 0, int lamp = 0, int fogReduction = 0, int heal = 0, int damage = 0, int fogGain = 0, string cardId = "", string itemId = "", int itemCount = 0, string relicId = "")
+        {
+            Id = id;
+            Name = name;
+            NameEn = nameEn;
+            Hint = hint;
+            HintEn = hintEn;
+            Shards = shards;
+            Lamp = lamp;
+            FogReduction = fogReduction;
+            Heal = heal;
+            Damage = damage;
+            FogGain = fogGain;
+            CardId = cardId;
+            ItemId = itemId;
+            ItemCount = itemCount;
+            RelicId = relicId;
+        }
+
+        public string Id { get; }
+        public string Name { get; }
+        public string NameEn { get; }
+        public string Hint { get; }
+        public string HintEn { get; }
+        public int Shards { get; }
+        public int Lamp { get; }
+        public int FogReduction { get; }
+        public int Heal { get; }
+        public int Damage { get; }
+        public int FogGain { get; }
+        public string CardId { get; }
+        public string ItemId { get; }
+        public int ItemCount { get; }
+        public string RelicId { get; }
+        public bool IsDanger => Damage > 0 || FogGain > 0;
+        public int ValueScore => Shards + Lamp + Heal + FogReduction * 10 + (!string.IsNullOrWhiteSpace(CardId) ? 24 : 0) + (!string.IsNullOrWhiteSpace(ItemId) ? 18 : 0) + (!string.IsNullOrWhiteSpace(RelicId) ? 42 : 0) - Damage * 3 - FogGain * 12;
+
+        public string DisplayName() => Localization.Pick(Name, NameEn);
+        public string DisplayPeekHint() => Localization.Pick(Hint, HintEn);
+
+        public string BuildResultText()
+        {
+            var parts = new List<string>();
+            if (Shards > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Buttons +{Shards}" : $"纽扣 +{Shards}");
+            }
+            if (Lamp > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Battery +{Lamp}" : $"手电 +{Lamp}");
+            }
+            if (Heal > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Courage +{Heal}" : $"勇气 +{Heal}");
+            }
+            if (FogReduction > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Noise -{FogReduction}" : $"声响 -{FogReduction}");
+            }
+            if (!string.IsNullOrWhiteSpace(CardId))
+            {
+                parts.Add(Localization.Language == Localization.English ? "New card" : "获得卡牌");
+            }
+            if (!string.IsNullOrWhiteSpace(ItemId))
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Item x{Math.Max(1, ItemCount)}" : $"道具 x{Math.Max(1, ItemCount)}");
+            }
+            if (!string.IsNullOrWhiteSpace(RelicId))
+            {
+                parts.Add(Localization.Language == Localization.English ? "Keepsake" : "纪念物");
+            }
+            if (Damage > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Courage -{Damage}" : $"勇气 -{Damage}");
+            }
+            if (FogGain > 0)
+            {
+                parts.Add(Localization.Language == Localization.English ? $"Noise +{FogGain}" : $"声响 +{FogGain}");
+            }
+
+            return parts.Count == 0
+                ? DisplayName()
+                : $"{DisplayName()}\n{string.Join("  |  ", parts)}";
+        }
     }
 
     private sealed class CalibrationNode

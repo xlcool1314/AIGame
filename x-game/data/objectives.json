@@ -1,54 +1,74 @@
 {
   "objectives": [
     {
-      "id": "reach_depth_4",
-      "title": "睡前挑战：找到第 4 个地下房间",
-      "titleEn": "Bedtime Quest: Reach Room 4",
-      "description": "抵达第 4 个地下房间。",
-      "descriptionEn": "Reach underground room 4.",
+      "id": "reach_depth_6",
+      "title": "睡前挑战：找到第 6 个地下房间",
+      "titleEn": "Bedtime Quest: Reach Room 6",
+      "description": "抵达第 6 个地下房间。",
+      "descriptionEn": "Reach underground room 6.",
       "type": "depth",
-      "target": 4,
+      "target": 6,
       "emberReward": 8
     },
     {
-      "id": "win_3_battles",
-      "title": "睡前挑战：赶跑 3 只怪东西",
-      "titleEn": "Bedtime Quest: Chase Off 3 Things",
-      "description": "获得 3 场战斗胜利。",
-      "descriptionEn": "Win 3 battles.",
+      "id": "win_4_battles",
+      "title": "睡前挑战：赶跑 4 只怪东西",
+      "titleEn": "Bedtime Quest: Chase Off 4 Things",
+      "description": "获得 4 场战斗胜利。",
+      "descriptionEn": "Win 4 battles.",
       "type": "battles",
-      "target": 3,
+      "target": 4,
       "emberReward": 9
     },
     {
-      "id": "clear_2_mines",
-      "title": "睡前挑战：清理 2 个房间棋盘",
-      "titleEn": "Bedtime Quest: Clear 2 Room Boards",
-      "description": "清理 2 个房间探索棋盘。",
-      "descriptionEn": "Clear 2 room search boards.",
+      "id": "clear_3_mines",
+      "title": "睡前挑战：清理 3 个房间棋盘",
+      "titleEn": "Bedtime Quest: Clear 3 Room Boards",
+      "description": "清理 3 个房间探索棋盘。",
+      "descriptionEn": "Clear 3 room search boards.",
       "type": "mines",
-      "target": 2,
+      "target": 3,
       "emberReward": 10
     },
     {
-      "id": "score_220",
+      "id": "score_350",
       "title": "睡前挑战：大胆记录",
       "titleEn": "Bedtime Quest: Brave Record",
-      "description": "本局达到 220 探险分。",
-      "descriptionEn": "Reach 220 adventure score this run.",
+      "description": "本局达到 350 探险分。",
+      "descriptionEn": "Reach 350 adventure score this run.",
       "type": "score",
-      "target": 220,
-      "emberReward": 12
+      "target": 350,
+      "emberReward": 14
     },
     {
-      "id": "collect_120_shards",
+      "id": "collect_160_shards",
       "title": "睡前挑战：攒满纽扣罐",
       "titleEn": "Bedtime Quest: Fill the Button Jar",
-      "description": "本局持有 120 枚纽扣。",
-      "descriptionEn": "Hold 120 buttons this run.",
+      "description": "本局持有 160 枚纽扣。",
+      "descriptionEn": "Hold 160 buttons this run.",
       "type": "shards",
-      "target": 120,
-      "emberReward": 8
+      "target": 160,
+      "emberReward": 10
+    },
+    {
+      "id": "reach_depth_10",
+      "title": "睡前挑战：深入地下室",
+      "titleEn": "Bedtime Quest: Deep Basement",
+      "description": "抵达第 10 个地下房间。",
+      "descriptionEn": "Reach underground room 10.",
+      "type": "depth",
+      "target": 10,
+      "emberReward": 14
+    },
+    {
+      "id": "win_7_battles",
+      "title": "睡前挑战：怪物清道夫",
+      "titleEn": "Bedtime Quest: Monster Sweeper",
+      "description": "获得 7 场战斗胜利。",
+      "descriptionEn": "Win 7 battles.",
+      "type": "battles",
+      "target": 7,
+      "emberReward": 12
     }
   ]
 }
