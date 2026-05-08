@@ -154,6 +154,9 @@ public partial class BattleScene : Control
         _intentPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel");
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
         _handBox = GetNode<Control>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
+        _handBox.CustomMinimumSize = new Vector2(0, 238);
+        _handBox.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        _handBox.SizeFlagsVertical = SizeFlags.ExpandFill;
         _endTurnButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/EndTurnButton");
         _deckButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/DeckButton");
         _rewardPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/RewardPanel");
@@ -726,7 +729,7 @@ public partial class BattleScene : Control
             return;
         }
 
-        var origin = new Vector2(RouteMapWidth / 2f, GetRouteMapHeight() - 24f);
+        var origin = new Vector2(RouteMapWidth / 2f, 24f);
         foreach (var room in _run.MapLayers[0])
         {
             var active = _run.CurrentLayerIndex < 0 && (_run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId));
@@ -761,7 +764,7 @@ public partial class BattleScene : Control
 
     private void AddRouteGuideLine(Control mapCanvas, Vector2 from, Vector2 to, bool active)
     {
-        var mid = (from + to) / 2f + new Vector2(0, active ? -10f : -6f);
+        var mid = (from + to) / 2f + new Vector2(0, active ? 10f : 6f);
         var shadow = new Line2D
         {
             Width = active ? 7f : 4f,
@@ -834,7 +837,7 @@ public partial class BattleScene : Control
 
     private float GetRouteLayerY(int layerIndex)
     {
-        return GetRouteMapHeight() - RouteMapBottomPadding - RouteNodeHeight - layerIndex * RouteLayerGap;
+        return RouteMapTopPadding + layerIndex * RouteLayerGap;
     }
 
     private Vector2 GetRouteNodePosition(RunRoom room)
@@ -935,7 +938,7 @@ public partial class BattleScene : Control
 
     private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
     {
-        var marker = current ? "●" : selectable ? "◆" : past || !onRoute ? "·" : "◇";
+        var marker = past ? "✓" : current ? "●" : selectable ? "◆" : !onRoute ? "·" : "◇";
         var title = TrimRouteTitle(room.DisplayTitle(), Localization.Language == Localization.English ? 13 : 8);
         return $"{marker} {GetMapNodeIcon(room.Kind)}\n{title}\n{FormatCompactRouteCost(room)}";
     }
@@ -2312,10 +2315,12 @@ public partial class BattleScene : Control
             return;
         }
 
+        var before = CaptureBattleSnapshot();
         var beforePlayerHp = _battle.PlayerHp;
         var beforeEnemyHp = _battle.TotalEnemyHp;
         var beforeEnemyBlock = _battle.TotalEnemyBlock;
         _battle.EndPlayerTurn();
+        ShowBattleDeltaFeedback(before, includePlayerResourceGains: false);
         ResolveBattleIfFinished();
         if (_battle.PlayerHp < beforePlayerHp)
         {
@@ -2342,6 +2347,7 @@ public partial class BattleScene : Control
         }
 
         var card = _battle.Hand[index];
+        var before = CaptureBattleSnapshot();
         var targetsEnemy = CardTargetsEnemy(card);
         var resolvedTarget = targetEnemyIndex >= 0 ? targetEnemyIndex : _battle.SelectedEnemyIndex;
         var beforeTargetHp = targetsEnemy && resolvedTarget >= 0 && resolvedTarget < _battle.Enemies.Count
@@ -2356,6 +2362,7 @@ public partial class BattleScene : Control
             return;
         }
 
+        ShowBattleDeltaFeedback(before, includePlayerResourceGains: true, playedCard: card);
         if (targetsEnemy && resolvedTarget >= 0 && resolvedTarget < _battle.Enemies.Count && _battle.Enemies[resolvedTarget].Hp < beforeTargetHp)
         {
             AnimateCombatFeedback(GetEnemyFeedbackTarget(resolvedTarget), new Vector2(18, 0), Color.FromHtml("ffb1b8"));
@@ -2562,6 +2569,188 @@ public partial class BattleScene : Control
         tween.SetParallel(false);
         tween.TweenProperty(target, "position", originalPosition, 0.12f).SetTrans(Tween.TransitionType.Sine);
         tween.TweenProperty(target, "modulate", originalModulate, 0.12f);
+    }
+
+    private BattleValueSnapshot CaptureBattleSnapshot()
+    {
+        var snapshot = new BattleValueSnapshot
+        {
+            PlayerHp = _battle.PlayerHp,
+            PlayerBlock = _battle.PlayerBlock,
+            PlayerWeak = _battle.PlayerWeak,
+            Energy = _battle.Energy,
+            HandCount = _battle.Hand.Count
+        };
+
+        foreach (var enemy in _battle.Enemies)
+        {
+            snapshot.EnemyHp.Add(enemy.Hp);
+            snapshot.EnemyBlock.Add(enemy.Block);
+            snapshot.EnemyWeak.Add(enemy.Weak);
+            snapshot.EnemyVulnerable.Add(enemy.Vulnerable);
+        }
+
+        return snapshot;
+    }
+
+    private void ShowBattleDeltaFeedback(BattleValueSnapshot before, bool includePlayerResourceGains, CardData? playedCard = null)
+    {
+        var playerOffset = 0;
+        var playerHpDelta = _battle.PlayerHp - before.PlayerHp;
+        if (playerHpDelta < 0)
+        {
+            SpawnFloatingText(_playerCombatPanel, playerHpDelta.ToString(), "damage", playerOffset++);
+        }
+        else if (playerHpDelta > 0)
+        {
+            SpawnFloatingText(_playerCombatPanel, $"+{playerHpDelta} HP", "heal", playerOffset++);
+        }
+
+        if (includePlayerResourceGains)
+        {
+            var blockDelta = _battle.PlayerBlock - before.PlayerBlock;
+            if (blockDelta > 0)
+            {
+                SpawnFloatingText(_playerCombatPanel, $"+{blockDelta} Block", "block", playerOffset++);
+            }
+
+            var explicitDraw = SumCardActionValues(playedCard, "draw");
+            if (explicitDraw > 0)
+            {
+                SpawnFloatingText(_playerCombatPanel, $"+{explicitDraw} Card", "draw", playerOffset++);
+            }
+
+            var explicitEnergy = SumCardActionValues(playedCard, "energy");
+            if (explicitEnergy > 0)
+            {
+                SpawnFloatingText(_playerCombatPanel, $"+{explicitEnergy} Energy", "energy", playerOffset++);
+            }
+        }
+        else if (playerHpDelta == 0 && _battle.PlayerBlock < before.PlayerBlock)
+        {
+            SpawnFloatingText(_playerCombatPanel, "Blocked", "block", playerOffset++);
+        }
+
+        if (_battle.PlayerWeak > before.PlayerWeak)
+        {
+            SpawnFloatingText(_playerCombatPanel, "Weak", "status", playerOffset++);
+        }
+
+        var enemyCount = Math.Min(before.EnemyHp.Count, _battle.Enemies.Count);
+        for (var i = 0; i < enemyCount; i++)
+        {
+            var enemy = _battle.Enemies[i];
+            var target = GetEnemyFeedbackTarget(i);
+            var offset = 0;
+            var hpDelta = enemy.Hp - before.EnemyHp[i];
+            if (hpDelta < 0)
+            {
+                SpawnFloatingText(target, hpDelta.ToString(), "damage", offset++);
+            }
+            else if (hpDelta > 0)
+            {
+                SpawnFloatingText(target, $"+{hpDelta} HP", "heal", offset++);
+            }
+
+            var blockDelta = enemy.Block - before.EnemyBlock[i];
+            if (blockDelta > 0)
+            {
+                SpawnFloatingText(target, $"+{blockDelta} Block", "block", offset++);
+            }
+            else if (hpDelta == 0 && before.EnemyBlock[i] > enemy.Block)
+            {
+                SpawnFloatingText(target, "Blocked", "block", offset++);
+            }
+
+            if (enemy.Weak > before.EnemyWeak[i])
+            {
+                SpawnFloatingText(target, "Weak", "status", offset++);
+            }
+            if (enemy.Vulnerable > before.EnemyVulnerable[i])
+            {
+                SpawnFloatingText(target, "Vulnerable", "status", offset++);
+            }
+        }
+    }
+
+    private static int SumCardActionValues(CardData? card, string actionType)
+    {
+        if (card == null)
+        {
+            return 0;
+        }
+
+        var total = 0;
+        foreach (var action in card.Actions)
+        {
+            if (action.Type == actionType)
+            {
+                total += Math.Max(0, action.Value);
+            }
+        }
+
+        return total;
+    }
+
+    private void SpawnFloatingText(Control target, string text, string kind, int stackIndex = 0)
+    {
+        if (!GodotObject.IsInstanceValid(target))
+        {
+            return;
+        }
+
+        var root = GetNode<Panel>("Root");
+        var label = new Label
+        {
+            Text = text,
+            MouseFilter = MouseFilterEnum.Ignore,
+            ZIndex = 180
+        };
+        label.AddThemeFontSizeOverride("font_size", kind == "damage" ? 28 : 22);
+        label.AddThemeColorOverride("font_color", GetFloatingTextColor(kind));
+        label.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.78f));
+        label.AddThemeConstantOverride("shadow_offset_x", 2);
+        label.AddThemeConstantOverride("shadow_offset_y", 2);
+        root.AddChild(label);
+
+        var start = target.GlobalPosition - root.GlobalPosition + new Vector2(target.Size.X * 0.5f - 46f, target.Size.Y * 0.24f + stackIndex * 26f);
+        label.Position = start;
+        label.Scale = new Vector2(0.86f, 0.86f);
+
+        var tween = CreateTween();
+        tween.SetParallel(true);
+        tween.TweenProperty(label, "position", start + new Vector2(0, -58f), 0.85f)
+            .SetTrans(Tween.TransitionType.Cubic)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenProperty(label, "scale", Vector2.One, 0.12f)
+            .SetTrans(Tween.TransitionType.Back)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenProperty(label, "modulate:a", 0.0f, 0.85f)
+            .SetDelay(0.18f)
+            .SetTrans(Tween.TransitionType.Sine)
+            .SetEase(Tween.EaseType.In);
+        tween.SetParallel(false);
+        tween.TweenCallback(Callable.From(() =>
+        {
+            if (GodotObject.IsInstanceValid(label))
+            {
+                label.QueueFree();
+            }
+        }));
+    }
+
+    private static Color GetFloatingTextColor(string kind)
+    {
+        return kind switch
+        {
+            "damage" => Color.FromHtml("ff7070"),
+            "block" => Color.FromHtml("8bd3ff"),
+            "heal" => Color.FromHtml("78d69b"),
+            "energy" => Color.FromHtml("d7b45f"),
+            "draw" => Color.FromHtml("f4f0df"),
+            "status" => Color.FromHtml("c995ff"),
+            _ => Color.FromHtml("f4f0df")
+        };
     }
 
     private void ResolveBattleIfFinished()
@@ -3082,7 +3271,13 @@ public partial class BattleScene : Control
             _handBox.AddChild(button);
         }
 
-        CallDeferred(nameof(LayoutHandFan));
+        CallDeferred(nameof(LayoutHandFanDeferred));
+    }
+
+    private async void LayoutHandFanDeferred()
+    {
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        LayoutHandFan();
     }
 
     private int CountAliveEnemies()
@@ -3321,23 +3516,25 @@ public partial class BattleScene : Control
             return;
         }
 
-        var availableSize = _handBox.Size;
-        if (availableSize.X <= 0 || availableSize.Y <= 0)
-        {
-            availableSize = _handBox.GetParent<Control>()?.Size ?? new Vector2(900, 220);
-        }
+        var parentSize = _handBox.GetParent<Control>()?.Size ?? Vector2.Zero;
+        var availableSize = new Vector2(
+            Math.Max(_handBox.Size.X, parentSize.X),
+            Math.Max(Math.Max(_handBox.Size.Y, parentSize.Y), 238f));
 
         var middle = (count - 1) / 2f;
         var firstCard = _handBox.GetChild(0) as Control;
-        var cardSize = firstCard != null && firstCard.Size.X > 0 && firstCard.Size.Y > 0
+        var measuredCardSize = firstCard != null && firstCard.Size.X > 0 && firstCard.Size.Y > 0
             ? firstCard.Size
             : new Vector2(146, 190);
+        var cardSize = new Vector2(
+            Math.Max(measuredCardSize.X, firstCard?.CustomMinimumSize.X ?? 146f),
+            Math.Max(measuredCardSize.Y, firstCard?.CustomMinimumSize.Y ?? 190f));
         var spacing = count <= 1
             ? 0f
             : Math.Min(cardSize.X * 0.76f, Math.Max(58f, (availableSize.X - cardSize.X) / (count - 1)));
         var totalWidth = cardSize.X + spacing * Math.Max(0, count - 1);
         var startX = Math.Max(0, (availableSize.X - totalWidth) / 2f);
-        var baseY = Math.Max(0, availableSize.Y - cardSize.Y - 8f);
+        var baseY = Math.Max(6f, availableSize.Y - cardSize.Y - 12f);
 
         for (var i = 0; i < count; i++)
         {
@@ -4270,12 +4467,12 @@ public partial class BattleScene : Control
         var root = GetNode<Panel>("Root");
         var tip = new PanelContainer
         {
-            Name = "CenterTip",
+            Name = "TopTip",
             MouseFilter = MouseFilterEnum.Ignore,
-            CustomMinimumSize = new Vector2(820, 58),
+            CustomMinimumSize = new Vector2(0, 25),
             ZIndex = 190
         };
-        tip.AddThemeStyleboxOverride("panel", MakePanelStyle("121c28", "8df0bd", 1));
+        tip.AddThemeStyleboxOverride("panel", MakeTopTipStyle());
 
         var label = new Label
         {
@@ -4283,26 +4480,26 @@ public partial class BattleScene : Control
             MouseFilter = MouseFilterEnum.Ignore,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart
+            ClipText = true
         };
-        label.AddThemeFontSizeOverride("font_size", 18);
+        label.AddThemeFontSizeOverride("font_size", 14);
         label.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         tip.AddChild(label);
 
         root.AddChild(tip);
 
-        var width = Math.Min(920f, Math.Max(520f, root.Size.X - 120f));
-        var height = 58f;
-        var target = new Vector2((root.Size.X - width) / 2f, Math.Clamp(root.Size.Y * 0.28f, 84f, Math.Max(84f, root.Size.Y - 170f)));
+        var width = Math.Max(320f, root.Size.X);
+        var height = 25f;
+        var target = Vector2.Zero;
         tip.Size = new Vector2(width, height);
-        tip.Position = target + new Vector2(0, -54f);
+        tip.Position = target + new Vector2(0, -height);
         tip.Modulate = new Color(1f, 1f, 1f, 0f);
 
         var tween = CreateTween();
         tween.TweenProperty(tip, "position", target, 0.22f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
         tween.Parallel().TweenProperty(tip, "modulate:a", 1.0f, 0.18f);
         tween.TweenInterval(1.15f);
-        tween.TweenProperty(tip, "position", target + new Vector2(0, -16f), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.TweenProperty(tip, "position", target + new Vector2(0, -height), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
         tween.Parallel().TweenProperty(tip, "modulate:a", 0.0f, 0.45f);
         tween.TweenCallback(Callable.From(tip.QueueFree));
         await ToSignal(tween, Tween.SignalName.Finished);
@@ -4384,6 +4581,21 @@ public partial class BattleScene : Control
         return style;
     }
 
+    private static StyleBoxFlat MakeTopTipStyle()
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = new Color(0.07f, 0.11f, 0.16f, 0.94f),
+            BorderColor = Color.FromHtml("8df0bd"),
+            ContentMarginLeft = 12,
+            ContentMarginTop = 2,
+            ContentMarginRight = 12,
+            ContentMarginBottom = 2
+        };
+        style.SetBorderWidth(Side.Bottom, 1);
+        return style;
+    }
+
     private static void StyleButton(Button button, Color background, Color fontColor)
     {
         var normal = MakeButtonStyle(background);
@@ -4407,11 +4619,19 @@ public partial class BattleScene : Control
         var font = kindColor.Lightened(0.45f);
         var borderWidth = 2;
 
-        if (past || !onRoute)
+        if (past)
         {
-            background = Color.FromHtml("1b2027");
-            border = Color.FromHtml("303944");
-            font = Color.FromHtml("667382");
+            background = Color.FromHtml("121820");
+            border = Color.FromHtml("252d36");
+            font = Color.FromHtml("586473");
+            borderWidth = 1;
+        }
+        else if (!onRoute)
+        {
+            background = Color.FromHtml("15191f");
+            border = Color.FromHtml("232a33");
+            font = Color.FromHtml("4e5865");
+            borderWidth = 1;
         }
         else if (current)
         {
@@ -4440,11 +4660,11 @@ public partial class BattleScene : Control
         button.AddThemeStyleboxOverride("normal", normal);
         button.AddThemeStyleboxOverride("hover", hover);
         button.AddThemeStyleboxOverride("pressed", pressed);
-        button.AddThemeStyleboxOverride("disabled", normal);
+        button.AddThemeStyleboxOverride("disabled", MakeRouteNodeStyle(background.Darkened(0.08f), border.Darkened(0.08f), borderWidth));
         button.AddThemeColorOverride("font_color", font);
         button.AddThemeColorOverride("font_hover_color", font.Lightened(0.08f));
         button.AddThemeColorOverride("font_pressed_color", font);
-        button.AddThemeColorOverride("font_disabled_color", font);
+        button.AddThemeColorOverride("font_disabled_color", past || !onRoute ? font.Darkened(0.18f) : font);
     }
 
     private static Color GetRouteKindColor(string kind)
@@ -4732,6 +4952,19 @@ public partial class BattleScene : Control
         public int DeckCount { get; set; }
         public int RelicCount { get; set; }
         public Dictionary<string, int> Items { get; set; } = new();
+    }
+
+    private sealed class BattleValueSnapshot
+    {
+        public int PlayerHp { get; set; }
+        public int PlayerBlock { get; set; }
+        public int PlayerWeak { get; set; }
+        public int Energy { get; set; }
+        public int HandCount { get; set; }
+        public List<int> EnemyHp { get; } = new();
+        public List<int> EnemyBlock { get; } = new();
+        public List<int> EnemyWeak { get; } = new();
+        public List<int> EnemyVulnerable { get; } = new();
     }
 
     private sealed class BattleRewardOffer
