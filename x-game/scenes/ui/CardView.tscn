@@ -1,0 +1,158 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/CardCell.cs" id="1_card_cell"]
+
+[node name="CardView" type="PanelContainer"]
+custom_minimum_size = Vector2(146, 190)
+mouse_filter = 0
+script = ExtResource("1_card_cell")
+
+[node name="CardSurface" type="Control" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="FullCardArt" type="TextureRect" parent="CardSurface"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="CardFrame" type="TextureRect" parent="CardSurface"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ContentMargin" type="MarginContainer" parent="CardSurface"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="ContentLayout" type="VBoxContainer" parent="CardSurface/ContentMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="TopRow" type="HBoxContainer" parent="CardSurface/ContentMargin/ContentLayout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="CostOrbBg" type="PanelContainer" parent="CardSurface/ContentMargin/ContentLayout/TopRow"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CostOrb" type="Label" parent="CardSurface/ContentMargin/ContentLayout/TopRow/CostOrbBg"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 17
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CardName" type="Label" parent="CardSurface/ContentMargin/ContentLayout/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 15
+text = "Card"
+vertical_alignment = 1
+clip_text = true
+
+[node name="TypeIcon" type="TextureRect" parent="CardSurface/ContentMargin/ContentLayout/TopRow"]
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtFrame" type="Control" parent="CardSurface/ContentMargin/ContentLayout"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="ArtBackdrop" type="ColorRect" parent="CardSurface/ContentMargin/ContentLayout/ArtFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0352941, 0.0352941, 0.0392157, 0.48)
+
+[node name="CardArtwork" type="TextureRect" parent="CardSurface/ContentMargin/ContentLayout/ArtFrame"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="PlaceholderGlyph" type="Label" parent="CardSurface/ContentMargin/ContentLayout/ArtFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+text = "SKL"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Description" type="Label" parent="CardSurface/ContentMargin/ContentLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+text = "Description"
+autowrap_mode = 3
+
+[node name="TypeTag" type="Label" parent="CardSurface/ContentMargin/ContentLayout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 11
+text = "Type"
+horizontal_alignment = 1
+
+[node name="Footer" type="Label" parent="CardSurface/ContentMargin/ContentLayout"]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+text = "Footer"
+horizontal_alignment = 1
+autowrap_mode = 3

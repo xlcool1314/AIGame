@@ -6,20 +6,53 @@ public static class UiArt
 {
     private const string ManifestPath = "res://data/art_manifest.json";
     private static ArtManifest? _manifest;
+    private static readonly Dictionary<string, bool> ResourceExistsCache = new();
+    private static readonly Dictionary<string, Texture2D?> TextureCache = new();
 
     public static string GetBackgroundPath(string key) => GetValue(Manifest.Backgrounds, key);
     public static string GetFramePath(string key) => GetValue(Manifest.Frames, key);
     public static string GetIconPath(string key) => GetValue(Manifest.Icons, key);
     public static string GetMineTilePath(string key) => GetValue(Manifest.MineTiles, key);
+    public static string GetCardPath(string key) => GetValue(Manifest.Cards, key);
 
     public static Texture2D? LoadTexture(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !ResourceLoader.Exists(path))
+        if (string.IsNullOrWhiteSpace(path))
         {
             return null;
         }
 
-        return ResourceLoader.Load<Texture2D>(path);
+        if (TextureCache.TryGetValue(path, out var cached))
+        {
+            return cached;
+        }
+
+        if (!ResourceExists(path))
+        {
+            TextureCache[path] = null;
+            return null;
+        }
+
+        var texture = ResourceLoader.Load<Texture2D>(path);
+        TextureCache[path] = texture;
+        return texture;
+    }
+
+    public static bool ResourceExists(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        if (ResourceExistsCache.TryGetValue(path, out var cached))
+        {
+            return cached;
+        }
+
+        var exists = ResourceLoader.Exists(path);
+        ResourceExistsCache[path] = exists;
+        return exists;
     }
 
     public static Texture2D? LoadBackground(string key) => LoadTexture(GetBackgroundPath(key));
@@ -100,4 +133,5 @@ public class ArtManifest
     public Dictionary<string, string> Frames { get; set; } = new();
     public Dictionary<string, string> Icons { get; set; } = new();
     public Dictionary<string, string> MineTiles { get; set; } = new();
+    public Dictionary<string, string> Cards { get; set; } = new();
 }

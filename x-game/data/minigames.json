@@ -3,41 +3,41 @@
     {
       "id": "lamp_array",
       "type": "draft",
-      "title": "\u96fe\u706f\u9635\u5217",
-      "titleEn": "Lamp Array",
-      "description": "\u4e00\u7ec4\u88c2\u7eb9\u77ff\u706f\u4ecd\u5728\u4f4e\u9e23\u3002\u9009\u62e9 3 \u4e2a\u8282\u70b9\u63a5\u5165\u56de\u8def\uff0c\u540c\u7c7b\u6807\u8bb0\u4f1a\u89e6\u53d1\u989d\u5916\u6548\u679c\u3002",
-      "descriptionEn": "A cracked lamp array still hums. Pick 3 nodes; matching tags trigger extra effects.",
+      "title": "手电机关板",
+      "titleEn": "Flashlight Gadget Board",
+      "description": "一块裂纹小屋机关仍在低鸣。选择 3 个节点接入回路，同类标记会触发额外效果。",
+      "descriptionEn": "A cracked house gadget still hums. Pick 3 nodes; matching tags trigger extra effects.",
       "pickCount": 3,
       "weight": 12,
       "minLayer": 2,
       "options": [
-        { "id": "stable", "text": "\u7a33\u5b9a\u6676\u706f", "textEn": "Stable Crystal", "hint": "\u7a33\u5b9a / \u51c0\u96fe", "hintEn": "Stable / Fog", "tags": ["stable", "fog"], "actions": [ { "type": "shards", "value": 8 }, { "type": "fog", "value": -1 } ] },
-        { "id": "ore", "text": "\u5bcc\u77ff\u68f1\u955c", "textEn": "Ore Prism", "hint": "\u5bcc\u77ff / \u5fae\u91cf\u96fe\u566a", "hintEn": "Ore / Minor fog", "tags": ["ore", "risk"], "actions": [ { "type": "shards", "value": 24 }, { "type": "fog", "value": 1 } ] },
-        { "id": "oil", "text": "\u50a8\u6cb9\u706f\u82af", "textEn": "Oil Wick", "hint": "\u706f\u6cb9 / \u7a33\u5b9a", "hintEn": "Oil / Stable", "tags": ["oil", "stable"], "actions": [ { "type": "lamp", "value": 22 } ] },
+        { "id": "stable", "text": "稳定纸星", "textEn": "Stable Paper Star", "hint": "稳定 / 安静", "hintEn": "Stable / Quiet", "tags": ["stable", "fog"], "actions": [ { "type": "shards", "value": 8 }, { "type": "fog", "value": -1 } ] },
+        { "id": "ore", "text": "纽扣棱镜", "textEn": "Button Prism", "hint": "纽扣 / 微量声响", "hintEn": "Buttons / Minor noise", "tags": ["ore", "risk"], "actions": [ { "type": "shards", "value": 24 }, { "type": "fog", "value": 1 } ] },
+        { "id": "oil", "text": "备用电池", "textEn": "Spare Battery", "hint": "电量 / 稳定", "hintEn": "Battery / Stable", "tags": ["oil", "stable"], "actions": [ { "type": "lamp", "value": 22 } ] },
         { "id": "map", "text": "\u6d4b\u7ed8\u661f\u56fe", "textEn": "Survey Map", "hint": "\u5361\u724c / \u7a33\u5b9a", "hintEn": "Card / Stable", "tags": ["card", "stable"], "actions": [ { "type": "add_card", "cardId": "mapping_flare" } ] },
-        { "id": "rift", "text": "\u88c2\u9699\u8c10\u632f\u5668", "textEn": "Rift Resonator", "hint": "\u5bcc\u77ff / \u8fc7\u8f7d", "hintEn": "Ore / Surge", "tags": ["ore", "risk", "card"], "actions": [ { "type": "shards", "value": 16 }, { "type": "damage", "value": 5 }, { "type": "add_card", "cardId": "crack_finder" } ] },
-        { "id": "lens", "text": "\u51c0\u96fe\u900f\u955c", "textEn": "Mist Lens", "hint": "\u51c0\u96fe / \u706f\u6cb9", "hintEn": "Fog / Oil", "tags": ["fog", "oil"], "actions": [ { "type": "lamp", "value": 8 }, { "type": "fog", "value": -2 } ] }
+        { "id": "rift", "text": "裂缝共鸣器", "textEn": "Rift Resonator", "hint": "纽扣 / 过载", "hintEn": "Buttons / Surge", "tags": ["ore", "risk", "card"], "actions": [ { "type": "shards", "value": 16 }, { "type": "damage", "value": 5 }, { "type": "add_card", "cardId": "crack_finder" } ] },
+        { "id": "lens", "text": "安静透镜", "textEn": "Quiet Lens", "hint": "安静 / 电量", "hintEn": "Quiet / Battery", "tags": ["fog", "oil"], "actions": [ { "type": "lamp", "value": 8 }, { "type": "fog", "value": -2 } ] }
       ],
       "combos": [
-        { "tag": "stable", "count": 2, "result": "\u7a33\u5b9a\u56de\u8def\uff1a\u706f\u6cb9 +8\uff0c\u96fe\u538b -1\u3002", "resultEn": "Stable circuit: oil +8, fog -1.", "actions": [ { "type": "lamp", "value": 8 }, { "type": "fog", "value": -1 } ] },
-        { "tag": "ore", "count": 2, "result": "\u5bcc\u77ff\u5171\u632f\uff1a\u77ff\u6676 +16\u3002", "resultEn": "Ore resonance: shards +16.", "actions": [ { "type": "shards", "value": 16 } ] },
-        { "tag": "risk", "count": 2, "result": "\u8fc7\u8f7d\u53cd\u9707\uff1aHP -6\uff0c\u96fe\u538b +1\u3002", "resultEn": "Surge backlash: HP -6, fog +1.", "actions": [ { "type": "damage", "value": 6 }, { "type": "fog", "value": 1 } ] }
+        { "tag": "stable", "count": 2, "result": "稳定回路：手电 +8，声响 -1。", "resultEn": "Stable circuit: battery +8, noise -1.", "actions": [ { "type": "lamp", "value": 8 }, { "type": "fog", "value": -1 } ] },
+        { "tag": "ore", "count": 2, "result": "纽扣共振：纽扣 +16。", "resultEn": "Button resonance: buttons +16.", "actions": [ { "type": "shards", "value": 16 } ] },
+        { "tag": "risk", "count": 2, "result": "过载反震：勇气 -6，声响 +1。", "resultEn": "Surge backlash: courage -6, noise +1.", "actions": [ { "type": "damage", "value": 6 }, { "type": "fog", "value": 1 } ] }
       ]
     },
     {
       "id": "rail_switch",
       "type": "choice",
-      "title": "\u77ff\u8f66\u5206\u8f68",
-      "titleEn": "Rail Switch",
-      "description": "\u4e09\u6761\u77ff\u8f66\u8f68\u9053\u901a\u5411\u4e0d\u540c\u652f\u9053\u3002\u8fd9\u662f\u4e00\u6b21\u8282\u594f\u9009\u62e9\uff1a\u7a33\u59a5\u3001\u8d2a\u5fc3\u6216\u538b\u7f29\u65f6\u95f4\u3002",
-      "descriptionEn": "Three cart tracks lead into different side tunnels. Choose tempo: safe, greedy, or fast.",
+      "title": "玩具轨道分岔",
+      "titleEn": "Toy Track Switch",
+      "description": "三条玩具轨道通向不同阴影。选择节奏：稳妥、贪心或压缩时间。",
+      "descriptionEn": "Three toy tracks lead into different shadows. Choose tempo: safe, greedy, or fast.",
       "pickCount": 1,
       "weight": 10,
       "minLayer": 2,
       "options": [
-        { "id": "safe_track", "text": "\u4f4e\u901f\u5b89\u5168\u8f68", "textEn": "Slow safe track", "hint": "\u6062\u590d\u72b6\u6001\uff0c\u6536\u76ca\u8f83\u4f4e", "hintEn": "Recover, lower reward", "tags": ["safe"], "actions": [ { "type": "heal", "value": 8 }, { "type": "fog", "value": -1 } ] },
-        { "id": "ore_track", "text": "\u5bcc\u77ff\u9661\u8f68", "textEn": "Rich risky track", "hint": "\u9ad8\u6536\u76ca\uff0c\u627f\u53d7\u635f\u4f24", "hintEn": "High reward, take damage", "tags": ["greedy"], "actions": [ { "type": "shards", "value": 38 }, { "type": "damage", "value": 7 } ] },
-        { "id": "short_track", "text": "\u8fd1\u8def\u6ed1\u8f68", "textEn": "Fast short track", "hint": "\u8282\u7701\u706f\u6cb9\uff0c\u589e\u52a0\u96fe\u538b", "hintEn": "Save oil, gain fog", "tags": ["tempo"], "actions": [ { "type": "lamp", "value": 14 }, { "type": "fog", "value": 1 } ] }
+        { "id": "safe_track", "text": "低速安全轨", "textEn": "Slow safe track", "hint": "恢复状态，收益较低", "hintEn": "Recover, lower reward", "tags": ["safe"], "actions": [ { "type": "heal", "value": 8 }, { "type": "fog", "value": -1 } ] },
+        { "id": "ore_track", "text": "纽扣险轨", "textEn": "Button risky track", "hint": "高收益，承受惊吓", "hintEn": "High reward, take damage", "tags": ["greedy"], "actions": [ { "type": "shards", "value": 38 }, { "type": "damage", "value": 7 } ] },
+        { "id": "short_track", "text": "近路滑轨", "textEn": "Fast short track", "hint": "节省手电，增加声响", "hintEn": "Save battery, gain noise", "tags": ["tempo"], "actions": [ { "type": "lamp", "value": 14 }, { "type": "fog", "value": 1 } ] }
       ]
     },
     {
@@ -53,27 +53,27 @@
       "options": [
         { "id": "supply", "text": "\u8865\u7ed9\u9501\u82af", "textEn": "Supply core", "hint": "\u83b7\u5f97\u5de5\u5177", "hintEn": "Gain tools", "tags": ["safe"], "actions": [ { "type": "item", "itemId": "probe_lamp", "value": 2 } ] },
         { "id": "card", "text": "\u56fe\u7eb8\u9501\u82af", "textEn": "Blueprint core", "hint": "\u83b7\u5f97\u4e00\u5f20\u63a2\u7d22\u724c", "hintEn": "Gain an exploration card", "tags": ["card"], "actions": [ { "type": "add_card", "cardId": "safe_route" } ] },
-        { "id": "ore", "text": "\u6676\u77ff\u9501\u82af", "textEn": "Shard core", "hint": "\u76f4\u63a5\u83b7\u5f97\u77ff\u6676", "hintEn": "Gain shards", "tags": ["greedy"], "actions": [ { "type": "shards", "value": 26 } ] },
-        { "id": "cursed", "text": "\u88c2\u7eb9\u9501\u82af", "textEn": "Cracked core", "hint": "\u5927\u6536\u76ca\uff0c\u4f46\u6fc0\u8d77\u96fe\u538b", "hintEn": "Big reward, fog pressure", "tags": ["greedy", "risk"], "actions": [ { "type": "shards", "value": 34 }, { "type": "fog", "value": 2 } ] }
+        { "id": "ore", "text": "纽扣锁芯", "textEn": "Button core", "hint": "直接获得纽扣", "hintEn": "Gain buttons", "tags": ["greedy"], "actions": [ { "type": "shards", "value": 26 } ] },
+        { "id": "cursed", "text": "裂纹锁芯", "textEn": "Cracked core", "hint": "大收益，但激起声响", "hintEn": "Big reward, more noise", "tags": ["greedy", "risk"], "actions": [ { "type": "shards", "value": 34 }, { "type": "fog", "value": 2 } ] }
       ],
       "combos": [
-        { "tag": "greedy", "count": 2, "result": "\u8d2a\u5fc3\u5f00\u9501\uff1a\u9501\u82af\u88c2\u5f00\uff0cHP -5\u3002", "resultEn": "Greedy lockpick: the core cracks, HP -5.", "actions": [ { "type": "damage", "value": 5 } ] }
+        { "tag": "greedy", "count": 2, "result": "贪心开锁：锁芯裂开，勇气 -5。", "resultEn": "Greedy lockpick: the core cracks, courage -5.", "actions": [ { "type": "damage", "value": 5 } ] }
       ]
     },
     {
       "id": "mist_pump",
       "type": "choice",
-      "title": "\u96fe\u538b\u6cf5\u623f",
-      "titleEn": "Mist Pump Room",
-      "description": "\u8001\u5f0f\u6cf5\u673a\u53ef\u4ee5\u62bd\u8d70\u96fe\u6c14\uff0c\u4e5f\u53ef\u4ee5\u628a\u538b\u529b\u501f\u7ed9\u4f60\u7684\u77ff\u706f\u3002",
-      "descriptionEn": "An old pump can drain mist, or feed pressure into your lamp.",
+      "title": "噪声风箱",
+      "titleEn": "Noise Bellows",
+      "description": "老式风箱可以压低声响，也可以把一点电量送回手电。",
+      "descriptionEn": "An old bellows can quiet the noise, or feed a little charge into your flashlight.",
       "pickCount": 1,
       "weight": 7,
       "minLayer": 4,
       "options": [
-        { "id": "vent", "text": "\u6392\u51fa\u6df1\u96fe", "textEn": "Vent deep mist", "hint": "\u5927\u5e45\u964d\u4f4e\u96fe\u538b", "hintEn": "Strong fog relief", "tags": ["safe"], "actions": [ { "type": "fog", "value": -4 }, { "type": "lamp", "value": -8 } ] },
-        { "id": "charge", "text": "\u538b\u529b\u5145\u706f", "textEn": "Pressure-charge lamp", "hint": "\u8865\u5145\u706f\u6cb9\uff0c\u4f46\u589e\u52a0\u98ce\u9669", "hintEn": "Restore oil with risk", "tags": ["tempo"], "actions": [ { "type": "lamp", "value": 34 }, { "type": "fog", "value": 2 } ] },
-        { "id": "salvage", "text": "\u62c6\u4e0b\u6cf5\u82af", "textEn": "Salvage pump core", "hint": "\u83b7\u5f97\u7a00\u6709\u6218\u6597\u724c", "hintEn": "Gain a strong card", "tags": ["card"], "actions": [ { "type": "add_card", "cardId": "vent_pressure" }, { "type": "damage", "value": 4 } ] }
+        { "id": "vent", "text": "放低声响", "textEn": "Quiet the noise", "hint": "大幅降低声响", "hintEn": "Strong noise relief", "tags": ["safe"], "actions": [ { "type": "fog", "value": -4 }, { "type": "lamp", "value": -8 } ] },
+        { "id": "charge", "text": "压力充电", "textEn": "Pressure charge", "hint": "补充手电，但增加风险", "hintEn": "Restore battery with risk", "tags": ["tempo"], "actions": [ { "type": "lamp", "value": 34 }, { "type": "fog", "value": 2 } ] },
+        { "id": "salvage", "text": "拆下风箱芯", "textEn": "Salvage bellows core", "hint": "获得稀有战斗牌", "hintEn": "Gain a strong card", "tags": ["card"], "actions": [ { "type": "add_card", "cardId": "vent_pressure" }, { "type": "damage", "value": 4 } ] }
       ]
     }
   ]

@@ -485,6 +485,11 @@ public class CardData
 	public string Name { get; set; } = string.Empty;
 	public string NameEn { get; set; } = string.Empty;
 	public string UnlockId { get; set; } = string.Empty;
+	public string TemplateId { get; set; } = string.Empty;
+	public string ArtPath { get; set; } = string.Empty;
+	public string FramePath { get; set; } = string.Empty;
+	public string IconPath { get; set; } = string.Empty;
+	public string FullArtPath { get; set; } = string.Empty;
 	public int Cost { get; set; }
 	public string Description { get; set; } = string.Empty;
 	public string DescriptionEn { get; set; } = string.Empty;
@@ -582,10 +587,31 @@ public class RewardData
 	public string TitleEn { get; set; } = string.Empty;
 	public int Shards { get; set; }
 	public int Heal { get; set; }
+	public int MinOffers { get; set; } = 2;
+	public int MaxOffers { get; set; } = 3;
+	public int CardOfferWeight { get; set; } = 60;
+	public int RelicOfferWeight { get; set; } = 12;
+	public int SupplyOfferWeight { get; set; } = 18;
+	public int ButtonOfferWeight { get; set; } = 18;
+	public int HealOfferWeight { get; set; } = 12;
+	public int CardPickCount { get; set; } = 2;
+	public int RelicPickCount { get; set; } = 1;
+	public int BonusShardsMin { get; set; } = 6;
+	public int BonusShardsMax { get; set; } = 12;
+	public int BonusHealMin { get; set; } = 4;
+	public int BonusHealMax { get; set; } = 8;
 	public List<string> CardChoices { get; set; } = new();
 	public List<string> RelicChoices { get; set; } = new();
+	public List<RewardSupplyData> Supplies { get; set; } = new();
 
 	public string DisplayTitle() => Localization.Pick(Title, TitleEn);
+}
+
+public class RewardSupplyData
+{
+	public string ItemId { get; set; } = string.Empty;
+	public int Count { get; set; } = 1;
+	public int Weight { get; set; } = 10;
 }
 
 public class RunAction

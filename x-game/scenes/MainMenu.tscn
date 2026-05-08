@@ -82,6 +82,11 @@ custom_minimum_size = Vector2(420, 64)
 layout_mode = 2
 text = "读档"
 
+[node name="DeleteSaveButton" type="Button" parent="Root/Margin/MenuLayout"]
+custom_minimum_size = Vector2(420, 56)
+layout_mode = 2
+text = "删除存档"
+
 [node name="SettingsButton" type="Button" parent="Root/Margin/MenuLayout" unique_id=339194231]
 custom_minimum_size = Vector2(420, 64)
 layout_mode = 2

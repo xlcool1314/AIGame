@@ -1,106 +1,13 @@
 {
   "relics": [
-    {
-      "id": "calibrated_lamp",
-      "name": "校准手电",
-      "nameEn": "Tuned Flashlight",
-      "description": "每场战斗开始时获得 3 点格挡。",
-      "descriptionEn": "Gain 3 block at the start of each battle.",
-      "rarity": "common",
-      "effects": [
-        { "type": "battle_start_block", "value": 3 }
-      ]
-    },
-    {
-      "id": "safety_tether",
-      "name": "被单绳",
-      "nameEn": "Bedsheet Rope",
-      "description": "触发吓人机关时受到的伤害降低 3 点。",
-      "descriptionEn": "Scary trap damage is reduced by 3.",
-      "rarity": "common",
-      "effects": [
-        { "type": "trap_damage_reduction", "value": 3 }
-      ]
-    },
-    {
-      "id": "ore_charm",
-      "name": "幸运纽扣",
-      "nameEn": "Lucky Button",
-      "description": "战斗奖励的纽扣提高 20%。",
-      "descriptionEn": "Battle reward buttons are increased by 20%.",
-      "rarity": "common",
-      "effects": [
-        { "type": "reward_shards_percent", "value": 20 }
-      ]
-    },
-    {
-      "id": "survey_lens",
-      "name": "玻璃弹珠镜",
-      "nameEn": "Marble Lens",
-      "description": "战斗奖励多出现 1 张卡牌选择。进入房间棋盘时预览 1 个隐藏格。",
-      "descriptionEn": "Card rewards offer 1 additional card. Preview 1 hidden tile when entering room boards.",
-      "rarity": "common",
-      "effects": [
-        { "type": "reward_card_bonus", "value": 1 },
-        { "type": "mine_start_preview", "value": 1 }
-      ]
-    },
-    {
-      "id": "old_miner_tag",
-      "name": "旧姓名牌",
-      "nameEn": "Old Name Tag",
-      "description": "每场战斗胜利后额外降低 1 点声响。",
-      "descriptionEn": "After each battle victory, reduce noise by 1 additional point.",
-      "rarity": "common",
-      "effects": [
-        { "type": "post_battle_fog_reduction", "value": 1 }
-      ]
-    },
-    {
-      "id": "skull_compass",
-      "name": "玩具骷髅罗盘",
-      "nameEn": "Toy Skull Compass",
-      "description": "每场战斗开始时额外抽 1 张牌。",
-      "descriptionEn": "Draw 1 extra card at the start of each battle.",
-      "rarity": "uncommon",
-      "effects": [
-        { "type": "battle_start_draw", "value": 1 }
-      ]
-    },
-    {
-      "id": "ember_cell",
-      "name": "余光电池",
-      "nameEn": "Glow Battery",
-      "description": "每场战斗第一回合获得 1 点额外能量。",
-      "descriptionEn": "Gain 1 extra energy on the first turn of each battle.",
-      "rarity": "uncommon",
-      "effects": [
-        { "type": "battle_start_energy", "value": 1 }
-      ]
-    },
-    {
-      "id": "deep_pouch",
-      "name": "深夜口袋",
-      "nameEn": "Midnight Pocket",
-      "description": "手电电量上限提高 15，战斗后恢复 4 点手电电量。",
-      "descriptionEn": "Max flashlight battery +15. Restore 4 battery after battles.",
-      "rarity": "uncommon",
-      "effects": [
-        { "type": "max_lamp", "value": 15 },
-        { "type": "post_battle_lamp", "value": 4 }
-      ]
-    },
-    {
-      "id": "black_lantern",
-      "name": "黑焰夜灯",
-      "nameEn": "Black Night-Light",
-      "description": "每场战斗开始时额外抽 1 张牌并获得 1 点能量。",
-      "descriptionEn": "At battle start, draw 1 extra card and gain 1 energy.",
-      "rarity": "rare",
-      "effects": [
-        { "type": "battle_start_draw", "value": 1 },
-        { "type": "battle_start_energy", "value": 1 }
-      ]
-    }
+    { "id": "calibrated_lamp", "name": "调好的手电", "nameEn": "Tuned Flashlight", "description": "每场战斗开始时获得 3 点格挡。", "descriptionEn": "Gain 3 block at the start of each battle.", "rarity": "common", "effects": [ { "type": "battle_start_block", "value": 3 } ] },
+    { "id": "safety_tether", "name": "床单绳", "nameEn": "Bedsheet Rope", "description": "吓人机关造成的伤害降低 3 点。", "descriptionEn": "Scary trap damage is reduced by 3.", "rarity": "common", "effects": [ { "type": "trap_damage_reduction", "value": 3 } ] },
+    { "id": "ore_charm", "name": "幸运纽扣", "nameEn": "Lucky Button", "description": "战斗奖励纽扣提高 20%。", "descriptionEn": "Battle reward buttons are increased by 20%.", "rarity": "common", "effects": [ { "type": "reward_shards_percent", "value": 20 } ] },
+    { "id": "survey_lens", "name": "玻璃弹珠镜", "nameEn": "Marble Lens", "description": "卡牌奖励多出现 1 张选择。进入房间棋盘时预览 1 个隐藏格。", "descriptionEn": "Card rewards offer 1 additional card. Preview 1 hidden tile when entering room boards.", "rarity": "common", "effects": [ { "type": "reward_card_bonus", "value": 1 }, { "type": "mine_start_preview", "value": 1 } ] },
+    { "id": "old_miner_tag", "name": "旧姓名牌", "nameEn": "Old Name Tag", "description": "每场战斗胜利后额外降低 1 点声响。", "descriptionEn": "After each battle victory, reduce noise by 1 additional point.", "rarity": "common", "effects": [ { "type": "post_battle_fog_reduction", "value": 1 } ] },
+    { "id": "skull_compass", "name": "玩具骷髅罗盘", "nameEn": "Toy Skull Compass", "description": "每场战斗开始时额外抽 1 张牌。", "descriptionEn": "Draw 1 extra card at the start of each battle.", "rarity": "uncommon", "effects": [ { "type": "battle_start_draw", "value": 1 } ] },
+    { "id": "ember_cell", "name": "余光电池", "nameEn": "Glow Battery", "description": "每场战斗第一回合获得 1 点额外能量。", "descriptionEn": "Gain 1 extra energy on the first turn of each battle.", "rarity": "uncommon", "effects": [ { "type": "battle_start_energy", "value": 1 } ] },
+    { "id": "deep_pouch", "name": "午夜口袋", "nameEn": "Midnight Pocket", "description": "手电电量上限提高 15，战斗后恢复 4 点手电电量。", "descriptionEn": "Max flashlight battery +15. Restore 4 battery after battles.", "rarity": "uncommon", "effects": [ { "type": "max_lamp", "value": 15 }, { "type": "post_battle_lamp", "value": 4 } ] },
+    { "id": "black_lantern", "name": "黑焦夜灯", "nameEn": "Black Night-Light", "description": "每场战斗开始时额外抽 1 张牌并获得 1 点能量。", "descriptionEn": "At battle start, draw 1 extra card and gain 1 energy.", "rarity": "rare", "effects": [ { "type": "battle_start_draw", "value": 1 }, { "type": "battle_start_energy", "value": 1 } ] }
   ]
 }

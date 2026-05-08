@@ -35,11 +35,12 @@ public partial class RunEngine : Node
 
     public void StartRun(GameData gameData)
     {
-        StartRun(gameData, GameSession.SelectedCharacterId);
+        StartRun(gameData, GameSession.GetPlayableCharacterId(gameData, GameSession.SelectedCharacterId, false));
     }
 
     public void StartRun(GameData gameData, string characterId)
     {
+        characterId = GameSession.GetPlayableCharacterId(gameData, characterId, false);
         var character = gameData.GetCharacter(characterId);
         CharacterId = character.Id;
         PlayerMaxHp = character.MaxHp;
@@ -71,12 +72,13 @@ public partial class RunEngine : Node
         SelectObjective(gameData);
 
         Log.Clear();
-        Log.Add("你点亮矿灯，进入迷雾矿井。");
+        Log.Add("你打开手电，钻进床下的地下空间。");
     }
 
     public void LoadFromSave(GameData gameData, RunSaveData saveData)
     {
-        StartRun(gameData, string.IsNullOrWhiteSpace(saveData.CharacterId) ? GameSession.SelectedCharacterId : saveData.CharacterId);
+        var characterId = string.IsNullOrWhiteSpace(saveData.CharacterId) ? GameSession.SelectedCharacterId : saveData.CharacterId;
+        StartRun(gameData, GameSession.GetPlayableCharacterId(gameData, characterId, false));
         RunSeed = saveData.RunSeed > 0 ? saveData.RunSeed : Random.Shared.Next(1, int.MaxValue);
         PlayerHp = Math.Clamp(saveData.PlayerHp, 0, saveData.PlayerMaxHp);
         PlayerMaxHp = Math.Max(1, saveData.PlayerMaxHp);
@@ -127,7 +129,7 @@ public partial class RunEngine : Node
 
         Log.Clear();
         Log.AddRange(saveData.Log);
-        Log.Add("读取存档，矿灯重新亮起。");
+        Log.Add("读取存档，手电重新亮起。");
     }
 
     public bool HasNextLayer()
@@ -203,7 +205,7 @@ public partial class RunEngine : Node
         Minefield = MinefieldState.Create(config, seed);
         var dangerCount = config.Monsters + config.Traps;
         ApplyMineStartPreview(gameData, seed);
-        Log.Add($"开始探勘：{config.Width}x{config.Height} 矿区，疑似雷区 {dangerCount} 处。");
+        Log.Add($"开始探索：{config.Width}x{config.Height} 房间棋盘，可疑危险 {dangerCount} 处。");
     }
 
     private void ApplyMineStartPreview(GameData? gameData, int seed)
@@ -222,7 +224,7 @@ public partial class RunEngine : Node
         var previewed = Minefield.PreviewRandomCells(previewCount, HashCode.Combine(seed, "preview"));
         if (previewed > 0)
         {
-            Log.Add($"Survey effect: previewed {previewed} hidden tiles.");
+            Log.Add($"探索效果：提前看清了 {previewed} 个隐藏格子。");
         }
     }
 
@@ -237,7 +239,7 @@ public partial class RunEngine : Node
         if (result == MineRevealResult.Monster)
         {
             FogPressure++;
-            Log.Add("惊动矿穴怪物，战斗开始。");
+            Log.Add("惊动房间里的怪东西，战斗开始。");
         }
         else if (result == MineRevealResult.Trap)
         {
@@ -249,17 +251,17 @@ public partial class RunEngine : Node
 
             PlayerHp = Math.Max(0, PlayerHp - trapDamage);
             FogPressure++;
-            Log.Add($"触发陷阱，失去 {trapDamage} 点生命。");
+            Log.Add($"触发陷阱，失去 {trapDamage} 点勇气。");
         }
         else if (result == MineRevealResult.Treasure)
         {
             Shards += 18;
-            Log.Add("打开宝箱，获得 18 矿晶。");
+            Log.Add("打开宝箱，获得 18 枚纽扣。");
         }
         else if (result == MineRevealResult.Ore)
         {
             Shards += 8;
-            Log.Add("采集矿石，获得 8 矿晶。");
+            Log.Add("找到闪亮纽扣，获得 8 枚纽扣。");
         }
         else if (result == MineRevealResult.Exit)
         {
@@ -272,7 +274,7 @@ public partial class RunEngine : Node
             MinesCleared++;
             Score += 18 + Minefield.RewardShards;
             ReduceFogPressure(1);
-            Log.Add($"矿区清理完成，获得 {Minefield.RewardShards} 矿晶。");
+            Log.Add($"房间清理完成，获得 {Minefield.RewardShards} 枚纽扣。");
         }
 
         return result;
@@ -293,7 +295,7 @@ public partial class RunEngine : Node
         if (item.UseMode == "instant_heal")
         {
             Heal(item.Value);
-            Log.Add($"使用 {item.DisplayName()}，恢复 {item.Value} 点生命。");
+            Log.Add($"使用 {item.DisplayName()}，恢复 {item.Value} 点勇气。");
             return true;
         }
 
@@ -309,7 +311,7 @@ public partial class RunEngine : Node
 
         if (!Minefield.CanPreview(index))
         {
-            Log.Add("这个矿格不需要探测。");
+            Log.Add("这个房间格子不需要探测。");
             return false;
         }
 
@@ -325,7 +327,7 @@ public partial class RunEngine : Node
             Log.Add($"Smoke marker locked a dangerous tile: {result}.");
             return true;
         }
-        Log.Add($"探测灯照亮目标：{result}。");
+        Log.Add($"探测手电照亮目标：{result}。");
         return true;
     }
 
@@ -348,7 +350,7 @@ public partial class RunEngine : Node
         Shards += shardReward;
         ReduceFogPressure(1);
         ApplyMineBattlePostEffects(gameData);
-        Log.Add("矿穴怪物被击退，你获得一些矿晶并继续探勘。");
+        Log.Add("房间里的怪东西被击退，你获得一些纽扣并继续探索。");
     }
 
     private void ApplyMineBattlePostEffects(GameData? gameData)
@@ -423,7 +425,7 @@ public partial class RunEngine : Node
 
         Relics.Add(relic.Id);
         ApplyImmediateRelicEffects(relic);
-        Log.Add($"遗物入手：{relic.DisplayName()} - {relic.DisplayDescription()}");
+        Log.Add($"纪念物入手：{relic.DisplayName()} - {relic.DisplayDescription()}");
         return true;
     }
 
@@ -443,52 +445,65 @@ public partial class RunEngine : Node
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气，加入卡牌 {chosenCard.DisplayName()}。");
         }
         else
         {
-            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {reward.Heal} 点勇气。");
         }
     }
 
     public void ApplyRewardWithRelic(RewardData reward, CardData? chosenCard, RelicData? chosenRelic, GameData gameData, int bonusPercent = 0)
     {
+        ApplyRewardPackage(reward, chosenCard, chosenRelic, gameData, bonusPercent);
+    }
+
+    public void ApplyRewardPackage(RewardData reward, CardData? chosenCard, RelicData? chosenRelic, GameData gameData, int bonusPercent = 0, int bonusShards = 0, int bonusHeal = 0, string itemId = "", int itemCount = 0)
+    {
         var totalBonusPercent = Math.Max(0, bonusPercent) + GetRunEffectValue(gameData, "reward_shards_percent");
-        var shardReward = reward.Shards + (reward.Shards * totalBonusPercent / 100);
+        var baseShards = reward.Shards + Math.Max(0, bonusShards);
+        var healReward = reward.Heal + Math.Max(0, bonusHeal);
+        var shardReward = baseShards + (baseShards * totalBonusPercent / 100);
         BattlesWon++;
         Score += 25 + shardReward + totalBonusPercent;
         Shards += shardReward;
-        Heal(reward.Heal);
+        Heal(healReward);
 
         if (chosenCard != null)
         {
             PlayerDeck.Add(chosenCard);
-            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，加入卡牌 {chosenCard.DisplayName()}。");
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {healReward} 点勇气，加入卡牌 {chosenCard.DisplayName()}。");
         }
 
         if (chosenRelic != null)
         {
             AddRelic(chosenRelic);
-            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点，并带走遗物 {chosenRelic.DisplayName()}。");
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {healReward} 点勇气，并带走纪念物 {chosenRelic.DisplayName()}。");
         }
 
-        if (chosenCard == null && chosenRelic == null)
+        if (!string.IsNullOrWhiteSpace(itemId))
         {
-            Log.Add($"战利品：获得 {shardReward} 矿晶，治疗 {reward.Heal} 点。");
+            AddItem(itemId, Math.Max(1, itemCount));
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {healReward} 点勇气，并获得道具 {gameData.GetItem(itemId).DisplayName()} x{Math.Max(1, itemCount)}。");
+        }
+
+        if (chosenCard == null && chosenRelic == null && string.IsNullOrWhiteSpace(itemId))
+        {
+            Log.Add($"战利品：获得 {shardReward} 枚纽扣，恢复 {healReward} 点勇气。");
         }
 
         var lampRestore = GetRunEffectValue(gameData, "post_battle_lamp");
         if (lampRestore > 0)
         {
             RestoreLamp(lampRestore);
-            Log.Add($"遗物效果：战斗后恢复 {lampRestore} 点灯油。");
+            Log.Add($"纪念物效果：战斗后恢复 {lampRestore} 点手电电量。");
         }
         ReduceFogPressure(1);
         var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
         if (fogReduction > 0)
         {
             ReduceFogPressure(fogReduction);
-            Log.Add($"Battle reward effect: fog pressure -{fogReduction}.");
+            Log.Add($"战斗奖励效果：声响 -{fogReduction}。");
         }
     }
 
@@ -496,19 +511,19 @@ public partial class RunEngine : Node
     {
         if (HasRelic(relic.Id))
         {
-            Log.Add($"已经拥有遗物 {relic.DisplayName()}。");
+            Log.Add($"已经拥有纪念物 {relic.DisplayName()}。");
             return false;
         }
 
         if (Shards < cost)
         {
-            Log.Add($"矿晶不足，无法购买遗物 {relic.DisplayName()}。");
+            Log.Add($"纽扣不足，无法交换纪念物 {relic.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         AddRelic(relic);
-        Log.Add($"花费 {cost} 矿晶购买遗物 {relic.DisplayName()}。");
+        Log.Add($"花费 {cost} 枚纽扣交换纪念物 {relic.DisplayName()}。");
         return true;
     }
 
@@ -516,13 +531,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add($"矿晶不足，无法购买 {card.DisplayName()}。");
+            Log.Add($"纽扣不足，无法购买 {card.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         PlayerDeck.Add(card);
-        Log.Add($"花费 {cost} 矿晶购买 {card.DisplayName()}。");
+        Log.Add($"花费 {cost} 枚纽扣购买 {card.DisplayName()}。");
         return true;
     }
 
@@ -542,7 +557,7 @@ public partial class RunEngine : Node
 
         if (Shards < cost)
         {
-            Log.Add($"矿晶不足，无法升级 {card.DisplayName()}。");
+            Log.Add($"纽扣不足，无法升级 {card.DisplayName()}。");
             return false;
         }
 
@@ -562,7 +577,7 @@ public partial class RunEngine : Node
 
         if (Shards < cost)
         {
-            Log.Add("矿晶不足，无法精简牌组。");
+            Log.Add("纽扣不足，无法精简牌组。");
             return false;
         }
 
@@ -577,13 +592,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add("矿晶不足，无法购买治疗。");
+            Log.Add("纽扣不足，无法交换零食。");
             return false;
         }
 
         Shards -= cost;
         Heal(amount);
-        Log.Add($"花费 {cost} 矿晶修理装备，恢复 {amount} 点生命。");
+        Log.Add($"花费 {cost} 枚纽扣交换零食，恢复 {amount} 点勇气。");
         return true;
     }
 
@@ -591,13 +606,13 @@ public partial class RunEngine : Node
     {
         if (Shards < cost)
         {
-            Log.Add($"Not enough shards to buy {item.DisplayName()}.");
+            Log.Add($"纽扣不足，无法交换 {item.DisplayName()}。");
             return false;
         }
 
         Shards -= cost;
         AddItem(item.Id, Math.Max(1, count));
-        Log.Add($"Bought {item.DisplayName()} x{Math.Max(1, count)} for {cost} shards.");
+        Log.Add($"花费 {cost} 枚纽扣交换 {item.DisplayName()} x{Math.Max(1, count)}。");
         return true;
     }
 
@@ -607,21 +622,21 @@ public partial class RunEngine : Node
         Shards += gained;
         if (gained > 0)
         {
-            Log.Add($"{reason}: gained {gained} shards.");
+            Log.Add($"{reason}: 获得 {gained} 枚纽扣。");
         }
     }
 
     public void AddCardReward(CardData card, string reason)
     {
         PlayerDeck.Add(card);
-        Log.Add($"{reason}: added {card.DisplayName()} to the deck.");
+        Log.Add($"{reason}: 将 {card.DisplayName()} 加入牌组。");
     }
 
     public void AddItemReward(ItemData item, int count, string reason)
     {
         var gained = Math.Max(1, count);
         AddItem(item.Id, gained);
-        Log.Add($"{reason}: gained {item.DisplayName()} x{gained}.");
+        Log.Add($"{reason}: 获得 {item.DisplayName()} x{gained}。");
     }
 
     public void ApplyCalibrationOutcome(int shards, int oil, int fogReduction, int heal, string cardId, int damage, int fogGain, GameData gameData)
@@ -651,10 +666,10 @@ public partial class RunEngine : Node
         }
 
         Score += Math.Max(0, shards / 2 + oil + fogReduction * 6 + heal);
-        Log.Add($"灯阵校准完成：矿晶 +{Math.Max(0, shards)}，灯油 +{Math.Max(0, oil)}，雾压 -{Math.Max(0, fogReduction)}，治疗 +{Math.Max(0, heal)}。");
+        Log.Add($"机关调整完成：纽扣 +{Math.Max(0, shards)}，手电 +{Math.Max(0, oil)}，声响 -{Math.Max(0, fogReduction)}，勇气 +{Math.Max(0, heal)}。");
         if (damage > 0 || fogGain > 0)
         {
-            Log.Add($"校准震荡：生命 -{damage}，雾压 +{fogGain}。");
+            Log.Add($"机关震荡：勇气 -{damage}，声响 +{fogGain}。");
         }
     }
 
@@ -690,7 +705,7 @@ public partial class RunEngine : Node
             {
                 AddRelic(gameData.GetRelic("calibrated_lamp"));
             }
-            Log.Add("你校准矿灯并整理矿石，获得 12 矿晶、18 灯油和遗物：校准矿灯。");
+            Log.Add("你整理手电和背包，获得 12 枚纽扣、18 点手电电量和纪念物：调好的手电。");
             return;
         }
 
@@ -698,7 +713,7 @@ public partial class RunEngine : Node
         {
             RestoreLamp(25);
             ReduceFogPressure(3);
-            Log.Add("You recalibrated the lamp beam: oil +25, fog pressure -3.");
+            Log.Add("你检查了手电光束：手电 +25，声响 -3。");
             return;
         }
 
@@ -706,7 +721,7 @@ public partial class RunEngine : Node
         Heal(amount);
         RestoreLamp(10);
         ReduceFogPressure(2);
-        Log.Add($"你在废弃升降机旁短暂休整，恢复 {amount} 点生命和 10 灯油。");
+        Log.Add($"你在旧木箱旁短暂休整，恢复 {amount} 点勇气和 10 点手电电量。");
     }
 
     public int CalculateMetaEmbers(bool victory)
@@ -1227,14 +1242,14 @@ public partial class RunEngine : Node
 
         if (LampOil >= 0)
         {
-            Log.Add($"矿灯消耗 {lampCost}。剩余灯油 {LampOil}/{MaxLampOil}。");
+            Log.Add($"手电消耗 {lampCost}。剩余电量 {LampOil}/{MaxLampOil}。");
             return;
         }
 
         var damage = Math.Min(Math.Max(0, PlayerHp - 1), Math.Abs(LampOil) + FogPressure);
         PlayerHp = Math.Max(1, PlayerHp - damage);
         LampOil = 0;
-        Log.Add($"灯油见底，雾压造成 {damage} 点伤害。雾压 {FogPressure}。");
+        Log.Add($"手电没电，声响造成 {damage} 点惊吓伤害。声响 {FogPressure}。");
     }
 
     private void RestoreLamp(int amount)
@@ -1248,14 +1263,14 @@ public partial class RunEngine : Node
         if (lampRestore > 0)
         {
             RestoreLamp(lampRestore);
-            Log.Add($"Post-battle effect: oil +{lampRestore}.");
+            Log.Add($"战斗后效果：手电 +{lampRestore}。");
         }
 
         var fogReduction = GetRunEffectValue(gameData, "post_battle_fog_reduction");
         if (fogReduction > 0)
         {
             ReduceFogPressure(fogReduction);
-            Log.Add($"Post-battle effect: fog pressure -{fogReduction}.");
+            Log.Add($"战斗后效果：声响 -{fogReduction}。");
         }
     }
 }
@@ -1445,7 +1460,7 @@ public class MinefieldState
             MineTileType.Monster => "怪物",
             MineTileType.Trap => "陷阱",
             MineTileType.Treasure => "宝箱",
-            MineTileType.Ore => "矿石",
+            MineTileType.Ore => "纽扣",
             _ => "未知"
         };
     }

@@ -2,19 +2,10 @@
   "items": [
     {
       "id": "probe_lamp",
-      "name": "窥探小灯",
-      "nameEn": "Peek Light",
-      "description": "选择一个隐藏房间格，显示内容但不触发。",
-      "descriptionEn": "Choose a hidden room tile to preview its content without triggering it.",
-      "useMode": "target_tile",
-      "value": 1
-    },
-    {
-      "id": "smoke_marker",
-      "name": "贴纸烟雾",
-      "nameEn": "Sticker Smoke",
-      "description": "预览一个可疑房间格，适合高风险探索。",
-      "descriptionEn": "Preview a suspicious room tile, useful on higher-risk boards.",
+      "name": "探测手电",
+      "nameEn": "Probe Flashlight",
+      "description": "预览一个隐藏房间格。",
+      "descriptionEn": "Preview one hidden room tile.",
       "useMode": "target_tile",
       "value": 1
     },
@@ -28,13 +19,22 @@
       "value": 12
     },
     {
-      "id": "crystal_tonic",
-      "name": "糖水汽水",
-      "nameEn": "Fizzy Tonic",
+      "id": "big_bandage",
+      "name": "大号创可贴",
+      "nameEn": "Big Bandage",
       "description": "立即恢复 20 点勇气。",
       "descriptionEn": "Immediately restore 20 courage.",
       "useMode": "instant_heal",
       "value": 20
+    },
+    {
+      "id": "smoke_marker",
+      "name": "烟雾贴纸",
+      "nameEn": "Smoke Sticker",
+      "description": "预览一个隐藏格；若为危险格会自动标记。",
+      "descriptionEn": "Preview a hidden tile; dangerous tiles are flagged automatically.",
+      "useMode": "target_tile",
+      "value": 1
     }
   ]
 }

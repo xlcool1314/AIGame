@@ -448,13 +448,13 @@ public partial class BattleEngine : Node
                     if (fromPlayer)
                     {
                         PlayerHp = Math.Min(PlayerMaxHp, PlayerHp + Math.Max(0, action.Value));
-                        Log.Add(L($"{source} 恢复 {action.Value} 点生命。", $"{source} restores {action.Value} courage."));
+                        Log.Add(L($"{source} 恢复 {action.Value} 点勇气。", $"{source} restores {action.Value} courage."));
                     }
                     else if (targetEnemy != null && targetEnemy.IsAlive)
                     {
                         var heal = ScaleEnemyValue(targetEnemy, action.Value, "heal");
                         targetEnemy.Hp = Math.Min(targetEnemy.MaxHp, targetEnemy.Hp + Math.Max(0, heal));
-                        Log.Add(L($"{source} 恢复 {heal} 点生命。", $"{source} restores {heal} HP."));
+                        Log.Add(L($"{source} 恢复 {heal} 点勇气。", $"{source} restores {heal} courage."));
                     }
                     break;
                 case "energy":
@@ -469,7 +469,7 @@ public partial class BattleEngine : Node
                     {
                         var selfDamage = Math.Max(0, action.Value - _selfDamageReduction);
                         PlayerHp = Math.Max(1, PlayerHp - selfDamage);
-                        Log.Add(L($"{source} 反噬，失去 {selfDamage} 点生命。", $"{source} backfires. Lose {selfDamage} courage."));
+                        Log.Add(L($"{source} 反噬，失去 {selfDamage} 点勇气。", $"{source} backfires. Lose {selfDamage} courage."));
                     }
                     break;
                 case "weak":
@@ -523,7 +523,7 @@ public partial class BattleEngine : Node
         targetEnemy.Block = block;
         targetEnemy.Hp -= damage;
         AddEnemyStagger(targetEnemy, Math.Max(1, damage));
-        Log.Add(L($"{source} 对 {targetEnemy.Data.DisplayName()} 造成 {damage} 点伤害。目标生命 {Math.Max(targetEnemy.Hp, 0)}", $"{source} deals {damage} damage to {targetEnemy.Data.DisplayName()}. Target HP {Math.Max(targetEnemy.Hp, 0)}."));
+        Log.Add(L($"{source} 对 {targetEnemy.Data.DisplayName()} 造成 {damage} 点伤害。目标勇气 {Math.Max(targetEnemy.Hp, 0)}", $"{source} deals {damage} damage to {targetEnemy.Data.DisplayName()}. Target courage {Math.Max(targetEnemy.Hp, 0)}."));
         if (targetEnemy.Hp <= 0)
         {
             targetEnemy.Block = 0;
@@ -567,7 +567,7 @@ public partial class BattleEngine : Node
         var damage = ResolveDamage(incoming, ref playerBlock);
         PlayerBlock = playerBlock;
         PlayerHp -= damage;
-        Log.Add(L($"{source} 对你造成 {damage} 点伤害。玩家生命 {Math.Max(PlayerHp, 0)}", $"{source} deals {damage} damage to you. Player HP {Math.Max(PlayerHp, 0)}."));
+        Log.Add(L($"{source} 对你造成 {damage} 点惊吓伤害。玩家勇气 {Math.Max(PlayerHp, 0)}", $"{source} deals {damage} scare damage to you. Player courage {Math.Max(PlayerHp, 0)}."));
     }
 
     private void ApplyEnemyStatus(string source, BattleEnemyState? targetEnemy, string status, int duration)

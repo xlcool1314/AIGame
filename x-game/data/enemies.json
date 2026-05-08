@@ -30,114 +30,67 @@
       "maxHp": 30,
       "intents": [
         { "name": "吸走光点", "nameEn": "Sip Light", "actions": [ { "type": "damage", "value": 5 }, { "type": "weak", "duration": 1 } ] },
-        { "name": "躲进影子", "nameEn": "Hide in Shadow", "actions": [ { "type": "block", "value": 9 } ] }
-      ]
-    },
-    {
-      "id": "dust_bunny",
-      "name": "灰尘兔",
-      "nameEn": "Dust Bunny",
-      "artPath": "res://art/placeholders/enemies/slime.svg",
-      "maxHp": 38,
-      "intents": [
-        { "name": "扑面灰云", "nameEn": "Dust Cloud", "actions": [ { "type": "damage", "value": 5 }, { "type": "weak", "duration": 1 } ] },
-        { "name": "蜷缩成团", "nameEn": "Roll Into a Ball", "actions": [ { "type": "block", "value": 8 } ] },
-        { "name": "软绵绵撞击", "nameEn": "Soft Bounce", "actions": [ { "type": "damage", "value": 4 } ] }
+        { "name": "藏进阴影", "nameEn": "Hide in Shadow", "actions": [ { "type": "block", "value": 8 } ] }
       ]
     },
     {
       "id": "ore_leecher",
-      "name": "橡皮泥贪吃鬼",
-      "nameEn": "Putty Nibbler",
+      "name": "纽扣吸附者",
+      "nameEn": "Button Leecher",
       "artPath": "res://art/placeholders/enemies/leecher.svg",
-      "maxHp": 48,
+      "maxHp": 56,
       "intents": [
-        { "name": "黏上来", "nameEn": "Latch On", "actions": [ { "type": "damage", "value": 8 } ] },
-        { "name": "吞下糖纸", "nameEn": "Candy Wrapper Snack", "actions": [ { "type": "heal", "value": 6 }, { "type": "block", "value": 4 } ] }
-      ]
-    },
-    {
-      "id": "jack_in_box",
-      "name": "弹跳惊吓盒",
-      "nameEn": "Jack-in-the-Box",
-      "artPath": "res://art/placeholders/enemies/bat.svg",
-      "maxHp": 44,
-      "intents": [
-        { "name": "突然弹出", "nameEn": "Pop Out", "actions": [ { "type": "damage", "value": 10 } ] },
-        { "name": "缩回盒里", "nameEn": "Hide in Box", "actions": [ { "type": "block", "value": 10 } ] },
-        { "name": "弹簧连打", "nameEn": "Spring Combo", "actions": [ { "type": "damage", "value": 5 }, { "type": "damage", "value": 5 } ] }
-      ]
-    },
-    {
-      "id": "crystal_guard",
-      "name": "玻璃眼守卫",
-      "nameEn": "Glass-Eye Guard",
-      "artPath": "res://art/placeholders/enemies/guard.svg",
-      "maxHp": 58,
-      "intents": [
-        { "name": "扫动大眼", "nameEn": "Glass Sweep", "actions": [ { "type": "damage", "value": 8 } ] },
-        { "name": "合上眼皮", "nameEn": "Shut the Lid", "actions": [ { "type": "block", "value": 12 } ] },
-        { "name": "反扑一跳", "nameEn": "Startle Counter", "actions": [ { "type": "damage", "value": 6 }, { "type": "block", "value": 6 } ] }
+        { "name": "咬住口袋", "nameEn": "Pocket Bite", "actions": [ { "type": "damage", "value": 9 } ] },
+        { "name": "黏住脚踝", "nameEn": "Sticky Snare", "actions": [ { "type": "damage", "value": 5 }, { "type": "vulnerable", "duration": 1 } ] },
+        { "name": "鼓起外壳", "nameEn": "Puff Shell", "actions": [ { "type": "block", "value": 10 } ] }
       ]
     },
     {
       "id": "spore_mason",
-      "name": "蘑菇木匠",
-      "nameEn": "Mushroom Mason",
+      "name": "积木泥匠",
+      "nameEn": "Block Mason",
       "artPath": "res://art/placeholders/enemies/mason.svg",
-      "maxHp": 52,
+      "maxHp": 64,
       "intents": [
-        { "name": "撒出痒痒粉", "nameEn": "Itchy Dust", "actions": [ { "type": "weak", "duration": 2 }, { "type": "damage", "value": 4 } ] },
-        { "name": "搭起蘑菇墙", "nameEn": "Build Mushroom Wall", "actions": [ { "type": "block", "value": 14 } ] },
-        { "name": "木槌敲击", "nameEn": "Toy Hammer", "actions": [ { "type": "damage", "value": 11 } ] }
+        { "name": "堆起小墙", "nameEn": "Stack a Wall", "actions": [ { "type": "block", "value": 12 } ] },
+        { "name": "丢出积木", "nameEn": "Throw Blocks", "actions": [ { "type": "damage", "value": 10 } ] },
+        { "name": "绊脚陷阱", "nameEn": "Trip Trap", "actions": [ { "type": "damage", "value": 6 }, { "type": "weak", "duration": 1 } ] }
       ]
     },
     {
-      "id": "windup_soldier",
-      "name": "发条士兵",
-      "nameEn": "Wind-Up Soldier",
+      "id": "crystal_guard",
+      "name": "玻璃弹珠守卫",
+      "nameEn": "Marble Guard",
       "artPath": "res://art/placeholders/enemies/guard.svg",
-      "maxHp": 60,
+      "maxHp": 92,
       "intents": [
-        { "name": "行军踩踏", "nameEn": "March Stomp", "actions": [ { "type": "damage", "value": 9 } ] },
-        { "name": "举盾防御", "nameEn": "Shield Guard", "actions": [ { "type": "block", "value": 11 } ] },
-        { "name": "发条冲锋", "nameEn": "Clockwork Charge", "actions": [ { "type": "damage", "value": 7 }, { "type": "block", "value": 5 } ] }
+        { "name": "滚动冲撞", "nameEn": "Rolling Ram", "actions": [ { "type": "damage", "value": 14 } ] },
+        { "name": "折射护盾", "nameEn": "Refracted Shield", "actions": [ { "type": "block", "value": 16 } ] },
+        { "name": "刺眼闪光", "nameEn": "Dazzle", "actions": [ { "type": "damage", "value": 8 }, { "type": "weak", "duration": 2 } ] }
       ]
     },
     {
       "id": "mine_overseer",
-      "name": "小屋管家",
-      "nameEn": "House Butler",
+      "name": "床下监管者",
+      "nameEn": "Underbed Overseer",
       "artPath": "res://art/placeholders/enemies/overseer.svg",
-      "maxHp": 72,
+      "maxHp": 112,
       "intents": [
-        { "name": "巡夜重击", "nameEn": "Night Patrol Smash", "actions": [ { "type": "damage", "value": 10 } ] },
-        { "name": "举起托盘", "nameEn": "Tray Guard", "actions": [ { "type": "block", "value": 12 } ] },
-        { "name": "连环训话", "nameEn": "Scolding Combo", "actions": [ { "type": "damage", "value": 5 }, { "type": "damage", "value": 5 } ] }
-      ]
-    },
-    {
-      "id": "shadow_cloak",
-      "name": "影子斗篷",
-      "nameEn": "Shadow Cloak",
-      "artPath": "res://art/placeholders/enemies/fog_core.svg",
-      "maxHp": 65,
-      "intents": [
-        { "name": "黑暗缠绕", "nameEn": "Dark Embrace", "actions": [ { "type": "damage", "value": 7 }, { "type": "weak", "duration": 2 } ] },
-        { "name": "消散成雾", "nameEn": "Dissipate", "actions": [ { "type": "block", "value": 15 } ] },
-        { "name": "影袭", "nameEn": "Shadow Strike", "actions": [ { "type": "damage", "value": 12 } ] }
+        { "name": "点名检查", "nameEn": "Roll Call", "actions": [ { "type": "damage", "value": 12 }, { "type": "vulnerable", "duration": 1 } ] },
+        { "name": "阴影动员", "nameEn": "Shadow Muster", "actions": [ { "type": "block", "value": 18 } ] },
+        { "name": "长尺敲击", "nameEn": "Ruler Smack", "actions": [ { "type": "damage", "value": 18 } ] }
       ]
     },
     {
       "id": "fog_core",
-      "name": "怪奇小屋的心脏",
-      "nameEn": "Heart of the Odd House",
-      "artPath": "res://art/placeholders/enemies/fog_core.svg",
-      "maxHp": 88,
+      "name": "小屋心脏",
+      "nameEn": "House Heart",
+      "artPath": "res://art/placeholders/enemies/core.svg",
+      "maxHp": 150,
       "intents": [
-        { "name": "午夜闪光", "nameEn": "Midnight Flash", "actions": [ { "type": "damage", "value": 8 }, { "type": "weak", "duration": 1 } ] },
-        { "name": "玩具外壳", "nameEn": "Toy Casing", "actions": [ { "type": "block", "value": 16 }, { "type": "heal", "value": 5 } ] },
-        { "name": "地板震动", "nameEn": "Floorboard Tremor", "actions": [ { "type": "damage", "value": 6 }, { "type": "damage", "value": 6 }, { "type": "damage", "value": 6 } ] }
+        { "name": "心跳震荡", "nameEn": "Heartbeat Quake", "actions": [ { "type": "damage", "value": 16 } ] },
+        { "name": "召回阴影", "nameEn": "Recall Shadows", "actions": [ { "type": "block", "value": 18 }, { "type": "weak", "duration": 1 } ] },
+        { "name": "午夜压迫", "nameEn": "Midnight Crush", "actions": [ { "type": "damage", "value": 22 }, { "type": "vulnerable", "duration": 1 } ] }
       ]
     }
   ]

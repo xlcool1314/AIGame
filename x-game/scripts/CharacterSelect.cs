@@ -39,6 +39,7 @@ public partial class CharacterSelect : Control
 
         ApplyUiStyle();
         BuildLoadingOverlay();
+        _selectedCharacterId = GameSession.GetPlayableCharacterId(_gameData, GameSession.SelectedCharacterId);
         RenderCharacters();
         SelectCharacter(_selectedCharacterId);
     }
@@ -70,6 +71,7 @@ public partial class CharacterSelect : Control
 
     private void SelectCharacter(string characterId)
     {
+        characterId = GameSession.GetPlayableCharacterId(_gameData, characterId);
         _selectedCharacterId = characterId;
         var character = _gameData.GetCharacter(characterId);
         if (!SaveManager.IsUnlocked(character.UnlockId))
@@ -93,8 +95,7 @@ public partial class CharacterSelect : Control
 
     private void OnStartPressed()
     {
-        GameSession.SelectedCharacterId = _selectedCharacterId;
-        GameSession.LoadRequested = false;
+        GameSession.ResetForNewRun(_selectedCharacterId);
         ChangeSceneWithLoading(
             "res://scenes/BattleScene.tscn",
             Localization.Language == Localization.English ? "Climbing through the trapdoor..." : "钻进床下暗门……");

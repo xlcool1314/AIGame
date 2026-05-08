@@ -32,6 +32,17 @@ public static class SaveManager
         return JsonSerializer.Deserialize<RunSaveData>(json);
     }
 
+    public static bool DeleteRunSave()
+    {
+        if (!HasSave())
+        {
+            return false;
+        }
+
+        using var dir = DirAccess.Open("user://");
+        return dir != null && dir.Remove("save_run.json") == Error.Ok;
+    }
+
     public static MetaProgressData LoadMeta()
     {
         if (!FileAccess.FileExists(MetaPath))

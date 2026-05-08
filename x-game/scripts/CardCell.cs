@@ -22,7 +22,10 @@ public enum CardCellMode
 public partial class CardCell : PanelContainer
 {
 	private const string StylePath = "res://data/card_styles.json";
+	private const string CardScenePath = "res://scenes/ui/CardView.tscn";
 	private static bool _styleLoaded;
+	private static bool _cardSceneChecked;
+	private static PackedScene? _cardScene;
 	private static readonly Dictionary<string, CardStyleData> CardStyles = new();
 	private static readonly Dictionary<string, string> RarityBorders = new();
 
@@ -40,6 +43,12 @@ public partial class CardCell : PanelContainer
 	private Label _footerLabel = null!;
 	private VBoxContainer _contentLayout = null!;
 	private PanelContainer _costOrbBg = null!;
+	private TextureRect? _fullCardTexture;
+	private TextureRect? _frameTexture;
+	private TextureRect? _artworkTexture;
+	private TextureRect? _typeIconTexture;
+	private Label? _placeholderGlyph;
+	private bool _uiBuilt;
 
 	// ── Colors ────────────────────────────────────────────────
 	// Border / rarity
@@ -121,6 +130,19 @@ public partial class CardCell : PanelContainer
 	// ── Build UI ──────────────────────────────────────────────
 	private void BuildUi()
 	{
+		if (_uiBuilt)
+		{
+			return;
+		}
+
+		_uiBuilt = true;
+		MouseFilter = MouseFilterEnum.Stop;
+		if (TryBindSceneUi())
+		{
+			GuiInput += OnGuiInput;
+			return;
+		}
+
 		_contentLayout = new VBoxContainer { Name = "ContentLayout" };
 		_contentLayout.AddThemeConstantOverride("separation", 2);
 		AddChild(_contentLayout);
@@ -133,19 +155,7 @@ public partial class CardCell : PanelContainer
 		_costOrbBg = new PanelContainer { Name = "CostOrbBg" };
 		_costOrbBg.CustomMinimumSize = new Vector2(32, 32);
 		_costOrbBg.SetAnchorsPreset(Control.LayoutPreset.Center);
-		var orbStyle = new StyleBoxFlat
-		{
-			BgColor = ColorCostOrbBg,
-			CornerRadiusTopLeft = 16,
-			CornerRadiusTopRight = 16,
-			CornerRadiusBottomLeft = 16,
-			CornerRadiusBottomRight = 16,
-			ContentMarginLeft = 0,
-			ContentMarginTop = 0,
-			ContentMarginRight = 0,
-			ContentMarginBottom = 0
-		};
-		_costOrbBg.AddThemeStyleboxOverride("panel", orbStyle);
+		_costOrbBg.AddThemeStyleboxOverride("panel", BuildCostOrbStyle());
 
 		_costOrb = new Label
 		{
@@ -213,6 +223,29 @@ public partial class CardCell : PanelContainer
 
 		// Input
 		GuiInput += OnGuiInput;
+	}
+
+	private bool TryBindSceneUi()
+	{
+		var layout = GetNodeOrNull<VBoxContainer>("CardSurface/ContentMargin/ContentLayout");
+		if (layout == null)
+		{
+			return false;
+		}
+
+		_contentLayout = layout;
+		_costOrbBg = GetNode<PanelContainer>("CardSurface/ContentMargin/ContentLayout/TopRow/CostOrbBg");
+		_costOrb = GetNode<Label>("CardSurface/ContentMargin/ContentLayout/TopRow/CostOrbBg/CostOrb");
+		_nameLabel = GetNode<Label>("CardSurface/ContentMargin/ContentLayout/TopRow/CardName");
+		_descriptionLabel = GetNode<Label>("CardSurface/ContentMargin/ContentLayout/Description");
+		_typeTag = GetNode<Label>("CardSurface/ContentMargin/ContentLayout/TypeTag");
+		_footerLabel = GetNode<Label>("CardSurface/ContentMargin/ContentLayout/Footer");
+		_fullCardTexture = GetNodeOrNull<TextureRect>("CardSurface/FullCardArt");
+		_frameTexture = GetNodeOrNull<TextureRect>("CardSurface/CardFrame");
+		_artworkTexture = GetNodeOrNull<TextureRect>("CardSurface/ContentMargin/ContentLayout/ArtFrame/CardArtwork");
+		_typeIconTexture = GetNodeOrNull<TextureRect>("CardSurface/ContentMargin/ContentLayout/TopRow/TypeIcon");
+		_placeholderGlyph = GetNodeOrNull<Label>("CardSurface/ContentMargin/ContentLayout/ArtFrame/PlaceholderGlyph");
+		return true;
 	}
 
 	private void OnGuiInput(InputEvent ev)
@@ -307,6 +340,7 @@ public partial class CardCell : PanelContainer
 		}
 
 		TooltipText = $"{_card.DisplayName()} - {_card.DisplayDescription()}";
+		ApplyArtwork();
 
 		if (_mode == CardCellMode.Deck)
 			MouseDefaultCursorShape = CursorShape.Arrow;
@@ -378,15 +412,131 @@ public partial class CardCell : PanelContainer
 		var borderWidth = _card.Rarity == "rare" ? 3 : 2;
 		var panelStyle = BuildCardStyle(background, border, borderWidth);
 		AddThemeStyleboxOverride("panel", panelStyle);
+		ApplyArtwork();
 
-		// Cost orb border glow for rare
-		if (_card.Rarity == "rare" && _playable)
+		_costOrbBg.AddThemeStyleboxOverride("panel", BuildCostOrbStyle(_card.Rarity == "rare" && _playable ? ColorRare : null));
+	}
+
+	private void ApplyArtwork()
+	{
+		if (_card == null)
 		{
-			var orbBorder = (StyleBoxFlat)_costOrbBg.GetThemeStylebox("panel");
-			orbBorder.BorderColor = ColorRare;
-			orbBorder.SetBorderWidthAll(2);
-			_costOrbBg.AddThemeStyleboxOverride("panel", orbBorder);
+			return;
 		}
+
+		ApplyOptionalTexture(_fullCardTexture, ResolveFullCardPath());
+		ApplyOptionalTexture(_frameTexture, ResolveFramePath());
+		var artwork = ResolveArtworkPath();
+		ApplyOptionalTexture(_artworkTexture, artwork);
+		ApplyOptionalTexture(_typeIconTexture, ResolveIconPath());
+
+		if (_placeholderGlyph != null)
+		{
+			_placeholderGlyph.Visible = string.IsNullOrWhiteSpace(artwork);
+			_placeholderGlyph.Text = _card.Type switch
+			{
+				"attack" => "ATK",
+				"curse" => "HEX",
+				_ => "SKL"
+			};
+			_placeholderGlyph.AddThemeColorOverride("font_color", GetBorderColor().Lightened(0.28f));
+		}
+	}
+
+	private static void ApplyOptionalTexture(TextureRect? target, string path)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		var texture = UiArt.LoadTexture(path);
+		target.Texture = texture;
+		target.Visible = texture != null;
+	}
+
+	private string ResolveFullCardPath()
+	{
+		return FirstExisting(_card.FullArtPath, CandidatePaths("res://art/cards/full", _card.Id));
+	}
+
+	private string ResolveArtworkPath()
+	{
+		return FirstExisting(_card.ArtPath, CandidatePaths("res://art/cards/illustrations", _card.Id));
+	}
+
+	private string ResolveFramePath()
+	{
+		var template = string.IsNullOrWhiteSpace(_card.TemplateId) ? string.Empty : _card.TemplateId;
+		return FirstExisting(
+			_card.FramePath,
+			CandidatePaths("res://art/cards/frames", template),
+			CandidatePaths("res://art/cards/frames", $"{_card.Type}_{_card.Rarity}"),
+			CandidatePaths("res://art/cards/frames", _card.Type),
+			CandidatePaths("res://art/cards/frames", "default"));
+	}
+
+	private string ResolveIconPath()
+	{
+		return FirstExisting(
+			_card.IconPath,
+			CandidatePaths("res://art/cards/icons", _card.Id),
+			CandidatePaths("res://art/cards/icons", _card.Type),
+			CandidatePaths("res://art/cards/icons", _card.Rarity));
+	}
+
+	private static string FirstExisting(params string[][] groups)
+	{
+		foreach (var group in groups)
+		{
+			var path = FirstExistingCandidatePaths(group);
+			if (!string.IsNullOrWhiteSpace(path))
+			{
+				return path;
+			}
+		}
+
+		return string.Empty;
+	}
+
+	private static string FirstExisting(string explicitPath, params string[][] groups)
+	{
+		if (!string.IsNullOrWhiteSpace(explicitPath) && UiArt.ResourceExists(explicitPath))
+		{
+			return explicitPath;
+		}
+
+		return FirstExisting(groups);
+	}
+
+	private static string FirstExistingCandidatePaths(IEnumerable<string> candidates)
+	{
+		foreach (var path in candidates)
+		{
+			if (!string.IsNullOrWhiteSpace(path) && UiArt.ResourceExists(path))
+			{
+				return path;
+			}
+		}
+
+		return string.Empty;
+	}
+
+	private static string[] CandidatePaths(string folder, string name)
+	{
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			return Array.Empty<string>();
+		}
+
+		return new[]
+		{
+			$"{folder}/{name}.png",
+			$"{folder}/{name}.webp",
+			$"{folder}/{name}.jpg",
+			$"{folder}/{name}.jpeg",
+			$"{folder}/{name}.svg"
+		};
 	}
 
 	private Color GetBorderColor()
@@ -506,6 +656,25 @@ public partial class CardCell : PanelContainer
 		return style;
 	}
 
+	private static StyleBoxFlat BuildCostOrbStyle(Color? border = null)
+	{
+		var style = new StyleBoxFlat
+		{
+			BgColor = ColorCostOrbBg,
+			BorderColor = border ?? new Color(0, 0, 0, 0),
+			CornerRadiusTopLeft = 16,
+			CornerRadiusTopRight = 16,
+			CornerRadiusBottomLeft = 16,
+			CornerRadiusBottomRight = 16,
+			ContentMarginLeft = 0,
+			ContentMarginTop = 0,
+			ContentMarginRight = 0,
+			ContentMarginBottom = 0
+		};
+		style.SetBorderWidthAll(border.HasValue ? 2 : 0);
+		return style;
+	}
+
 	private static Color ParseColor(string? hex, Color fallback)
 	{
 		return string.IsNullOrWhiteSpace(hex) ? fallback : Color.FromHtml(hex);
@@ -557,9 +726,31 @@ public partial class CardCell : PanelContainer
 	/// </summary>
 	public static CardCell Create(CardData card, CardCellMode mode, bool playable = true, string footerText = "", int index = -1)
 	{
-		var cell = new CardCell();
+		var cell = CreateFromScene() ?? new CardCell();
 		cell.Setup(card, mode, playable, footerText, index);
 		return cell;
+	}
+
+	private static CardCell? CreateFromScene()
+	{
+		if (!_cardSceneChecked)
+		{
+			_cardSceneChecked = true;
+			if (UiArt.ResourceExists(CardScenePath))
+			{
+				try
+				{
+					_cardScene = ResourceLoader.Load<PackedScene>(CardScenePath);
+				}
+				catch (Exception error)
+				{
+					GD.PushWarning($"Card prefab load failed: {error.Message}");
+					_cardScene = null;
+				}
+			}
+		}
+
+		return _cardScene?.Instantiate<CardCell>();
 	}
 }
 

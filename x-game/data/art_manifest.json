@@ -43,5 +43,12 @@
     "ore": "",
     "entrance": "",
     "exit": ""
+  },
+  "cards": {
+    "prefab": "res://scenes/ui/CardView.tscn",
+    "illustrationDir": "res://art/cards/illustrations",
+    "fullDir": "res://art/cards/full",
+    "frameDir": "res://art/cards/frames",
+    "iconDir": "res://art/cards/icons"
   }
 }

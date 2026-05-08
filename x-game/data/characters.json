@@ -1,88 +1,88 @@
 {
   "characters": [
-    {
-      "id": "miner",
-      "name": "小小探险家",
-      "nameEn": "Little Explorer",
-      "description": "勇气最高，战斗开局获得额外格挡，踩到吓人机关时受到的惊吓更低。",
-      "descriptionEn": "High courage. Starts battles with extra block and takes less damage from scary traps.",
-      "artPath": "res://art/placeholders/characters/miner.svg",
-      "maxHp": 78,
-      "shards": 20,
-      "deckId": "starter",
-      "cardPools": [ "miner" ],
-      "startingItems": [
-        { "itemId": "probe_lamp", "count": 2 },
-        { "itemId": "bandage", "count": 1 }
-      ],
-      "effects": [
-        { "type": "battle_start_block", "value": 2 },
-        { "type": "trap_damage_reduction", "value": 1 }
-      ]
-    },
-    {
-      "id": "scout",
-      "name": "纸星侦探",
-      "nameEn": "Paper-Star Detective",
-      "description": "勇气较低，战斗开局额外抽牌，奖励中多看 1 张卡牌。",
-      "descriptionEn": "Lower courage. Draws an extra card at battle start and sees 1 more card reward.",
-      "artPath": "res://art/placeholders/characters/scout.svg",
-      "maxHp": 62,
-      "shards": 30,
-      "deckId": "scout",
-      "cardPools": [ "scout" ],
-      "startingItems": [
-        { "itemId": "probe_lamp", "count": 4 },
-        { "itemId": "bandage", "count": 1 }
-      ],
-      "effects": [
-        { "type": "battle_start_draw", "value": 1 },
-        { "type": "reward_card_bonus", "value": 1 }
-      ]
-    },
-    {
-      "id": "breaker",
-      "name": "爆竹勇士",
-      "nameEn": "Firecracker Kid",
-      "description": "进攻牌质量高，所有攻击伤害 +2，自损伤害降低 1 点。",
-      "descriptionEn": "Strong attacks. All attack damage +2 and self-damage is reduced by 1.",
-      "artPath": "res://art/placeholders/characters/breaker.svg",
-      "unlockId": "character_breaker",
-      "maxHp": 70,
-      "shards": 12,
-      "deckId": "breaker",
-      "cardPools": [ "breaker" ],
-      "startingItems": [
-        { "itemId": "bandage", "count": 1 },
-        { "itemId": "smoke_marker", "count": 1 }
-      ],
-      "effects": [
-        { "type": "player_damage_bonus", "value": 2 },
-        { "type": "self_damage_reduction", "value": 1 }
-      ]
-    },
-    {
-      "id": "engineer",
-      "name": "发明小孩",
-      "nameEn": "Tiny Inventor",
-      "description": "擅长能量和防御，每场战斗第一回合额外能量，手电电量上限更高。",
-      "descriptionEn": "Energy and defense specialist. Starts battles with extra energy and a higher flashlight battery cap.",
-      "artPath": "res://art/placeholders/characters/engineer.svg",
-      "unlockId": "character_engineer",
-      "maxHp": 68,
-      "shards": 24,
-      "deckId": "engineer",
-      "cardPools": [ "engineer" ],
-      "startingItems": [
-        { "itemId": "probe_lamp", "count": 2 },
-        { "itemId": "bandage", "count": 2 },
-        { "itemId": "smoke_marker", "count": 1 }
-      ],
-      "effects": [
-        { "type": "battle_start_energy", "value": 1 },
-        { "type": "player_block_bonus", "value": 1 },
-        { "type": "max_lamp", "value": 10 }
-      ]
-    }
+	{
+	  "id": "miner",
+	  "name": "小小探险家",
+	  "nameEn": "Little Explorer",
+	  "description": "勇气最高。战斗开局获得额外格挡，踩到吓人机关时受到的伤害更低。",
+	  "descriptionEn": "High courage. Starts battles with extra block and takes less damage from scary traps.",
+	  "artPath": "res://art/placeholders/characters/miner.svg",
+	  "maxHp": 78,
+	  "shards": 20,
+	  "deckId": "starter",
+	  "cardPools": [ "miner" ],
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 2 },
+		{ "itemId": "bandage", "count": 1 }
+	  ],
+	  "effects": [
+		{ "type": "battle_start_block", "value": 2 },
+		{ "type": "trap_damage_reduction", "value": 1 }
+	  ]
+	},
+	{
+	  "id": "scout",
+	  "name": "纸星侦探",
+	  "nameEn": "Paper-Star Detective",
+	  "description": "勇气较低。战斗开局额外抽牌，奖励中多看 1 张卡牌。",
+	  "descriptionEn": "Lower courage. Draws an extra card at battle start and sees 1 more card reward.",
+	  "artPath": "res://art/placeholders/characters/scout.svg",
+	  "maxHp": 62,
+	  "shards": 30,
+	  "deckId": "scout",
+	  "cardPools": [ "scout" ],
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 4 },
+		{ "itemId": "bandage", "count": 1 }
+	  ],
+	  "effects": [
+		{ "type": "battle_start_draw", "value": 1 },
+		{ "type": "reward_card_bonus", "value": 1 }
+	  ]
+	},
+	{
+	  "id": "breaker",
+	  "name": "爆竹勇士",
+	  "nameEn": "Firecracker Kid",
+	  "description": "进攻牌质量高。所有攻击伤害 +2，自损伤害降低 1 点。",
+	  "descriptionEn": "Strong attacks. All attack damage +2 and self-damage is reduced by 1.",
+	  "artPath": "res://art/placeholders/characters/breaker.svg",
+	  "unlockId": "character_breaker",
+	  "maxHp": 70,
+	  "shards": 12,
+	  "deckId": "breaker",
+	  "cardPools": [ "breaker" ],
+	  "startingItems": [
+		{ "itemId": "bandage", "count": 1 },
+		{ "itemId": "smoke_marker", "count": 1 }
+	  ],
+	  "effects": [
+		{ "type": "player_damage_bonus", "value": 2 },
+		{ "type": "self_damage_reduction", "value": 1 }
+	  ]
+	},
+	{
+	  "id": "engineer",
+	  "name": "发明小孩",
+	  "nameEn": "Tiny Inventor",
+	  "description": "擅长能量和防御。每场战斗第一回合额外能量，手电电量上限更高。",
+	  "descriptionEn": "Energy and defense specialist. Starts battles with extra energy and a higher flashlight battery cap.",
+	  "artPath": "res://art/placeholders/characters/engineer.svg",
+	  "unlockId": "character_engineer",
+	  "maxHp": 68,
+	  "shards": 24,
+	  "deckId": "engineer",
+	  "cardPools": [ "engineer" ],
+	  "startingItems": [
+		{ "itemId": "probe_lamp", "count": 2 },
+		{ "itemId": "bandage", "count": 2 },
+		{ "itemId": "smoke_marker", "count": 1 }
+	  ],
+	  "effects": [
+		{ "type": "battle_start_energy", "value": 1 },
+		{ "type": "player_block_bonus", "value": 1 },
+		{ "type": "max_lamp", "value": 10 }
+	  ]
+	}
   ]
 }

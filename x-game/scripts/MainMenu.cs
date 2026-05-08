@@ -7,6 +7,7 @@ public partial class MainMenu : Control
 	private Label _subtitleLabel = null!;
 	private Button _newGameButton = null!;
 	private Button _continueButton = null!;
+	private Button _deleteSaveButton = null!;
 	private Button _settingsButton = null!;
 	private Button _unlocksButton = null!;
 	private Button _cardLibraryButton = null!;
@@ -29,6 +30,7 @@ public partial class MainMenu : Control
 	private OptionButton _languageOption = null!;
 	private Label _messageLabel = null!;
 	private bool _loadingActive;
+	private bool _deleteSaveConfirmArmed;
 
 	public override void _Ready()
 	{
@@ -40,6 +42,7 @@ public partial class MainMenu : Control
 		_subtitleLabel = GetNode<Label>("Root/Margin/MenuLayout/SubtitleLabel");
 		_newGameButton = GetNode<Button>("Root/Margin/MenuLayout/NewGameButton");
 		_continueButton = GetNode<Button>("Root/Margin/MenuLayout/ContinueButton");
+		_deleteSaveButton = GetNode<Button>("Root/Margin/MenuLayout/DeleteSaveButton");
 		_settingsButton = GetNode<Button>("Root/Margin/MenuLayout/SettingsButton");
 		_unlocksButton = GetNode<Button>("Root/Margin/MenuLayout/UnlocksButton");
 		_cardLibraryButton = GetNode<Button>("Root/Margin/MenuLayout/CardLibraryButton");
@@ -66,6 +69,7 @@ public partial class MainMenu : Control
 
 		_newGameButton.Pressed += OnNewGamePressed;
 		_continueButton.Pressed += OnContinuePressed;
+		_deleteSaveButton.Pressed += OnDeleteSavePressed;
 		_settingsButton.Pressed += OnSettingsPressed;
 		_unlocksButton.Pressed += OnUnlocksPressed;
 		_cardLibraryButton.Pressed += OnCardLibraryPressed;
@@ -80,7 +84,7 @@ public partial class MainMenu : Control
 
 	private void OnNewGamePressed()
 	{
-		GameSession.LoadRequested = false;
+		GameSession.ResetForNewRun(GameSession.GetPlayableCharacterId(_gameData));
 		ChangeSceneWithLoading(
 			"res://scenes/CharacterSelect.tscn",
 			Localization.T("loading_choose_kid"));
@@ -88,6 +92,7 @@ public partial class MainMenu : Control
 
 	private void OnContinuePressed()
 	{
+		_deleteSaveConfirmArmed = false;
 		if (!SaveManager.HasSave())
 		{
 			_messageLabel.Text = Localization.T("no_save");
@@ -100,20 +105,48 @@ public partial class MainMenu : Control
 			Localization.T("loading_reopen_trapdoor"));
 	}
 
+	private void OnDeleteSavePressed()
+	{
+		if (!SaveManager.HasSave())
+		{
+			_deleteSaveConfirmArmed = false;
+			_messageLabel.Text = Localization.T("delete_save_missing");
+			RenderMainButtonState();
+			return;
+		}
+
+		if (!_deleteSaveConfirmArmed)
+		{
+			_deleteSaveConfirmArmed = true;
+			_messageLabel.Text = Localization.T("delete_save_confirm");
+			return;
+		}
+
+		_deleteSaveConfirmArmed = false;
+		GameSession.ResetForNewRun(GameSession.GetPlayableCharacterId(_gameData));
+		_messageLabel.Text = SaveManager.DeleteRunSave()
+			? Localization.T("delete_save_done")
+			: Localization.T("delete_save_failed");
+		RenderMainButtonState();
+	}
+
 	private void OnSettingsPressed()
 	{
+		_deleteSaveConfirmArmed = false;
 		ShowSubPage(_settingsPanel);
 		_messageLabel.Text = string.Empty;
 	}
 
 	private void OnUnlocksPressed()
 	{
+		_deleteSaveConfirmArmed = false;
 		ShowSubPage(_unlocksPanel);
 		RenderUnlocks();
 	}
 
 	private void OnCardLibraryPressed()
 	{
+		_deleteSaveConfirmArmed = false;
 		ShowSubPage(_cardLibraryPanel);
 		RenderCardLibrary();
 	}
@@ -154,6 +187,7 @@ public partial class MainMenu : Control
 
 	private void ShowMainPage()
 	{
+		_deleteSaveConfirmArmed = false;
 		_modalOverlay.Visible = false;
 		_settingsPanel.Visible = false;
 		_unlocksPanel.Visible = false;
@@ -167,6 +201,7 @@ public partial class MainMenu : Control
 		_subtitleLabel.Visible = visible;
 		_newGameButton.Visible = visible;
 		_continueButton.Visible = visible;
+		_deleteSaveButton.Visible = visible;
 		_settingsButton.Visible = visible;
 		_unlocksButton.Visible = visible;
 		_cardLibraryButton.Visible = visible;
@@ -179,6 +214,7 @@ public partial class MainMenu : Control
 		_subtitleLabel.Text = Localization.T("game_subtitle");
 		_newGameButton.Text = Localization.T("new_game");
 		_continueButton.Text = Localization.T("continue_game");
+		_deleteSaveButton.Text = Localization.T("delete_save");
 		_settingsButton.Text = Localization.T("settings");
 		_unlocksButton.Text = Localization.T("unlocks");
 		_cardLibraryButton.Text = Localization.T("card_library");
@@ -191,6 +227,14 @@ public partial class MainMenu : Control
 		_languageOption.Select(Localization.Language == Localization.English ? 1 : 0);
 		var meta = SaveManager.LoadMeta();
 		_messageLabel.Text = Localization.T("main_meta", meta.TotalEmbers, meta.BestDepth, meta.BestScore, meta.CompletedObjectiveIds.Count);
+		RenderMainButtonState();
+	}
+
+	private void RenderMainButtonState()
+	{
+		var hasSave = SaveManager.HasSave();
+		_continueButton.Disabled = !hasSave;
+		_deleteSaveButton.Disabled = !hasSave;
 	}
 
 	private void RenderUnlocks()
@@ -412,6 +456,7 @@ public partial class MainMenu : Control
 		MistTheme.StylePanel(_cardLibraryPanel, MistPanelVariant.Stone);
 		MistTheme.StyleButton(_newGameButton, MistButtonVariant.Primary);
 		MistTheme.StyleButton(_continueButton, MistButtonVariant.Neutral);
+		MistTheme.StyleButton(_deleteSaveButton, MistButtonVariant.Neutral);
 		MistTheme.StyleButton(_settingsButton, MistButtonVariant.Purple);
 		MistTheme.StyleButton(_unlocksButton, MistButtonVariant.Gold);
 		MistTheme.StyleButton(_cardLibraryButton, MistButtonVariant.Neutral);
