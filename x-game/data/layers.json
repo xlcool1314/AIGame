@@ -1,6 +1,8 @@
 {
   "layers": [
     {
+      "minRooms": 3,
+      "maxRooms": 3,
       "rooms": [
         {
           "kind": "mine",
@@ -10,10 +12,23 @@
           "risk": 1,
           "lampCost": 6,
           "rewardBonus": 0,
-          "mineConfig": { "width": 5, "height": 5, "monsters": 2, "traps": 2, "treasures": 2, "ores": 5, "clearReward": 14, "trapDamage": 8 }
+          "mineConfig": { "width": 5, "height": 5, "monsters": 2, "traps": 2, "treasures": 2, "ores": 5, "clearReward": 14, "partialRewardPercent": 55, "trapDamage": 8 }
         },
         { "kind": "battle", "title": "袜子怪影", "titleEn": "Sock Thing", "enemyId": "slime", "rewardId": "basic", "risk": 1, "lampCost": 5 },
-        { "kind": "event", "title": "纽扣回声", "titleEn": "Button Echo", "eventId": "echo_ore", "risk": 1, "lampCost": 4, "miniGameChance": 0 }
+        { "kind": "event", "title": "纽扣回声", "titleEn": "Button Echo", "eventId": "echo_ore", "risk": 1, "lampCost": 4, "miniGameChance": 0 },
+        {
+          "kind": "mine",
+          "title": "\u73a9\u5177\u79ef\u6728\u6d45\u5751",
+          "titleEn": "Toy Block Hollow",
+          "enemyId": "lamp_mite",
+          "risk": 1,
+          "lampCost": 6,
+          "rewardBonus": 0,
+          "mineConfig": { "width": 5, "height": 5, "monsters": 1, "traps": 2, "treasures": 2, "ores": 5, "clearReward": 14, "partialRewardPercent": 55, "trapDamage": 8 }
+        },
+        { "kind": "battle", "title": "\u5077\u5149\u5c0f\u866b", "titleEn": "Light-Sipping Bug", "enemyId": "lamp_mite", "rewardId": "basic", "risk": 1, "lampCost": 5 },
+        { "kind": "treasure", "title": "\u5e8a\u6cbf\u8865\u7ed9\u76d2", "titleEn": "Bedside Cache", "rewardId": "cache", "risk": 1, "lampCost": 5, "miniGameChance": 8, "miniGamePool": ["sealed_cache_lock"] },
+        { "kind": "calibration", "title": "\u73a9\u5177\u8f68\u9053\u8bd5\u53f0", "titleEn": "Toy Track Test", "risk": 1, "lampCost": 5, "rewardBonus": 4, "miniGamePool": ["rail_switch", "lamp_array"] }
       ]
     },
     {
@@ -26,7 +41,7 @@
           "risk": 2,
           "lampCost": 9,
           "rewardBonus": 10,
-          "mineConfig": { "width": 5, "height": 6, "monsters": 3, "traps": 3, "treasures": 2, "ores": 6, "clearReward": 20, "trapDamage": 9 }
+          "mineConfig": { "width": 5, "height": 6, "monsters": 3, "traps": 3, "treasures": 2, "ores": 6, "clearReward": 20, "partialRewardPercent": 58, "trapDamage": 9 }
         },
         { "kind": "battle", "title": "纸翼小鬼巢", "titleEn": "Paper-Wing Nest", "enemyId": "crystal_bat", "rewardId": "basic", "risk": 2, "lampCost": 8, "rewardBonus": 10 },
         { "kind": "treasure", "title": "\u5c01\u5b58\u5de5\u5177\u7bb1", "titleEn": "Sealed Tool Cache", "rewardId": "cache", "risk": 1, "lampCost": 6, "miniGameChance": 12, "miniGamePool": ["sealed_cache_lock"] },
@@ -46,7 +61,7 @@
           "risk": 2,
           "lampCost": 7,
           "rewardBonus": 10,
-          "mineConfig": { "width": 5, "height": 6, "monsters": 2, "traps": 3, "treasures": 2, "ores": 7, "clearReward": 22, "trapDamage": 9 }
+          "mineConfig": { "width": 5, "height": 6, "monsters": 2, "traps": 3, "treasures": 2, "ores": 7, "clearReward": 22, "partialRewardPercent": 60, "trapDamage": 9 }
         },
         { "kind": "event", "title": "裂缝地图", "titleEn": "Crack Map", "eventId": "fault_map", "risk": 1, "lampCost": 5, "miniGameChance": 28, "miniGamePool": ["rail_switch", "sealed_cache_lock"] },
         { "kind": "shop", "title": "手电补给架", "titleEn": "Flashlight Supply Shelf", "rewardId": "shop", "risk": 1, "lampCost": 5 }
@@ -63,7 +78,7 @@
           "risk": 2,
           "lampCost": 10,
           "rewardBonus": 15,
-          "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 8, "clearReward": 28, "trapDamage": 10 }
+          "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 8, "clearReward": 28, "partialRewardPercent": 62, "trapDamage": 10 }
         },
         { "kind": "battle", "title": "纽扣吸附者", "titleEn": "Button Leecher", "enemyId": "ore_leecher", "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
         { "kind": "event", "title": "旧秘密基地", "titleEn": "Old Hideout", "eventId": "old_camp", "risk": 1, "lampCost": 6, "miniGameChance": 30, "miniGamePool": ["rail_switch", "lamp_array"] },
@@ -76,7 +91,7 @@
           "risk": 3,
           "lampCost": 11,
           "rewardBonus": 20,
-          "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 9, "clearReward": 32, "trapDamage": 10 }
+          "mineConfig": { "width": 6, "height": 6, "monsters": 3, "traps": 4, "treasures": 3, "ores": 9, "clearReward": 32, "partialRewardPercent": 64, "trapDamage": 10 }
         }
       ]
     },
@@ -90,7 +105,7 @@
           "risk": 3,
           "lampCost": 12,
           "rewardBonus": 25,
-          "mineConfig": { "width": 6, "height": 7, "monsters": 5, "traps": 5, "treasures": 3, "ores": 9, "clearReward": 34, "trapDamage": 11 }
+          "mineConfig": { "width": 6, "height": 7, "monsters": 5, "traps": 5, "treasures": 3, "ores": 9, "clearReward": 34, "partialRewardPercent": 65, "trapDamage": 11 }
         },
         { "kind": "elite", "title": "玻璃弹珠守卫", "titleEn": "Marble Guard", "enemyId": "crystal_guard", "enemyIds": ["crystal_guard", "lamp_mite"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
         { "kind": "battle", "title": "积木泥匠", "titleEn": "Block Mason", "enemyId": "spore_mason", "enemyIds": ["spore_mason", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
@@ -109,6 +124,69 @@
     },
     {
       "rooms": [
+        {
+          "kind": "mine",
+          "title": "毛毯褶皱深带",
+          "titleEn": "Blanket Fold Depths",
+          "enemyId": "spore_mason",
+          "risk": 3,
+          "lampCost": 11,
+          "rewardBonus": 20,
+          "mineConfig": { "width": 6, "height": 7, "monsters": 4, "traps": 4, "treasures": 3, "ores": 9, "clearReward": 36, "partialRewardPercent": 64, "trapDamage": 11 }
+        },
+        { "kind": "battle", "title": "偷光小虫群", "titleEn": "Light-Sipping Swarm", "enemyId": "lamp_mite", "enemyIds": ["lamp_mite", "crystal_bat"], "rewardId": "advanced", "risk": 2, "lampCost": 9, "rewardBonus": 15 },
+        { "kind": "event", "title": "书页风道", "titleEn": "Paper Vent", "eventId": "fault_map", "risk": 2, "lampCost": 8, "rewardBonus": 10, "miniGameChance": 34, "miniGamePool": ["rail_switch", "lamp_array"] },
+        { "kind": "calibration", "title": "褶皱机关板", "titleEn": "Fold Gadget Board", "risk": 1, "lampCost": 6, "rewardBonus": 12, "miniGamePool": ["lamp_array", "sealed_cache_lock"] },
+        { "kind": "treasure", "title": "枕边隐藏盒", "titleEn": "Pillow Cache", "rewardId": "cache", "risk": 1, "lampCost": 6, "rewardBonus": 10, "miniGameChance": 24, "miniGamePool": ["sealed_cache_lock"] }
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "kind": "mine",
+          "title": "玩具车轨道",
+          "titleEn": "Toy Cart Rails",
+          "enemyId": "crystal_guard",
+          "risk": 3,
+          "lampCost": 12,
+          "rewardBonus": 25,
+          "mineConfig": { "width": 7, "height": 6, "monsters": 4, "traps": 5, "treasures": 3, "ores": 9, "clearReward": 38, "partialRewardPercent": 66, "trapDamage": 12 }
+        },
+        { "kind": "elite", "title": "弹珠守卫巡逻", "titleEn": "Marble Guard Patrol", "enemyId": "crystal_guard", "enemyIds": ["crystal_guard", "ore_leecher"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
+        { "kind": "battle", "title": "积木泥匠队", "titleEn": "Block Mason Crew", "enemyId": "spore_mason", "enemyIds": ["spore_mason", "lamp_mite"], "rewardId": "advanced", "risk": 2, "lampCost": 10, "rewardBonus": 15 },
+        { "kind": "shop", "title": "轨道边交换铺", "titleEn": "Trackside Trade Shelf", "rewardId": "shop", "risk": 1, "lampCost": 7, "rewardBonus": 10 },
+        { "kind": "rest", "title": "玩具车停靠点", "titleEn": "Toy Cart Stop", "risk": 1, "lampCost": 6 }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "event", "title": "黑暗抽屉口", "titleEn": "Dark Drawer Mouth", "eventId": "collapsed_tunnel", "risk": 2, "lampCost": 9, "rewardBonus": 12, "miniGameChance": 34, "miniGamePool": ["rail_switch", "mist_pump"] },
+        { "kind": "battle", "title": "床下监管者前哨", "titleEn": "Overseer Outpost", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "lamp_mite"], "rewardId": "advanced", "risk": 3, "lampCost": 12, "rewardBonus": 20 },
+        {
+          "kind": "mine",
+          "title": "抽屉影子迷宫",
+          "titleEn": "Drawer Shadow Maze",
+          "enemyId": "mine_overseer",
+          "risk": 3,
+          "lampCost": 13,
+          "rewardBonus": 25,
+          "mineConfig": { "width": 7, "height": 7, "monsters": 5, "traps": 6, "treasures": 4, "ores": 10, "clearReward": 40, "partialRewardPercent": 67, "trapDamage": 12 }
+        },
+        { "kind": "calibration", "title": "抽屉机关盘", "titleEn": "Drawer Gadget Board", "risk": 2, "lampCost": 8, "rewardBonus": 15, "miniGamePool": ["lamp_array", "mist_pump"] },
+        { "kind": "treasure", "title": "抽屉夹层补给", "titleEn": "Drawer Cache", "rewardId": "cache", "risk": 2, "lampCost": 8, "rewardBonus": 15, "miniGameChance": 26, "miniGamePool": ["sealed_cache_lock", "mist_pump"] }
+      ]
+    },
+    {
+      "rooms": [
+        { "kind": "rest", "title": "核心前后勤点", "titleEn": "Pre-Core Supply Nook", "risk": 1, "lampCost": 6 },
+        { "kind": "shop", "title": "深夜交换柜", "titleEn": "Midnight Trade Cabinet", "rewardId": "shop", "risk": 1, "lampCost": 7, "rewardBonus": 10 },
+        { "kind": "treasure", "title": "压箱底藏品", "titleEn": "Bottom Drawer Cache", "rewardId": "cache", "risk": 1, "lampCost": 7, "rewardBonus": 15, "miniGameChance": 24, "miniGamePool": ["sealed_cache_lock"] },
+        { "kind": "calibration", "title": "核心前调试台", "titleEn": "Pre-Core Tuning Desk", "risk": 2, "lampCost": 8, "rewardBonus": 15, "miniGamePool": ["lamp_array", "mist_pump", "sealed_cache_lock"] },
+        { "kind": "event", "title": "最后的纸箱近路", "titleEn": "Last Box Shortcut", "eventId": "broken_lift", "risk": 2, "lampCost": 8, "rewardBonus": 15, "miniGameChance": 40, "miniGamePool": ["rail_switch", "mist_pump"] }
+      ]
+    },
+    {
+      "rooms": [
         { "kind": "rest", "title": "核心前小窝", "titleEn": "Core Hideout" },
         {
           "kind": "mine",
@@ -118,7 +196,7 @@
           "risk": 4,
           "lampCost": 14,
           "rewardBonus": 35,
-          "mineConfig": { "width": 7, "height": 7, "monsters": 6, "traps": 6, "treasures": 4, "ores": 10, "clearReward": 42, "trapDamage": 12 }
+          "mineConfig": { "width": 7, "height": 7, "monsters": 6, "traps": 6, "treasures": 4, "ores": 10, "clearReward": 42, "partialRewardPercent": 68, "trapDamage": 12 }
         },
         { "kind": "elite", "title": "床下监管者", "titleEn": "Underbed Overseer", "enemyId": "mine_overseer", "enemyIds": ["mine_overseer", "spore_mason"], "rewardId": "elite", "risk": 3, "lampCost": 12, "rewardBonus": 25 },
         { "kind": "calibration", "title": "外圈机关板", "titleEn": "Outer Gadget Board", "risk": 2, "lampCost": 8, "rewardBonus": 15, "miniGamePool": ["lamp_array", "mist_pump"] },

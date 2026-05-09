@@ -268,16 +268,40 @@ public partial class RunEngine : Node
             Log.Add("你找到了通往下一层的出口，可以继续探索或立刻深入。");
         }
 
-        if (Minefield.IsCleared)
-        {
-            Shards += Minefield.RewardShards;
-            MinesCleared++;
-            Score += 18 + Minefield.RewardShards;
-            ReduceFogPressure(1);
-            Log.Add($"房间清理完成，获得 {Minefield.RewardShards} 枚纽扣。");
-        }
+        ApplyMineMilestoneRewards();
 
         return result;
+    }
+
+    private void ApplyMineMilestoneRewards()
+    {
+        if (Minefield == null)
+        {
+            return;
+        }
+
+        if (Minefield.TryClaimPartialReward(out var partialReward))
+        {
+            if (partialReward > 0)
+            {
+                Shards += partialReward;
+                Score += 8 + partialReward;
+                Log.Add($"探索达到阶段目标，获得 {partialReward} 枚纽扣。");
+            }
+        }
+
+        if (Minefield.TryClaimPerfectReward(out var clearReward))
+        {
+            if (clearReward > 0)
+            {
+                Shards += clearReward;
+            }
+
+            MinesCleared++;
+            Score += 18 + clearReward;
+            ReduceFogPressure(1);
+            Log.Add($"房间清理完成，额外获得 {clearReward} 枚纽扣。");
+        }
     }
 
     public void ToggleMineFlag(int index)
@@ -860,10 +884,12 @@ public partial class RunEngine : Node
         for (var layerIndex = 0; layerIndex < gameData.Layers.Layers.Count; layerIndex++)
         {
             var layer = gameData.Layers.Layers[layerIndex];
+            var selectedRooms = SelectLayerRooms(layer, layerIndex);
             var rooms = new List<RunRoom>();
-            for (var roomIndex = 0; roomIndex < layer.Rooms.Count; roomIndex++)
+            for (var roomIndex = 0; roomIndex < selectedRooms.Count; roomIndex++)
             {
-                var room = ResolveRoomVariant(gameData, layer.Rooms[roomIndex], layerIndex, roomIndex);
+                var selected = selectedRooms[roomIndex];
+                var room = ResolveRoomVariant(gameData, selected.Room, layerIndex, selected.SourceIndex);
                 rooms.Add(new RunRoom(
                     $"L{layerIndex}R{roomIndex}",
                     layerIndex,
@@ -886,6 +912,188 @@ public partial class RunEngine : Node
         }
 
         BuildMapConnections();
+    }
+
+    private List<(RoomData Room, int SourceIndex)> SelectLayerRooms(LayerData layer, int layerIndex)
+    {
+        var candidates = new List<(RoomData Room, int SourceIndex)>();
+        for (var sourceIndex = 0; sourceIndex < layer.Rooms.Count; sourceIndex++)
+        {
+            candidates.Add((layer.Rooms[sourceIndex], sourceIndex));
+        }
+
+        if (IsFixedMapLayer(layer) || candidates.Count <= 3)
+        {
+            return candidates;
+        }
+
+        var random = new Random(HashCode.Combine(RunSeed, CharacterId, layerIndex, "layer_room_pool"));
+        ShuffleLayerCandidates(candidates, random);
+        var targetCount = GetLayerRoomTarget(layer, layerIndex, candidates.Count, random);
+        var selected = new List<(RoomData Room, int SourceIndex)>();
+        var kindCounts = new Dictionary<string, int>();
+
+        foreach (var candidate in candidates)
+        {
+            if (selected.Count >= targetCount)
+            {
+                break;
+            }
+
+            var kind = candidate.Room.Kind ?? string.Empty;
+            kindCounts.TryGetValue(kind, out var count);
+            if (count >= GetLayerKindCap(kind, layerIndex))
+            {
+                continue;
+            }
+
+            selected.Add(candidate);
+            kindCounts[kind] = count + 1;
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (selected.Count >= targetCount)
+            {
+                break;
+            }
+
+            if (ContainsSourceRoom(selected, candidate.SourceIndex))
+            {
+                continue;
+            }
+
+            selected.Add(candidate);
+        }
+
+        TryEnsurePressureRoom(candidates, selected, random);
+        ShuffleLayerCandidates(selected, random);
+        return selected;
+    }
+
+    private static bool IsFixedMapLayer(LayerData layer)
+    {
+        if (layer.Fixed || layer.Rooms.Count <= 1)
+        {
+            return true;
+        }
+
+        foreach (var room in layer.Rooms)
+        {
+            if (room.Kind == "complete")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int GetLayerRoomTarget(LayerData layer, int layerIndex, int sourceCount, Random random)
+    {
+        if (sourceCount <= 3)
+        {
+            return sourceCount;
+        }
+
+        var defaultMin = 3;
+        var defaultMax = layerIndex <= 0 ? 3 : sourceCount >= 6 ? 5 : 4;
+        var min = layer.MinRooms > 0 ? layer.MinRooms : defaultMin;
+        var max = layer.MaxRooms > 0 ? layer.MaxRooms : defaultMax;
+        min = Math.Clamp(min, 1, sourceCount);
+        max = Math.Clamp(max, 1, sourceCount);
+        if (max < min)
+        {
+            max = min;
+        }
+
+        return random.Next(min, max + 1);
+    }
+
+    private static int GetLayerKindCap(string kind, int layerIndex)
+    {
+        return kind switch
+        {
+            "rest" => 1,
+            "shop" => 1,
+            "treasure" => 1,
+            "calibration" => 1,
+            "event" => layerIndex <= 1 ? 1 : 2,
+            _ => int.MaxValue
+        };
+    }
+
+    private static void TryEnsurePressureRoom(
+        List<(RoomData Room, int SourceIndex)> candidates,
+        List<(RoomData Room, int SourceIndex)> selected,
+        Random random)
+    {
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var candidate in selected)
+        {
+            if (IsPressureRoom(candidate.Room.Kind))
+            {
+                return;
+            }
+        }
+
+        var pressureRooms = new List<(RoomData Room, int SourceIndex)>();
+        foreach (var candidate in candidates)
+        {
+            if (IsPressureRoom(candidate.Room.Kind) && !ContainsSourceRoom(selected, candidate.SourceIndex))
+            {
+                pressureRooms.Add(candidate);
+            }
+        }
+
+        if (pressureRooms.Count == 0)
+        {
+            return;
+        }
+
+        var replacement = pressureRooms[random.Next(pressureRooms.Count)];
+        var replaceIndex = selected.Count - 1;
+        for (var i = 0; i < selected.Count; i++)
+        {
+            if (!IsPressureRoom(selected[i].Room.Kind))
+            {
+                replaceIndex = i;
+                break;
+            }
+        }
+
+        selected[replaceIndex] = replacement;
+    }
+
+    private static bool IsPressureRoom(string kind)
+    {
+        return kind == "battle" || kind == "elite" || kind == "mine";
+    }
+
+    private static bool ContainsSourceRoom(List<(RoomData Room, int SourceIndex)> rooms, int sourceIndex)
+    {
+        foreach (var room in rooms)
+        {
+            if (room.SourceIndex == sourceIndex)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void ShuffleLayerCandidates(List<(RoomData Room, int SourceIndex)> rooms, Random random)
+    {
+        for (var i = rooms.Count - 1; i > 0; i--)
+        {
+            var swapIndex = random.Next(i + 1);
+            (rooms[i], rooms[swapIndex]) = (rooms[swapIndex], rooms[i]);
+        }
     }
 
     private RoomData ResolveRoomVariant(GameData gameData, RoomData source, int layerIndex, int roomIndex)
@@ -1233,11 +1441,11 @@ public partial class RunEngine : Node
     private void ApplyRoomPressure(RunRoom room)
     {
         RoomsCompleted++;
-        var layerPressure = Math.Max(0, CurrentLayerIndex);
-        var riskPressure = Math.Max(1, room.Risk) * 2;
+        var layerPressure = Math.Max(0, CurrentLayerIndex / 2);
+        var riskPressure = Math.Max(1, room.Risk);
         var lampCost = Math.Max(0, room.LampCost + layerPressure + riskPressure);
         LampOil -= lampCost;
-        FogPressure += Math.Max(0, room.Risk - 1) + Math.Max(0, CurrentLayerIndex / 3);
+        FogPressure += Math.Max(0, room.Risk - 1) + Math.Max(0, CurrentLayerIndex / 4);
         Score += Math.Max(1, room.Risk) * 6;
 
         if (LampOil >= 0)
@@ -1326,11 +1534,63 @@ public class MinefieldState
     public int DangerCount { get; private set; }
     public int RewardCount { get; private set; }
     public int RewardShards { get; private set; }
+    public int PartialRewardShards { get; private set; }
+    public int PartialRewardPercent { get; private set; } = 55;
     public int TrapDamage { get; private set; } = 8;
     public int Seed { get; private set; }
     public bool ExitFound { get; private set; }
     public bool IsCleared { get; private set; }
+    public bool PartialRewardClaimed { get; private set; }
+    public bool PerfectRewardClaimed { get; private set; }
     public readonly List<MineCell> Cells = new();
+
+    public int SafeRevealGoal
+    {
+        get
+        {
+            var count = 0;
+            foreach (var cell in Cells)
+            {
+                if (!cell.IsDanger && cell.Type != MineTileType.Exit)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    public int SafeRevealCount
+    {
+        get
+        {
+            var count = 0;
+            foreach (var cell in Cells)
+            {
+                if (cell.IsRevealed && !cell.IsDanger && cell.Type != MineTileType.Exit)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    public int SafeRevealPercent
+    {
+        get
+        {
+            var goal = SafeRevealGoal;
+            if (goal <= 0)
+            {
+                return 100;
+            }
+
+            return Math.Clamp((int)Math.Round(SafeRevealCount * 100.0 / goal), 0, 100);
+        }
+    }
 
     public static MinefieldState Create(MineRoomConfig config, int seed)
     {
@@ -1346,6 +1606,10 @@ public class MinefieldState
             Width = width,
             Height = height,
             RewardShards = Math.Max(0, config.ClearReward),
+            PartialRewardShards = config.PartialReward > 0
+                ? Math.Max(0, config.PartialReward)
+                : Math.Max(4, Math.Max(0, config.ClearReward) * 45 / 100),
+            PartialRewardPercent = Math.Clamp(config.PartialRewardPercent, 30, 90),
             TrapDamage = Math.Max(1, config.TrapDamage),
             Seed = seed
         };
@@ -1534,6 +1798,32 @@ public class MinefieldState
         }
 
         return count;
+    }
+
+    public bool TryClaimPartialReward(out int reward)
+    {
+        reward = 0;
+        if (PartialRewardClaimed || SafeRevealPercent < PartialRewardPercent)
+        {
+            return false;
+        }
+
+        PartialRewardClaimed = true;
+        reward = PartialRewardShards;
+        return true;
+    }
+
+    public bool TryClaimPerfectReward(out int reward)
+    {
+        reward = 0;
+        if (PerfectRewardClaimed || !IsCleared)
+        {
+            return false;
+        }
+
+        PerfectRewardClaimed = true;
+        reward = RewardShards;
+        return true;
     }
 
     private void FloodReveal(int startIndex)

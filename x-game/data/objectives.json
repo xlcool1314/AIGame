@@ -6,6 +6,9 @@
     { "id": "score_350", "title": "睡前挑战：大胆记录", "titleEn": "Bedtime Quest: Brave Record", "description": "本局达到 350 探险分。", "descriptionEn": "Reach 350 adventure score this run.", "type": "score", "target": 350, "emberReward": 14 },
     { "id": "collect_160_shards", "title": "睡前挑战：装满纽扣罐", "titleEn": "Bedtime Quest: Fill the Button Jar", "description": "本局持有 160 枚纽扣。", "descriptionEn": "Hold 160 buttons this run.", "type": "shards", "target": 160, "emberReward": 10 },
     { "id": "reach_depth_10", "title": "睡前挑战：深入地下室", "titleEn": "Bedtime Quest: Deep Basement", "description": "抵达第 10 个地下房间。", "descriptionEn": "Reach underground room 10.", "type": "depth", "target": 10, "emberReward": 14 },
-    { "id": "win_7_battles", "title": "睡前挑战：怪物清道夫", "titleEn": "Bedtime Quest: Monster Sweeper", "description": "获得 7 场战斗胜利。", "descriptionEn": "Win 7 battles.", "type": "battles", "target": 7, "emberReward": 12 }
+    { "id": "win_7_battles", "title": "睡前挑战：怪物清道夫", "titleEn": "Bedtime Quest: Monster Sweeper", "description": "获得 7 场战斗胜利。", "descriptionEn": "Win 7 battles.", "type": "battles", "target": 7, "emberReward": 12 },
+    { "id": "reach_depth_14", "title": "睡前挑战：摸到核心门口", "titleEn": "Bedtime Quest: Reach the Core Door", "description": "抵达第 14 个地下房间。", "descriptionEn": "Reach underground room 14.", "type": "depth", "target": 14, "emberReward": 18 },
+    { "id": "score_650", "title": "睡前挑战：深夜探险记录", "titleEn": "Bedtime Quest: Midnight Record", "description": "本局达到 650 探险分。", "descriptionEn": "Reach 650 adventure score this run.", "type": "score", "target": 650, "emberReward": 18 },
+    { "id": "win_9_battles", "title": "睡前挑战：影子清道夫", "titleEn": "Bedtime Quest: Shadow Sweeper", "description": "获得 9 场战斗胜利。", "descriptionEn": "Win 9 battles.", "type": "battles", "target": 9, "emberReward": 16 }
   ]
 }

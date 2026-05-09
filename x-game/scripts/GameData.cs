@@ -441,6 +441,9 @@ public class UnlockData
 public class LayerData
 {
 	public List<RoomData> Rooms { get; set; } = new();
+	public int MinRooms { get; set; }
+	public int MaxRooms { get; set; }
+	public bool Fixed { get; set; }
 }
 
 public class RoomData
@@ -463,14 +466,16 @@ public class RoomData
 
 public class MineRoomConfig
 {
-	public int Width { get; set; } = 5;
-	public int Height { get; set; } = 5;
-	public int Monsters { get; set; } = 2;
-	public int Traps { get; set; } = 2;
-	public int Treasures { get; set; } = 2;
-	public int Ores { get; set; } = 5;
-	public int ClearReward { get; set; } = 14;
-	public int TrapDamage { get; set; } = 8;
+    public int Width { get; set; } = 5;
+    public int Height { get; set; } = 5;
+    public int Monsters { get; set; } = 2;
+    public int Traps { get; set; } = 2;
+    public int Treasures { get; set; } = 2;
+    public int Ores { get; set; } = 5;
+    public int ClearReward { get; set; } = 14;
+    public int PartialReward { get; set; } = 0;
+    public int PartialRewardPercent { get; set; } = 55;
+    public int TrapDamage { get; set; } = 8;
 }
 
 public class DeckData
@@ -515,14 +520,16 @@ public class CardAction
 
 public class EnemyData
 {
-	public string Id { get; set; } = string.Empty;
-	public string Name { get; set; } = string.Empty;
-	public string NameEn { get; set; } = string.Empty;
-	public string ArtPath { get; set; } = string.Empty;
-	public int MaxHp { get; set; }
-	public List<IntentData> Intents { get; set; } = new();
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string ArtPath { get; set; } = string.Empty;
+    public string TestType { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
+    public int MaxHp { get; set; }
+    public List<IntentData> Intents { get; set; } = new();
 
-	public string DisplayName() => Localization.Pick(Name, NameEn);
+    public string DisplayName() => Localization.Pick(Name, NameEn);
 }
 
 public class IntentData
@@ -582,13 +589,19 @@ public class RelicEffectData
 
 public class RewardData
 {
-	public string Id { get; set; } = string.Empty;
-	public string Title { get; set; } = string.Empty;
-	public string TitleEn { get; set; } = string.Empty;
-	public int Shards { get; set; }
-	public int Heal { get; set; }
-	public int MinOffers { get; set; } = 2;
-	public int MaxOffers { get; set; } = 3;
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string TitleEn { get; set; } = string.Empty;
+    public int Shards { get; set; }
+    public int Heal { get; set; }
+    public int ValueBudget { get; set; } = 110;
+    public int CardOfferValue { get; set; } = 45;
+    public int RelicOfferValue { get; set; } = 90;
+    public int SupplyOfferValue { get; set; } = 35;
+    public int ButtonOfferValue { get; set; } = 28;
+    public int HealOfferValue { get; set; } = 30;
+    public int MinOffers { get; set; } = 2;
+    public int MaxOffers { get; set; } = 3;
 	public int CardOfferWeight { get; set; } = 60;
 	public int RelicOfferWeight { get; set; } = 12;
 	public int SupplyOfferWeight { get; set; } = 18;

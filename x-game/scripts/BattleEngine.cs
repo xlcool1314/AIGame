@@ -13,6 +13,11 @@ public partial class BattleEngine : Node
     public int PlayerWeak { get; private set; }
     public int ThreatLevel { get; private set; }
     public int SelectedEnemyIndex { get; private set; }
+    public int CardsPlayedThisTurn { get; private set; }
+    public int InspirationProgress { get; private set; }
+    public int InspirationsThisTurn { get; private set; }
+    public int InspirationDebt { get; private set; }
+    public int InspirationThreshold => 3;
 
     public EnemyData Enemy => CurrentEnemy?.Data ?? new EnemyData();
     public int EnemyHp => CurrentEnemy?.Hp ?? 0;
@@ -62,6 +67,9 @@ public partial class BattleEngine : Node
     private int _playerDamageBonus;
     private int _playerBlockBonus;
     private int _selfDamageReduction;
+    private int _inspirationBlockBonus;
+    private int _inspirationStaggerBonus;
+    private int _inspirationDebtNextTurn;
 
     private BattleEnemyState? CurrentEnemy
     {
@@ -98,6 +106,13 @@ public partial class BattleEngine : Node
         _playerDamageBonus = 0;
         _playerBlockBonus = 0;
         _selfDamageReduction = 0;
+        _inspirationBlockBonus = 0;
+        _inspirationStaggerBonus = 0;
+        CardsPlayedThisTurn = 0;
+        InspirationProgress = 0;
+        InspirationsThisTurn = 0;
+        InspirationDebt = 0;
+        _inspirationDebtNextTurn = 0;
 
         Enemies.Clear();
         var encounterEnemies = enemies.Count == 0
@@ -130,12 +145,21 @@ public partial class BattleEngine : Node
     {
         PlayerBlock = 0;
         Energy = 3;
+        CardsPlayedThisTurn = 0;
+        InspirationProgress = 0;
+        InspirationsThisTurn = 0;
+        InspirationDebt = Math.Max(0, _inspirationDebtNextTurn);
+        _inspirationDebtNextTurn = 0;
         if (PlayerWeak > 0)
         {
             PlayerWeak--;
         }
 
         DrawCards(5);
+        if (InspirationDebt > 0)
+        {
+            Log.Add(L($"你被噪声干扰，本回合前 {InspirationDebt} 点灵感会被抵消。", $"Noise interference: the first {InspirationDebt} Inspiration progress this turn is cancelled."));
+        }
         Log.Add(L("你的回合开始。", "Your turn begins."));
     }
 
@@ -177,6 +201,12 @@ public partial class BattleEngine : Node
         _playerDamageBonus = Math.Max(0, damageBonus);
         _playerBlockBonus = Math.Max(0, blockBonus);
         _selfDamageReduction = Math.Max(0, selfDamageReduction);
+    }
+
+    public void SetInspirationModifiers(int blockBonus, int staggerBonus)
+    {
+        _inspirationBlockBonus = Math.Max(0, blockBonus);
+        _inspirationStaggerBonus = Math.Max(0, staggerBonus);
     }
 
     public bool SelectEnemy(int enemyIndex)
@@ -225,6 +255,8 @@ public partial class BattleEngine : Node
         ApplyActions(card.Actions, true, card.DisplayName(), targetsEnemy ? SelectedEnemyIndex : -1);
         Hand.RemoveAt(handIndex);
         DiscardPile.Add(card);
+        CardsPlayedThisTurn++;
+        AddInspirationProgress(1, card.DisplayName());
         NormalizeSelectedEnemy();
         return true;
     }
@@ -310,8 +342,17 @@ public partial class BattleEngine : Node
                 case "block":
                     parts.Add($"格挡 {ScaleEnemyValue(enemy, action.Value, "block")}");
                     break;
+                case "block_all":
+                    parts.Add($"全体格挡 {ScaleEnemyValue(enemy, action.Value, "block")}");
+                    break;
                 case "block_per_enemy":
                     parts.Add($"每敌人格挡 {action.Value}");
+                    break;
+                case "clear_stagger":
+                    parts.Add($"稳住破势 {action.Value}");
+                    break;
+                case "inspiration_tax":
+                    parts.Add($"阻滞灵感 {action.Value}");
                     break;
                 case "weak":
                     parts.Add($"虚弱 {action.Duration}");
@@ -409,6 +450,13 @@ public partial class BattleEngine : Node
                         ApplyEnemyDamage(source, targetEnemy, action.Value);
                     }
                     break;
+                case "combo_damage":
+                    if (fromPlayer)
+                    {
+                        var multiplier = Math.Max(1, action.Duration);
+                        ApplyPlayerDamage(source, targetEnemy, action.Value + CardsPlayedThisTurn * multiplier);
+                    }
+                    break;
                 case "damage_all":
                     if (fromPlayer)
                     {
@@ -437,6 +485,21 @@ public partial class BattleEngine : Node
                         Log.Add(L($"{source} 根据敌人数量获得 {blockGain} 点格挡。", $"{source} gains {blockGain} block based on enemy count."));
                     }
                     break;
+                case "block_all":
+                    if (!fromPlayer && targetEnemy != null && targetEnemy.IsAlive)
+                    {
+                        ApplyAllEnemiesBlock(source, ScaleEnemyValue(targetEnemy, action.Value, "block"));
+                    }
+                    break;
+                case "combo_block":
+                    if (fromPlayer)
+                    {
+                        var multiplier = Math.Max(1, action.Duration);
+                        var blockGain = Math.Max(0, action.Value + CardsPlayedThisTurn * multiplier + _playerBlockBonus);
+                        PlayerBlock += blockGain;
+                        Log.Add(L($"{source} 顺着节奏获得 {blockGain} 点格挡。", $"{source} gains {blockGain} block from rhythm."));
+                    }
+                    break;
                 case "draw":
                     if (fromPlayer)
                     {
@@ -462,6 +525,40 @@ public partial class BattleEngine : Node
                     {
                         Energy += action.Value;
                         Log.Add(L($"{source} 获得 {action.Value} 点能量。", $"{source} gains {action.Value} energy."));
+                    }
+                    break;
+                case "inspire":
+                    if (fromPlayer)
+                    {
+                        AddInspirationProgress(Math.Max(1, action.Value), source);
+                    }
+                    break;
+                case "stagger":
+                    if (fromPlayer)
+                    {
+                        AddEnemyStagger(targetEnemy, Math.Max(1, action.Value), source);
+                    }
+                    break;
+                case "stagger_all":
+                    if (fromPlayer)
+                    {
+                        AddAllEnemiesStagger(Math.Max(1, action.Value), source);
+                    }
+                    break;
+                case "clear_stagger":
+                    if (!fromPlayer && targetEnemy != null && targetEnemy.IsAlive)
+                    {
+                        var removed = Math.Min(targetEnemy.Stagger, Math.Max(1, action.Value));
+                        targetEnemy.Stagger = Math.Max(0, targetEnemy.Stagger - removed);
+                        Log.Add(L($"{source} 稳住身形，破势 -{removed}。", $"{source} steadies itself, stagger -{removed}."));
+                    }
+                    break;
+                case "inspiration_tax":
+                    if (!fromPlayer)
+                    {
+                        var tax = Math.Max(1, action.Value);
+                        _inspirationDebtNextTurn += tax;
+                        Log.Add(L($"{source} 扰乱节奏：下回合灵感阻滞 +{tax}。", $"{source} disrupts rhythm: Inspiration interference +{tax} next turn."));
                     }
                     break;
                 case "self_damage":
@@ -638,14 +735,101 @@ public partial class BattleEngine : Node
         };
     }
 
-    private void AddEnemyStagger(BattleEnemyState enemy, int amount)
+    private void AddInspirationProgress(int amount, string source)
     {
-        if (!enemy.IsAlive)
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        if (InspirationDebt > 0)
+        {
+            var cancelled = Math.Min(amount, InspirationDebt);
+            InspirationDebt -= cancelled;
+            amount -= cancelled;
+            Log.Add(L($"{source} 的灵感被噪声抵消 {cancelled} 点。", $"{source}'s Inspiration is cancelled by noise ({cancelled})."));
+            if (amount <= 0)
+            {
+                return;
+            }
+        }
+
+        InspirationProgress += amount;
+        while (InspirationProgress >= InspirationThreshold)
+        {
+            InspirationProgress -= InspirationThreshold;
+            TriggerInspiration(source);
+        }
+    }
+
+    private void TriggerInspiration(string source)
+    {
+        InspirationsThisTurn++;
+        var block = 3 + _inspirationBlockBonus;
+        var stagger = 3 + _inspirationStaggerBonus;
+        PlayerBlock += block;
+        DrawCards(1);
+        AddAllEnemiesStagger(stagger, source, logEach: false);
+        Log.Add(L($"{source} 点亮灵感：抽 1 张牌，获得 {block} 格挡，所有敌人破势 +{stagger}。", $"{source} sparks Inspiration: draw 1 card, gain {block} block, all enemies stagger +{stagger}."));
+    }
+
+    private void ApplyAllEnemiesBlock(string source, int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        var applied = 0;
+        foreach (var enemy in Enemies)
+        {
+            if (!enemy.IsAlive)
+            {
+                continue;
+            }
+
+            enemy.Block += amount;
+            applied++;
+        }
+
+        if (applied > 0)
+        {
+            Log.Add(L($"{source} 让敌群获得 {amount} 点格挡。", $"{source} grants {amount} block to the enemy group."));
+        }
+    }
+
+    private void AddAllEnemiesStagger(int amount, string source, bool logEach = true)
+    {
+        var applied = 0;
+        foreach (var enemy in Enemies)
+        {
+            if (!enemy.IsAlive)
+            {
+                continue;
+            }
+
+            AddEnemyStagger(enemy, amount, source, false);
+            applied++;
+        }
+
+        if (logEach && applied > 0)
+        {
+            Log.Add(L($"{source} 让所有敌人破势 +{amount}。", $"{source} adds {amount} stagger to all enemies."));
+        }
+    }
+
+    private void AddEnemyStagger(BattleEnemyState? enemy, int amount, string source = "", bool logGain = false)
+    {
+        if (enemy == null || !enemy.IsAlive)
         {
             return;
         }
 
         enemy.Stagger += amount;
+        if (logGain && amount > 0)
+        {
+            Log.Add(L($"{source} 使 {enemy.Data.DisplayName()} 破势 +{amount}。", $"{source} adds {amount} stagger to {enemy.Data.DisplayName()}."));
+        }
         if (enemy.Stagger < enemy.StaggerLimit)
         {
             return;
@@ -705,7 +889,7 @@ public partial class BattleEngine : Node
     {
         foreach (var action in actions)
         {
-            if (action.Type is "damage" or "weak" or "vulnerable")
+            if (action.Type is "damage" or "combo_damage" or "weak" or "vulnerable" or "stagger")
             {
                 return true;
             }

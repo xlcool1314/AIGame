@@ -20,6 +20,7 @@ public partial class BattleScene : Control
     private PanelContainer _actionPanel = null!;
     private PanelContainer _logPanel = null!;
     private PanelContainer _intentPanel = null!;
+    private Button _infoToggleButton = null!;
     private PanelContainer _mineBoardFrame = null!;
     private Label _runStatusLabel = null!;
     private Label _hudLayerLabel = null!;
@@ -39,6 +40,8 @@ public partial class BattleScene : Control
     private Button _mineModeButton = null!;
     private GridContainer _mineGrid = null!;
     private PanelContainer _battlePanel = null!;
+    private VBoxContainer _battleLayout = null!;
+    private HBoxContainer _combatantRow = null!;
     private PanelContainer _playerCombatPanel = null!;
     private PanelContainer _enemyCombatPanel = null!;
     private VBoxContainer _enemyCombatLayout = null!;
@@ -55,6 +58,7 @@ public partial class BattleScene : Control
     private PanelContainer _statusHelpPanel = null!;
     private Label _statusHelpLabel = null!;
     private Label _intentLabel = null!;
+    private PanelContainer _handPanel = null!;
     private Control _handBox = null!;
     private Button _endTurnButton = null!;
     private Button _deckButton = null!;
@@ -84,13 +88,13 @@ public partial class BattleScene : Control
     private Label _mineRevealTipLabel = null!;
     private Line2D _dragLine = null!;
 
-    private const float RouteMapWidth = 960f;
-    private const float RouteNodeWidth = 126f;
-    private const float RouteNodeHeight = 78f;
-    private const float RouteLayerGap = 108f;
-    private const float RouteMapSidePadding = 136f;
-    private const float RouteMapTopPadding = 44f;
-    private const float RouteMapBottomPadding = 70f;
+    private const float RouteMapWidth = 1220f;
+    private const float RouteNodeWidth = 122f;
+    private const float RouteNodeHeight = 70f;
+    private const float RouteLayerGap = 134f;
+    private const float RouteMapSidePadding = 220f;
+    private const float RouteMapTopPadding = 56f;
+    private const float RouteMapBottomPadding = 90f;
 
     private RunRoom? _activeBattleRoom;
     private RunRoom? _activeMineRoom;
@@ -98,14 +102,16 @@ public partial class BattleScene : Control
     private bool _returnToMineAfterBattle;
     private bool _mineFlagMode;
     private bool _debugVisible;
+    private bool _infoPanelExpanded = true;
     private bool _metaRecorded;
     private bool _loadingActive;
     private bool _tipPlaying;
     private string _selectedItemId = string.Empty;
     private readonly Queue<string> _tipQueue = new();
-    private readonly Dictionary<int, Button> _enemyTargetButtons = new();
+    private readonly Dictionary<int, Control> _enemyTargetButtons = new();
     private Control? _aimingCardButton;
     private int _aimingCardIndex = -1;
+    private int _aimHoverEnemyIndex = -1;
     private Vector2 _dragLineStart;
     private bool _dragTargetsEnemy;
     private Container? _choiceButtonTarget;
@@ -139,6 +145,8 @@ public partial class BattleScene : Control
         _mineModeButton = GetNode<Button>("Root/Margin/MainLayout/ContentSplit/SidePanel/ActionPanel/ActionLayout/MineModeButton");
         _mineGrid = GetNode<GridContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/MinePanel/MineLayout/MineBoardFrame/MineBoardCenter/MineGrid");
         _battlePanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel");
+        _battleLayout = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout");
+        _combatantRow = GetNode<HBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow");
         _playerCombatPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/PlayerCombatPanel");
         _enemyCombatPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel");
         _enemyCombatLayout = GetNode<VBoxContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/CombatantRow/EnemyCombatPanel/EnemyCombatLayout");
@@ -153,6 +161,7 @@ public partial class BattleScene : Control
         _battleResourceLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/BattleResourceLabel");
         _intentPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel");
         _intentLabel = GetNode<Label>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/IntentPanel/IntentLabel");
+        _handPanel = GetNode<PanelContainer>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel");
         _handBox = GetNode<Control>("Root/Margin/MainLayout/ContentSplit/MainPanel/ContentStack/BattlePanel/BattleLayout/HandPanel/HandList");
         _handBox.CustomMinimumSize = new Vector2(0, 238);
         _handBox.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -178,6 +187,7 @@ public partial class BattleScene : Control
         BuildModalHost();
         BuildBattleStatusHelp();
         BuildEnemyTargetRow();
+        BuildBattleInteractionLayout();
 
         AddChild(_gameData);
         AddChild(_battle);
@@ -380,8 +390,17 @@ public partial class BattleScene : Control
         _hudFogLabel = AddHudCell("HudFog", 144);
         _hudScoreLabel = AddHudCell("HudScore", 134);
         _hudObjectiveLabel = AddHudCell("HudObjective", 300, true);
+        _infoToggleButton = new Button
+        {
+            Name = "InfoToggleButton",
+            CustomMinimumSize = new Vector2(104, 52),
+            FocusMode = FocusModeEnum.None
+        };
+        _infoToggleButton.Pressed += ToggleInfoPanel;
+        _topBarLayout.AddChild(_infoToggleButton);
         _topBarLayout.AddChild(_menuButton);
         _menuButton.CustomMinimumSize = new Vector2(72, 52);
+        UpdateInfoToggleButton();
     }
 
     private Label AddHudCell(string name, float minWidth, bool expand = false)
@@ -411,19 +430,83 @@ public partial class BattleScene : Control
         return label;
     }
 
+    private void ToggleInfoPanel()
+    {
+        SetInfoPanelExpanded(!_infoPanelExpanded);
+    }
+
+    private void SetInfoPanelExpanded(bool expanded)
+    {
+        _infoPanelExpanded = expanded;
+        _rightPanel.Visible = expanded;
+        _contentSplit.AddThemeConstantOverride("separation", expanded ? 12 : 8);
+        UpdateInfoToggleButton();
+    }
+
+    private void UpdateInfoToggleButton()
+    {
+        if (_infoToggleButton == null)
+        {
+            return;
+        }
+
+        var english = Localization.Language == Localization.English;
+        _infoToggleButton.Text = _infoPanelExpanded
+            ? english ? "Hide Info" : "收起信息"
+            : english ? "Info" : "信息";
+        _infoToggleButton.TooltipText = _infoPanelExpanded
+            ? english ? "Collapse room information and log." : "收起房间信息与记录。"
+            : english ? "Show room information and log." : "打开房间信息与记录。";
+    }
+
     private void BuildEnemyTargetRow()
     {
         _enemyPortrait.Visible = false;
         _enemyHpBar.Visible = false;
         _enemyBlockLabel.Visible = false;
+        _enemyCombatLabel.Visible = false;
 
         _enemyTargetRow = new HBoxContainer
         {
             Name = "EnemyTargetRow",
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
-        _enemyTargetRow.AddThemeConstantOverride("separation", 10);
+        _enemyTargetRow.AddThemeConstantOverride("separation", 14);
         _enemyCombatLayout.AddChild(_enemyTargetRow);
+    }
+
+    private void BuildBattleInteractionLayout()
+    {
+        _battlePanel.SizeFlagsVertical = SizeFlags.ExpandFill;
+        _battlePanel.CustomMinimumSize = new Vector2(0, 660);
+        _battleLayout.AddThemeConstantOverride("separation", 6);
+
+        _combatantRow.CustomMinimumSize = new Vector2(0, 318);
+        _combatantRow.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        _combatantRow.AddThemeConstantOverride("separation", 14);
+
+        _playerCombatPanel.CustomMinimumSize = new Vector2(286, 302);
+        _playerCombatPanel.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+        _enemyCombatPanel.CustomMinimumSize = new Vector2(0, 302);
+        _enemyCombatPanel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        _enemyCombatLayout.AddThemeConstantOverride("separation", 8);
+        _enemyTargetRow.CustomMinimumSize = new Vector2(0, 270);
+
+        _playerPortrait.CustomMinimumSize = new Vector2(0, 144);
+        _playerHpBar.CustomMinimumSize = new Vector2(0, 16);
+        _enemyHpBar.CustomMinimumSize = new Vector2(0, 16);
+
+        _battleResourceLabel.AddThemeFontSizeOverride("font_size", 17);
+        _battleResourceLabel.HorizontalAlignment = HorizontalAlignment.Center;
+        _statusHelpLabel.AddThemeFontSizeOverride("font_size", 14);
+        _statusHelpPanel.CustomMinimumSize = new Vector2(0, 44);
+        _statusHelpPanel.Visible = false;
+
+        _handPanel.CustomMinimumSize = new Vector2(0, 252);
+        _handPanel.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        _handBox.CustomMinimumSize = new Vector2(0, 244);
+        _endTurnButton.CustomMinimumSize = new Vector2(0, 58);
+        _endTurnButton.AddThemeFontSizeOverride("font_size", 22);
     }
 
     private void BuildBattleStatusHelp()
@@ -467,6 +550,7 @@ public partial class BattleScene : Control
         HideInteractivePanels();
 
         var choices = _run.GetNextRoomChoices();
+        SetInfoPanelExpanded(false);
         if (choices.Count == 0)
         {
             _roomTitleLabel.Text = Localization.T("run_complete");
@@ -565,8 +649,8 @@ public partial class BattleScene : Control
 
         return room.Kind switch
         {
-            "battle" => $"{string.Format(Localization.T("encounter_reward"), _gameData.GetEnemy(room.EnemyId).DisplayName())} {FormatThreatPreview(room)}",
-            "elite" => $"{(Localization.Language == Localization.English ? "Elite battle. Higher pressure, stronger spoils." : "精英战。压力更高，但战利品更强。")} {FormatThreatPreview(room)}",
+            "battle" => $"{string.Format(Localization.T("encounter_reward"), GetPrimaryRoomEnemy(room).DisplayName())} {FormatEnemyTestType(GetPrimaryRoomEnemy(room))} {FormatThreatPreview(room)}",
+            "elite" => $"{(Localization.Language == Localization.English ? "Elite battle. Higher pressure, stronger spoils." : "精英战。压力更高，但战利品更强。")} {FormatEnemyTestType(GetPrimaryRoomEnemy(room))} {FormatThreatPreview(room)}",
             "treasure" => Localization.Language == Localization.English ? "Choose a cache reward: keepsake, card, or supplies." : "选择一份宝藏补给：纪念物、卡牌或工具。",
             "mine" => FormatMineSummary(room.MineConfig),
             "event" => _gameData.GetEvent(room.EventId).DisplayDescription(),
@@ -578,6 +662,47 @@ public partial class BattleScene : Control
             "complete" => Localization.T("complete_summary"),
             _ => Localization.T("unknown_room")
         };
+    }
+
+    private EnemyData GetPrimaryRoomEnemy(RunRoom room)
+    {
+        if (!string.IsNullOrWhiteSpace(room.EnemyId))
+        {
+            return _gameData.GetEnemy(room.EnemyId);
+        }
+
+        if (room.EnemyIds.Count > 0)
+        {
+            return _gameData.GetEnemy(room.EnemyIds[0]);
+        }
+
+        return _gameData.GetEnemy("slime");
+    }
+
+    private static string FormatEnemyTestType(EnemyData enemy)
+    {
+        var key = !string.IsNullOrWhiteSpace(enemy.TestType)
+            ? enemy.TestType
+            : enemy.Tags.Count > 0 ? enemy.Tags[0] : string.Empty;
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        var label = key switch
+        {
+            "baseline_check" => Localization.Language == Localization.English ? "baseline tactics" : "基础攻防",
+            "defense_check" => Localization.Language == Localization.English ? "defense check" : "防御检验",
+            "burst_check" => Localization.Language == Localization.English ? "burst check" : "爆发检验",
+            "shield_check" => Localization.Language == Localization.English ? "shield break" : "破盾检验",
+            "sustain_check" => Localization.Language == Localization.English ? "sustain check" : "续航检验",
+            "control_check" => Localization.Language == Localization.English ? "control check" : "控制检验",
+            "scaling_check" => Localization.Language == Localization.English ? "scaling check" : "成长检验",
+            "boss_pressure" => Localization.Language == Localization.English ? "boss pressure" : "首领压力",
+            _ => Localization.Language == Localization.English ? key.Replace('_', ' ') : key
+        };
+
+        return Localization.Language == Localization.English ? $"Test: {label}" : $"考验：{label}";
     }
 
     private void RenderRouteMap(IReadOnlyList<RunRoom> choices)
@@ -677,8 +802,8 @@ public partial class BattleScene : Control
                 Color = layerIndex == _run.CurrentLayerIndex + 1
                     ? new Color(0.16f, 0.24f, 0.30f, 0.58f)
                     : layerIndex % 2 == 0 ? new Color(0.08f, 0.13f, 0.18f, 0.36f) : new Color(0.06f, 0.10f, 0.15f, 0.28f),
-                Position = new Vector2(22, y - 14),
-                Size = new Vector2(RouteMapWidth - 44, RouteNodeHeight + 28),
+                Position = new Vector2(96, y - 16),
+                Size = new Vector2(RouteMapWidth - 118, RouteNodeHeight + 32),
                 MouseFilter = MouseFilterEnum.Ignore,
                 ZIndex = -2
             };
@@ -687,15 +812,16 @@ public partial class BattleScene : Control
             var label = new Label
             {
                 Text = FormatRouteLayerTitle(layerIndex),
-                Position = new Vector2(18, y + 18),
-                Size = new Vector2(106, 42),
-                HorizontalAlignment = HorizontalAlignment.Center,
+                Position = new Vector2(8, y + 12),
+                Size = new Vector2(82, 46),
+                HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 MouseFilter = MouseFilterEnum.Ignore,
                 ZIndex = 3
             };
             label.AddThemeColorOverride("font_color", layerIndex == _run.CurrentLayerIndex + 1 ? Color.FromHtml("f4f0df") : Color.FromHtml("71849a"));
-            label.AddThemeFontSizeOverride("font_size", 13);
+            label.AddThemeFontSizeOverride("font_size", 12);
             mapCanvas.AddChild(label);
         }
     }
@@ -714,9 +840,8 @@ public partial class BattleScene : Control
                         continue;
                     }
 
-                    var active = room.NodeId == _run.CurrentRoomNodeId || _run.IsRoomReachable(room) || availableRoute.Contains(room.NodeId);
-                    var forward = availableRoute.Contains(next.NodeId);
-                    AddRouteConnectionLine(mapCanvas, room, next, active && forward);
+                    var active = room.NodeId == _run.CurrentRoomNodeId && _run.IsRoomReachable(next);
+                    AddRouteConnectionLine(mapCanvas, room, next, active);
                 }
             }
         }
@@ -797,9 +922,10 @@ public partial class BattleScene : Control
             foreach (var room in _run.MapLayers[layerIndex])
             {
                 var selectable = _run.IsRoomReachable(room);
-                var current = room.NodeId == _run.CurrentRoomNodeId;
-                var past = room.LayerIndex < _run.CurrentLayerIndex || (room.LayerIndex == _run.CurrentLayerIndex && !current);
-                var onRoute = current || selectable || availableRoute.Contains(room.NodeId);
+                var routeAnchor = room.NodeId == _run.CurrentRoomNodeId;
+                var current = routeAnchor && !_run.HasNextLayer();
+                var past = room.LayerIndex < _run.CurrentLayerIndex || routeAnchor || (room.LayerIndex == _run.CurrentLayerIndex && !routeAnchor);
+                var onRoute = routeAnchor || selectable || availableRoute.Contains(room.NodeId);
                 var button = new Button
                 {
                     Text = FormatRouteNodeText(room, current, selectable, past, onRoute),
@@ -810,7 +936,7 @@ public partial class BattleScene : Control
                     Disabled = !selectable,
                     ZIndex = 2
                 };
-                button.AddThemeFontSizeOverride("font_size", 13);
+                button.AddThemeFontSizeOverride("font_size", 12);
                 StyleRouteNodeButton(button, room, current, selectable, past, onRoute);
                 if (selectable)
                 {
@@ -831,8 +957,8 @@ public partial class BattleScene : Control
 
     private int GetRouteScrollTarget()
     {
-        var focusLayer = Math.Clamp(_run.CurrentLayerIndex < 0 ? 0 : _run.CurrentLayerIndex, 0, Math.Max(0, _run.MapLayers.Count - 1));
-        return Math.Max(0, (int)(GetRouteLayerY(focusLayer) - 360f));
+        var focusLayer = Math.Clamp(_run.CurrentLayerIndex < 0 ? 0 : _run.CurrentLayerIndex + 1, 0, Math.Max(0, _run.MapLayers.Count - 1));
+        return Math.Max(0, (int)(GetRouteLayerY(focusLayer) - 220f));
     }
 
     private float GetRouteLayerY(int layerIndex)
@@ -922,15 +1048,17 @@ public partial class BattleScene : Control
 
     private string FormatRouteLayerTitle(int layerIndex)
     {
-        var title = layerIndex == 0 ? Localization.T("route_entry_layer") : string.Format(Localization.T("route_layer"), layerIndex + 1);
-        if (layerIndex == _run.CurrentLayerIndex)
+        var title = Localization.Language == Localization.English
+            ? layerIndex == 0 ? "Entry" : $"Room {layerIndex + 1}"
+            : layerIndex == 0 ? "暗门" : $"第 {layerIndex + 1} 间";
+        if (layerIndex <= _run.CurrentLayerIndex)
         {
-            return $"{title} · {Localization.T("route_current")}";
+            return $"{title}\n{Localization.T("route_visited")}";
         }
 
         if (layerIndex == _run.CurrentLayerIndex + 1)
         {
-            return $"{title} · {Localization.T("route_available")}";
+            return $"{title}\n{Localization.T("route_available")}";
         }
 
         return title;
@@ -938,8 +1066,8 @@ public partial class BattleScene : Control
 
     private string FormatRouteNodeText(RunRoom room, bool current, bool selectable, bool past, bool onRoute)
     {
-        var marker = past ? "✓" : current ? "●" : selectable ? "◆" : !onRoute ? "·" : "◇";
-        var title = TrimRouteTitle(room.DisplayTitle(), Localization.Language == Localization.English ? 13 : 8);
+        var marker = past && onRoute ? "✓" : current ? "●" : selectable ? "◆" : !onRoute ? "·" : "◇";
+        var title = TrimRouteTitle(room.DisplayTitle(), Localization.Language == Localization.English ? 12 : 7);
         return $"{marker} {GetMapNodeIcon(room.Kind)}\n{title}\n{FormatCompactRouteCost(room)}";
     }
 
@@ -955,9 +1083,11 @@ public partial class BattleScene : Control
             ? Localization.T("route_current")
             : selectable
                 ? Localization.T("route_available")
-                : past || !onRoute
-                    ? Localization.T("route_lost")
-                    : Localization.T("route_future");
+                : past && onRoute
+                    ? Localization.T("route_visited")
+                    : past || !onRoute
+                        ? Localization.T("route_lost")
+                        : Localization.T("route_future");
     }
 
     private static string TrimRouteTitle(string title, int maxChars)
@@ -974,8 +1104,8 @@ public partial class BattleScene : Control
     {
         var bonus = room.RewardBonus > 0 ? $" +{room.RewardBonus}%" : string.Empty;
         return Localization.Language == Localization.English
-            ? $"R{room.Risk} / O-{room.LampCost}{bonus}"
-            : $"险{room.Risk} / 电-{room.LampCost}{bonus}";
+            ? $"R{room.Risk} O-{room.LampCost}{bonus}"
+            : $"险{room.Risk} 电-{room.LampCost}{bonus}";
     }
 
     private string FormatRouteNodeSummary(RunRoom room)
@@ -1148,22 +1278,26 @@ public partial class BattleScene : Control
 
     private static string FormatMineSummary(MineRoomConfig config)
     {
+        var partialReward = config.PartialReward > 0 ? config.PartialReward : Math.Max(4, Math.Max(0, config.ClearReward) * 45 / 100);
+        var partialPercent = Math.Clamp(config.PartialRewardPercent, 30, 90);
         if (Localization.Language == Localization.English)
         {
-            return $"{config.Width}x{config.Height} room board. Threats: {config.Monsters + config.Traps}; finds: {config.Treasures + config.Ores}; clear reward: {config.ClearReward} buttons.";
+            return $"{config.Width}x{config.Height} board. Threats: {config.Monsters + config.Traps}; finds: {config.Treasures + config.Ores}; stage {partialPercent}% +{partialReward}; clear +{config.ClearReward}.";
         }
 
-        return $"{config.Width}x{config.Height} 探索棋盘。危险：{config.Monsters + config.Traps}；藏品：{config.Treasures + config.Ores}；清理奖励：{config.ClearReward} 纽扣。";
+        return $"{config.Width}x{config.Height} 探索棋盘。危险：{config.Monsters + config.Traps}；藏品：{config.Treasures + config.Ores}；探索 {partialPercent}% +{partialReward}；全清 +{config.ClearReward}。";
     }
 
     private static string FormatMineIntro(MineRoomConfig config)
     {
+        var partialReward = config.PartialReward > 0 ? config.PartialReward : Math.Max(4, Math.Max(0, config.ClearReward) * 45 / 100);
+        var partialPercent = Math.Clamp(config.PartialRewardPercent, 30, 90);
         if (Localization.Language == Localization.English)
         {
-            return $"Room search started. Numbers show nearby danger and find clues. Board {config.Width}x{config.Height}, monsters {config.Monsters}, traps {config.Traps}, finds {config.Treasures + config.Ores}.";
+            return $"Search the room. Numbers hint at nearby danger and finds. Exit can end the room; {partialPercent}% safe reveal grants +{partialReward}, full clear grants +{config.ClearReward}.";
         }
 
-        return $"房间探索开始。数字同时提示周围危险与藏品。棋盘 {config.Width}x{config.Height}，怪物 {config.Monsters}，陷阱 {config.Traps}，藏品 {config.Treasures + config.Ores}。";
+        return $"房间探索开始。数字提示周围危险与藏品。找到出口即可离开；安全格探索 {partialPercent}% 获得 +{partialReward}，全清额外 +{config.ClearReward}。";
     }
 
     private void RenderMineRoom(RunRoom room)
@@ -1338,22 +1472,20 @@ public partial class BattleScene : Control
         _mineModeButton.Text = _mineFlagMode ? Localization.T("mine_mode_flag") : Localization.T("mine_mode_reveal");
         _mineGrid.Columns = minefield.Width;
 
-        var revealedSafe = 0;
         var flags = 0;
         foreach (var cell in minefield.Cells)
         {
-            if (cell.IsRevealed && !cell.IsDanger && cell.Type != MineTileType.Exit)
-            {
-                revealedSafe++;
-            }
             if (cell.IsFlagged)
             {
                 flags++;
             }
         }
 
-        var safeTotal = minefield.Cells.Count - minefield.DangerCount - 1;
-        _mineStatusLabel.Text = string.Format(Localization.T("mine_status"), revealedSafe, safeTotal, flags, minefield.DangerCount, minefield.TrapDamage, minefield.RewardShards);
+        var stageState = minefield.PartialRewardClaimed ? "✓" : $"{minefield.PartialRewardPercent}%";
+        var clearState = minefield.PerfectRewardClaimed ? "✓" : "100%";
+        _mineStatusLabel.Text = Localization.Language == Localization.English
+            ? $"Safe {minefield.SafeRevealCount}/{minefield.SafeRevealGoal} ({minefield.SafeRevealPercent}%)  Flags {flags}/{minefield.DangerCount}  Trap -{minefield.TrapDamage} HP  Stage {stageState} +{minefield.PartialRewardShards}  Clear {clearState} +{minefield.RewardShards}"
+            : $"安全 {minefield.SafeRevealCount}/{minefield.SafeRevealGoal}（{minefield.SafeRevealPercent}%）  标记 {flags}/{minefield.DangerCount}  陷阱 -{minefield.TrapDamage}  阶段 {stageState} +{minefield.PartialRewardShards}  全清 {clearState} +{minefield.RewardShards}";
 
         ClearBox(_mineGrid);
         for (var i = 0; i < minefield.Cells.Count; i++)
@@ -2187,6 +2319,7 @@ public partial class BattleScene : Control
 
     private void StartBattleRoom(RunRoom room)
     {
+        SetInfoPanelExpanded(false);
         _continueButton.Visible = false;
         _activeBattleRoom = room;
         _returnToMineAfterBattle = false;
@@ -2210,6 +2343,9 @@ public partial class BattleScene : Control
             _run.GetRunEffectValue(_gameData, "player_damage_bonus"),
             _run.GetRunEffectValue(_gameData, "player_block_bonus"),
             _run.GetRunEffectValue(_gameData, "self_damage_reduction"));
+        _battle.SetInspirationModifiers(
+            _run.GetRunEffectValue(_gameData, "inspiration_block_bonus"),
+            _run.GetRunEffectValue(_gameData, "inspiration_stagger_bonus"));
         _battle.GainBlock(_run.GetRunEffectValue(_gameData, "battle_start_block"));
         _battle.GainEnergy(_run.GetRunEffectValue(_gameData, "battle_start_energy"));
         _battle.DrawExtraCards(_run.GetRunEffectValue(_gameData, "battle_start_draw"));
@@ -2395,6 +2531,7 @@ public partial class BattleScene : Control
         CancelAimingCard(false);
         _aimingCardButton = button;
         _aimingCardIndex = handIndex;
+        _aimHoverEnemyIndex = -1;
         _dragTargetsEnemy = CardTargetsEnemy(_battle.Hand[handIndex]);
         _dragLineStart = button.GlobalPosition + button.Size * new Vector2(0.5f, 0.06f);
         button.ZIndex = 100;
@@ -2419,6 +2556,7 @@ public partial class BattleScene : Control
 
         _aimingCardButton = null;
         _aimingCardIndex = -1;
+        _aimHoverEnemyIndex = -1;
         HideAimingFeedback();
     }
 
@@ -2468,6 +2606,11 @@ public partial class BattleScene : Control
     {
         foreach (var pair in _enemyTargetButtons)
         {
+            if (pair.Key < 0 || pair.Key >= _battle.Enemies.Count || !_battle.Enemies[pair.Key].IsAlive)
+            {
+                continue;
+            }
+
             if (pair.Value.GetGlobalRect().HasPoint(globalPosition))
             {
                 return pair.Key;
@@ -2492,7 +2635,7 @@ public partial class BattleScene : Control
     {
         foreach (var action in card.Actions)
         {
-            if (action.Type is "damage" or "weak" or "vulnerable")
+            if (action.Type is "damage" or "combo_damage" or "weak" or "vulnerable" or "stagger")
             {
                 return true;
             }
@@ -2526,7 +2669,15 @@ public partial class BattleScene : Control
             return;
         }
 
-        var valid = IsValidAimingTarget(_battle.Hand[_aimingCardIndex], globalMousePosition);
+        var card = _battle.Hand[_aimingCardIndex];
+        var valid = IsValidAimingTarget(card, globalMousePosition);
+        var hoverEnemy = CardTargetsEnemy(card) ? FindEnemyTargetAt(globalMousePosition) : -1;
+        if (hoverEnemy != _aimHoverEnemyIndex)
+        {
+            _aimHoverEnemyIndex = hoverEnemy;
+            RefreshAimingTargetScales();
+        }
+
         _dragHintLabel.AddThemeColorOverride("font_color", valid ? Color.FromHtml("bdf7d4") : Color.FromHtml("f4f0df"));
     }
 
@@ -2535,6 +2686,7 @@ public partial class BattleScene : Control
         _dragHintPanel.Visible = false;
         _dragLine.Visible = false;
         StyleCombatPanels(false, false);
+        ResetAimingTargetScales();
     }
 
     private void UpdateAimingLine(Vector2 globalMousePosition)
@@ -2548,14 +2700,89 @@ public partial class BattleScene : Control
         _dragLine.Visible = true;
         var rootOrigin = root.GlobalPosition;
         _dragLineStart = _aimingCardButton.GlobalPosition + _aimingCardButton.Size * new Vector2(0.5f, 0.06f);
-        _dragLine.Points = new[]
-        {
-            _dragLineStart - rootOrigin,
-            globalMousePosition - rootOrigin
-        };
-        _dragLine.DefaultColor = IsValidAimingTarget(_battle.Hand[_aimingCardIndex], globalMousePosition)
+        var card = _battle.Hand[_aimingCardIndex];
+        var endPoint = ResolveAimEndPoint(card, globalMousePosition);
+        _dragLine.Points = BuildAimCurve(_dragLineStart - rootOrigin, endPoint - rootOrigin);
+        _dragLine.DefaultColor = IsValidAimingTarget(card, globalMousePosition)
             ? Color.FromHtml("78d69b")
             : Color.FromHtml("d7b45f");
+    }
+
+    private Vector2 ResolveAimEndPoint(CardData card, Vector2 globalMousePosition)
+    {
+        if (CardTargetsEnemy(card))
+        {
+            var enemyIndex = FindEnemyTargetAt(globalMousePosition);
+            if (enemyIndex >= 0 && _enemyTargetButtons.TryGetValue(enemyIndex, out var target) && GodotObject.IsInstanceValid(target))
+            {
+                return GetAimPoint(target, 0.42f);
+            }
+        }
+        else if (_playerCombatPanel.GetGlobalRect().HasPoint(globalMousePosition))
+        {
+            return GetAimPoint(_playerCombatPanel, 0.36f);
+        }
+
+        return globalMousePosition;
+    }
+
+    private static Vector2 GetAimPoint(Control target, float verticalFactor)
+    {
+        var rect = target.GetGlobalRect();
+        return rect.Position + rect.Size * new Vector2(0.5f, verticalFactor);
+    }
+
+    private static Vector2[] BuildAimCurve(Vector2 start, Vector2 end)
+    {
+        const int segments = 18;
+        var points = new Vector2[segments + 1];
+        var height = Math.Clamp(Math.Abs(start.X - end.X) * 0.16f + Math.Abs(start.Y - end.Y) * 0.18f + 92f, 92f, 220f);
+        var control = new Vector2((start.X + end.X) * 0.5f, Math.Min(start.Y, end.Y) - height);
+        for (var i = 0; i <= segments; i++)
+        {
+            var t = i / (float)segments;
+            var a = start.Lerp(control, t);
+            var b = control.Lerp(end, t);
+            points[i] = a.Lerp(b, t);
+        }
+
+        return points;
+    }
+
+    private void RefreshAimingTargetScales()
+    {
+        foreach (var pair in _enemyTargetButtons)
+        {
+            if (!GodotObject.IsInstanceValid(pair.Value))
+            {
+                continue;
+            }
+
+            if (pair.Key == _aimHoverEnemyIndex)
+            {
+                pair.Value.Scale = new Vector2(1.045f, 1.045f);
+                pair.Value.Modulate = Color.FromHtml("ffffff");
+            }
+            else
+            {
+                pair.Value.Scale = Vector2.One;
+                pair.Value.Modulate = pair.Key == _battle.SelectedEnemyIndex ? Color.FromHtml("ffffff") : Color.FromHtml("e9edf2");
+            }
+        }
+    }
+
+    private void ResetAimingTargetScales()
+    {
+        foreach (var pair in _enemyTargetButtons)
+        {
+            if (!GodotObject.IsInstanceValid(pair.Value))
+            {
+                continue;
+            }
+
+            pair.Value.Scale = Vector2.One;
+            pair.Value.Modulate = Color.FromHtml("ffffff");
+        }
     }
 
     private void AnimateCombatFeedback(Control target, Vector2 offset, Color flashColor)
@@ -2579,13 +2806,15 @@ public partial class BattleScene : Control
             PlayerBlock = _battle.PlayerBlock,
             PlayerWeak = _battle.PlayerWeak,
             Energy = _battle.Energy,
-            HandCount = _battle.Hand.Count
+            HandCount = _battle.Hand.Count,
+            InspirationsThisTurn = _battle.InspirationsThisTurn
         };
 
         foreach (var enemy in _battle.Enemies)
         {
             snapshot.EnemyHp.Add(enemy.Hp);
             snapshot.EnemyBlock.Add(enemy.Block);
+            snapshot.EnemyStagger.Add(enemy.Stagger);
             snapshot.EnemyWeak.Add(enemy.Weak);
             snapshot.EnemyVulnerable.Add(enemy.Vulnerable);
         }
@@ -2624,6 +2853,12 @@ public partial class BattleScene : Control
             if (explicitEnergy > 0)
             {
                 SpawnFloatingText(_playerCombatPanel, $"+{explicitEnergy} Energy", "energy", playerOffset++);
+            }
+
+            var inspirationDelta = _battle.InspirationsThisTurn - before.InspirationsThisTurn;
+            if (inspirationDelta > 0)
+            {
+                SpawnFloatingText(_playerCombatPanel, inspirationDelta == 1 ? "灵感!" : $"灵感 x{inspirationDelta}", "draw", playerOffset++);
             }
         }
         else if (playerHpDelta == 0 && _battle.PlayerBlock < before.PlayerBlock)
@@ -2669,6 +2904,18 @@ public partial class BattleScene : Control
             if (enemy.Vulnerable > before.EnemyVulnerable[i])
             {
                 SpawnFloatingText(target, "Vulnerable", "status", offset++);
+            }
+            if (i < before.EnemyStagger.Count)
+            {
+                var staggerDelta = enemy.Stagger - before.EnemyStagger[i];
+                if (staggerDelta > 0)
+                {
+                    SpawnFloatingText(target, $"+{staggerDelta} 破势", "status", offset++);
+                }
+                else if (staggerDelta < 0 && enemy.IsAlive)
+                {
+                    SpawnFloatingText(target, $"{staggerDelta} 破势", "block", offset++);
+                }
             }
         }
     }
@@ -2862,16 +3109,18 @@ public partial class BattleScene : Control
             Math.Max(1, reward.MinOffers),
             Math.Max(Math.Max(1, reward.MinOffers), reward.MaxOffers) + 1);
         var pickedKinds = new HashSet<string>();
+        var remainingBudget = Math.Max(30, reward.ValueBudget);
 
         while (pickedKinds.Count < targetCount)
         {
-            var kind = PickRewardOfferKind(reward, random, pickedKinds);
+            var kind = PickRewardOfferKind(reward, random, pickedKinds, remainingBudget, pickedKinds.Count == 0);
             if (string.IsNullOrWhiteSpace(kind))
             {
                 break;
             }
 
             pickedKinds.Add(kind);
+            remainingBudget -= GetRewardKindValue(reward, kind);
             AddOffersForKind(result, reward, kind, random);
         }
 
@@ -2883,14 +3132,14 @@ public partial class BattleScene : Control
         return result;
     }
 
-    private string PickRewardOfferKind(RewardData reward, Random random, HashSet<string> pickedKinds)
+    private string PickRewardOfferKind(RewardData reward, Random random, HashSet<string> pickedKinds, int remainingBudget, bool allowOverBudget)
     {
         var weighted = new List<(string Kind, int Weight)>();
-        AddRewardKind(weighted, pickedKinds, "card", reward.CardOfferWeight, HasCardRewardChoices(reward));
-        AddRewardKind(weighted, pickedKinds, "relic", reward.RelicOfferWeight, HasRelicRewardChoices(reward));
-        AddRewardKind(weighted, pickedKinds, "supply", reward.SupplyOfferWeight, HasSupplyRewardChoices(reward));
-        AddRewardKind(weighted, pickedKinds, "buttons", reward.ButtonOfferWeight, reward.BonusShardsMax > 0);
-        AddRewardKind(weighted, pickedKinds, "heal", reward.HealOfferWeight, reward.BonusHealMax > 0 && _run.PlayerHp < _run.PlayerMaxHp);
+        AddRewardKind(weighted, reward, pickedKinds, "card", reward.CardOfferWeight, HasCardRewardChoices(reward), remainingBudget, allowOverBudget);
+        AddRewardKind(weighted, reward, pickedKinds, "relic", reward.RelicOfferWeight, HasRelicRewardChoices(reward), remainingBudget, allowOverBudget);
+        AddRewardKind(weighted, reward, pickedKinds, "supply", reward.SupplyOfferWeight, HasSupplyRewardChoices(reward), remainingBudget, allowOverBudget);
+        AddRewardKind(weighted, reward, pickedKinds, "buttons", reward.ButtonOfferWeight, reward.BonusShardsMax > 0, remainingBudget, allowOverBudget);
+        AddRewardKind(weighted, reward, pickedKinds, "heal", reward.HealOfferWeight, reward.BonusHealMax > 0 && _run.PlayerHp < _run.PlayerMaxHp, remainingBudget, allowOverBudget);
 
         var total = 0;
         foreach (var entry in weighted)
@@ -2916,12 +3165,34 @@ public partial class BattleScene : Control
         return weighted[0].Kind;
     }
 
-    private static void AddRewardKind(List<(string Kind, int Weight)> weighted, HashSet<string> pickedKinds, string kind, int weight, bool available)
+    private static void AddRewardKind(List<(string Kind, int Weight)> weighted, RewardData reward, HashSet<string> pickedKinds, string kind, int weight, bool available, int remainingBudget, bool allowOverBudget)
     {
-        if (available && weight > 0 && !pickedKinds.Contains(kind))
+        if (!available || weight <= 0 || pickedKinds.Contains(kind))
         {
-            weighted.Add((kind, weight));
+            return;
         }
+
+        var value = GetRewardKindValue(reward, kind);
+        if (!allowOverBudget && value > remainingBudget)
+        {
+            return;
+        }
+
+        var adjustedWeight = value > remainingBudget ? Math.Max(1, weight / 3) : weight;
+        weighted.Add((kind, adjustedWeight));
+    }
+
+    private static int GetRewardKindValue(RewardData reward, string kind)
+    {
+        return kind switch
+        {
+            "card" => Math.Max(1, reward.CardOfferValue),
+            "relic" => Math.Max(1, reward.RelicOfferValue),
+            "supply" => Math.Max(1, reward.SupplyOfferValue),
+            "buttons" => Math.Max(1, reward.ButtonOfferValue),
+            "heal" => Math.Max(1, reward.HealOfferValue),
+            _ => 1
+        };
     }
 
     private bool HasCardRewardChoices(RewardData reward)
@@ -3247,14 +3518,26 @@ public partial class BattleScene : Control
             return;
         }
 
-        var playerStatuses = _battle.PlayerWeak > 0 ? $" | 虚弱 {_battle.PlayerWeak}" : string.Empty;
+        var isEnglish = Localization.Language == Localization.English;
+        var playerStatuses = _battle.PlayerWeak > 0
+            ? isEnglish ? $" | Weak {_battle.PlayerWeak}" : $" | 虚弱 {_battle.PlayerWeak}"
+            : string.Empty;
         _playerHpBar.MaxValue = _battle.PlayerMaxHp;
         _playerHpBar.Value = Math.Max(0, _battle.PlayerHp);
-        _playerCombatLabel.Text = $"玩家  HP {_battle.PlayerHp}/{_battle.PlayerMaxHp}\n能量 {_battle.Energy}{playerStatuses}";
+        _playerCombatLabel.Text = isEnglish
+            ? $"Kid Explorer\nHP {_battle.PlayerHp}/{_battle.PlayerMaxHp}  Energy {_battle.Energy}{playerStatuses}"
+            : $"小小探险家\n勇气 {_battle.PlayerHp}/{_battle.PlayerMaxHp}  能量 {_battle.Energy}{playerStatuses}";
         _playerCombatPanel.TooltipText = BuildPlayerStatusTooltip();
-        _enemyCombatLabel.Text = $"敌群  存活 {CountAliveEnemies()}/{_battle.Enemies.Count}\n威胁 {_battle.ThreatLevel} | 当前目标：{_battle.Enemy.DisplayName()}";
-        _playerBlockLabel.Text = $"格挡 {_battle.PlayerBlock}";
-        _battleResourceLabel.Text = $"抽牌堆 {_battle.DrawPile.Count} | 弃牌堆 {_battle.DiscardPile.Count} | 手牌 {_battle.Hand.Count}";
+        _enemyCombatPanel.TooltipText = isEnglish
+            ? $"Enemies alive {CountAliveEnemies()}/{_battle.Enemies.Count}. Current target: {_battle.Enemy.DisplayName()}."
+            : $"敌人存活 {CountAliveEnemies()}/{_battle.Enemies.Count}。当前目标：{_battle.Enemy.DisplayName()}。";
+        _playerBlockLabel.Text = isEnglish ? $"Block {_battle.PlayerBlock}" : $"格挡 {_battle.PlayerBlock}";
+        var debtText = _battle.InspirationDebt > 0
+            ? isEnglish ? $" | Interference {_battle.InspirationDebt}" : $" | 阻滞 {_battle.InspirationDebt}"
+            : string.Empty;
+        _battleResourceLabel.Text = isEnglish
+            ? $"Energy {_battle.Energy}/3     Draw {_battle.DrawPile.Count}     Discard {_battle.DiscardPile.Count}     Hand {_battle.Hand.Count}     Inspiration {_battle.InspirationProgress}/{_battle.InspirationThreshold}{debtText}"
+            : $"能量 {_battle.Energy}/3     抽牌堆 {_battle.DrawPile.Count}     弃牌堆 {_battle.DiscardPile.Count}     手牌 {_battle.Hand.Count}     灵感 {_battle.InspirationProgress}/{_battle.InspirationThreshold}{debtText}";
         _statusHelpLabel.Text = BuildStatusHelpText();
         _intentPanel.Visible = false;
 
@@ -3298,18 +3581,12 @@ public partial class BattleScene : Control
     {
         ClearBox(_enemyTargetRow);
         _enemyTargetButtons.Clear();
+        _aimHoverEnemyIndex = -1;
         for (var i = 0; i < _battle.Enemies.Count; i++)
         {
             var enemy = _battle.Enemies[i];
             var selected = i == _battle.SelectedEnemyIndex;
-            var button = new Button
-            {
-                Text = FormatEnemyTargetText(enemy, i, selected),
-                CustomMinimumSize = new Vector2(176, 232),
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                Disabled = !enemy.IsAlive
-            };
+            var button = CreateEnemyTargetButton(enemy, i, selected);
             StyleEnemyTargetButton(button, enemy, selected);
             button.TooltipText = BuildEnemyStatusTooltip(enemy);
             var captured = i;
@@ -3317,6 +3594,214 @@ public partial class BattleScene : Control
             _enemyTargetButtons[captured] = button;
             _enemyTargetRow.AddChild(button);
         }
+    }
+
+    private Button CreateEnemyTargetButton(BattleEnemyState enemy, int index, bool selected)
+    {
+        var button = new Button
+        {
+            Text = string.Empty,
+            CustomMinimumSize = new Vector2(GetEnemyTargetWidth(), 278),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            Disabled = !enemy.IsAlive,
+            FocusMode = FocusModeEnum.None,
+            ClipText = true
+        };
+        button.PivotOffset = button.CustomMinimumSize / 2f;
+
+        var margin = new MarginContainer
+        {
+            Name = "EnemyTargetContent",
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        margin.SetAnchorsPreset(LayoutPreset.FullRect);
+        margin.OffsetLeft = 10;
+        margin.OffsetTop = 10;
+        margin.OffsetRight = -10;
+        margin.OffsetBottom = -10;
+
+        var layout = new VBoxContainer
+        {
+            MouseFilter = MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill
+        };
+        layout.AddThemeConstantOverride("separation", 6);
+
+        layout.AddChild(MakeEnemyLabel(BuildEnemyIntentBadge(index, enemy), 14, enemy.IsAlive ? Color.FromHtml("ffe8bd") : Color.FromHtml("687381"), HorizontalAlignment.Center, true));
+        layout.AddChild(MakeEnemyLabel(
+            selected ? Localization.Language == Localization.English ? "TARGET" : "当前目标" : " ",
+            12,
+            selected ? Color.FromHtml("8df0bd") : Color.FromHtml("47515d"),
+            HorizontalAlignment.Center,
+            false));
+        layout.AddChild(MakeEnemyLabel(GetEnemyPortraitGlyph(enemy), enemy.IsAlive ? 34 : 28, enemy.IsAlive ? Color.FromHtml("f0e4ff") : Color.FromHtml("687381"), HorizontalAlignment.Center, false));
+        layout.AddChild(MakeEnemyLabel(enemy.Data.DisplayName(), 18, enemy.IsAlive ? Color.FromHtml("ffe2e6") : Color.FromHtml("7b8490"), HorizontalAlignment.Center, true));
+
+        var hpBar = MakeEnemyProgressBar(Math.Max(0, enemy.Hp), Math.Max(1, enemy.MaxHp), Color.FromHtml("c95765"));
+        hpBar.TooltipText = $"HP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}";
+        layout.AddChild(hpBar);
+
+        layout.AddChild(MakeEnemyLabel(
+            enemy.IsAlive
+                ? $"HP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}     {(Localization.Language == Localization.English ? "Block" : "格挡")} {enemy.Block}"
+                : (Localization.Language == Localization.English ? "Defeated" : "已击倒"),
+            13,
+            enemy.IsAlive ? Color.FromHtml("d8e2ee") : Color.FromHtml("6e7884"),
+            HorizontalAlignment.Center,
+            false));
+
+        var staggerBar = MakeEnemyProgressBar(Math.Max(0, enemy.Stagger), Math.Max(1, enemy.StaggerLimit), Color.FromHtml("9d75e5"));
+        staggerBar.TooltipText = Localization.Language == Localization.English
+            ? $"Stagger {enemy.Stagger}/{enemy.StaggerLimit}"
+            : $"破势 {enemy.Stagger}/{enemy.StaggerLimit}";
+        layout.AddChild(staggerBar);
+
+        var status = FormatEnemyStatusLine(enemy);
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            layout.AddChild(MakeEnemyLabel(status.Replace("\n", " "), 12, Color.FromHtml("c995ff"), HorizontalAlignment.Center, true));
+        }
+
+        layout.AddChild(MakeEnemyLabel(BuildEnemyCounterHint(_battle.GetCurrentEnemyIntent(index)), 12, Color.FromHtml("9fabb8"), HorizontalAlignment.Center, true));
+
+        margin.AddChild(layout);
+        button.AddChild(margin);
+        return button;
+    }
+
+    private float GetEnemyTargetWidth()
+    {
+        return _battle.Enemies.Count switch
+        {
+            <= 1 => 330f,
+            2 => 244f,
+            3 => 198f,
+            _ => 172f
+        };
+    }
+
+    private static Label MakeEnemyLabel(string text, int fontSize, Color color, HorizontalAlignment alignment, bool wrap)
+    {
+        var label = new Label
+        {
+            Text = text,
+            HorizontalAlignment = alignment,
+            VerticalAlignment = VerticalAlignment.Center,
+            AutowrapMode = wrap ? TextServer.AutowrapMode.WordSmart : TextServer.AutowrapMode.Off,
+            ClipText = !wrap,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        label.AddThemeFontSizeOverride("font_size", fontSize);
+        label.AddThemeColorOverride("font_color", color);
+        return label;
+    }
+
+    private static ProgressBar MakeEnemyProgressBar(int value, int maxValue, Color color)
+    {
+        var bar = new ProgressBar
+        {
+            MinValue = 0,
+            MaxValue = Math.Max(1, maxValue),
+            Value = Math.Clamp(value, 0, Math.Max(1, maxValue)),
+            ShowPercentage = false,
+            CustomMinimumSize = new Vector2(0, 12),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        StyleProgressBar(bar, color);
+        return bar;
+    }
+
+    private string BuildEnemyIntentBadge(int index, BattleEnemyState enemy)
+    {
+        if (!enemy.IsAlive)
+        {
+            return Localization.Language == Localization.English ? "Defeated" : "已击倒";
+        }
+
+        var intent = _battle.GetCurrentEnemyIntent(index);
+        var icon = GetIntentIcon(intent);
+        return $"{icon} {intent.DisplayName()}  |  {_battle.GetEnemyIntentPreview(index)}";
+    }
+
+    private static string GetIntentIcon(IntentData intent)
+    {
+        var hasDamage = false;
+        var hasBlock = false;
+        var hasControl = false;
+        var hasHeal = false;
+        foreach (var action in intent.Actions)
+        {
+            switch (action.Type)
+            {
+                case "damage":
+                case "damage_all":
+                    hasDamage = true;
+                    break;
+                case "block":
+                case "block_per_enemy":
+                case "block_all":
+                    hasBlock = true;
+                    break;
+                case "weak":
+                case "weak_all":
+                case "vulnerable":
+                case "vulnerable_all":
+                case "inspiration_tax":
+                case "clear_stagger":
+                    hasControl = true;
+                    break;
+                case "heal":
+                    hasHeal = true;
+                    break;
+            }
+        }
+
+        if (hasDamage && hasControl)
+        {
+            return "ATK+";
+        }
+        if (hasDamage)
+        {
+            return "ATK";
+        }
+        if (hasHeal)
+        {
+            return "HEAL";
+        }
+        if (hasBlock)
+        {
+            return "DEF";
+        }
+        if (hasControl)
+        {
+            return "HEX";
+        }
+
+        return "WAIT";
+    }
+
+    private static string GetEnemyPortraitGlyph(BattleEnemyState enemy)
+    {
+        if (!enemy.IsAlive)
+        {
+            return "X";
+        }
+
+        if (enemy.Data.Tags.Contains("swarm") || enemy.Data.Id.Contains("mite"))
+        {
+            return "虫";
+        }
+        if (enemy.Data.Tags.Contains("guardian") || enemy.Data.Id.Contains("guard"))
+        {
+            return "盾";
+        }
+        if (enemy.Data.Tags.Contains("boss") || enemy.Data.Id.Contains("core"))
+        {
+            return "王";
+        }
+
+        return "怪";
     }
 
     private string FormatEnemyTargetText(BattleEnemyState enemy, int index, bool selected)
@@ -3330,7 +3815,9 @@ public partial class BattleScene : Control
         var status = FormatEnemyStatusLine(enemy);
         var intentPreview = _battle.GetEnemyIntentPreview(index);
         var counterHint = BuildEnemyCounterHint(_battle.GetCurrentEnemyIntent(index));
-        return $"{marker}{enemy.Data.DisplayName()}\nHP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}  格挡 {enemy.Block}\n破势 {enemy.Stagger}/{enemy.StaggerLimit}{status}\n下一步: {intentPreview}\n应对: {counterHint}";
+        var testType = FormatEnemyTestType(enemy.Data);
+        var testLine = string.IsNullOrWhiteSpace(testType) ? string.Empty : $"{testType}\n";
+        return $"{marker}{enemy.Data.DisplayName()}\n{testLine}HP {Math.Max(0, enemy.Hp)}/{enemy.MaxHp}  格挡 {enemy.Block}\n破势 {enemy.Stagger}/{enemy.StaggerLimit}{status}\n下一步: {intentPreview}\n应对: {counterHint}";
     }
 
     private static string FormatEnemyStatusLine(BattleEnemyState enemy)
@@ -3370,7 +3857,12 @@ public partial class BattleScene : Control
                     break;
                 case "block":
                 case "block_per_enemy":
+                case "block_all":
+                case "clear_stagger":
                     hasDefense = true;
+                    break;
+                case "inspiration_tax":
+                    hasControl = true;
                     break;
                 case "heal":
                     hasHeal = true;
@@ -3396,7 +3888,7 @@ public partial class BattleScene : Control
         }
         if (hasControl)
         {
-            return Localization.Language == Localization.English ? "Plan around the debuff." : "注意负面状态，保留解场节奏。";
+            return Localization.Language == Localization.English ? "Protect your rhythm or switch target." : "它会干扰节奏，考虑转火或提前触发灵感。";
         }
 
         return Localization.Language == Localization.English ? "Low immediate threat." : "当前威胁较低。";
@@ -3405,22 +3897,34 @@ public partial class BattleScene : Control
     private string BuildStatusHelpText()
     {
         return Localization.Language == Localization.English
-            ? "Status: Weak reduces outgoing attack damage by 2. Vulnerable takes 50% more player attack damage. Status duration drops at the end of that unit's turn."
-            : "状态说明：虚弱会使造成的攻击伤害 -2；易伤会使受到的玩家攻击伤害 +50%。状态在其回合结束时减少 1。";
+            ? "Status: every 3 Inspiration progress draws 1 card, gains block, and staggers all enemies. Weak reduces outgoing attack damage by 2. Vulnerable takes 50% more player attack damage."
+            : "状态说明：每累计 3 点灵感，会抽 1 张牌、获得格挡，并使所有敌人破势。虚弱使攻击伤害 -2；易伤使受到的玩家攻击伤害 +50%。";
     }
 
     private string BuildPlayerStatusTooltip()
     {
-        if (_battle.PlayerWeak <= 0)
+        var lines = new List<string>
         {
-            return Localization.Language == Localization.English
-                ? "No active status."
-                : "当前没有状态。";
+            Localization.Language == Localization.English
+                ? $"Inspiration {_battle.InspirationProgress}/{_battle.InspirationThreshold}: every 3 progress draws 1 card, gains block, and staggers all enemies."
+                : $"灵感 {_battle.InspirationProgress}/{_battle.InspirationThreshold}：每累计 3 点会抽 1 张牌、获得格挡，并使所有敌人破势。"
+        };
+        if (_battle.InspirationDebt > 0)
+        {
+            lines.Add(Localization.Language == Localization.English
+                ? $"Interference {_battle.InspirationDebt}: upcoming Inspiration progress is cancelled first."
+                : $"阻滞 {_battle.InspirationDebt}：接下来的灵感推进会先被抵消。");
         }
 
-        return Localization.Language == Localization.English
+        if (_battle.PlayerWeak <= 0)
+        {
+            return string.Join("\n", lines);
+        }
+
+        lines.Add(Localization.Language == Localization.English
             ? $"Weak {_battle.PlayerWeak}: your outgoing attack damage is reduced by 2. Duration drops at the end of your turn."
-            : $"虚弱 {_battle.PlayerWeak}：你造成的攻击伤害减少 2。持续回合在你的回合结束时减少。";
+            : $"虚弱 {_battle.PlayerWeak}：你造成的攻击伤害减少 2。持续回合在你的回合结束时减少。");
+        return string.Join("\n", lines);
     }
 
     private string BuildEnemyStatusTooltip(BattleEnemyState enemy)
@@ -3468,6 +3972,27 @@ public partial class BattleScene : Control
                     lines.Add(Localization.Language == Localization.English
                         ? "Vulnerable: target takes 50% more attack damage from your cards."
                         : "易伤：使目标受到你的卡牌攻击伤害提高 50%。");
+                    break;
+                case "combo_damage":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Rhythm attack: gains damage for each card already played this turn."
+                        : "节奏攻击：本回合已打出的牌越多，伤害越高。");
+                    break;
+                case "combo_block":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Rhythm block: gains block for each card already played this turn."
+                        : "节奏格挡：本回合已打出的牌越多，格挡越高。");
+                    break;
+                case "inspire":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Inspire: advances the 3-step Inspiration meter."
+                        : "激发：推进灵感计量。");
+                    break;
+                case "stagger":
+                case "stagger_all":
+                    lines.Add(Localization.Language == Localization.English
+                        ? "Stagger: filling an enemy's stagger bar applies Weak and Vulnerable."
+                        : "破势：填满敌人的破势条会施加虚弱和易伤。");
                     break;
             }
         }
@@ -3519,7 +4044,7 @@ public partial class BattleScene : Control
         var parentSize = _handBox.GetParent<Control>()?.Size ?? Vector2.Zero;
         var availableSize = new Vector2(
             Math.Max(_handBox.Size.X, parentSize.X),
-            Math.Max(Math.Max(_handBox.Size.Y, parentSize.Y), 238f));
+            Math.Max(Math.Max(_handBox.Size.Y, parentSize.Y), 226f));
 
         var middle = (count - 1) / 2f;
         var firstCard = _handBox.GetChild(0) as Control;
@@ -3531,10 +4056,10 @@ public partial class BattleScene : Control
             Math.Max(measuredCardSize.Y, firstCard?.CustomMinimumSize.Y ?? 190f));
         var spacing = count <= 1
             ? 0f
-            : Math.Min(cardSize.X * 0.76f, Math.Max(58f, (availableSize.X - cardSize.X) / (count - 1)));
+            : Math.Min(cardSize.X * 0.72f, Math.Max(64f, (availableSize.X - cardSize.X) / (count - 1)));
         var totalWidth = cardSize.X + spacing * Math.Max(0, count - 1);
         var startX = Math.Max(0, (availableSize.X - totalWidth) / 2f);
-        var baseY = Math.Max(6f, availableSize.Y - cardSize.Y - 12f);
+        var baseY = Math.Max(6f, availableSize.Y - cardSize.Y - 56f);
 
         for (var i = 0; i < count; i++)
         {
@@ -3546,8 +4071,8 @@ public partial class BattleScene : Control
             var offsetFromMiddle = i - middle;
             var normalized = middle <= 0 ? 0 : offsetFromMiddle / middle;
             cardControl.PivotOffset = cardControl.Size / 2f;
-            cardControl.RotationDegrees = normalized * 9f;
-            cardControl.Position = new Vector2(startX + spacing * i, baseY + Math.Abs(normalized) * 24f);
+            cardControl.RotationDegrees = normalized * 11f;
+            cardControl.Position = new Vector2(startX + spacing * i, baseY + Math.Abs(normalized) * 28f);
         }
     }
 
@@ -3811,6 +4336,8 @@ public partial class BattleScene : Control
             "player_damage_bonus" => Localization.Language == Localization.English ? $"Player attack damage +{value}." : $"玩家攻击伤害 +{value}。",
             "player_block_bonus" => Localization.Language == Localization.English ? $"Player block from cards +{value}." : $"卡牌获得格挡 +{value}。",
             "self_damage_reduction" => Localization.Language == Localization.English ? $"Self damage -{value}." : $"自伤 -{value}。",
+            "inspiration_block_bonus" => Localization.Language == Localization.English ? $"Inspiration block +{value}." : $"灵感触发格挡 +{value}。",
+            "inspiration_stagger_bonus" => Localization.Language == Localization.English ? $"Inspiration stagger +{value}." : $"灵感触发破势 +{value}。",
             _ => Localization.Language == Localization.English ? $"{effect.Type}: {value}" : $"{effect.Type}：{value}"
         };
     }
@@ -4325,10 +4852,13 @@ public partial class BattleScene : Control
         {
             Name = "DragAimLine",
             Visible = false,
-            Width = 4,
+            Width = 6,
             DefaultColor = Color.FromHtml("d7b45f"),
             ZIndex = 80
         };
+        _dragLine.Antialiased = true;
+        _dragLine.BeginCapMode = Line2D.LineCapMode.Round;
+        _dragLine.EndCapMode = Line2D.LineCapMode.Round;
         GetNode<Panel>("Root").AddChild(_dragLine);
 
         BuildLoadingOverlay();
@@ -4467,9 +4997,9 @@ public partial class BattleScene : Control
         var root = GetNode<Panel>("Root");
         var tip = new PanelContainer
         {
-            Name = "TopTip",
+            Name = "GameTip",
             MouseFilter = MouseFilterEnum.Ignore,
-            CustomMinimumSize = new Vector2(0, 25),
+            CustomMinimumSize = new Vector2(0, 35),
             ZIndex = 190
         };
         tip.AddThemeStyleboxOverride("panel", MakeTopTipStyle());
@@ -4482,24 +5012,24 @@ public partial class BattleScene : Control
             VerticalAlignment = VerticalAlignment.Center,
             ClipText = true
         };
-        label.AddThemeFontSizeOverride("font_size", 14);
+        label.AddThemeFontSizeOverride("font_size", 15);
         label.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         tip.AddChild(label);
 
         root.AddChild(tip);
 
         var width = Math.Max(320f, root.Size.X);
-        var height = 25f;
-        var target = Vector2.Zero;
+        var height = 35f;
+        var target = new Vector2(0f, Math.Max(92f, root.Size.Y * 0.14f));
         tip.Size = new Vector2(width, height);
-        tip.Position = target + new Vector2(0, -height);
+        tip.Position = target + new Vector2(0, -12f);
         tip.Modulate = new Color(1f, 1f, 1f, 0f);
 
         var tween = CreateTween();
         tween.TweenProperty(tip, "position", target, 0.22f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
         tween.Parallel().TweenProperty(tip, "modulate:a", 1.0f, 0.18f);
         tween.TweenInterval(1.15f);
-        tween.TweenProperty(tip, "position", target + new Vector2(0, -height), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tween.TweenProperty(tip, "position", target + new Vector2(0, -12f), 0.45f).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
         tween.Parallel().TweenProperty(tip, "modulate:a", 0.0f, 0.45f);
         tween.TweenCallback(Callable.From(tip.QueueFree));
         await ToSignal(tween, Tween.SignalName.Finished);
@@ -4552,6 +5082,7 @@ public partial class BattleScene : Control
         _mineRevealTipLabel.AddThemeColorOverride("font_color", Color.FromHtml("f4f0df"));
         StyleCombatPanels(false, false);
         StyleButton(_continueButton, Color.FromHtml("315f46"), Color.FromHtml("e7fff1"));
+        StyleButton(_infoToggleButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
         StyleButton(_menuButton, Color.FromHtml("403547"), Color.FromHtml("f0e4ff"));
         StyleButton(_mineModeButton, Color.FromHtml("3a4f68"), Color.FromHtml("e4f0ff"));
         StyleButton(_deckButton, Color.FromHtml("2f4c54"), Color.FromHtml("e4fbff"));
@@ -4587,11 +5118,16 @@ public partial class BattleScene : Control
         {
             BgColor = new Color(0.07f, 0.11f, 0.16f, 0.94f),
             BorderColor = Color.FromHtml("8df0bd"),
-            ContentMarginLeft = 12,
-            ContentMarginTop = 2,
-            ContentMarginRight = 12,
-            ContentMarginBottom = 2
+            CornerRadiusTopLeft = 0,
+            CornerRadiusTopRight = 0,
+            CornerRadiusBottomLeft = 0,
+            CornerRadiusBottomRight = 0,
+            ContentMarginLeft = 18,
+            ContentMarginTop = 4,
+            ContentMarginRight = 18,
+            ContentMarginBottom = 4
         };
+        style.SetBorderWidth(Side.Top, 1);
         style.SetBorderWidth(Side.Bottom, 1);
         return style;
     }
@@ -4621,9 +5157,9 @@ public partial class BattleScene : Control
 
         if (past)
         {
-            background = Color.FromHtml("121820");
-            border = Color.FromHtml("252d36");
-            font = Color.FromHtml("586473");
+            background = onRoute ? Color.FromHtml("141b22") : Color.FromHtml("10151b");
+            border = onRoute ? Color.FromHtml("33414c") : Color.FromHtml("222a33");
+            font = onRoute ? Color.FromHtml("758291") : Color.FromHtml("4d5865");
             borderWidth = 1;
         }
         else if (!onRoute)
@@ -4961,8 +5497,10 @@ public partial class BattleScene : Control
         public int PlayerWeak { get; set; }
         public int Energy { get; set; }
         public int HandCount { get; set; }
+        public int InspirationsThisTurn { get; set; }
         public List<int> EnemyHp { get; } = new();
         public List<int> EnemyBlock { get; } = new();
+        public List<int> EnemyStagger { get; } = new();
         public List<int> EnemyWeak { get; } = new();
         public List<int> EnemyVulnerable { get; } = new();
     }
