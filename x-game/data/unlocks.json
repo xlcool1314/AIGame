@@ -1,8 +1,0 @@
-{
-  "unlocks": [
-    { "id": "character_breaker", "title": "解锁：爆竹勇士", "titleEn": "Unlock: Firecracker Kid", "description": "解锁高攻击风格角色，初始牌组更偏爆发。", "descriptionEn": "Unlock an aggressive kid with a burst-focused starter deck.", "cost": 18, "requiredBestDepth": 3 },
-    { "id": "character_engineer", "title": "解锁：发明小孩", "titleEn": "Unlock: Tiny Inventor", "description": "解锁能量与防御风格角色，更适合稳定推进。", "descriptionEn": "Unlock an energy and defense kid for steadier routes.", "cost": 24, "requiredRuns": 2 },
-    { "id": "pack_deep_tools", "title": "解锁：午夜道具包", "titleEn": "Unlock: Midnight Tools Pack", "description": "将手电过载、地板裂缝、厚被堡垒等高级卡加入奖励池。", "descriptionEn": "Add advanced cards such as Flashlight Overdrive, Floor Crack, and Blanket Bulwark to reward pools.", "cost": 30, "requiredBestDepth": 5, "requiredBestScore": 180 },
-    { "id": "start_lamp_plus", "title": "解锁：大号手电", "titleEn": "Unlock: Bigger Flashlight", "description": "所有角色开局手电电量上限 +15，更适合贪高风险路线。", "descriptionEn": "All characters start with +15 maximum flashlight battery, supporting riskier routes.", "cost": 36, "requiredVictories": 1 }
-  ]
-}
