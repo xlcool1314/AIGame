@@ -23,6 +23,8 @@ public partial class MainGame : Node2D
     private const int MaxPoolSize = 900;
     private const int PlayerTrailCapacity = 14;
     private const int ShotTrailCapacity = 4;
+    private const int CruiseStance = 0;
+    private const int AssaultStance = 1;
     private const float PolaritySwitchCooldownBase = 2.65f;
     private const float PolaritySwitchCooldownMin = 1.75f;
     private const float EnemyBulletSpeedStartScale = 0.54f;
@@ -70,7 +72,10 @@ public partial class MainGame : Node2D
     private static readonly string[] UpgradeHighlightTerms =
     {
         "Star Dust",
-        "opposite-polarity",
+        "Cruise",
+        "Assault",
+        "overheat",
+        "red fire",
         "invulnerable",
         "regenerates",
         "ultimate",
@@ -105,7 +110,6 @@ public partial class MainGame : Node2D
         "rays",
         "clear",
         "cycle",
-        "opposite",
         "longer",
         "extra",
         "more",
@@ -126,7 +130,11 @@ public partial class MainGame : Node2D
         "子弹",
         "穿透",
         "无人机",
-        "反色",
+        "巡航",
+        "突击",
+        "红弹",
+        "过热",
+        "破绽",
         "火力",
         "弹道",
         "蓄能",
@@ -271,8 +279,8 @@ public partial class MainGame : Node2D
         ["hud.objectives"] = new("EXPEDITION GOALS", "远征目标"),
         ["hud.cyan_resonance"] = new("CRUISE MODE", "巡航态"),
         ["hud.gold_resonance"] = new("ASSAULT MODE", "突击态"),
-        ["hud.resonance_ready"] = new("SHIFT READY", "切换就绪"),
-        ["hud.resonance_cooldown"] = new("SHIFT {0:0.0}s", "切换 {0:0.0}秒"),
+        ["hud.resonance_ready"] = new("SPACE READY", "切换就绪"),
+        ["hud.resonance_cooldown"] = new("SPACE {0:0.0}s", "切换 {0:0.0}秒"),
         ["hud.cruise_charge"] = new("CHARGE", "蓄势"),
         ["hud.assault_window"] = new("BURST {0:0.0}s", "爆发 {0:0.0}秒"),
         ["hud.controls"] = new("WASD MOVE  MOUSE AIM  AUTO FIRE  RMB/SHIFT DASH  SPACE STANCE SHIFT  F/E ULTIMATE  L LANGUAGE", "WASD移动  鼠标瞄准  自动射击  右键/Shift冲刺  空格切换姿态  F/E大招  L语言"),
@@ -382,7 +390,7 @@ public partial class MainGame : Node2D
         ["upgrade.gravity.body"] = new("Pull pickups from farther away and thicken enemy time.", "拾取物吸得更远，敌人略微变慢。"),
         ["upgrade.vital.title"] = new("Vital Shell", "生命护盾"),
         ["upgrade.vital.body"] = new("Increases hull integrity and repairs a large chunk immediately.", "提高最大生命，并立即回复生命。"),
-        ["upgrade.leech.title"] = new("Resonance Leech", "修复掉落"),
+        ["upgrade.leech.title"] = new("Repair Seed", "修复掉落"),
         ["upgrade.leech.body"] = new("Kills can seed repairs. Cruise play becomes a survival engine.", "击败敌人有更高概率掉落修复。"),
         ["upgrade.wisp.title"] = new("Moon Wisp", "自动浮游炮"),
         ["upgrade.wisp.body"] = new("Adds an orbiting shard that searches nearby targets and fires.", "增加一个自动攻击附近敌人的环绕碎片。"),
@@ -449,324 +457,6 @@ public partial class MainGame : Node2D
         ["upgrade.unknown.title"] = new("Unknown", "未知升级"),
         ["upgrade.unknown.body"] = new("Mystery signal.", "未知效果。"),
     };
-
-    private enum GameMode
-    {
-        Title,
-        Meta,
-        Playing,
-        Upgrade,
-        GameOver,
-        Victory,
-        Settings,
-        Guide,
-    }
-
-    private enum GameLanguage
-    {
-        English,
-        Chinese,
-    }
-
-    private enum PilotKind
-    {
-        Astra,
-        Vesper,
-        Kairo,
-        Sol,
-    }
-
-    private enum MetaUpgradeId
-    {
-        HullPlating,
-        ReactorSeed,
-        FocusLens,
-        DriftEngine,
-        SalvageRig,
-        StarterChart,
-        RepairProtocol,
-        AegisMatrix,
-        NovaCatalyst,
-        DroneDock,
-        PolarityTuner,
-        DeepSurvey,
-    }
-
-    private readonly struct LocalizedText
-    {
-        public LocalizedText(string english, string chinese)
-        {
-            English = english;
-            Chinese = chinese;
-        }
-
-        public readonly string English;
-        public readonly string Chinese;
-    }
-
-    private readonly struct SectorInfo
-    {
-        public SectorInfo(string nameKey, string traitKey, Color accent)
-        {
-            NameKey = nameKey;
-            TraitKey = traitKey;
-            Accent = accent;
-        }
-
-        public readonly string NameKey;
-        public readonly string TraitKey;
-        public readonly Color Accent;
-    }
-
-    private readonly struct MetaUpgradeDef
-    {
-        public MetaUpgradeDef(MetaUpgradeId id, string titleKey, string bodyKey, Color accent, int maxRank, int baseCost, int stepCost)
-        {
-            Id = id;
-            TitleKey = titleKey;
-            BodyKey = bodyKey;
-            Accent = accent;
-            MaxRank = maxRank;
-            BaseCost = baseCost;
-            StepCost = stepCost;
-        }
-
-        public readonly MetaUpgradeId Id;
-        public readonly string TitleKey;
-        public readonly string BodyKey;
-        public readonly Color Accent;
-        public readonly int MaxRank;
-        public readonly int BaseCost;
-        public readonly int StepCost;
-    }
-
-    private enum EnemyKind
-    {
-        Chaser,
-        Weaver,
-        Turret,
-        Splitter,
-        Lance,
-        Mine,
-        Shard,
-        Warden,
-        Drifter,
-        Bulwark,
-        Siren,
-        Harrier,
-        Boss,
-    }
-
-    private enum RunObjectiveKind
-    {
-        ReachWave,
-        PerfectWaves,
-        DefeatEnemies,
-        AbsorbBullets,
-        CollectPickups,
-        BestCombo,
-        DefeatBosses,
-    }
-
-    private enum PickupKind
-    {
-        Dust,
-        Energy,
-        Repair,
-    }
-
-    private enum UpgradeId
-    {
-        PrismArray,
-        RailHeart,
-        CoolantLattice,
-        KineticBloom,
-        GravityWell,
-        VitalShell,
-        ResonanceLeech,
-        MoonWisp,
-        RiftNeedle,
-        MirrorSkin,
-        NovaCapacitor,
-        PolarityStorm,
-        CometTrail,
-        AegisBloom,
-        QuantumEcho,
-        SolarThesis,
-        EmergencyRepair,
-        OneWaveOverdrive,
-        GlassCannon,
-        BountyContract,
-        BulletTransmute,
-        HarmonicMap,
-        AstraRefraction,
-        AstraPrismWake,
-        VesperCapacitor,
-        VesperSplitRail,
-        KairoDroneBay,
-        KairoSwarmSync,
-        SolCoronaBloom,
-        SolSolarForge,
-        AstraNovaBloom,
-        AstraTwinRefraction,
-        VesperJudgmentCoil,
-        VesperSeverLine,
-        KairoOverrideMatrix,
-        KairoRelayProtocol,
-        SolFlareCore,
-        SolRadiantMantle,
-    }
-
-    private sealed class Enemy
-    {
-        public EnemyKind Kind;
-        public Vector2 Pos;
-        public Vector2 Vel;
-        public float Radius;
-        public float Hp;
-        public float MaxHp;
-        public float Cooldown;
-        public float Overheat;
-        public float OverheatMax;
-        public float Phase;
-        public float SpawnPulse = 1.0f;
-        public float ContactTimer;
-        public int Polarity;
-        public int Value;
-        public int SplitDepth;
-        public bool Elite;
-        public float Armor;
-    }
-
-    private sealed class Shot
-    {
-        public Vector2 Pos;
-        public Vector2 Prev;
-        public Vector2 Vel;
-        public float Radius;
-        public float Damage;
-        public float Life;
-        public float MaxLife;
-        public Vector2 Trail0;
-        public Vector2 Trail1;
-        public Vector2 Trail2;
-        public Vector2 Trail3;
-        public int TrailCount;
-        public int Polarity;
-        public bool FromPlayer;
-        public int Pierce;
-        public bool Rift;
-        public bool Grazed;
-    }
-
-    private sealed class Pickup
-    {
-        public PickupKind Kind;
-        public Vector2 Pos;
-        public Vector2 Vel;
-        public float Radius;
-        public float Life;
-    }
-
-    private sealed class Particle
-    {
-        public Vector2 Pos;
-        public Vector2 Vel;
-        public Color Color;
-        public float Size;
-        public float Life;
-        public float MaxLife;
-        public float Spin;
-    }
-
-    private sealed class DamageText
-    {
-        public Vector2 Pos;
-        public string Text = string.Empty;
-        public Color Color;
-        public float Life;
-        public float MaxLife;
-        public float Size;
-    }
-
-    private sealed class HazardLine
-    {
-        public Vector2 A;
-        public Vector2 B;
-        public Color Color;
-        public float Life;
-        public float MaxLife;
-        public float Warmup;
-        public float Width;
-        public float Damage;
-        public int Polarity;
-    }
-
-    private sealed class Star
-    {
-        public Vector2 Pos;
-        public float Radius;
-        public float Twinkle;
-        public float Depth;
-        public Color Color;
-    }
-
-    private sealed class Nebula
-    {
-        public Vector2 Pos;
-        public float Radius;
-        public Color Color;
-        public float Drift;
-    }
-
-    private sealed class UpgradeCard
-    {
-        public UpgradeId Id;
-        public string Title = string.Empty;
-        public string Tag = string.Empty;
-        public string Body = string.Empty;
-        public Color Accent;
-        public Rect2 Rect;
-    }
-
-    private readonly struct RichTextSegment
-    {
-        public RichTextSegment(string text, bool highlight)
-        {
-            Text = text;
-            Highlight = highlight;
-        }
-
-        public string Text { get; }
-        public bool Highlight { get; }
-    }
-
-    private sealed class RunObjective
-    {
-        public RunObjectiveKind Kind;
-        public int Target;
-        public int Progress;
-        public int RewardDust;
-        public bool Completed;
-    }
-
-    private sealed class PendingSpawn
-    {
-        public EnemyKind Kind;
-        public int Polarity;
-        public float RewardBoost;
-    }
-
-    private sealed class SfxVoice
-    {
-        public float Age;
-        public float Life;
-        public float Frequency;
-        public float Sweep;
-        public float Volume;
-        public float Noise;
-        public int Wave;
-    }
 
     private readonly RandomNumberGenerator _rng = new();
     private readonly List<Enemy> _enemies = new();
@@ -1114,302 +804,6 @@ public partial class MainGame : Node2D
         _voices.Clear();
     }
 
-    private Enemy? AddEnemy()
-    {
-        if (_enemies.Count >= MaxEnemies)
-        {
-            return null;
-        }
-
-        Enemy enemy = _enemyPool.Count > 0 ? _enemyPool.Pop() : new Enemy();
-        _enemies.Add(enemy);
-        return enemy;
-    }
-
-    private Shot? AddShot(bool fromPlayer)
-    {
-        if (!fromPlayer && ActiveEnemyBulletCount() >= EnemyBulletCap())
-        {
-            return null;
-        }
-
-        if (_shots.Count >= MaxShots && !MakeShotRoom(fromPlayer))
-        {
-            return null;
-        }
-
-        Shot shot = _shotPool.Count > 0 ? _shotPool.Pop() : new Shot();
-        shot.FromPlayer = fromPlayer;
-        shot.Rift = false;
-        shot.Pierce = 0;
-        shot.TrailCount = 0;
-        shot.Grazed = false;
-        _shots.Add(shot);
-        if (!fromPlayer)
-        {
-            _activeEnemyBullets++;
-        }
-        return shot;
-    }
-
-    private bool MakeShotRoom(bool incomingPlayerShot)
-    {
-        for (int i = 0; i < _shots.Count; i++)
-        {
-            if (!_shots[i].FromPlayer)
-            {
-                RemoveShotAt(i);
-                return true;
-            }
-        }
-
-        if (!incomingPlayerShot)
-        {
-            return false;
-        }
-
-        if (_shots.Count > 0)
-        {
-            RemoveShotAt(0);
-            return true;
-        }
-        return true;
-    }
-
-    private Pickup? AddPickup()
-    {
-        if (_pickups.Count >= MaxPickups)
-        {
-            RemovePickupAt(0);
-        }
-
-        Pickup pickup = _pickupPool.Count > 0 ? _pickupPool.Pop() : new Pickup();
-        _pickups.Add(pickup);
-        return pickup;
-    }
-
-    private Particle AddParticleObject()
-    {
-        if (_particles.Count >= MaxParticles)
-        {
-            RemoveParticleAt(0);
-        }
-
-        Particle particle = _particlePool.Count > 0 ? _particlePool.Pop() : new Particle();
-        _particles.Add(particle);
-        return particle;
-    }
-
-    private DamageText AddDamageTextObject()
-    {
-        if (_damageTexts.Count >= MaxDamageTexts)
-        {
-            RemoveDamageTextAt(0);
-        }
-
-        DamageText text = _damageTextPool.Count > 0 ? _damageTextPool.Pop() : new DamageText();
-        _damageTexts.Add(text);
-        return text;
-    }
-
-    private void RemoveShotAt(int index)
-    {
-        Shot shot = _shots[index];
-        if (!shot.FromPlayer)
-        {
-            _activeEnemyBullets = Math.Max(0, _activeEnemyBullets - 1);
-        }
-        int last = _shots.Count - 1;
-        _shots[index] = _shots[last];
-        _shots.RemoveAt(last);
-        RecycleShot(shot);
-    }
-
-    private void RemovePickupAt(int index)
-    {
-        Pickup pickup = _pickups[index];
-        int last = _pickups.Count - 1;
-        _pickups[index] = _pickups[last];
-        _pickups.RemoveAt(last);
-        RecyclePickup(pickup);
-    }
-
-    private void RemoveParticleAt(int index)
-    {
-        Particle particle = _particles[index];
-        int last = _particles.Count - 1;
-        _particles[index] = _particles[last];
-        _particles.RemoveAt(last);
-        RecycleParticle(particle);
-    }
-
-    private void RemoveDamageTextAt(int index)
-    {
-        DamageText text = _damageTexts[index];
-        int last = _damageTexts.Count - 1;
-        _damageTexts[index] = _damageTexts[last];
-        _damageTexts.RemoveAt(last);
-        RecycleDamageText(text);
-    }
-
-    private bool DetachEnemy(Enemy enemy)
-    {
-        int index = _enemies.IndexOf(enemy);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        int last = _enemies.Count - 1;
-        _enemies[index] = _enemies[last];
-        _enemies.RemoveAt(last);
-        return true;
-    }
-
-    private void ClearEnemies()
-    {
-        _pendingSpawns.Clear();
-        _waveSpawnTimer = 0.0f;
-        for (int i = 0; i < _enemies.Count; i++)
-        {
-            RecycleEnemy(_enemies[i]);
-        }
-        _enemies.Clear();
-    }
-
-    private void ClearShots()
-    {
-        for (int i = 0; i < _shots.Count; i++)
-        {
-            RecycleShot(_shots[i]);
-        }
-        _shots.Clear();
-        _activeEnemyBullets = 0;
-    }
-
-    private void ClearPickups()
-    {
-        for (int i = 0; i < _pickups.Count; i++)
-        {
-            RecyclePickup(_pickups[i]);
-        }
-        _pickups.Clear();
-    }
-
-    private void ClearParticles()
-    {
-        for (int i = 0; i < _particles.Count; i++)
-        {
-            RecycleParticle(_particles[i]);
-        }
-        _particles.Clear();
-    }
-
-    private void ClearDamageTexts()
-    {
-        for (int i = 0; i < _damageTexts.Count; i++)
-        {
-            RecycleDamageText(_damageTexts[i]);
-        }
-        _damageTexts.Clear();
-    }
-
-    private void RecycleEnemy(Enemy enemy)
-    {
-        if (_enemyPool.Count < MaxPoolSize)
-        {
-            _enemyPool.Push(enemy);
-        }
-    }
-
-    private void RecycleShot(Shot shot)
-    {
-        shot.TrailCount = 0;
-        if (_shotPool.Count < MaxPoolSize)
-        {
-            _shotPool.Push(shot);
-        }
-    }
-
-    private void ResetPlayerTrail(Vector2 pos)
-    {
-        for (int i = 0; i < _playerTrail.Length; i++)
-        {
-            _playerTrail[i] = pos;
-        }
-
-        _playerTrailCount = 1;
-        _playerTrailTimer = 0.0f;
-    }
-
-    private void UpdatePlayerTrail(float dt)
-    {
-        if (_playerTrailCount <= 0)
-        {
-            ResetPlayerTrail(_playerPos);
-            return;
-        }
-
-        _playerTrailTimer -= dt;
-        float minDistance = _dashTimer > 0.0f ? 5.0f : 9.0f;
-        if (_playerTrailTimer > 0.0f && _playerPos.DistanceSquaredTo(_playerTrail[0]) < minDistance * minDistance)
-        {
-            return;
-        }
-
-        for (int i = Math.Min(_playerTrailCount, PlayerTrailCapacity - 1); i > 0; i--)
-        {
-            _playerTrail[i] = _playerTrail[i - 1];
-        }
-
-        _playerTrail[0] = _playerPos;
-        _playerTrailCount = Math.Min(PlayerTrailCapacity, _playerTrailCount + 1);
-        _playerTrailTimer = _dashTimer > 0.0f ? 0.008f : 0.022f;
-    }
-
-    private static void ResetShotTrail(Shot shot, Vector2 pos)
-    {
-        shot.Trail0 = pos;
-        shot.Trail1 = pos;
-        shot.Trail2 = pos;
-        shot.Trail3 = pos;
-        shot.TrailCount = 1;
-    }
-
-    private static void PushShotTrail(Shot shot, Vector2 pos)
-    {
-        shot.Trail3 = shot.Trail2;
-        shot.Trail2 = shot.Trail1;
-        shot.Trail1 = shot.Trail0;
-        shot.Trail0 = pos;
-        shot.TrailCount = Math.Min(ShotTrailCapacity, shot.TrailCount + 1);
-    }
-
-    private void RecyclePickup(Pickup pickup)
-    {
-        if (_pickupPool.Count < MaxPoolSize)
-        {
-            _pickupPool.Push(pickup);
-        }
-    }
-
-    private void RecycleParticle(Particle particle)
-    {
-        if (_particlePool.Count < MaxPoolSize)
-        {
-            _particlePool.Push(particle);
-        }
-    }
-
-    private void RecycleDamageText(DamageText text)
-    {
-        text.Text = string.Empty;
-        if (_damageTextPool.Count < MaxPoolSize)
-        {
-            _damageTextPool.Push(text);
-        }
-    }
-
     private void LoadMetaProgress()
     {
         _metaRanks.Clear();
@@ -1581,7 +975,7 @@ public partial class MainGame : Node2D
         _dashCooldown = 0.0f;
         SnapHudBars();
         _invulnTimer = 1.8f;
-        _playerPolarity = 0;
+        _playerPolarity = CruiseStance;
         _polarityCooldown = 0.0f;
         _polarityDenyTextCooldown = 0.0f;
         _waveClearTimer = 0.0f;
@@ -2268,7 +1662,7 @@ public partial class MainGame : Node2D
         _counterTextCooldown -= gameDt;
         _polarityTipTimer -= gameDt;
         _assaultBurstTimer = Mathf.Max(0.0f, _assaultBurstTimer - gameDt);
-        if (_playerPolarity == 0)
+        if (IsCruiseStance(_playerPolarity))
         {
             _cruiseCharge = Mathf.Max(0.0f, _cruiseCharge - gameDt * 1.2f);
         }
@@ -2399,12 +1793,12 @@ public partial class MainGame : Node2D
     private void TogglePolarity()
     {
         int previous = _playerPolarity;
-        _playerPolarity = 1 - _playerPolarity;
+        _playerPolarity = OtherStance(_playerPolarity);
         _polarityCooldown = _polarityCooldownMax;
         _polarityTipTimer = 2.4f;
         _energy = Mathf.Clamp(_energy + 8.0f, 0.0f, _maxEnergy);
 
-        if (previous == 0 && _playerPolarity == 1)
+        if (IsCruiseStance(previous) && IsAssaultStance(_playerPolarity))
         {
             float charge01 = CruiseCharge01();
             _assaultPower = 1.15f + charge01 * 0.62f;
@@ -2415,7 +1809,7 @@ public partial class MainGame : Node2D
                 AddText(AssaultText(_assaultPower), _playerPos + new Vector2(0.0f, -112.0f), PolarityAmber, 20.0f);
             }
         }
-        else if (previous == 1 && _playerPolarity == 0)
+        else if (IsAssaultStance(previous) && IsCruiseStance(_playerPolarity))
         {
             float clearRadius = 110.0f + Mathf.Clamp(_assaultPower - 1.0f, 0.0f, 0.8f) * 120.0f;
             ClearBulletsNear(_playerPos, clearRadius, true);
@@ -2431,7 +1825,7 @@ public partial class MainGame : Node2D
         {
             FirePolarityStorm();
         }
-        PlaySfx(_playerPolarity == 0 ? 560.0f : 390.0f, 0.65f, 0.12f, 0.22f, 0.02f, 2);
+        PlaySfx(IsCruiseStance(_playerPolarity) ? 560.0f : 390.0f, 0.65f, 0.12f, 0.22f, 0.02f, 2);
     }
 
     private void CastUltimate()
@@ -2703,7 +2097,7 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + _aimDir * 32.0f, _aimDir * 180.0f, color, 10.0f, 0.18f);
-        PlaySfx(_playerPolarity == 0 ? 690.0f : 520.0f, -140.0f, 0.06f, 0.14f, 0.01f, 1);
+        PlaySfx(IsCruiseStance(_playerPolarity) ? 690.0f : 520.0f, -140.0f, 0.06f, 0.14f, 0.01f, 1);
     }
 
     private void FireVesperShot()
@@ -2723,7 +2117,7 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + _aimDir * 34.0f, _aimDir * 220.0f, color, 9.0f, 0.16f);
-        PlaySfx(_playerPolarity == 0 ? 430.0f : 330.0f, -180.0f, 0.08f, 0.18f, 0.01f, 1);
+        PlaySfx(IsCruiseStance(_playerPolarity) ? 430.0f : 330.0f, -180.0f, 0.08f, 0.18f, 0.01f, 1);
     }
 
     private void FireKairoShot()
@@ -2739,7 +2133,7 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + dir * 28.0f, dir * 120.0f, PolarityColor(_playerPolarity), 7.0f, 0.14f);
-        PlaySfx(_playerPolarity == 0 ? 760.0f : 610.0f, -120.0f, 0.05f, 0.1f, 0.01f, 1);
+        PlaySfx(IsCruiseStance(_playerPolarity) ? 760.0f : 610.0f, -120.0f, 0.05f, 0.1f, 0.01f, 1);
     }
 
     private void FireSolShot()
@@ -2755,7 +2149,7 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + _aimDir * 28.0f, _aimDir * 160.0f, color, 12.0f, 0.16f);
-        PlaySfx(_playerPolarity == 0 ? 590.0f : 470.0f, -150.0f, 0.07f, 0.16f, 0.02f, 1);
+        PlaySfx(IsCruiseStance(_playerPolarity) ? 590.0f : 470.0f, -150.0f, 0.07f, 0.16f, 0.02f, 1);
     }
 
     private void SpawnPlayerShot(Vector2 pos, Vector2 dir, float speed, float radius, float damage, float life, int pierce, bool rift, int polarity = -1)
@@ -2864,7 +2258,7 @@ public partial class MainGame : Node2D
                             FireEnemy(enemy, Vector2.Right.Rotated(baseAngle + Mathf.Tau * a / petals), 260.0f + threat * 12.0f, 1, 0.0f);
                         }
                         enemy.Cooldown = 2.35f;
-                        enemy.Polarity = 1 - enemy.Polarity;
+                        enemy.Polarity = OtherStance(enemy.Polarity);
                     }
                     break;
                 case EnemyKind.Splitter:
@@ -2914,7 +2308,7 @@ public partial class MainGame : Node2D
                         FireEnemy(enemy, dir, 300.0f + threat * 10.0f, 5, 0.22f, 11.0f);
                         if (_enemies.Count < 26 + sector * 4)
                         {
-                            SpawnEnemy(sector >= 3 ? EnemyKind.Shard : EnemyKind.Chaser, ClampToArena(enemy.Pos + RandomDirection() * 78.0f, 34.0f), 1 - enemy.Polarity, 1);
+                            SpawnEnemy(sector >= 3 ? EnemyKind.Shard : EnemyKind.Chaser, ClampToArena(enemy.Pos + RandomDirection() * 78.0f, 34.0f), OtherStance(enemy.Polarity), 1);
                         }
                         enemy.Cooldown = enemy.Elite ? 1.25f : 1.85f;
                     }
@@ -2941,7 +2335,7 @@ public partial class MainGame : Node2D
                     desired *= speed;
                     if (enemy.Cooldown <= 0.0f)
                     {
-                        enemy.Polarity = 1 - enemy.Polarity;
+                        enemy.Polarity = OtherStance(enemy.Polarity);
                         int rings = ScaledEnemyPatternCount(enemy.Kind, enemy.Elite ? 10 : 7);
                         float spin = enemy.Phase;
                         for (int a = 0; a < rings; a++)
@@ -3023,7 +2417,7 @@ public partial class MainGame : Node2D
                     FireEnemy(boss, Vector2.Right.Rotated(spin + i * Mathf.Tau / count), 250.0f + sector * 18.0f + (1.0f - hpRatio) * 100.0f, 1, 0.0f, 9.0f);
                 }
                 boss.Cooldown = 1.15f;
-                boss.Polarity = 1 - boss.Polarity;
+                boss.Polarity = OtherStance(boss.Polarity);
             }
             else if (pattern == 2)
             {
@@ -3040,7 +2434,7 @@ public partial class MainGame : Node2D
                 if (_enemies.Count < 13)
                 {
                     SpawnEnemy(sector >= 2 ? EnemyKind.Shard : EnemyKind.Weaver, boss.Pos + RandomDirection() * 110.0f, boss.Polarity);
-                    SpawnEnemy(sector >= 3 ? EnemyKind.Mine : EnemyKind.Chaser, boss.Pos + RandomDirection() * 130.0f, 1 - boss.Polarity);
+                    SpawnEnemy(sector >= 3 ? EnemyKind.Mine : EnemyKind.Chaser, boss.Pos + RandomDirection() * 130.0f, OtherStance(boss.Polarity));
                 }
                 boss.Cooldown = 1.65f;
             }
@@ -3149,7 +2543,7 @@ public partial class MainGame : Node2D
                     float dy = Mathf.Abs(shot.Pos.Y - enemy.Pos.Y);
                     if (dx <= hitRadius && dy <= hitRadius && shot.Pos.DistanceSquaredTo(enemy.Pos) <= hitRadius * hitRadius)
                     {
-                        bool assaultShot = shot.Polarity == 1;
+                        bool assaultShot = IsAssaultStance(shot.Polarity);
                         bool overheated = EnemyOverheat01(enemy) > 0.0f;
                         float windowBonus = overheated ? (assaultShot ? _critMultiplier + (enemy.Elite ? 0.18f : 0.0f) : 1.08f) : (assaultShot ? 1.08f : 0.96f);
                         float damage = shot.Damage * windowBonus * _nextWaveDamageBoost;
@@ -3199,7 +2593,7 @@ public partial class MainGame : Node2D
             {
                 float hitRadius = shot.Radius + PlayerRadius;
                 float distanceSquared = shot.Pos.DistanceSquaredTo(_playerPos);
-                if (!shot.Grazed && _playerPolarity == 0 && _dashTimer <= 0.0f)
+                if (!shot.Grazed && IsCruiseStance(_playerPolarity) && _dashTimer <= 0.0f)
                 {
                     float grazeRadius = hitRadius + CruiseGrazeRadius;
                     if (distanceSquared <= grazeRadius * grazeRadius && distanceSquared > hitRadius * hitRadius)
@@ -3241,8 +2635,8 @@ public partial class MainGame : Node2D
                     }
                     else
                     {
-                        float incoming = shot.Damage * (_playerPolarity == 0 ? 0.78f : 1.08f);
-                        if (_playerPolarity == 0)
+                        float incoming = shot.Damage * (IsCruiseStance(_playerPolarity) ? 0.78f : 1.08f);
+                        if (IsCruiseStance(_playerPolarity))
                         {
                             AddCruiseCharge(3.0f, shot.Pos);
                         }
@@ -3327,7 +2721,7 @@ public partial class MainGame : Node2D
 
         if (enemy.Kind == EnemyKind.Splitter && enemy.SplitDepth < 1)
         {
-            SpawnEnemy(EnemyKind.Chaser, ClampToArena(enemy.Pos + new Vector2(-42.0f, 36.0f), 30.0f), 1 - enemy.Polarity, enemy.SplitDepth + 1);
+            SpawnEnemy(EnemyKind.Chaser, ClampToArena(enemy.Pos + new Vector2(-42.0f, 36.0f), 30.0f), OtherStance(enemy.Polarity), enemy.SplitDepth + 1);
             SpawnEnemy(EnemyKind.Chaser, ClampToArena(enemy.Pos + new Vector2(42.0f, 36.0f), 30.0f), enemy.Polarity, enemy.SplitDepth + 1);
         }
         RecycleEnemy(enemy);
@@ -3501,11 +2895,11 @@ public partial class MainGame : Node2D
                     }
                     else
                     {
-                        if (_playerPolarity == 0)
+                        if (IsCruiseStance(_playerPolarity))
                         {
                             AddCruiseCharge(6.0f, (hazard.A + hazard.B) * 0.5f);
                         }
-                        DamagePlayer(hazard.Damage * (_playerPolarity == 0 ? 0.82f : 1.08f), (hazard.A + hazard.B) * 0.5f);
+                        DamagePlayer(hazard.Damage * (IsCruiseStance(_playerPolarity) ? 0.82f : 1.08f), (hazard.A + hazard.B) * 0.5f);
                     }
                 }
             }
@@ -4528,7 +3922,7 @@ public partial class MainGame : Node2D
         Vector2 center = playerPos + new Vector2(32.0f, -32.0f);
         float ready = PolaritySwitchReady01();
         float radius = 9.5f;
-        Color next = PolarityColor(1 - _playerPolarity);
+        Color next = PolarityColor(OtherStance(_playerPolarity));
 
         DrawCircle(center, radius + 2.0f, Alpha(Void, 0.62f));
         DrawCircle(center, radius, Alpha(Graphite, 0.84f));
@@ -4941,16 +4335,16 @@ public partial class MainGame : Node2D
         DrawPanel(polarityCard, Alpha(Ink, 0.46f), Alpha(polarity, 0.5f));
         DrawCircle(polarityCard.Position + new Vector2(25.0f, 20.0f), 11.0f, Alpha(Graphite, 0.95f));
         DrawCircle(polarityCard.Position + new Vector2(25.0f, 20.0f), 8.0f, Alpha(polarity, 0.9f), false, UiStroke, true);
-        DrawText(_playerPolarity == 0 ? T("hud.cyan_resonance") : T("hud.gold_resonance"), polarityCard.Position + new Vector2(46.0f, 22.0f), 15, Paper, HorizontalAlignment.Left, 165.0f, true, 2);
+        DrawText(IsCruiseStance(_playerPolarity) ? T("hud.cyan_resonance") : T("hud.gold_resonance"), polarityCard.Position + new Vector2(46.0f, 22.0f), 15, Paper, HorizontalAlignment.Left, 165.0f, true, 2);
         string switchText = _polarityCooldown > 0.0f
             ? Tf("hud.resonance_cooldown", _polarityCooldown)
-            : _playerPolarity == 0
+            : IsCruiseStance(_playerPolarity)
                 ? $"{T("hud.cruise_charge")} {Mathf.RoundToInt(CruiseCharge01() * 100.0f)}%"
                 : _assaultBurstTimer > 0.0f ? Tf("hud.assault_window", _assaultBurstTimer) : T("hud.resonance_ready");
         DrawText(switchText, polarityCard.Position + new Vector2(46.0f, 39.0f), 11, Alpha(_polarityCooldown <= 0.0f ? XpGreen : Paper, 0.68f), HorizontalAlignment.Left, 165.0f, false, 0);
         Rect2 polarityBar = new(polarityCard.Position + new Vector2(14.0f, 41.0f), new Vector2(polarityCard.Size.X - 28.0f, 3.0f));
         DrawRect(polarityBar, Alpha(Paper, 0.08f), true);
-        float stanceMeter = _playerPolarity == 0 ? CruiseCharge01() : Mathf.Clamp(_assaultBurstTimer / AssaultBurstMax, 0.0f, 1.0f);
+        float stanceMeter = IsCruiseStance(_playerPolarity) ? CruiseCharge01() : Mathf.Clamp(_assaultBurstTimer / AssaultBurstMax, 0.0f, 1.0f);
         float meter = _polarityCooldown > 0.0f ? PolaritySwitchReady01() : stanceMeter;
         DrawRect(new Rect2(polarityBar.Position, new Vector2(polarityBar.Size.X * meter, polarityBar.Size.Y)), Alpha(polarity, _polarityCooldown <= 0.0f ? 0.9f : 0.58f), true);
 
@@ -5314,7 +4708,7 @@ public partial class MainGame : Node2D
             {
                 0 => Paper,
                 1 => PolarityColor(_playerPolarity),
-                2 => PolarityColor(1 - _playerPolarity),
+                2 => PolarityColor(OtherStance(_playerPolarity)),
                 3 => XpGreen,
                 4 => PickupBlue,
                 _ => AlertRed,
@@ -5554,137 +4948,6 @@ public partial class MainGame : Node2D
         }
 
         return Mathf.Clamp(value / (float)target, 0.0f, 1.0f);
-    }
-
-    private float CruiseCharge01()
-    {
-        return Mathf.Clamp(_cruiseCharge / CruiseChargeMax, 0.0f, 1.0f);
-    }
-
-    private void AddCruiseCharge(float amount, Vector2 source)
-    {
-        if (amount <= 0.0f)
-        {
-            return;
-        }
-
-        _cruiseCharge = Mathf.Clamp(_cruiseCharge + amount * _absorbEfficiency, 0.0f, CruiseChargeMax);
-        if (_visualPressure < 0.76f)
-        {
-            Vector2 pull = (_playerPos - source).LengthSquared() > 0.01f ? (_playerPos - source).Normalized() : Vector2.Up;
-            AddParticle(source, pull * 120.0f, PolarityBlue, 5.0f, 0.18f);
-        }
-    }
-
-    private float PlayerShotDamageScale(int stance)
-    {
-        if (stance == 0)
-        {
-            return 0.88f;
-        }
-
-        return _assaultBurstTimer > 0.0f ? _assaultPower : 1.12f;
-    }
-
-    private void EnterOverheat(Enemy enemy)
-    {
-        float duration = EnemyOverheatDuration(enemy);
-        enemy.Overheat = Mathf.Max(enemy.Overheat, duration);
-        enemy.OverheatMax = Mathf.Max(0.01f, duration);
-    }
-
-    private float EnemyOverheatDuration(Enemy enemy)
-    {
-        float duration = EnemyOverheatBase;
-        duration += enemy.Kind switch
-        {
-            EnemyKind.Boss => 0.75f,
-            EnemyKind.Lance or EnemyKind.Harrier or EnemyKind.Shard => 0.28f,
-            EnemyKind.Bulwark or EnemyKind.Warden => 0.5f,
-            _ => 0.0f,
-        };
-        if (enemy.Elite)
-        {
-            duration += 0.22f;
-        }
-        return duration;
-    }
-
-    private float EnemyOverheat01(Enemy enemy)
-    {
-        return Mathf.Clamp(enemy.Overheat / Mathf.Max(0.01f, enemy.OverheatMax), 0.0f, 1.0f);
-    }
-
-    private float EnemyTelegraph01(Enemy enemy)
-    {
-        if (enemy.Overheat > 0.0f)
-        {
-            return 0.0f;
-        }
-
-        float lead = EnemyTelegraphLead + (enemy.Kind == EnemyKind.Boss ? 0.28f : enemy.Elite ? 0.12f : 0.0f);
-        return 1.0f - Mathf.Clamp(enemy.Cooldown / lead, 0.0f, 1.0f);
-    }
-
-    private bool EnemyIsCharging(Enemy enemy)
-    {
-        return enemy.Cooldown > 0.0f && enemy.Overheat <= 0.0f && EnemyTelegraph01(enemy) > 0.0f;
-    }
-
-    private float EnemyCooldownRate(Enemy enemy)
-    {
-        float rate = Mathf.Lerp(0.58f, 0.76f, RunProgress01());
-        if (enemy.Kind == EnemyKind.Boss)
-        {
-            rate *= 0.9f;
-        }
-        else if (enemy.Kind == EnemyKind.Shard || enemy.Kind == EnemyKind.Harrier)
-        {
-            rate *= 1.08f;
-        }
-        if (enemy.Elite)
-        {
-            rate *= 1.08f;
-        }
-        return rate;
-    }
-
-    private static Color EnemyBulletColor()
-    {
-        return EnemyFireRed;
-    }
-
-    private Color ShotVisualColor(Shot shot)
-    {
-        return shot.FromPlayer ? PolarityColor(shot.Polarity) : EnemyBulletColor();
-    }
-
-    private Color EnemyStateColor(Enemy enemy)
-    {
-        float charge = EnemyTelegraph01(enemy);
-        if (charge > 0.0f)
-        {
-            return PolarityColor(enemy.Polarity).Lerp(EnemyBulletColor(), Mathf.Clamp(0.44f + charge * 0.48f, 0.0f, 1.0f));
-        }
-
-        float overheat = EnemyOverheat01(enemy);
-        if (overheat > 0.0f)
-        {
-            return PolarityColor(enemy.Polarity).Lerp(Paper, 0.42f + overheat * 0.32f).Lerp(Gold, 0.18f);
-        }
-
-        return PolarityColor(enemy.Polarity).Lerp(CurrentSector().Accent, 0.16f).Lerp(Steel, 0.18f);
-    }
-
-    private static float PolarityCooldownFor(int tunerRank, int stormRank)
-    {
-        float cooldown = PolaritySwitchCooldownBase - tunerRank * 0.1f - stormRank * 0.12f;
-        return Mathf.Max(PolaritySwitchCooldownMin, cooldown);
-    }
-
-    private float PolaritySwitchReady01()
-    {
-        return 1.0f - Mathf.Clamp(_polarityCooldown / Mathf.Max(0.01f, _polarityCooldownMax), 0.0f, 1.0f);
     }
 
     private float CalculateVisualPressure()
@@ -6585,11 +5848,6 @@ public partial class MainGame : Node2D
         return point.DistanceTo(a + ab * t);
     }
 
-    private Color PolarityColor(int polarity)
-    {
-        return polarity == 0 ? PolarityBlue : PolarityAmber;
-    }
-
     private Color PickupColor(PickupKind kind)
     {
         return kind switch
@@ -6668,23 +5926,13 @@ public partial class MainGame : Node2D
         return string.Format(System.Globalization.CultureInfo.InvariantCulture, T(key), args);
     }
 
-    private string SameRuleText()
-    {
-        return _language == GameLanguage.Chinese ? "红弹危险" : "RED FIRE IS DANGER";
-    }
-
-    private string OppositeRuleText()
-    {
-        return _language == GameLanguage.Chinese ? "过热突击" : "ASSAULT OVERHEAT";
-    }
-
     private string PolarityTipText()
     {
         if (_language == GameLanguage.Chinese)
         {
-            return _playerPolarity == 0 ? "巡航态：擦过红弹蓄势，等待破绽" : "突击态：抓住过热窗口爆发";
+            return IsCruiseStance(_playerPolarity) ? "巡航态：擦过红弹蓄势，等待破绽" : "突击态：抓住过热窗口爆发";
         }
-        return _playerPolarity == 0 ? "CRUISE: graze red fire, build charge" : "ASSAULT: punish overheat windows";
+        return IsCruiseStance(_playerPolarity) ? "CRUISE: graze red fire, build charge" : "ASSAULT: punish overheat windows";
     }
 
     private string PolarityCooldownText()
@@ -6795,7 +6043,7 @@ public partial class MainGame : Node2D
         {
             "Move with WASD or arrow keys. Aim with the mouse; weapons fire automatically.",
             "Enemy bullets are always red, and red fire is always danger. Cruise mode builds charge by grazing and landing steady hits.",
-            "Enemies telegraph, fire a volley, then briefly overheat. Shift into Assault during overheat windows for burst damage.",
+            "Enemies telegraph, fire a volley, then briefly overheat. Switch into Assault during overheat windows for burst damage.",
             "Switching stance locks you in briefly. Cruise to stabilize the field; Assault to punish openings.",
             "Right mouse or Shift dashes. Dash briefly grants invulnerability and clears nearby bullets.",
             "F or E spends energy on your role ultimate. Every pilot has a different ultimate.",
@@ -6820,7 +6068,7 @@ public partial class MainGame : Node2D
         return id switch
         {
             1 => "Red fire is always danger. Graze in Cruise mode to build charge.",
-            2 => "Enemies overheat after volleys. Shift into Assault to punish openings.",
+            2 => "Enemies overheat after volleys. Switch into Assault to punish openings.",
             3 => "Stance shift has a cooldown. Read the field, then commit.",
             9 => "Beams are dangerous too. Dash or use ultimates to open lanes.",
             _ => string.Empty,
