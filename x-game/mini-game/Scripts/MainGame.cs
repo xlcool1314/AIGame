@@ -11,6 +11,7 @@ public partial class MainGame : Node2D
     private const int WavesPerSector = 8;
     private const int SectorCount = 5;
     private const int TotalWaves = WavesPerSector * SectorCount;
+    private const int ClearRecordCount = 5;
     private const float PlayerRadius = 24.0f;
     private const float EnemyBulletRadius = 8.0f;
     private const float PlayerBulletRadius = 7.0f;
@@ -18,15 +19,19 @@ public partial class MainGame : Node2D
     private const int MaxEnemies = 96;
     private const int MaxShots = 480;
     private const int MaxPickups = 260;
-    private const int MaxParticles = 520;
+    private const int MaxParticles = 720;
     private const int MaxDamageTexts = 72;
     private const int MaxPoolSize = 900;
+    private const float EnemyGridCellSize = 160.0f;
+    private const int EnemyGridColumns = 12;
+    private const int EnemyGridRows = 7;
+    private const int EnemyGridCellCount = EnemyGridColumns * EnemyGridRows;
     private const int PlayerTrailCapacity = 14;
     private const int ShotTrailCapacity = 4;
     private const int CruiseStance = 0;
     private const int AssaultStance = 1;
-    private const float PolaritySwitchCooldownBase = 2.65f;
-    private const float PolaritySwitchCooldownMin = 1.75f;
+    private const float PolaritySwitchCooldownBase = 6.4f;
+    private const float PolaritySwitchCooldownMin = 3.4f;
     private const float EnemyBulletSpeedStartScale = 0.54f;
     private const float EnemyBulletSpeedEndScale = 0.84f;
     private const int EnemyBulletCapStart = 72;
@@ -35,19 +40,26 @@ public partial class MainGame : Node2D
     private const float CruiseGrazeRadius = 58.0f;
     private const float AssaultBurstMin = 1.45f;
     private const float AssaultBurstMax = 4.4f;
+    private const float UltimateCooldownBase = 8.5f;
+    private const float UltimateCostBase = 108.0f;
+    private const float UltimateCostFloor = 88.0f;
+    private const int ScoreCacheBase = 12000;
+    private const int ScoreCacheStep = 9000;
+    private const int XpBase = 48;
+    private const int XpStep = 14;
     private const float EnemyTelegraphLead = 0.58f;
     private const float EnemyOverheatBase = 1.55f;
     private const float UiHairline = 0.8f;
     private const float UiStroke = 1.05f;
     private const float UiAccentStroke = 1.3f;
-    private const int VesperUnlockWave = 8;
-    private const int VesperUnlockKills = 120;
-    private const int KairoUnlockWave = 14;
-    private const int KairoUnlockPickups = 220;
-    private const int KairoUnlockRuns = 3;
-    private const int SolUnlockWave = 22;
-    private const int SolUnlockBosses = 3;
-    private const int SolUnlockPerfectWaves = 10;
+    private const int MaxJoypadSlots = 8;
+    private const float GamepadStickDeadZone = 0.24f;
+    private const float GamepadAimDeadZone = 0.2f;
+    private const float GamepadTriggerThreshold = 0.45f;
+    private const float GamepadNavThreshold = 0.56f;
+    private const float GamepadNavRepeat = 0.18f;
+    private static readonly float[] BossPhaseThresholds = { 0.72f, 0.43f, 0.18f };
+    private static readonly int[] BuildMilestoneThresholds = { 5, 8, 11 };
 
     private static readonly Vector2 ScreenCenter = new(ScreenWidth * 0.5f, ScreenHeight * 0.5f);
     private static readonly Rect2 Arena = new(new Vector2(84.0f, 86.0f), new Vector2(1752.0f, 884.0f));
@@ -71,115 +83,224 @@ public partial class MainGame : Node2D
     private static readonly Color EnemyFireRed = new(1.0f, 0.16f, 0.10f);
     private static readonly string[] UpgradeHighlightTerms =
     {
+        "CAPSTONE",
+        "Capstone",
         "Star Dust",
-        "Cruise",
-        "Assault",
-        "overheat",
+        "EXP",
+        "Boss guard",
+        "Boss",
         "red fire",
-        "invulnerable",
-        "regenerates",
+        "enemy bullets",
+        "emergency clear",
+        "overheated",
+        "overheat",
+        "low-hull",
+        "guard-broken",
+        "weapon",
+        "pilot skill",
+        "tactical",
+        "skill",
         "ultimate",
-        "stronger",
-        "protects",
-        "restore",
-        "restores",
-        "repairs",
-        "repair",
-        "launches",
-        "clears",
-        "convert",
-        "charge",
-        "damage",
-        "bullets",
-        "pierce",
-        "drones",
         "energy",
+        "hull",
         "shield",
-        "reroll",
+        "invulnerable",
+        "invulnerability",
+        "dash",
+        "focus",
         "pickup",
         "pickups",
-        "enemies",
-        "faster",
-        "larger",
-        "cheaper",
-        "wider",
+        "reroll",
+        "bullets",
+        "clear",
+        "chain",
+        "chains",
+        "split",
+        "shards",
+        "ricochet",
+        "stasis",
+        "magnet",
+        "singularity",
+        "execution",
+        "mark",
+        "marks",
+        "rhythm",
+        "echo",
+        "orbit",
+        "pulse",
+        "pulses",
+        "prism",
+        "rail",
+        "gravity",
+        "lance",
+        "lances",
+        "pierce",
+        "drone",
+        "drones",
+        "swarm",
+        "corona",
         "volley",
         "volleys",
-        "shots",
-        "beams",
-        "rays",
-        "clear",
-        "cycle",
-        "longer",
-        "extra",
-        "more",
-        "adds",
-        "cost",
-        "hull",
-        "fire",
-        "dash",
-        "slow",
-        "boss",
-        "elites",
-        "自动攻击",
-        "蓄能时间",
-        "伤害",
-        "生命",
-        "能量",
-        "射速",
-        "子弹",
-        "穿透",
-        "无人机",
-        "巡航",
-        "突击",
+        "质变",
+        "Boss",
+        "Boss 护盾",
+        "Boss 破盾",
         "红弹",
+        "敌方子弹",
+        "紧急清弹",
+        "清弹",
         "过热",
         "破绽",
-        "火力",
-        "弹道",
-        "蓄能",
-        "弹幕",
-        "保护",
-        "回响",
-        "齐射",
-        "清除",
-        "转化",
-        "概率",
-        "修复",
-        "压制",
-        "消耗",
-        "上限",
-        "速度",
-        "环绕",
-        "冲刺",
-        "移动",
-        "拾取",
-        "敌人",
-        "减速",
+        "武器",
+        "角色技能",
+        "战术",
+        "技能",
         "大招",
-        "回复",
-        "恢复",
-        "重抽",
-        "星尘",
-        "精英",
+        "专注",
+        "生命",
+        "能量",
         "护盾",
         "无敌",
-        "范围",
-        "降低",
-        "提高",
-        "增加",
-        "额外",
-        "更多",
-        "更快",
-        "更高",
-        "更少",
-        "更强",
-        "更远",
-        "更久",
-        "更宽",
-        "更便宜",
-        "立即",
-        "掉落",
+        "冲刺",
+        "拾取物",
+        "拾取",
+        "重抽",
+        "子弹",
+        "弹幕",
+        "弹道",
+        "穿透",
+        "连锁",
+        "分裂",
+        "碎片",
+        "回弹",
+        "停滞",
+        "磁吸",
+        "奇点",
+        "处决",
+        "标记",
+        "节拍",
+        "节奏",
+        "回响",
+        "环绕",
+        "脉冲",
+        "棱镜",
+        "轨道",
+        "重力",
+        "星矛",
+        "长枪",
+        "无人机",
+        "蜂群",
+        "日冕",
+        "齐射",
+        "星尘",
+        "弹匣",
+        "壁垒",
+        "ПРЕДЕЛ",
+        "БОСС",
+        "босс",
+        "энергия",
+        "энергию",
+        "корпус",
+        "щит",
+        "защита",
+        "перегрев",
+        "пули",
+        "очистка",
+        "рой",
+        "дроны",
+        "цепи",
+        "раскол",
+        "рикошет",
+        "стазис",
+        "сингулярность",
+        "ÁPICE",
+        "chefe",
+        "energia",
+        "casco",
+        "escudo",
+        "guarda",
+        "tiros",
+        "limpeza",
+        "superaquecimento",
+        "drones",
+        "enxame",
+        "cadeia",
+        "divisão",
+        "ricochete",
+        "estase",
+        "singularidade",
+        "KRÖNUNG",
+        "Bosswache",
+        "Boss",
+        "Energie",
+        "Hülle",
+        "Schild",
+        "Kugeln",
+        "Noträumung",
+        "Überhitzung",
+        "Drohnen",
+        "Schwarm",
+        "Kette",
+        "Splitter",
+        "Abpraller",
+        "Stasis",
+        "Singularität",
+        "DORUK",
+        "boss",
+        "enerji",
+        "gövde",
+        "kalkan",
+        "koruma",
+        "mermi",
+        "temizleme",
+        "aşırı ısı",
+        "dron",
+        "sürü",
+        "zincir",
+        "bölünme",
+        "sekme",
+        "durgunluk",
+        "tekillik",
+        "APOGÉE",
+        "boss",
+        "énergie",
+        "coque",
+        "bouclier",
+        "garde",
+        "tirs",
+        "nettoyage",
+        "surchauffe",
+        "drones",
+        "essaim",
+        "chaîne",
+        "chaînes",
+        "fragmentation",
+        "ricochet",
+        "stase",
+        "singularité",
+        "奥義化",
+        "Boss",
+        "赤弾",
+        "敵弾",
+        "弾消し",
+        "エネルギー",
+        "耐久",
+        "シールド",
+        "無敵",
+        "ダッシュ",
+        "スキル",
+        "奥義",
+        "ドローン",
+        "連鎖",
+        "分裂",
+        "跳弾",
+        "過熱",
+        "防御",
+        "プリズム",
+        "コロナ",
+        "重力",
+        "特異点",
+        "回復",
     };
 
     private static readonly SectorInfo[] Sectors =
@@ -195,18 +316,18 @@ public partial class MainGame : Node2D
 
     private static readonly MetaUpgradeDef[] MetaUpgrades =
     {
-        new(MetaUpgradeId.HullPlating, "meta.hull.title", "meta.hull.body", Rose, 7, 50, 14),
-        new(MetaUpgradeId.ReactorSeed, "meta.energy.title", "meta.energy.body", Cyan, 6, 55, 16),
-        new(MetaUpgradeId.FocusLens, "meta.weapon.title", "meta.weapon.body", Gold, 6, 65, 18),
-        new(MetaUpgradeId.DriftEngine, "meta.engine.title", "meta.engine.body", Violet, 6, 50, 16),
-        new(MetaUpgradeId.SalvageRig, "meta.salvage.title", "meta.salvage.body", Jade, 5, 80, 24),
-        new(MetaUpgradeId.StarterChart, "meta.chart.title", "meta.chart.body", new Color(0.72f, 0.82f, 1.0f), 3, 110, 42),
-        new(MetaUpgradeId.RepairProtocol, "meta.repair.title", "meta.repair.body", new Color(0.4f, 1.0f, 0.66f), 5, 70, 20),
-        new(MetaUpgradeId.AegisMatrix, "meta.aegis.title", "meta.aegis.body", new Color(0.64f, 0.82f, 1.0f), 4, 85, 26),
-        new(MetaUpgradeId.NovaCatalyst, "meta.nova.title", "meta.nova.body", new Color(1.0f, 0.54f, 0.22f), 5, 75, 22),
-        new(MetaUpgradeId.DroneDock, "meta.drone.title", "meta.drone.body", PickupBlue, 4, 90, 28),
-        new(MetaUpgradeId.PolarityTuner, "meta.tuner.title", "meta.tuner.body", PolarityAmber, 4, 80, 25),
-        new(MetaUpgradeId.DeepSurvey, "meta.survey.title", "meta.survey.body", new Color(0.76f, 0.62f, 1.0f), 4, 95, 30),
+        new(MetaUpgradeId.HullPlating, "meta.hull.title", "meta.hull.body", Rose, 7, 95, 34),
+        new(MetaUpgradeId.ReactorSeed, "meta.energy.title", "meta.energy.body", Cyan, 6, 105, 38),
+        new(MetaUpgradeId.FocusLens, "meta.weapon.title", "meta.weapon.body", Gold, 6, 120, 42),
+        new(MetaUpgradeId.DriftEngine, "meta.engine.title", "meta.engine.body", Violet, 6, 95, 36),
+        new(MetaUpgradeId.SalvageRig, "meta.salvage.title", "meta.salvage.body", Jade, 5, 145, 54),
+        new(MetaUpgradeId.StarterChart, "meta.chart.title", "meta.chart.body", new Color(0.72f, 0.82f, 1.0f), 3, 210, 86),
+        new(MetaUpgradeId.RepairProtocol, "meta.repair.title", "meta.repair.body", new Color(0.4f, 1.0f, 0.66f), 5, 125, 46),
+        new(MetaUpgradeId.AegisMatrix, "meta.aegis.title", "meta.aegis.body", new Color(0.64f, 0.82f, 1.0f), 4, 165, 66),
+        new(MetaUpgradeId.NovaCatalyst, "meta.nova.title", "meta.nova.body", new Color(1.0f, 0.54f, 0.22f), 5, 145, 54),
+        new(MetaUpgradeId.DroneDock, "meta.drone.title", "meta.drone.body", PickupBlue, 4, 175, 70),
+        new(MetaUpgradeId.PolarityTuner, "meta.tuner.title", "meta.tuner.body", PolarityAmber, 4, 150, 62),
+        new(MetaUpgradeId.DeepSurvey, "meta.survey.title", "meta.survey.body", new Color(0.76f, 0.62f, 1.0f), 4, 185, 78),
     };
 
     private static readonly Dictionary<string, LocalizedText> Texts = new()
@@ -217,7 +338,7 @@ public partial class MainGame : Node2D
         ["sector.enter"] = new("SECTOR {0}: {1}", "第 {0} 章：{1}"),
         ["sector.cleared"] = new("{0} CLEARED", "通过：{0}"),
         ["sector.0.name"] = new("Lumen Shoal", "光滩星区"),
-        ["sector.0.trait"] = new("Calm opening field. Learn Cruise, Assault, and enemy overheat windows.", "第一章没有环境危险。练习巡航、突击和敌人过热窗口。"),
+        ["sector.0.trait"] = new("Calm opening field. Learn your pilot weapon, skill, and red-fire pressure.", "第一章没有环境危险。熟悉角色武器、角色技能和红弹压力。"),
         ["sector.1.name"] = new("Glass Reef", "玻璃星区"),
         ["sector.1.trait"] = new("Warning beams cut across the arena before firing.", "光束会先显示预警线，随后造成伤害。"),
         ["sector.2.name"] = new("Verdant Grave", "孢子星区"),
@@ -234,12 +355,40 @@ public partial class MainGame : Node2D
         ["menu.language"] = new("SWITCH LANGUAGE", "切换语言"),
         ["menu.settings"] = new("SETTINGS", "设置"),
         ["menu.pilot"] = new("PILOT", "角色"),
-        ["menu.tip"] = new("Click START or press Enter. Spend Star Dust in Permanent Upgrades between runs.", "点击“开始远征”或按 Enter。每局结束后可用星尘购买永久升级。"),
+        ["menu.tip"] = new("Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.", "点击“开始远征”、按 Enter 或按 A。每局结束后可用星尘购买永久升级。"),
         ["boss.choir_core"] = new("CHOIR CORE", "合唱核心"),
         ["boss.sector"] = new("{0} CORE", "{0} Boss"),
+        ["wave.engage"] = new("ENGAGE", "接战"),
+        ["wave.pace.short.standard"] = new("PATROL", "巡逻"),
+        ["wave.pace.short.swarm"] = new("SWARM", "蜂群"),
+        ["wave.pace.short.elite"] = new("ELITE", "精英"),
+        ["wave.pace.short.recovery"] = new("SUPPLY", "补给"),
+        ["wave.pace.short.pressure"] = new("RUSH", "压迫"),
+        ["wave.pace.short.boss"] = new("BOSS", "Boss"),
+        ["hud.route.label"] = new("ROUTE", "路线"),
+        ["hud.spawn.label"] = new("SPAWN", "刷新"),
+        ["hud.spawn.boss"] = new("--", "--"),
+        ["combo.pop"] = new("COMBO x{0}", "连击X{0}"),
+        ["combo.value"] = new("x{0}", "连击X{0}"),
         ["wave.enemy.focus"] = new("PRIMARY: {0} - {1}", "主敌：{0} - {1}"),
         ["wave.enemy.support"] = new("SUPPORT: {0}", "辅助：{0}"),
         ["wave.enemy.new"] = new("NEW ENEMY: {0}", "新敌人：{0}"),
+        ["boss.title"] = new("{0}: {1}", "{0}：{1}"),
+        ["boss.preview"] = new("{0} BOSS VARIANT", "{0} 随机 Boss"),
+        ["boss.choir.name"] = new("Choir Core", "合唱核心"),
+        ["boss.prism.name"] = new("Prism Regent", "棱镜王庭"),
+        ["boss.swarm.name"] = new("Drone Matriarch", "蜂群母舰"),
+        ["boss.forge.name"] = new("Solar Forge", "日冕熔炉"),
+        ["boss.rift.name"] = new("Rift Warden", "裂隙典狱"),
+        ["wave.pace.standard"] = new("PATROL", "巡逻波"),
+        ["wave.pace.swarm"] = new("SWARM", "蜂群波"),
+        ["wave.pace.elite"] = new("ELITE HUNT", "精英狩猎"),
+        ["wave.pace.recovery"] = new("SUPPLY DRIFT", "补给漂流"),
+        ["wave.pace.pressure"] = new("PRESSURE RUN", "压迫连战"),
+        ["wave.pace.boss"] = new("BOSS", "Boss"),
+        ["flow.momentum"] = new("MOMENTUM +FOCUS +ENERGY", "连战动量：专注与能量提升"),
+        ["flow.supply"] = new("SUPPLY WAVE: fewer enemies, better recovery.", "补给波：敌人较少，回复更多。"),
+        ["flow.draft"] = new("BUILD DRAFT READY", "构筑选择就绪"),
         ["enemy.chaser.name"] = new("Chaser", "追猎者"),
         ["enemy.chaser.role"] = new("rushes you and fires simple aimed shots", "直线追击，发射简单瞄准弹"),
         ["enemy.weaver.name"] = new("Weaver", "织弹者"),
@@ -274,63 +423,91 @@ public partial class MainGame : Node2D
         ["hud.sector.label"] = new("SECTOR", "章节"),
         ["hud.score"] = new("SCORE {0:000000}", "分数 {0:000000}"),
         ["hud.score.label"] = new("SCORE", "分数"),
+        ["hud.xp.label"] = new("EXP", "经验"),
+        ["hud.level.label"] = new("LV", "等级"),
+        ["hud.cache.label"] = new("CACHE", "缓存"),
         ["hud.combo.label"] = new("COMBO", "连击"),
+        ["xp.gain"] = new("+{0} EXP", "+{0} 经验"),
+        ["xp.level_up"] = new("LEVEL UP", "升级"),
+        ["score.cache"] = new("SCORE CACHE +{0} DUST", "战绩缓存 +{0} 星尘"),
+        ["score.cache.hint"] = new("score feeds end-run dust and instant resources", "分数会转化为结算星尘和即时资源"),
+        ["score.combo_break"] = new("COMBO BREAK", "连击中断"),
         ["hud.build"] = new("BUILD", "构筑"),
         ["hud.objectives"] = new("EXPEDITION GOALS", "远征目标"),
-        ["hud.cyan_resonance"] = new("CRUISE MODE", "巡航态"),
-        ["hud.gold_resonance"] = new("ASSAULT MODE", "突击态"),
-        ["hud.resonance_ready"] = new("SPACE READY", "切换就绪"),
-        ["hud.resonance_cooldown"] = new("SPACE {0:0.0}s", "切换 {0:0.0}秒"),
-        ["hud.cruise_charge"] = new("CHARGE", "蓄势"),
-        ["hud.assault_window"] = new("BURST {0:0.0}s", "爆发 {0:0.0}秒"),
-        ["hud.controls"] = new("WASD MOVE  MOUSE AIM  AUTO FIRE  RMB/SHIFT DASH  SPACE STANCE SHIFT  F/E ULTIMATE  L LANGUAGE", "WASD移动  鼠标瞄准  自动射击  右键/Shift冲刺  空格切换姿态  F/E大招  L语言"),
+        ["hud.cyan_resonance"] = new("TACTICAL", "战术技"),
+        ["hud.gold_resonance"] = new("TACTICAL", "战术技"),
+        ["hud.resonance_ready"] = new("SKILL READY", "技能就绪"),
+        ["hud.resonance_cooldown"] = new("COOLDOWN {0:0.0}s", "冷却 {0:0.0}秒"),
+        ["hud.cruise_charge"] = new("FOCUS", "专注"),
+        ["hud.assault_window"] = new("SKILL {0:0.0}s", "战术 {0:0.0}秒"),
+        ["hud.controls"] = new("WASD/LS MOVE  MOUSE/RS AIM  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT  START MENU", "WASD/左摇杆移动  鼠标/右摇杆瞄准  自动射击  A/LB冲刺  X/RB技能  Y/RT大招  Start菜单"),
         ["title.astra"] = new("ASTRA", "星穹"),
         ["title.fracture"] = new("FRACTURE", "裂隙"),
-        ["title.subtitle"] = new("a stance-shifting arcade roguelite built in Godot C#", "Godot C# 制作的姿态切换弹幕 Roguelite"),
-        ["title.body"] = new("Red fire is always danger. Cruise through pressure, build charge, then shift into Assault during enemy overheat windows.", "红色弹幕永远危险。巡航态穿过压力并蓄势，敌人过热时切入突击态爆发。"),
+        ["title.subtitle"] = new("a pilot-build arcade roguelite built in Godot C#", "Godot C# 制作的角色构筑弹幕 Roguelite"),
+        ["title.body"] = new("Red fire is always danger. Each pilot has a distinct weapon, pilot skill, ultimate, and upgrade path.", "红色弹幕永远危险。每个角色都有不同武器、角色技能、大招和升级流派。"),
         ["pilot.astra.name"] = new("Astra", "星棱"),
-        ["pilot.astra.body"] = new("Balanced prism bolts. Easy to read, easy to grow.", "均衡棱镜弹。稳定、清晰，适合熟悉流程。"),
+        ["pilot.astra.body"] = new("Balanced prism bolts. Skill focuses a refraction burst.", "均衡棱镜弹。角色技能释放折射聚焦。"),
         ["pilot.astra.weapon"] = new("Prism Bolts", "棱镜连射"),
         ["pilot.vesper.name"] = new("Vesper", "暮轨"),
-        ["pilot.vesper.body"] = new("Slow heavy rail shots pierce targets and reward aim.", "低频重炮，穿透敌人，适合精准瞄准。"),
+        ["pilot.vesper.body"] = new("Slow heavy rail shots. Skill locks a cutting line.", "低频重炮。角色技能锁定一条切割射线。"),
         ["pilot.vesper.weapon"] = new("Rail Lance", "轨道长枪"),
         ["pilot.kairo.name"] = new("Kairo", "环序"),
-        ["pilot.kairo.body"] = new("Starts with drones and a softer primary pulse.", "开局拥有无人机，主武器较弱但自动压制强。"),
+        ["pilot.kairo.body"] = new("Starts with drones. Skill orders synchronized swarm fire.", "开局拥有无人机。角色技能指挥蜂群同步集火。"),
         ["pilot.kairo.weapon"] = new("Drone Net", "无人机网"),
         ["pilot.sol.name"] = new("Sol", "日冕"),
-        ["pilot.sol.body"] = new("Wide scatter fire and deeper energy reserves.", "宽角散射，能量更厚，适合近中距离压场。"),
+        ["pilot.sol.body"] = new("Wide scatter fire. Skill opens a protective corona field.", "宽角散射。角色技能展开护身日冕场。"),
         ["pilot.sol.weapon"] = new("Corona Scatter", "日冕散射"),
         ["pilot.unlock.free"] = new("Unlocked", "已解锁"),
         ["pilot.unlock.wave8"] = new("Reach wave 8", "到达第 8 波解锁"),
         ["pilot.unlock.wave16"] = new("Reach wave 16", "到达第 16 波解锁"),
         ["pilot.unlock.wave24"] = new("Reach wave 24", "到达第 24 波解锁"),
-        ["title.start"] = new("PRESS ENTER / CLICK", "按 ENTER / 点击开始"),
+        ["title.start"] = new("ENTER / CLICK / A", "ENTER / 点击 / A 开始"),
         ["title.won_once"] = new("Choir Core fractured once. It remembers.", "合唱核心曾被击碎。它记得你。"),
-        ["upgrade.title"] = new("CHOOSE A NEW RESONANCE", "选择一个升级"),
-        ["upgrade.hint"] = new("1 / 2 / 3 / 4 or click a card. R rerolls once.", "按 1 / 2 / 3 / 4 或点击卡牌。R 可重抽一次。"),
+        ["upgrade.title"] = new("CHOOSE A BUILD UPGRADE", "选择一个构筑升级"),
+        ["upgrade.hint"] = new("1 / 2 / 3 or click. Gamepad: LS/D-Pad choose, A select, X reroll.", "按 1 / 2 / 3 或点击。手柄：左摇杆/方向键选择，A确认，X重抽。"),
         ["choice.instant"] = new("Instant", "立即生效"),
         ["choice.tactic"] = new("Tactic", "战术"),
         ["choice.risk"] = new("Risk", "风险"),
         ["choice.contract"] = new("Contract", "契约"),
         ["choice.meta"] = new("Map", "路线"),
+        ["choice.capstone"] = new("Capstone", "质变"),
+        ["capstone.chain"] = new("CAPSTONE: relays become steadier, jump farther, and finish with a shard burst.", "质变：连锁更稳定、跳得更远，最后一跳会爆出碎片。"),
+        ["capstone.fractal"] = new("CAPSTONE: split shards can reliably create a second controlled split.", "质变：分裂碎片更容易触发受控二次分裂。"),
+        ["capstone.astra.refraction"] = new("CAPSTONE: prism volleys open permanent side lanes.", "质变：棱镜连射会展开额外侧向弹道。"),
+        ["capstone.astra.wake"] = new("CAPSTONE: Focus Prism becomes a true burst window with stronger echo fire.", "质变：棱镜聚焦变成真正的爆发窗口，并强化回响火力。"),
+        ["capstone.astra.nova"] = new("CAPSTONE: Prism Nova detonates a second star ring.", "质变：棱镜星爆会追加第二圈星环。"),
+        ["capstone.astra.twin"] = new("CAPSTONE: Focus Prism fires a cross refraction through the arena.", "质变：棱镜聚焦会打出贯穿战场的十字折射。"),
+        ["capstone.vesper.charge"] = new("CAPSTONE: the main rail leaves a delayed afterimage lance.", "质变：主轨道炮会留下延迟余像枪线。"),
+        ["capstone.vesper.fork"] = new("CAPSTONE: rail side lanes become a stable triangular firing pattern.", "质变：副轨道变成稳定的三角枪线。"),
+        ["capstone.vesper.judgment"] = new("CAPSTONE: Judgment pierces Boss guard and widens the kill lane.", "质变：轨道裁决会穿透 Boss 护盾并拓宽终结线。"),
+        ["capstone.vesper.sever"] = new("CAPSTONE: ultimate beams create crossing sever lines.", "质变：大招光束会追加交叉裂轨。"),
+        ["capstone.kairo.bay"] = new("CAPSTONE: drones become guardian nodes that clear bullets around themselves.", "质变：无人机会变成护卫节点，自动清理周围红弹。"),
+        ["capstone.kairo.sync"] = new("CAPSTONE: swarm shots synchronize into an extra lock-on stream.", "质变：蜂群射击会同步出额外锁定弹流。"),
+        ["capstone.kairo.override"] = new("CAPSTONE: Swarm Override tags every visible enemy once.", "质变：蜂群覆写会对所有可见敌人执行一次标记打击。"),
+        ["capstone.kairo.relay"] = new("CAPSTONE: relay commands refund more energy and push chain builds online.", "质变：中继指令回复更多能量，并让连锁流完全成型。"),
+        ["capstone.sol.bloom"] = new("CAPSTONE: corona scatter becomes a near-full halo.", "质变：日冕散射会接近完整光环。"),
+        ["capstone.sol.forge"] = new("CAPSTONE: ultimate ignites enemies and refills a chunk of energy.", "质变：大招会点燃敌人，并返还一段能量。"),
+        ["capstone.sol.flare"] = new("CAPSTONE: corona skills chain flare pulses through nearby enemies.", "质变：日冕技能会在附近敌人间连锁耀斑。"),
+        ["capstone.sol.mantle"] = new("CAPSTONE: corona field grants a brief radiant shield.", "质变：日冕场会提供短暂光冕护盾。"),
         ["end.victory.title"] = new("CORE FRACTURED", "核心已碎裂"),
         ["end.defeat.title"] = new("SIGNAL LOST", "信号丢失"),
-        ["end.score"] = new("FINAL SCORE {0:000000}", "最终分数 {0:000000}"),
+        ["end.wave"] = new("REACHED WAVE {0}/{1}", "抵达波次 {0}/{1}"),
         ["end.victory.body"] = new("The starfield exhales. Your pattern survives.", "你击败了全部 Boss，完成了这次航行。"),
         ["end.defeat.body"] = new("The Choir rewinds the arena. Tune again.", "这次失败了。调整升级选择，再试一次。"),
-        ["end.restart"] = new("ENTER / CLICK TO RESTART", "ENTER / 点击重新开始"),
+        ["end.restart"] = new("ENTER / CLICK / A TO RESTART", "ENTER / 点击 / A 重新开始"),
         ["end.reward"] = new("STAR DUST +{0}   REACHED WAVE {1}/40", "获得星尘 +{0}   到达波次 {1}/40"),
         ["end.objective_bonus"] = new("GOAL BONUS +{0}", "目标奖励 +{0}"),
-        ["end.meta_hint"] = new("Press Esc for title, then spend Star Dust in Permanent Upgrades.", "按 Esc 回主界面，然后在永久升级中使用星尘。"),
+        ["end.score_bonus"] = new("CACHE DUST +{0}", "缓存星尘 +{0}"),
+        ["end.meta_hint"] = new("B/Esc returns to title. Y opens Permanent Upgrades.", "B/Esc 返回主界面。Y 打开永久升级。"),
         ["objective.complete"] = new("GOAL COMPLETE +{0} DUST", "目标完成 +{0} 星尘"),
         ["objective.clean_wave"] = new("CLEAN WAVE +ENERGY", "无伤清波 +能量"),
         ["meta.title"] = new("STAR VAULT", "星尘工坊"),
         ["meta.subtitle"] = new("Permanent upgrades are a long route across many expeditions.", "永久升级需要多次远征逐步推进。"),
         ["meta.dust"] = new("Star Dust", "星尘"),
         ["meta.wallet"] = new("STAR DUST {0}", "星尘 {0}"),
-        ["meta.best"] = new("BEST WAVE {0}/40   BEST SCORE {1:000000}   RUNS {2}", "最高波次 {0}/40   最高分 {1:000000}   出航 {2}"),
+        ["meta.best"] = new("BEST WAVE {0}/40   RUNS {2}", "最高波次 {0}/40   出航 {2}"),
         ["meta.open_hint"] = new("Press U or click Permanent Upgrades.", "按 U 或点击“永久升级”。"),
-        ["meta.buy_hint"] = new("Click any node to buy. Keys 1-9 buy the first nine nodes. Esc returns to title.", "点击任意节点购买。按 1-9 可购买前九个节点。Esc 返回主界面。"),
+        ["meta.buy_hint"] = new("Click or use LS/D-Pad + A to buy. Keys 1-9 buy nodes. B/Esc returns.", "点击或用左摇杆/方向键 + A 购买。1-9 可快捷购买。B/Esc 返回。"),
         ["meta.back"] = new("BACK", "返回"),
         ["meta.cost"] = new("COST {0}", "花费 {0}"),
         ["meta.max"] = new("MAX", "已满"),
@@ -373,13 +550,13 @@ public partial class MainGame : Node2D
         ["meta.nova.body"] = new("Ultimates cost less energy and each run starts with more charge.", "大招耗能降低，开局能量更多。"),
         ["meta.drone.title"] = new("Drone Dock", "无人机坞"),
         ["meta.drone.body"] = new("Begin runs with support drones. Kairo turns this into a stronger swarm.", "开局获得支援无人机。环序会形成更强蜂群。"),
-        ["meta.tuner.title"] = new("Stance Tuner", "姿态调谐"),
-        ["meta.tuner.body"] = new("Cruise charge and overheat-window hits return more energy.", "巡航蓄势和过热窗口命中会获得更多能量。"),
+        ["meta.tuner.title"] = new("Tactical Console", "战术控制台"),
+        ["meta.tuner.body"] = new("Pilot skills cool down faster and focus gains return more energy.", "角色战术技冷却更快，专注收益带来更多能量。"),
         ["meta.survey.title"] = new("Deep Survey", "深空测绘"),
         ["meta.survey.body"] = new("Earn a modest Star Dust bonus and read the opening waves more safely.", "略微提高星尘收益，并让开局节奏更稳。"),
         ["rank"] = new("Rank {0}", "等级 {0}"),
         ["upgrade.prism.title"] = new("Prism Array", "多重射击"),
-        ["upgrade.prism.body"] = new("Adds another parallel beam. Assault windows bloom harder.", "多发一颗子弹。突击窗口爆发更强。"),
+        ["upgrade.prism.body"] = new("Adds another parallel beam. Weapon builds gain a wider base.", "多发一颗子弹。弹幕流派更容易成型。"),
         ["upgrade.rail.title"] = new("Rail Heart", "强力核心"),
         ["upgrade.rail.body"] = new("Raises weapon damage and trims charge delay. Simple, brutal, beautiful.", "提高子弹伤害，并略微提高射速。"),
         ["upgrade.coolant.title"] = new("Coolant Lattice", "冷却装置"),
@@ -391,7 +568,7 @@ public partial class MainGame : Node2D
         ["upgrade.vital.title"] = new("Vital Shell", "生命护盾"),
         ["upgrade.vital.body"] = new("Increases hull integrity and repairs a large chunk immediately.", "提高最大生命，并立即回复生命。"),
         ["upgrade.leech.title"] = new("Repair Seed", "修复掉落"),
-        ["upgrade.leech.body"] = new("Kills can seed repairs. Cruise play becomes a survival engine.", "击败敌人有更高概率掉落修复。"),
+        ["upgrade.leech.body"] = new("Kills can seed repairs. Survival builds become easier to sustain.", "击败敌人有更高概率掉落修复，生存流更稳定。"),
         ["upgrade.wisp.title"] = new("Moon Wisp", "自动浮游炮"),
         ["upgrade.wisp.body"] = new("Adds an orbiting shard that searches nearby targets and fires.", "增加一个自动攻击附近敌人的环绕碎片。"),
         ["upgrade.rift.title"] = new("Rift Needle", "穿透弹"),
@@ -400,16 +577,20 @@ public partial class MainGame : Node2D
         ["upgrade.mirror.body"] = new("Reduces incoming damage and flashes absorbed force outward.", "减少受到的伤害。"),
         ["upgrade.nova.title"] = new("Ultimate Capacitor", "大招强化"),
         ["upgrade.nova.body"] = new("Ultimate skills cost less energy and your vessel holds more charge.", "大招消耗更少，能量上限更高。"),
-        ["upgrade.storm.title"] = new("Stance Storm", "姿态反击"),
-        ["upgrade.storm.body"] = new("Switching stance releases counterfire and shortens stance cooldown.", "切换姿态时向四周发射子弹，并缩短姿态冷却。"),
+        ["upgrade.storm.title"] = new("Tactical Overdrive", "战术超载"),
+        ["upgrade.storm.body"] = new("Pilot skills release counterfire and recover faster.", "角色技能会释放反击弹幕，并缩短冷却。"),
         ["upgrade.comet.title"] = new("Comet Trail", "冲刺强化"),
         ["upgrade.comet.body"] = new("Dash impact damage rises and the dash clears a wider lane.", "冲刺伤害更高，清除更大范围的弹幕。"),
         ["upgrade.aegis.title"] = new("Aegis Bloom", "自动回血"),
         ["upgrade.aegis.body"] = new("Slowly regenerates hull while you avoid damage.", "一段时间不受伤会缓慢回血。"),
         ["upgrade.echo.title"] = new("Quantum Echo", "额外射击"),
         ["upgrade.echo.body"] = new("Shots can echo into a second ghost lance.", "射击时有概率额外发射一发穿透弹。"),
-        ["upgrade.solar.title"] = new("Overheat Thesis", "破绽专精"),
-        ["upgrade.solar.body"] = new("Assault hits scale harder against overheated elites and cores.", "突击命中过热精英和 Boss 时伤害更高。"),
+        ["upgrade.chain.title"] = new("Chain Relay", "连锁中继"),
+        ["upgrade.chain.body"] = new("Weapon hits can jump to nearby enemies. Swarm and pressure waves become relay windows.", "武器命中会向附近敌人连锁跳跃。蜂群波和压迫波收益更高。"),
+        ["upgrade.fractal.title"] = new("Fractal Split", "分裂棱片"),
+        ["upgrade.fractal.body"] = new("Kills split into small shards. Higher ranks create controlled second splits for cleanup.", "击败敌人会分裂出小型子弹。等级高后可产生受控二次分裂。"),
+        ["upgrade.solar.title"] = new("Flow Core", "流派核心"),
+        ["upgrade.solar.body"] = new("Tactical windows and overheat punishes hit harder.", "战术技窗口和过热破绽伤害更高。"),
         ["upgrade.repair.title"] = new("Emergency Repair", "紧急维修"),
         ["upgrade.repair.body"] = new("Repair hull immediately and gain a little max hull.", "立即回复生命，并少量提高最大生命。"),
         ["upgrade.overdrive.title"] = new("One-Wave Overdrive", "单波过载"),
@@ -417,43 +598,43 @@ public partial class MainGame : Node2D
         ["upgrade.glass.title"] = new("Glass Cannon", "玻璃大炮"),
         ["upgrade.glass.body"] = new("Permanent damage up, but max hull goes down.", "永久提高伤害，但降低最大生命。"),
         ["upgrade.bounty.title"] = new("Bounty Contract", "赏金契约"),
-        ["upgrade.bounty.body"] = new("Next wave has more enemies, but they are worth more score and drops.", "下一波敌人更多，但分数和掉落更多。"),
+        ["upgrade.bounty.body"] = new("Next wave has more enemies, higher score-cache progress, and better drops.", "下一波敌人更多，战绩缓存推进更快，掉落更好。"),
         ["upgrade.transmute.title"] = new("Bullet Transmute", "弹幕转化"),
         ["upgrade.transmute.body"] = new("Clear enemy bullets now and convert them into energy.", "立刻清除敌方子弹，并转化为能量。"),
         ["upgrade.map.title"] = new("Harmonic Map", "升级地图"),
         ["upgrade.map.body"] = new("Gain one extra reroll on future upgrade screens.", "之后的升级界面多一次重抽机会。"),
         ["upgrade.astra.refraction.title"] = new("Refraction Lattice", "折射阵列"),
-        ["upgrade.astra.refraction.body"] = new("Astra gains extra prism lanes without losing clarity.", "星棱增加额外弹道，保持稳定火力。"),
+        ["upgrade.astra.refraction.body"] = new("Astra gains extra prism lanes and a denser Focus Prism salvo.", "星棱增加额外弹道，空格棱镜聚焦也更密。"),
         ["upgrade.astra.wake.title"] = new("Prism Wake", "棱光余波"),
-        ["upgrade.astra.wake.body"] = new("Prism shots hit harder and cycle a little faster.", "棱镜弹伤害提高，射击节奏略快。"),
+        ["upgrade.astra.wake.body"] = new("Prism shots hit harder, cycle faster, and extend Focus Prism.", "棱镜弹伤害提高、射击更快，并延长棱镜聚焦。"),
         ["upgrade.vesper.charge.title"] = new("Capacitor Spine", "蓄能脊柱"),
-        ["upgrade.vesper.charge.body"] = new("Rail lance damage rises and charge time shrinks.", "轨道长枪伤害提高，蓄能时间缩短。"),
+        ["upgrade.vesper.charge.body"] = new("Rail lance damage rises. Skill lock-on cuts deeper.", "轨道长枪伤害提高，角色技能锁定射线更锋利。"),
         ["upgrade.vesper.fork.title"] = new("Split Rail", "分裂轨道"),
-        ["upgrade.vesper.fork.body"] = new("Rail shots add narrow side lances.", "轨道炮追加两侧副枪线。"),
+        ["upgrade.vesper.fork.body"] = new("Rail shots and skill lock add narrow side lances.", "轨道炮和角色技能锁定追加两侧副枪线。"),
         ["upgrade.kairo.bay.title"] = new("Drone Bay", "无人机舱"),
-        ["upgrade.kairo.bay.body"] = new("Kairo launches more orbiting drones.", "环序增加更多环绕无人机。"),
+        ["upgrade.kairo.bay.body"] = new("Kairo launches more orbiting drones. Skill commands a larger swarm.", "环序增加更多环绕无人机，角色技能指挥更大蜂群。"),
         ["upgrade.kairo.sync.title"] = new("Swarm Sync", "蜂群同步"),
-        ["upgrade.kairo.sync.body"] = new("Drones and pulses fire faster and hit harder.", "无人机和脉冲弹射速、伤害提高。"),
+        ["upgrade.kairo.sync.body"] = new("Drones fire faster and tactical volleys synchronize harder.", "无人机射击更快，空格同步齐射更强。"),
         ["upgrade.sol.bloom.title"] = new("Corona Bloom", "日冕绽放"),
-        ["upgrade.sol.bloom.body"] = new("Sol scatter fire gains more rays and wider control.", "日冕散射弹数量增加，压制范围更大。"),
+        ["upgrade.sol.bloom.body"] = new("Sol scatter fire gains more rays. Skill corona covers more space.", "日冕散射弹数量增加，角色技能日冕场覆盖更大。"),
         ["upgrade.sol.forge.title"] = new("Solar Forge", "太阳熔炉"),
-        ["upgrade.sol.forge.body"] = new("More energy, cheaper ultimate skills, and stronger scatter impact.", "能量更多，大招更便宜，散射伤害提高。"),
+        ["upgrade.sol.forge.body"] = new("More energy, cheaper ultimates, and hotter corona skills.", "能量更多，大招更便宜，并强化日冕战术技。"),
         ["upgrade.astra.nova.title"] = new("Nova Bloom", "星爆棱镜"),
-        ["upgrade.astra.nova.body"] = new("Prism Nova clears a larger field and launches more blades.", "棱镜星爆范围更大，并发射更多棱镜弹。"),
+        ["upgrade.astra.nova.body"] = new("Prism Nova clears wider, and Focus Prism cuts more space.", "棱镜星爆范围更大，棱镜聚焦清场更强。"),
         ["upgrade.astra.twin.title"] = new("Twin Refraction", "双相折射"),
-        ["upgrade.astra.twin.body"] = new("Prism Nova adds an inner echo ring with stronger pierce.", "棱镜星爆追加内圈回响，穿透更强。"),
+        ["upgrade.astra.twin.body"] = new("Prism Nova and Focus Prism echo with a second refraction ring.", "棱镜星爆和空格聚焦追加第二圈折射。"),
         ["upgrade.vesper.judgment.title"] = new("Judgment Coil", "裁决线圈"),
-        ["upgrade.vesper.judgment.body"] = new("Rail Judgment becomes wider, cheaper, and more lethal.", "轨道裁决更宽、更便宜，伤害更高。"),
+        ["upgrade.vesper.judgment.body"] = new("Rail Judgment and skill lock become wider, cheaper, and more lethal.", "轨道裁决和角色技能锁定更宽、更便宜，伤害更高。"),
         ["upgrade.vesper.sever.title"] = new("Sever Line", "裂轨余震"),
-        ["upgrade.vesper.sever.body"] = new("Rail Judgment creates parallel aftershock beams.", "轨道裁决会生成平行余震光束。"),
+        ["upgrade.vesper.sever.body"] = new("Rail Judgment and skill lock create parallel aftershock beams.", "轨道裁决和角色技能锁定会生成平行余震光束。"),
         ["upgrade.kairo.override.title"] = new("Override Matrix", "覆写矩阵"),
-        ["upgrade.kairo.override.body"] = new("Swarm Override launches more drones and stronger shots.", "蜂群覆写展开更多无人机，弹幕更强。"),
+        ["upgrade.kairo.override.body"] = new("Swarm Override adds command bursts to the pilot skill and stronger shots.", "蜂群覆写为角色技能增加指令齐射，弹幕更强。"),
         ["upgrade.kairo.relay.title"] = new("Relay Protocol", "接力协议"),
-        ["upgrade.kairo.relay.body"] = new("Swarm Override fires extra volleys and improves drone pierce.", "蜂群覆写增加齐射轮次，并提高无人机穿透。"),
+        ["upgrade.kairo.relay.body"] = new("Swarm relays refund energy and make skill commands chain shots.", "蜂群中继会回复能量，并让角色技能指令连锁更多射击。"),
         ["upgrade.sol.flare.title"] = new("Flare Core", "耀斑核心"),
-        ["upgrade.sol.flare.body"] = new("Corona Flare expands farther and burns harder.", "日冕耀斑范围更大，伤害更高。"),
+        ["upgrade.sol.flare.body"] = new("Corona Flare and pilot skill burn brighter and clear a wider field.", "日冕耀斑和角色技能日冕场更亮，清场更强。"),
         ["upgrade.sol.mantle.title"] = new("Radiant Mantle", "光冕护层"),
-        ["upgrade.sol.mantle.body"] = new("Corona Flare restores more hull and protects you longer.", "日冕耀斑回复更多生命，并提供更久保护。"),
+        ["upgrade.sol.mantle.body"] = new("Radiant mantle adds hull, invulnerability, and skill recovery.", "提高生命、无敌时间，并强化角色技能回复。"),
         ["upgrade.unknown.title"] = new("Unknown", "未知升级"),
         ["upgrade.unknown.body"] = new("Mystery signal.", "未知效果。"),
     };
@@ -475,6 +656,8 @@ public partial class MainGame : Node2D
     private readonly Queue<PendingSpawn> _pendingSpawns = new();
     private readonly Dictionary<UpgradeId, int> _upgradeRanks = new();
     private readonly Dictionary<MetaUpgradeId, int> _metaRanks = new();
+    private readonly Dictionary<PilotKind, int> _pilotRuns = new();
+    private readonly List<Enemy>[] _enemyGrid = CreateEnemyGrid();
     private readonly Stack<Enemy> _enemyPool = new();
     private readonly Stack<Shot> _shotPool = new();
     private readonly Stack<Pickup> _pickupPool = new();
@@ -482,6 +665,7 @@ public partial class MainGame : Node2D
     private readonly Stack<DamageText> _damageTextPool = new();
     private int _activeEnemyBullets;
     private float _visualPressure;
+    private float _frameRatePressure;
 
     private GameMode _mode = GameMode.Title;
     private GameMode _settingsReturnMode = GameMode.Title;
@@ -490,6 +674,7 @@ public partial class MainGame : Node2D
     private Vector2 _playerPos = ScreenCenter;
     private Vector2 _playerVel = Vector2.Zero;
     private Vector2 _aimDir = Vector2.Right;
+    private Vector2 _lastMousePos = ScreenCenter;
     private float _playerHp = 120.0f;
     private float _playerMaxHp = 120.0f;
     private float _energy = 35.0f;
@@ -500,19 +685,36 @@ public partial class MainGame : Node2D
     private float _hudEnergyTrail = 0.35f;
     private float _hudDashValue = 1.0f;
     private float _hudDashTrail = 1.0f;
+    private float _hudSpawnValue = 0.1f;
+    private float _hudSpawnTrail = 0.1f;
     private float _fireTimer;
     private float _dashTimer;
     private float _dashCooldown;
     private float _invulnTimer;
     private float _polarityCooldown;
     private float _polarityCooldownMax = PolaritySwitchCooldownBase;
+    private float _ultimateCooldown;
     private float _polarityDenyTextCooldown;
     private int _playerPolarity;
     private int _wave;
     private int _score;
     private int _combo;
     private float _comboTimer;
+    private int _comboTier;
+    private float _comboTierPulse;
+    private int _scoreCacheLevel;
+    private int _nextScoreCache;
+    private int _runScoreBonusDust;
+    private int _lastScoreBonusDust;
+    private PilotKind? _lastUnlockedPilot;
+    private float _scoreCachePulse;
+    private int _runLevel = 1;
+    private int _xp;
+    private int _xpToNext = XpBase;
+    private int _queuedLevelUps;
+    private float _xpPulse;
     private float _waveClearTimer;
+    private float _waveIntelPulse;
     private float _time;
     private float _shake;
     private float _flash;
@@ -520,8 +722,13 @@ public partial class MainGame : Node2D
     private float _playerTrailTimer;
     private float _spawnDirector;
     private float _waveSpawnTimer;
+    private int _waveBudget;
     private float _bossPatternTimer;
     private float _sectorHazardTimer;
+    private WavePaceKind _currentWavePace = WavePaceKind.Standard;
+    private int _combatChain;
+    private BossArchetype _lastBossArchetype = BossArchetype.Choir;
+    private bool _hasLastBossArchetype;
     private float _deleteSaveConfirmTimer;
     private float _deleteSaveNoticeTimer;
     private float _timeSinceHit;
@@ -536,7 +743,24 @@ public partial class MainGame : Node2D
     private bool _wonOnce;
     private bool _runRewardGranted;
     private GameLanguage _language = GameLanguage.English;
+    private DisplayResolutionPreset _resolutionPreset = DisplayResolutionPreset.R1920x1080;
+    private VisualQuality _visualQuality = VisualQuality.High;
+    private float _musicVolume = 0.72f;
+    private float _sfxVolume = 0.78f;
     private Font? _uiFont;
+    private bool _usingGamepad;
+    private Rect2 _gamepadFocusRect;
+    private bool _gamepadFocusVisible;
+    private int _gamepadPilotIndex;
+    private int _gamepadUpgradeIndex;
+    private int _gamepadMetaIndex;
+    private int _gamepadSettingsIndex;
+    private int _guidePage;
+    private float _gamepadNavCooldown;
+    private int _gamepadLastNavX;
+    private int _gamepadLastNavY;
+    private float _runTimer;
+    private readonly List<float> _clearTimeRecords = new();
 
     private int _starDust;
     private int _lifetimeDust;
@@ -545,11 +769,15 @@ public partial class MainGame : Node2D
     private int _runsCompleted;
     private int _careerKills;
     private int _careerPickups;
+    private int _careerAbsorbs;
+    private int _careerBestCombo;
     private int _careerBossKills;
     private int _careerPerfectWaves;
     private int _lastDustEarned;
     private int _lastRunWave;
     private int _lastObjectiveBonusDust;
+    private float _lastClearTime;
+    private int _lastClearRecordRank;
     private int _runObjectiveBonusDust;
     private int _runWavesCleared;
     private int _runPerfectWaves;
@@ -578,6 +806,13 @@ public partial class MainGame : Node2D
     private float _dashDamage = 70.0f;
     private float _aegisRegen;
     private float _echoChance;
+    private int _chainRelay;
+    private int _fractalSplit;
+    private int _pulseMagazine;
+    private int _executionMark;
+    private int _stasisField;
+    private int _magnetizedCore;
+    private int _ricochetMatrix;
     private float _nextWaveDamageBoost = 1.0f;
     private float _nextWaveRewardBoost = 1.0f;
     private int _polarityStorm;
@@ -600,6 +835,29 @@ public partial class MainGame : Node2D
     private int _kairoRelayProtocol;
     private int _solFlareCore;
     private int _solRadiantMantle;
+    private int _nyxOrbit;
+    private int _nyxSingularity;
+    private int _nyxEventHorizon;
+    private int _nyxGravityCantor;
+    private int _rookBulwarkCore;
+    private int _rookSiegeBattery;
+    private int _rookAegisRelay;
+    private int _rookCitadelProtocol;
+    private int _lyraResonanceChord;
+    private int _lyraTempoBloom;
+    private int _lyraHarmonicCascade;
+    private int _lyraEncoreField;
+    private int _orionCometSpear;
+    private int _orionDeadeyeMark;
+    private int _orionStarfallQuiver;
+    private int _orionPerihelionVector;
+    private int _lyraBeat;
+    private int _draftBiasWeapon;
+    private int _draftBiasDefense;
+    private int _draftBiasSkill;
+    private int _draftBiasFlow;
+    private int _draftBiasEconomy;
+    private int _buildMilestoneMask;
     private bool _riftNeedle;
 
     private bool _lastStart;
@@ -621,9 +879,25 @@ public partial class MainGame : Node2D
     private bool _lastLanguage;
     private bool _lastMeta;
     private bool _lastBack;
+    private bool _lastConfirm;
+    private bool _lastCancel;
+    private bool _lastPause;
+    private bool _lastSettingsShortcut;
+    private bool _lastSettingsLeft;
+    private bool _lastSettingsRight;
 
     private AudioStreamPlayer? _musicPlayer;
     private AudioStreamGeneratorPlayback? _musicPlayback;
+
+    private static List<Enemy>[] CreateEnemyGrid()
+    {
+        List<Enemy>[] grid = new List<Enemy>[EnemyGridCellCount];
+        for (int i = 0; i < grid.Length; i++)
+        {
+            grid[i] = new List<Enemy>(8);
+        }
+        return grid;
+    }
 
     public override void _Ready()
     {
@@ -639,7 +913,6 @@ public partial class MainGame : Node2D
         SetupAudio();
         LoadMetaProgress();
         ResetTitle();
-        DisplayServer.WindowSetTitle("穿越星际 - 1920x1080 Godot C#");
         SetProcess(true);
     }
 
@@ -654,6 +927,8 @@ public partial class MainGame : Node2D
         float dt = Mathf.Min((float)delta, 0.033f);
         _time += dt;
         FillAudio();
+        UpdatePointerInputMode();
+        UpdateGamepadNavigation(dt);
         UpdateLanguageToggle();
 
         switch (_mode)
@@ -695,6 +970,7 @@ public partial class MainGame : Node2D
         _shake = Approach(_shake, 0.0f, dt * 9.0f);
         _flash = Approach(_flash, 0.0f, dt * 2.8f);
         _visualPressure = CalculateVisualPressure();
+        UpdatePerformancePressure(dt);
         QueueRedraw();
         CaptureButtons();
     }
@@ -748,7 +1024,17 @@ public partial class MainGame : Node2D
         foreach (DamageText damageText in _damageTexts)
         {
             float t = Mathf.Clamp(damageText.Life / damageText.MaxLife, 0.0f, 1.0f);
-            DrawText(damageText.Text, damageText.Pos + ShakeOffset(), (int)damageText.Size, Alpha(damageText.Color, t), HorizontalAlignment.Center, 220.0f, true, 4);
+            float age = 1.0f - t;
+            float pop = damageText.ComboPop ? 1.0f + Mathf.Sin(age * Mathf.Pi) * 0.34f : 1.0f;
+            Vector2 pos = damageText.Pos + ShakeOffset();
+            if (damageText.ComboPop)
+            {
+                float width = Mathf.Clamp(damageText.Text.Length * damageText.Size * 0.54f + 22.0f, 58.0f, 142.0f) * pop;
+                Rect2 badge = new(pos - new Vector2(width * 0.5f, damageText.Size * 0.78f * pop), new Vector2(width, damageText.Size * 1.18f * pop));
+                DrawRect(badge, Alpha(Ink, 0.22f * t), true);
+                DrawRect(badge, Alpha(damageText.Color, 0.42f * t), false, UiHairline, true);
+            }
+            DrawText(damageText.Text, pos, Mathf.RoundToInt(damageText.Size * pop), Alpha(damageText.Color, t), HorizontalAlignment.Center, 220.0f, true, 4);
         }
 
         if (visibleMode == GameMode.Title)
@@ -802,6 +1088,9 @@ public partial class MainGame : Node2D
         _hazards.Clear();
         _upgradeChoices.Clear();
         _voices.Clear();
+        _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        _gamepadUpgradeIndex = 0;
+        _gamepadSettingsIndex = 0;
     }
 
     private void LoadMetaProgress()
@@ -810,8 +1099,27 @@ public partial class MainGame : Node2D
         ConfigFile config = new();
         if (config.Load(MetaSavePath) != Error.Ok)
         {
+            ApplyRuntimeSettings(false);
             return;
         }
+
+        string languageName = ReadConfigString(config, "settings", "language", _language.ToString());
+        if (Enum.TryParse(languageName, out GameLanguage loadedLanguage))
+        {
+            _language = loadedLanguage;
+        }
+        string resolutionName = ReadConfigString(config, "settings", "resolution", _resolutionPreset.ToString());
+        if (Enum.TryParse(resolutionName, out DisplayResolutionPreset loadedResolution))
+        {
+            _resolutionPreset = loadedResolution;
+        }
+        string qualityName = ReadConfigString(config, "settings", "quality", _visualQuality.ToString());
+        if (Enum.TryParse(qualityName, out VisualQuality loadedQuality))
+        {
+            _visualQuality = loadedQuality;
+        }
+        _musicVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
+        _sfxVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
 
         _starDust = Mathf.Max(0, ReadConfigInt(config, "meta", "star_dust", 0));
         _lifetimeDust = Mathf.Max(0, ReadConfigInt(config, "meta", "lifetime_dust", 0));
@@ -821,8 +1129,27 @@ public partial class MainGame : Node2D
         _wonOnce = ReadConfigInt(config, "stats", "won_once", 0) > 0;
         _careerKills = Mathf.Max(0, ReadConfigInt(config, "career", "kills", 0));
         _careerPickups = Mathf.Max(0, ReadConfigInt(config, "career", "pickups", 0));
+        _careerAbsorbs = Mathf.Max(0, ReadConfigInt(config, "career", "absorbs", 0));
+        _careerBestCombo = Mathf.Max(0, ReadConfigInt(config, "career", "best_combo", 0));
         _careerBossKills = Mathf.Max(0, ReadConfigInt(config, "career", "boss_kills", 0));
         _careerPerfectWaves = Mathf.Max(0, ReadConfigInt(config, "career", "perfect_waves", 0));
+        LoadClearTimeRecords(config);
+        _pilotRuns.Clear();
+        int pilotRunTotal = 0;
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            int runs = Mathf.Max(0, ReadConfigInt(config, "pilot_runs", pilot.ToString(), 0));
+            if (runs > 0)
+            {
+                _pilotRuns[pilot] = runs;
+                pilotRunTotal += runs;
+            }
+        }
+        if (pilotRunTotal == 0 && _runsCompleted > 0)
+        {
+            _pilotRuns[PilotKind.Astra] = _runsCompleted;
+        }
         string pilotName = ReadConfigString(config, "settings", "pilot", PilotKind.Astra.ToString());
         if (Enum.TryParse(pilotName, out PilotKind loadedPilot) && IsPilotUnlocked(loadedPilot))
         {
@@ -832,6 +1159,8 @@ public partial class MainGame : Node2D
         {
             _selectedPilot = PilotKind.Astra;
         }
+        _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        ApplyRuntimeSettings(false);
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
         {
@@ -854,9 +1183,26 @@ public partial class MainGame : Node2D
         config.SetValue("stats", "won_once", _wonOnce ? 1 : 0);
         config.SetValue("career", "kills", _careerKills);
         config.SetValue("career", "pickups", _careerPickups);
+        config.SetValue("career", "absorbs", _careerAbsorbs);
+        config.SetValue("career", "best_combo", _careerBestCombo);
         config.SetValue("career", "boss_kills", _careerBossKills);
         config.SetValue("career", "perfect_waves", _careerPerfectWaves);
+        for (int i = 0; i < ClearRecordCount; i++)
+        {
+            int centiseconds = i < _clearTimeRecords.Count ? TimeToCentiseconds(_clearTimeRecords[i]) : 0;
+            config.SetValue("records", $"clear_time_{i}_cs", centiseconds);
+        }
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            config.SetValue("pilot_runs", pilot.ToString(), PilotRunCount(pilot));
+        }
         config.SetValue("settings", "pilot", _selectedPilot.ToString());
+        config.SetValue("settings", "language", _language.ToString());
+        config.SetValue("settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f));
+        config.SetValue("settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f));
+        config.SetValue("settings", "resolution", _resolutionPreset.ToString());
+        config.SetValue("settings", "quality", _visualQuality.ToString());
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
         {
@@ -880,13 +1226,22 @@ public partial class MainGame : Node2D
         _runsCompleted = 0;
         _careerKills = 0;
         _careerPickups = 0;
+        _careerAbsorbs = 0;
+        _careerBestCombo = 0;
         _careerBossKills = 0;
         _careerPerfectWaves = 0;
+        _pilotRuns.Clear();
         _wonOnce = false;
         _selectedPilot = PilotKind.Astra;
+        _gamepadPilotIndex = PilotIndex(_selectedPilot);
         _lastDustEarned = 0;
         _lastRunWave = 0;
         _lastObjectiveBonusDust = 0;
+        _lastScoreBonusDust = 0;
+        _lastClearTime = 0.0f;
+        _lastClearRecordRank = 0;
+        _lastUnlockedPilot = null;
+        _clearTimeRecords.Clear();
         SaveMetaProgress();
 
         ResetTitle();
@@ -907,6 +1262,140 @@ public partial class MainGame : Node2D
         return config.GetValue(section, key, fallback).AsString();
     }
 
+    private void LoadClearTimeRecords(ConfigFile config)
+    {
+        _clearTimeRecords.Clear();
+        for (int i = 0; i < ClearRecordCount; i++)
+        {
+            AddClearTimeRecord(CentisecondsToTime(ReadConfigInt(config, "records", $"clear_time_{i}_cs", 0)));
+        }
+
+        if (_clearTimeRecords.Count == 0)
+        {
+            AddClearTimeRecord(CentisecondsToTime(ReadConfigInt(config, "records", "best_clear_time_cs", 0)));
+        }
+    }
+
+    private int AddClearTimeRecord(float seconds)
+    {
+        if (seconds <= 0.0f)
+        {
+            return 0;
+        }
+
+        _clearTimeRecords.Add(seconds);
+        _clearTimeRecords.Sort();
+        int rank = _clearTimeRecords.IndexOf(seconds) + 1;
+        while (_clearTimeRecords.Count > ClearRecordCount)
+        {
+            _clearTimeRecords.RemoveAt(_clearTimeRecords.Count - 1);
+        }
+
+        return rank > 0 && rank <= ClearRecordCount ? rank : 0;
+    }
+
+    private static int TimeToCentiseconds(float seconds)
+    {
+        return Mathf.Max(0, Mathf.RoundToInt(seconds * 100.0f));
+    }
+
+    private static float CentisecondsToTime(int centiseconds)
+    {
+        return Mathf.Max(0, centiseconds) / 100.0f;
+    }
+
+    private void ApplyRuntimeSettings(bool save)
+    {
+        if (save)
+        {
+            ApplyWindowResolution();
+        }
+        GenerateBackdrop();
+        if (save)
+        {
+            SaveMetaProgress();
+        }
+    }
+
+    private void ApplyWindowResolution()
+    {
+        if (IsHeadlessLaunch())
+        {
+            return;
+        }
+
+        Vector2I size = ResolutionSize(_resolutionPreset);
+        DisplayServer.WindowSetMinSize(new Vector2I(960, 540));
+        DisplayServer.WindowSetSize(size);
+        Rect2I usable = DisplayServer.ScreenGetUsableRect();
+        if (size.X <= usable.Size.X && size.Y <= usable.Size.Y)
+        {
+            Vector2I offset = new((usable.Size.X - size.X) / 2, (usable.Size.Y - size.Y) / 2);
+            DisplayServer.WindowSetPosition(usable.Position + offset);
+        }
+    }
+
+    private static bool IsHeadlessLaunch()
+    {
+        foreach (string arg in System.Environment.GetCommandLineArgs())
+        {
+            if (string.Equals(arg, "--headless", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return OS.HasFeature("headless") || OS.HasFeature("server");
+    }
+
+    private static Vector2I ResolutionSize(DisplayResolutionPreset preset)
+    {
+        return preset switch
+        {
+            DisplayResolutionPreset.R1280x720 => new Vector2I(1280, 720),
+            DisplayResolutionPreset.R1600x900 => new Vector2I(1600, 900),
+            DisplayResolutionPreset.R2560x1440 => new Vector2I(2560, 1440),
+            _ => new Vector2I(1920, 1080),
+        };
+    }
+
+    private static string ResolutionDisplayName(DisplayResolutionPreset preset)
+    {
+        Vector2I size = ResolutionSize(preset);
+        return $"{size.X} x {size.Y}";
+    }
+
+    private string QualityDisplayName(VisualQuality quality)
+    {
+        return quality switch
+        {
+            VisualQuality.Low => T("settings.quality.low"),
+            VisualQuality.Medium => T("settings.quality.medium"),
+            VisualQuality.Ultra => T("settings.quality.ultra"),
+            _ => T("settings.quality.high"),
+        };
+    }
+
+    private static int ResolutionPresetCount()
+    {
+        return 4;
+    }
+
+    private static int VisualQualityCount()
+    {
+        return 4;
+    }
+
+    private static int WrapIndex(int index, int count)
+    {
+        if (count <= 0)
+        {
+            return 0;
+        }
+
+        return (index % count + count) % count;
+    }
+
     private void AwardMetaProgress(bool victory)
     {
         if (_runRewardGranted)
@@ -917,20 +1406,38 @@ public partial class MainGame : Node2D
         _runRewardGranted = true;
         int reachedWave = Mathf.Clamp(_wave, 0, TotalWaves);
         int sectorBonus = Mathf.Clamp(CurrentSectorIndex(), 0, SectorCount - 1) * 3;
-        int baseDust = 10 + Mathf.RoundToInt(reachedWave * 1.35f) + _score / 9000 + sectorBonus + (victory ? 45 : 0);
+        int scoreDust = _score / 7000;
+        int baseDust = 10 + Mathf.RoundToInt(reachedWave * 1.35f) + scoreDust + sectorBonus + (victory ? 45 : 0);
         float dustBonus = 1.0f + MetaRank(MetaUpgradeId.SalvageRig) * 0.045f + MetaRank(MetaUpgradeId.DeepSurvey) * 0.035f;
-        int earned = Mathf.Max(10, Mathf.RoundToInt(baseDust * dustBonus)) + _runObjectiveBonusDust;
+        int earned = Mathf.Max(10, Mathf.RoundToInt(baseDust * dustBonus)) + _runObjectiveBonusDust + _runScoreBonusDust;
+        PilotKind? possibleUnlock = NextPilot(_runPilot);
+        bool unlockWasLocked = possibleUnlock.HasValue && !IsPilotUnlocked(possibleUnlock.Value);
 
         _lastDustEarned = earned;
         _lastRunWave = reachedWave;
         _lastObjectiveBonusDust = _runObjectiveBonusDust;
+        _lastClearTime = victory ? _runTimer : 0.0f;
+        _lastClearRecordRank = 0;
+        _lastScoreBonusDust = Mathf.RoundToInt(scoreDust * dustBonus) + _runScoreBonusDust;
+        _lastUnlockedPilot = null;
         _starDust += earned;
         _lifetimeDust += earned;
         _runsCompleted++;
+        _pilotRuns[_runPilot] = PilotRunCount(_runPilot) + 1;
+        if (unlockWasLocked && possibleUnlock.HasValue && IsPilotUnlocked(possibleUnlock.Value))
+        {
+            _lastUnlockedPilot = possibleUnlock.Value;
+        }
         _bestScore = Math.Max(_bestScore, _score);
         _bestWave = Math.Max(_bestWave, reachedWave);
+        if (victory)
+        {
+            _lastClearRecordRank = AddClearTimeRecord(_runTimer);
+        }
         _careerKills += _runKills;
         _careerPickups += _runPickups;
+        _careerAbsorbs += _runAbsorbs;
+        _careerBestCombo = Math.Max(_careerBestCombo, _runBestCombo);
         _careerBossKills += _runBossKills;
         _careerPerfectWaves += _runPerfectWaves;
         SaveMetaProgress();
@@ -949,8 +1456,22 @@ public partial class MainGame : Node2D
         _runPilot = _selectedPilot;
         _wave = 0;
         _score = 0;
+        _runTimer = 0.0f;
         _combo = 0;
         _comboTimer = 0.0f;
+        _comboTier = 0;
+        _comboTierPulse = 0.0f;
+        _scoreCacheLevel = 0;
+        _nextScoreCache = ScoreCacheThreshold(0);
+        _runScoreBonusDust = 0;
+        _lastScoreBonusDust = 0;
+        _lastUnlockedPilot = null;
+        _scoreCachePulse = 0.0f;
+        _runLevel = 1;
+        _xp = 0;
+        _xpToNext = XpThresholdForLevel(_runLevel);
+        _queuedLevelUps = 0;
+        _xpPulse = 0.0f;
         _playerPos = ScreenCenter;
         _playerVel = Vector2.Zero;
         ResetPlayerTrail(_playerPos);
@@ -975,13 +1496,19 @@ public partial class MainGame : Node2D
         _dashCooldown = 0.0f;
         SnapHudBars();
         _invulnTimer = 1.8f;
+        _ultimateCooldown = 0.0f;
         _playerPolarity = CruiseStance;
         _polarityCooldown = 0.0f;
         _polarityDenyTextCooldown = 0.0f;
         _waveClearTimer = 0.0f;
+        _waveIntelPulse = 0.0f;
         _bossPatternTimer = 0.0f;
         _spawnDirector = 0.0f;
+        _waveBudget = 0;
         _sectorHazardTimer = 4.0f;
+        _currentWavePace = WavePaceKind.Standard;
+        _combatChain = 0;
+        _hasLastBossArchetype = false;
         _timeSinceHit = 99.0f;
         _absorbTextCooldown = 0.0f;
         _counterTextCooldown = 0.0f;
@@ -1002,7 +1529,7 @@ public partial class MainGame : Node2D
         _leechChance = repairRank * 0.025f;
         _mirrorReduction = 1.0f - aegisRank * 0.025f;
         _absorbEfficiency = 1.0f + tunerRank * 0.055f;
-        _novaCost = 70.0f - reactorRank * 1.5f - novaRank * 2.4f;
+        _novaCost = UltimateCostBase - reactorRank * 1.2f - novaRank * 2.0f;
         _critMultiplier = 1.55f + tunerRank * 0.035f;
         _dashDamage = 70.0f;
         _aegisRegen = repairRank * 0.08f;
@@ -1030,11 +1557,44 @@ public partial class MainGame : Node2D
         _kairoRelayProtocol = 0;
         _solFlareCore = 0;
         _solRadiantMantle = 0;
+        _chainRelay = 0;
+        _fractalSplit = 0;
+        _pulseMagazine = 0;
+        _executionMark = 0;
+        _stasisField = 0;
+        _magnetizedCore = 0;
+        _ricochetMatrix = 0;
+        _nyxOrbit = 0;
+        _nyxSingularity = 0;
+        _nyxEventHorizon = 0;
+        _nyxGravityCantor = 0;
+        _rookBulwarkCore = 0;
+        _rookSiegeBattery = 0;
+        _rookAegisRelay = 0;
+        _rookCitadelProtocol = 0;
+        _lyraResonanceChord = 0;
+        _lyraTempoBloom = 0;
+        _lyraHarmonicCascade = 0;
+        _lyraEncoreField = 0;
+        _orionCometSpear = 0;
+        _orionDeadeyeMark = 0;
+        _orionStarfallQuiver = 0;
+        _orionPerihelionVector = 0;
+        _lyraBeat = 0;
+        _draftBiasWeapon = 0;
+        _draftBiasDefense = 0;
+        _draftBiasSkill = 0;
+        _draftBiasFlow = 0;
+        _draftBiasEconomy = 0;
+        _buildMilestoneMask = 0;
         _riftNeedle = false;
         _runRewardGranted = false;
         _lastDustEarned = 0;
         _lastRunWave = 0;
         _lastObjectiveBonusDust = 0;
+        _lastClearTime = 0.0f;
+        _lastClearRecordRank = 0;
+        _lastUnlockedPilot = null;
         _runObjectiveBonusDust = 0;
         _runWavesCleared = 0;
         _runPerfectWaves = 0;
@@ -1048,6 +1608,7 @@ public partial class MainGame : Node2D
         _upgradeOrder.Clear();
         SetupRunObjectives();
         ApplyPilotBaseline();
+        ClampUltimateCost();
         if (droneRank > 0)
         {
             int metaDrones = 1 + (droneRank - 1) / 2;
@@ -1087,13 +1648,45 @@ public partial class MainGame : Node2D
                 _fireInterval = 0.48f;
                 _maxEnergy += 24.0f;
                 _energy = Mathf.Clamp(_energy + 24.0f, 0.0f, _maxEnergy);
-                _novaCost = Mathf.Max(48.0f, _novaCost - 10.0f);
                 _playerMaxHp += 10.0f;
                 _playerHp += 10.0f;
+                break;
+            case PilotKind.Nyx:
+                _fireInterval = 0.38f;
+                _damageMultiplier *= 0.92f;
+                _playerSpeed += 22.0f;
+                _dashPower += 70.0f;
+                _pickupMagnet += 28.0f;
+                break;
+            case PilotKind.Rook:
+                _fireInterval = 0.72f;
+                _damageMultiplier += 0.12f;
+                _playerSpeed -= 38.0f;
+                _playerMaxHp += 52.0f;
+                _playerHp += 52.0f;
+                _mirrorReduction *= 0.88f;
+                break;
+            case PilotKind.Lyra:
+                _fireInterval = 0.3f;
+                _damageMultiplier *= 0.82f;
+                _maxEnergy += 20.0f;
+                _energy = Mathf.Clamp(_energy + 20.0f, 0.0f, _maxEnergy);
+                _echoChance += 0.06f;
+                break;
+            case PilotKind.Orion:
+                _fireInterval = 0.66f;
+                _damageMultiplier += 0.24f;
+                _critMultiplier += 0.18f;
+                _playerSpeed -= 8.0f;
                 break;
             default:
                 break;
         }
+    }
+
+    private void ClampUltimateCost()
+    {
+        _novaCost = Mathf.Clamp(_novaCost, UltimateCostFloor, _maxEnergy);
     }
 
     private void BeginNextWave()
@@ -1103,9 +1696,12 @@ public partial class MainGame : Node2D
         _waveTookDamage = false;
         _spawnDirector = 0.0f;
         _waveSpawnTimer = 0.0f;
+        _waveBudget = 0;
+        _waveIntelPulse = 1.0f;
         _pendingSpawns.Clear();
         _bossPatternTimer = 0.0f;
         _sectorHazardTimer = Mathf.Max(2.5f, 8.0f - CurrentSectorIndex());
+        _currentWavePace = WavePaceFor(_wave);
         for (int i = _shots.Count - 1; i >= 0; i--)
         {
             if (!_shots[i].FromPlayer)
@@ -1124,24 +1720,28 @@ public partial class MainGame : Node2D
             AddText(T(info.TraitKey), ScreenCenter + new Vector2(0.0f, -202.0f), Paper, 22.0f);
         }
 
-        if (waveInSector == WavesPerSector)
+        if (_currentWavePace == WavePaceKind.Boss)
         {
-            SpawnBoss();
-            AddText(Tf("boss.sector", T(info.NameKey)), ScreenCenter + new Vector2(0.0f, -180.0f), info.Accent, 44.0f);
+            _waveBudget = 1;
+            Enemy? boss = SpawnBoss();
+            string title = boss != null ? BossTitle(boss.BossArchetype, sector) : Tf("boss.sector", T(info.NameKey));
+            AddText(title, ScreenCenter + new Vector2(0.0f, -180.0f), boss != null ? BossAccent(boss.BossArchetype) : info.Accent, 44.0f);
             PlaySfx(72.0f, 0.5f, 1.6f, 0.46f, 0.3f, 0);
             return;
         }
 
-        int budget = 3 + waveInSector * 2 + sector * 4 + _nextWaveBonusEnemies;
-        float rewardBoost = _nextWaveRewardBoost;
+        int baseBudget = WaveBaseBudget(sector, waveInSector);
+        int budget = Mathf.Max(2, Mathf.RoundToInt((baseBudget + _nextWaveBonusEnemies) * WaveBudgetScale(_currentWavePace)));
+        _waveBudget = budget;
+        float rewardBoost = _nextWaveRewardBoost * WaveRewardScale(_currentWavePace);
         EnemyKind primaryKind = WavePrimaryEnemyKind(sector, waveInSector);
         EnemyKind supportKind = WaveSupportEnemyKind(sector, waveInSector);
         _nextWaveBonusEnemies = 0;
         _nextWaveRewardBoost = 1.0f;
-        int openingBatch = Math.Min(budget, Math.Max(3, 3 + sector + waveInSector / 3));
+        int openingBatch = Math.Min(budget, Math.Max(2, Mathf.RoundToInt((3 + sector + waveInSector / 3.0f) * WaveOpeningScale(_currentWavePace))));
         for (int i = 0; i < budget; i++)
         {
-            EnemyKind kind = SelectEnemyKind(i, sector, waveInSector, primaryKind, supportKind);
+            EnemyKind kind = SelectEnemyKind(i, sector, waveInSector, primaryKind, supportKind, _currentWavePace);
             PendingSpawn spawn = new()
             {
                 Kind = kind,
@@ -1159,7 +1759,13 @@ public partial class MainGame : Node2D
             }
         }
 
-        AddText(Tf("wave.intro", _wave), ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 42.0f);
+        AddText($"{T("wave.engage")}  /  {WavePaceText(_currentWavePace)}", ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 42.0f);
+        if (_currentWavePace == WavePaceKind.Recovery)
+        {
+            AddText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
+            SpawnPickup(ScreenCenter + new Vector2(-72.0f, 34.0f), PickupKind.Energy);
+            SpawnPickup(ScreenCenter + new Vector2(72.0f, 34.0f), PickupKind.Repair);
+        }
         AddWaveEnemyCallout(primaryKind, supportKind, info.Accent);
         ShowWaveTutorial();
         PlaySfx(120.0f + waveInSector * 18.0f + sector * 22.0f, 0.4f, 0.36f, 0.32f, 0.08f, 1);
@@ -1204,11 +1810,27 @@ public partial class MainGame : Node2D
         }
 
         int sector = CurrentSectorIndex();
-        int spawnCount = (_enemies.Count < 8 + sector * 2 && _pendingSpawns.Count > 3) ? 2 : 1;
-        if (_visualPressure > 0.82f || _enemies.Count > 34 + sector * 3)
+        float spawnRate = SpawnRateMultiplier();
+        float pressure = PerformancePressure();
+        int spawnCount = (_enemies.Count < 6 + sector * 2 && _pendingSpawns.Count > 3) ? 2 : 1;
+        if (_currentWavePace == WavePaceKind.Swarm && _enemies.Count < 16 + sector * 2 && pressure < 0.75f)
+        {
+            spawnCount++;
+        }
+        else if (_currentWavePace == WavePaceKind.Elite || _currentWavePace == WavePaceKind.Recovery)
         {
             spawnCount = 1;
-            _waveSpawnTimer = 0.55f;
+        }
+
+        if (spawnRate >= 1.7f && pressure < 0.68f && _pendingSpawns.Count > 3)
+        {
+            spawnCount += spawnRate >= 2.25f ? 2 : 1;
+        }
+
+        if (pressure > 0.82f || _enemies.Count > 34 + sector * 3)
+        {
+            spawnCount = 1;
+            _waveSpawnTimer = Mathf.Lerp(0.72f, 0.46f, ComboPace01());
             return;
         }
 
@@ -1217,8 +1839,7 @@ public partial class MainGame : Node2D
             SpawnPendingEnemy(_pendingSpawns.Dequeue());
         }
 
-        float progress = RunProgress01();
-        _waveSpawnTimer = Mathf.Lerp(1.25f, 0.72f, progress) + _rng.RandfRange(-0.12f, 0.16f);
+        _waveSpawnTimer = NextSpawnInterval(spawnRate);
     }
 
     private void SpawnPendingEnemy(PendingSpawn spawn)
@@ -1251,6 +1872,18 @@ public partial class MainGame : Node2D
             case PilotKind.Sol:
                 AddRunObjective(RunObjectiveKind.DefeatEnemies, _bestWave < 16 ? 90 : 145, 56 + MetaRank(MetaUpgradeId.FocusLens) * 4);
                 break;
+            case PilotKind.Nyx:
+                AddRunObjective(RunObjectiveKind.AbsorbBullets, _bestWave < 20 ? 42 : 72, 58 + MetaRank(MetaUpgradeId.PolarityTuner) * 4);
+                break;
+            case PilotKind.Rook:
+                AddRunObjective(RunObjectiveKind.DefeatEnemies, _bestWave < 24 ? 100 : 155, 62 + MetaRank(MetaUpgradeId.AegisMatrix) * 5);
+                break;
+            case PilotKind.Lyra:
+                AddRunObjective(RunObjectiveKind.CollectPickups, _bestWave < 24 ? 140 : 210, 60 + MetaRank(MetaUpgradeId.SalvageRig) * 5);
+                break;
+            case PilotKind.Orion:
+                AddRunObjective(RunObjectiveKind.DefeatBosses, _bestWave < 32 ? 1 : 2, 86 + MetaRank(MetaUpgradeId.FocusLens) * 5);
+                break;
             default:
                 AddRunObjective(RunObjectiveKind.AbsorbBullets, _bestWave < 16 ? 52 : 86, 52 + MetaRank(MetaUpgradeId.PolarityTuner) * 4);
                 break;
@@ -1280,6 +1913,83 @@ public partial class MainGame : Node2D
             _playerHp = Mathf.Clamp(_playerHp + 4.0f, 0.0f, _playerMaxHp);
             AddText(T("objective.clean_wave"), ScreenCenter + new Vector2(0.0f, -118.0f), Jade, 22.0f);
         }
+
+        if (_wave < TotalWaves)
+        {
+            GrantWavePaceClearReward();
+        }
+    }
+
+    private void GrantWavePaceClearReward()
+    {
+        Color accent = CurrentSector().Accent;
+        int sector = CurrentSectorIndex();
+        bool clean = !_waveTookDamage;
+
+        switch (_currentWavePace)
+        {
+            case WavePaceKind.Swarm:
+                _nextWaveRewardBoost = Mathf.Max(_nextWaveRewardBoost, 1.08f + _comboTier * 0.03f);
+                for (int i = 0; i < 2 + Math.Min(3, _comboTier); i++)
+                {
+                    SpawnPickup(ScreenCenter + RandomDirection() * _rng.RandfRange(46.0f, 116.0f), PickupKind.Dust);
+                }
+                AddText(T("flow.reward.swarm"), ScreenCenter + new Vector2(0.0f, -82.0f), XpGray().Lerp(accent, 0.25f), 19.0f);
+                break;
+            case WavePaceKind.Elite:
+                _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, 1.12f + sector * 0.015f);
+                _energy = Mathf.Clamp(_energy + 14.0f + sector * 2.0f, 0.0f, _maxEnergy);
+                AddText(T("flow.reward.elite"), ScreenCenter + new Vector2(0.0f, -82.0f), Rose.Lerp(accent, 0.22f), 19.0f);
+                break;
+            case WavePaceKind.Recovery:
+                _playerHp = Mathf.Clamp(_playerHp + 16.0f + sector * 3.0f, 0.0f, _playerMaxHp);
+                _energy = Mathf.Clamp(_energy + 18.0f + sector * 3.0f, 0.0f, _maxEnergy);
+                SpawnPickup(ScreenCenter + new Vector2(_rng.RandfRange(-88.0f, 88.0f), 42.0f), clean ? PickupKind.Repair : PickupKind.Energy);
+                AddText(T("flow.reward.recovery"), ScreenCenter + new Vector2(0.0f, -82.0f), Jade, 19.0f);
+                break;
+            case WavePaceKind.Pressure:
+                _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, clean ? 1.18f : 1.1f);
+                _energy = Mathf.Clamp(_energy + 8.0f + Math.Min(_combo, 60) * 0.22f, 0.0f, _maxEnergy);
+                AddText(T("flow.reward.pressure"), ScreenCenter + new Vector2(0.0f, -82.0f), Gold, 19.0f);
+                break;
+            case WavePaceKind.Standard:
+                if (clean && _combo >= 8)
+                {
+                    _energy = Mathf.Clamp(_energy + 8.0f, 0.0f, _maxEnergy);
+                    _nextWaveRewardBoost = Mathf.Max(_nextWaveRewardBoost, 1.05f);
+                    AddText(T("flow.reward.clean"), ScreenCenter + new Vector2(0.0f, -82.0f), Alpha(Jade, 0.88f), 18.0f);
+                }
+                break;
+        }
+    }
+
+    private bool ShouldOpenUpgradeAfterWave()
+    {
+        if (_wave >= TotalWaves)
+        {
+            return false;
+        }
+
+        int waveInSector = CurrentWaveInSector();
+        if (_wave <= 6 || waveInSector == 1 || waveInSector == WavesPerSector - 1 || waveInSector == WavesPerSector)
+        {
+            return true;
+        }
+
+        return waveInSector == 4 || _wave % 3 == 0;
+    }
+
+    private void GrantMomentumReward()
+    {
+        _combatChain = Math.Min(3, _combatChain + 1);
+        float energyGain = 14.0f + _combatChain * 5.0f + CurrentSectorIndex() * 2.0f;
+        _energy = Mathf.Clamp(_energy + energyGain, 0.0f, _maxEnergy);
+        _cruiseCharge = Mathf.Clamp(_cruiseCharge + 16.0f + _combatChain * 8.0f, 0.0f, CruiseChargeMax);
+        _playerHp = Mathf.Clamp(_playerHp + 3.0f + _combatChain * 2.0f, 0.0f, _playerMaxHp);
+        _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, 1.08f + _combatChain * 0.04f);
+        AddText(T("flow.momentum"), ScreenCenter + new Vector2(0.0f, -118.0f), PilotAccent(_runPilot), 24.0f);
+        Burst(ScreenCenter + new Vector2(0.0f, -84.0f), PilotAccent(_runPilot), 24 + _combatChain * 8, 320.0f, 0.82f);
+        PlaySfx(390.0f + _combatChain * 45.0f, 110.0f, 0.18f, 0.22f, 0.02f, 1);
     }
 
     private void AddObjectiveProgress(RunObjectiveKind kind, int amount)
@@ -1336,35 +2046,334 @@ public partial class MainGame : Node2D
         SetObjectiveProgress(RunObjectiveKind.BestCombo, _runBestCombo);
     }
 
-    private void SpawnBoss()
+    private void IncreaseCombo(Vector2 source, int amount = 1)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        _combo += amount;
+        _comboTimer = 2.4f;
+        RefreshRunBestCombo();
+        UpdateComboTier(source);
+        AddComboPopText(source);
+    }
+
+    private void UpdateComboTier(Vector2 source)
+    {
+        int tier = ComboTierFor(_combo);
+        if (tier <= _comboTier)
+        {
+            return;
+        }
+
+        _comboTier = tier;
+        _comboTierPulse = 1.0f;
+        float energyGain = 3.0f + tier * 2.0f;
+        _energy = Mathf.Clamp(_energy + energyGain, 0.0f, _maxEnergy);
+        _cruiseCharge = Mathf.Clamp(_cruiseCharge + 6.0f + tier * 4.0f, 0.0f, CruiseChargeMax);
+        Color accent = tier >= 4 ? Gold : XpGreen.Lerp(Gold, tier * 0.18f);
+        AddText(Tf("combo.surge", _combo), _playerPos + new Vector2(0.0f, -118.0f), accent, 21.0f + tier);
+        if (_visualPressure < 0.82f)
+        {
+            Burst(source, accent, 10 + tier * 4, 300.0f + tier * 36.0f, 0.55f);
+        }
+        PlaySfx(360.0f + tier * 60.0f, 80.0f, 0.1f, 0.15f, 0.015f, 1);
+    }
+
+    private static int ComboTierFor(int combo)
+    {
+        return combo >= 100 ? 4 : combo >= 60 ? 3 : combo >= 30 ? 2 : combo >= 12 ? 1 : 0;
+    }
+
+    private void AddComboPopText(Vector2 source)
+    {
+        if (_combo <= 0 || _damageTexts.Count >= MaxDamageTexts)
+        {
+            return;
+        }
+
+        DamageText damageText = AddDamageTextObject();
+        damageText.Text = Tf("combo.pop", _combo);
+        Vector2 away = _playerPos - source;
+        if (away.LengthSquared() < 0.01f)
+        {
+            away = RandomDirection();
+        }
+        Vector2 side = away.Normalized().Orthogonal() * _rng.RandfRange(-18.0f, 18.0f);
+        damageText.Pos = _playerPos + new Vector2(0.0f, -76.0f) + away.Normalized() * 18.0f + side;
+        damageText.Color = _combo >= 40 ? Gold : _combo >= 16 ? XpGreen : Alpha(Paper, 0.92f);
+        damageText.Life = 0.68f;
+        damageText.MaxLife = 0.68f;
+        damageText.Size = Mathf.Clamp(20.0f + Mathf.Min(_combo, 80) * 0.14f, 20.0f, 32.0f);
+        damageText.ComboPop = true;
+    }
+
+    private void AddRunScore(int amount, Vector2 source, Color accent, bool showPopup = false)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        _score += amount;
+        if (showPopup && (_visualPressure < 0.74f || amount >= 600))
+        {
+            AddText($"+{amount}", source + new Vector2(0.0f, -38.0f), accent, amount >= 1000 ? 24.0f : 18.0f);
+        }
+    }
+
+    private void CheckScoreCaches(Vector2 source, Color accent)
+    {
+        if (_nextScoreCache <= 0)
+        {
+            _nextScoreCache = ScoreCacheThreshold(_scoreCacheLevel);
+        }
+
+        int gainedDust = 0;
+        int gainedCaches = 0;
+        while (_score >= _nextScoreCache)
+        {
+            _scoreCacheLevel++;
+            int dust = 3 + _scoreCacheLevel + CurrentSectorIndex();
+            gainedDust += dust;
+            gainedCaches++;
+            _energy = Mathf.Clamp(_energy + 12.0f + _scoreCacheLevel * 2.0f, 0.0f, _maxEnergy);
+            _cruiseCharge = Mathf.Clamp(_cruiseCharge + 16.0f + _scoreCacheLevel * 3.0f, 0.0f, CruiseChargeMax);
+            _nextScoreCache = ScoreCacheThreshold(_scoreCacheLevel);
+        }
+
+        if (gainedDust <= 0)
+        {
+            return;
+        }
+
+        _runScoreBonusDust += gainedDust;
+        _scoreCachePulse = 1.0f;
+        Vector2 noticePos = source.DistanceSquaredTo(Vector2.Zero) > 0.01f ? source : ScreenCenter;
+        AddText(Tf("score.cache", gainedDust), noticePos + new Vector2(0.0f, -72.0f), Gold, gainedCaches > 1 ? 28.0f : 24.0f);
+        AddText(T("score.cache.hint"), ScreenCenter + new Vector2(0.0f, -112.0f), Alpha(Paper, 0.72f), 18.0f);
+        Burst(noticePos, Gold, 24 + _scoreCacheLevel * 2, 360.0f, 0.82f);
+        PlaySfx(560.0f + _scoreCacheLevel * 18.0f, 120.0f, 0.16f, 0.22f, 0.02f, 1);
+    }
+
+    private static int ScoreCacheThreshold(int level)
+    {
+        int rank = Math.Max(1, level + 1);
+        return ScoreCacheBase * rank + ScoreCacheStep * rank * (rank - 1) / 2;
+    }
+
+    private int ScoreMultiplier()
+    {
+        return Math.Clamp(1 + Math.Min(_combo, 84) / 12, 1, 8);
+    }
+
+    private void AddExperience(int amount, Vector2 source)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        _xp += amount;
+        _xpPulse = 1.0f;
+        AddRunScore(amount * 14, source, XpGray());
+        if (_visualPressure < 0.72f || amount >= 8)
+        {
+            AddText(Tf("xp.gain", amount), source + new Vector2(0.0f, -34.0f), Alpha(Paper, 0.78f), 16.0f);
+        }
+
+        while (_xp >= _xpToNext)
+        {
+            _xp -= _xpToNext;
+            _runLevel++;
+            _queuedLevelUps++;
+            _xpToNext = XpThresholdForLevel(_runLevel);
+            _energy = Mathf.Clamp(_energy + 12.0f + _runLevel * 1.5f, 0.0f, _maxEnergy);
+            _cruiseCharge = Mathf.Clamp(_cruiseCharge + 18.0f, 0.0f, CruiseChargeMax);
+        }
+
+        if (_queuedLevelUps > 0 && _mode == GameMode.Playing)
+        {
+            OpenLevelUpChoice(source);
+        }
+    }
+
+    private void OpenLevelUpChoice(Vector2 source)
+    {
+        _queuedLevelUps = Math.Max(0, _queuedLevelUps - 1);
+        _combatChain = 0;
+        OpenUpgradeChoice();
+        AddText(T("xp.level_up"), ScreenCenter + new Vector2(0.0f, -168.0f), XpGray().Lerp(Paper, 0.22f), 36.0f);
+        Burst(source, XpGray().Lerp(Paper, 0.2f), 44, 460.0f, 1.0f);
+        PlaySfx(620.0f, 160.0f, 0.22f, 0.28f, 0.02f, 1);
+    }
+
+    private static int XpThresholdForLevel(int level)
+    {
+        int rank = Math.Max(1, level);
+        return XpBase + (rank - 1) * XpStep + Math.Max(0, rank - 8) * 4;
+    }
+
+    private int XpPickupValue()
+    {
+        return 5 + CurrentSectorIndex() + (_currentWavePace == WavePaceKind.Elite ? 2 : 0) + (_currentWavePace == WavePaceKind.Boss ? 4 : 0);
+    }
+
+    private static Color XpGray()
+    {
+        return new Color(0.58f, 0.62f, 0.66f);
+    }
+
+    private Enemy? SpawnBoss()
     {
         int sector = CurrentSectorIndex();
         float threat = ThreatLevel();
         Enemy? boss = AddEnemy();
         if (boss == null)
         {
-            return;
+            return null;
         }
 
+        BossArchetype archetype = ChooseBossArchetype(sector);
         boss.Kind = EnemyKind.Boss;
-        boss.Pos = new Vector2(ScreenWidth * 0.5f, Arena.Position.Y + 148.0f);
+        boss.BossArchetype = archetype;
+        boss.BossLastPattern = -1;
+        boss.Pos = BossSpawnPosition(archetype, sector);
         boss.Vel = Vector2.Zero;
-        boss.Radius = 82.0f + sector * 8.0f;
-        boss.Hp = 1500.0f + sector * 1000.0f + threat * 45.0f;
+        boss.Radius = (82.0f + sector * 8.0f) * BossRadiusScale(archetype);
+        boss.Hp = (3200.0f + sector * 1900.0f + threat * 120.0f) * BossHpScale(archetype);
         boss.MaxHp = boss.Hp;
-        boss.Cooldown = 1.0f;
+        boss.Cooldown = BossOpeningCooldown(archetype);
         boss.Overheat = 0.0f;
         boss.OverheatMax = 1.0f;
-        boss.Phase = 0.0f;
+        boss.Phase = _rng.RandfRange(0.0f, Mathf.Tau);
         boss.SpawnPulse = 1.0f;
         boss.ContactTimer = 0.0f;
-        boss.Polarity = sector % 2;
+        boss.Polarity = _rng.RandiRange(0, 1);
         boss.Value = 8000 + sector * 5000;
         boss.SplitDepth = 0;
         boss.Elite = true;
-        boss.Armor = 1.0f + sector * 0.08f;
-        Burst(boss.Pos, CurrentSector().Accent, 100 + sector * 24, 760.0f + sector * 80.0f, 2.8f);
+        boss.Armor = (1.12f + sector * 0.1f) * BossArmorScale(archetype);
+        boss.BossIntent = BossPatternKind.AimedFan;
+        boss.BossIntentPulse = 0.0f;
+        boss.BossPhase = 0;
+        boss.BossGuard = 1.15f;
+        Burst(boss.Pos, BossAccent(archetype), 100 + sector * 24, 760.0f + sector * 80.0f, 2.8f);
         _shake = 1.0f;
+        return boss;
+    }
+
+    private BossArchetype ChooseBossArchetype(int sector)
+    {
+        BossArchetype[] pool = sector switch
+        {
+            0 => new[] { BossArchetype.Choir, BossArchetype.Prism },
+            1 => new[] { BossArchetype.Choir, BossArchetype.Prism, BossArchetype.Mirror, BossArchetype.Tempest },
+            2 => new[] { BossArchetype.Swarm, BossArchetype.Forge, BossArchetype.Mirror, BossArchetype.Bastion },
+            3 => new[] { BossArchetype.Rift, BossArchetype.Tempest, BossArchetype.Serpent, BossArchetype.Bastion },
+            _ => new[] { BossArchetype.Choir, BossArchetype.Forge, BossArchetype.Rift, BossArchetype.Serpent, BossArchetype.Oracle, BossArchetype.Tempest, BossArchetype.Bastion, BossArchetype.Mirror },
+        };
+
+        BossArchetype chosen = BossArchetype.Choir;
+        for (int attempt = 0; attempt < 4; attempt++)
+        {
+            chosen = pool[_rng.RandiRange(0, pool.Length - 1)];
+            if (!_hasLastBossArchetype || chosen != _lastBossArchetype)
+            {
+                break;
+            }
+        }
+
+        _lastBossArchetype = chosen;
+        _hasLastBossArchetype = true;
+        return chosen;
+    }
+
+    private static Vector2 BossSpawnPosition(BossArchetype archetype, int sector)
+    {
+        float y = archetype switch
+        {
+            BossArchetype.Forge => Arena.Position.Y + 190.0f,
+            BossArchetype.Swarm => Arena.Position.Y + 132.0f,
+            BossArchetype.Rift => Arena.Position.Y + 165.0f,
+            BossArchetype.Bastion => Arena.Position.Y + 205.0f,
+            BossArchetype.Tempest => Arena.Position.Y + 118.0f,
+            BossArchetype.Serpent => Arena.Position.Y + 152.0f,
+            BossArchetype.Oracle => Arena.Position.Y + 136.0f,
+            _ => Arena.Position.Y + 148.0f,
+        };
+        float x = ScreenWidth * 0.5f + (archetype == BossArchetype.Rift || archetype == BossArchetype.Serpent ? (sector % 2 == 0 ? -120.0f : 120.0f) : 0.0f);
+        return new Vector2(x, y);
+    }
+
+    private static float BossHpScale(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 1.08f,
+            BossArchetype.Swarm => 1.12f,
+            BossArchetype.Forge => 1.28f,
+            BossArchetype.Rift => 1.18f,
+            BossArchetype.Mirror => 1.16f,
+            BossArchetype.Tempest => 1.08f,
+            BossArchetype.Bastion => 1.42f,
+            BossArchetype.Serpent => 1.22f,
+            BossArchetype.Oracle => 1.2f,
+            _ => 1.14f,
+        };
+    }
+
+    private static float BossRadiusScale(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 0.9f,
+            BossArchetype.Swarm => 0.96f,
+            BossArchetype.Forge => 1.1f,
+            BossArchetype.Rift => 1.02f,
+            BossArchetype.Mirror => 0.94f,
+            BossArchetype.Tempest => 0.9f,
+            BossArchetype.Bastion => 1.18f,
+            BossArchetype.Serpent => 0.98f,
+            BossArchetype.Oracle => 0.92f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float BossArmorScale(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 1.02f,
+            BossArchetype.Swarm => 1.04f,
+            BossArchetype.Forge => 1.18f,
+            BossArchetype.Rift => 1.1f,
+            BossArchetype.Mirror => 1.04f,
+            BossArchetype.Tempest => 0.98f,
+            BossArchetype.Bastion => 1.28f,
+            BossArchetype.Serpent => 1.08f,
+            BossArchetype.Oracle => 1.06f,
+            _ => 1.06f,
+        };
+    }
+
+    private static float BossOpeningCooldown(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 0.72f,
+            BossArchetype.Swarm => 0.82f,
+            BossArchetype.Forge => 0.96f,
+            BossArchetype.Rift => 0.78f,
+            BossArchetype.Mirror => 0.7f,
+            BossArchetype.Tempest => 0.66f,
+            BossArchetype.Bastion => 1.08f,
+            BossArchetype.Serpent => 0.8f,
+            BossArchetype.Oracle => 0.9f,
+            _ => 0.8f,
+        };
     }
 
     private Enemy? SpawnEnemy(EnemyKind kind, Vector2 pos, int polarity, int splitDepth = 0)
@@ -1412,6 +2421,15 @@ public partial class MainGame : Node2D
         };
 
         float eliteChance = kind == EnemyKind.Boss || splitDepth > 0 || sector == 0 ? 0.0f : Mathf.Clamp(sector * 0.04f + CurrentWaveInSector() * 0.004f, 0.0f, 0.2f);
+        if (_currentWavePace == WavePaceKind.Elite)
+        {
+            eliteChance += 0.16f;
+        }
+        else if (_currentWavePace == WavePaceKind.Recovery)
+        {
+            eliteChance *= 0.35f;
+        }
+
         bool elite = _rng.Randf() < eliteChance;
         if (elite)
         {
@@ -1434,8 +2452,12 @@ public partial class MainGame : Node2D
         enemy.Polarity = polarity;
         enemy.Value = (int)((100 + _wave * 32 + (int)kind * 45) * (elite ? 2.8f : 1.0f));
         enemy.SplitDepth = splitDepth;
+        enemy.LastHitChainDepth = 0;
+        enemy.LastHitSplitDepth = 0;
         enemy.Elite = elite;
         enemy.Armor = elite ? 1.18f + sector * 0.06f : 1.0f;
+        enemy.BossPhase = 0;
+        enemy.BossGuard = 0.0f;
         if (kind == EnemyKind.Bulwark)
         {
             enemy.Armor += 0.22f;
@@ -1448,17 +2470,29 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
+        int pilotNav = ConsumeGamepadNavX();
+        if (pilotNav != 0)
+        {
+            _gamepadPilotIndex = (_gamepadPilotIndex + pilotNav + PilotCount()) % PilotCount();
+            PlaySfx(260.0f + _gamepadPilotIndex * 35.0f, 20.0f, 0.07f, 0.12f, 0.01f, 1);
+        }
+        SetGamepadFocus(PilotCardRect(_gamepadPilotIndex));
+
         Vector2 mouse = GetGlobalMousePosition();
-        bool startKey = KeyDown(Key.Enter);
-        bool metaKey = KeyDown(Key.U);
+        bool startKey = StartHeld();
+        bool metaKey = MetaHeld();
+        bool settingsKey = SettingsShortcutHeld();
+        bool gamepadPilotConfirm = JoyButtonHeld(JoyButton.A);
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
         if (click)
         {
+            _usingGamepad = false;
             for (int i = 0; i < PilotCount(); i++)
             {
                 PilotKind pilot = PilotFromIndex(i);
                 if (PilotCardRect(i).HasPoint(mouse))
                 {
+                    _gamepadPilotIndex = i;
                     if (IsPilotUnlocked(pilot))
                     {
                         _selectedPilot = pilot;
@@ -1475,6 +2509,30 @@ public partial class MainGame : Node2D
             }
         }
 
+        if (gamepadPilotConfirm && !_lastConfirm)
+        {
+            PilotKind pilot = PilotFromIndex(_gamepadPilotIndex);
+            if (IsPilotUnlocked(pilot))
+            {
+                if (_selectedPilot == pilot)
+                {
+                    StartRun();
+                }
+                else
+                {
+                    _selectedPilot = pilot;
+                    SaveMetaProgress();
+                    PlaySfx(360.0f + _gamepadPilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
+                }
+            }
+            else
+            {
+                AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
+                PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
+            }
+            return;
+        }
+
         if ((startKey && !_lastStart) || (click && StartButtonRect().HasPoint(mouse)))
         {
             StartRun();
@@ -1484,7 +2542,7 @@ public partial class MainGame : Node2D
             _mode = GameMode.Meta;
             PlaySfx(360.0f, 80.0f, 0.18f, 0.2f, 0.02f, 1);
         }
-        else if (click && TitleSettingsButtonRect().HasPoint(mouse))
+        else if ((settingsKey && !_lastSettingsShortcut) || (click && TitleSettingsButtonRect().HasPoint(mouse)))
         {
             OpenSettings(GameMode.Title);
         }
@@ -1496,32 +2554,167 @@ public partial class MainGame : Node2D
         UpdateDamageTexts(dt);
         _deleteSaveConfirmTimer = Mathf.Max(0.0f, _deleteSaveConfirmTimer - dt);
         _deleteSaveNoticeTimer = Mathf.Max(0.0f, _deleteSaveNoticeTimer - dt);
+        int optionCount = SettingsOptionCount();
+        _gamepadSettingsIndex = Mathf.Clamp(_gamepadSettingsIndex, 0, optionCount - 1);
+        int nav = ConsumeGamepadNavY();
+        if (nav != 0)
+        {
+            _gamepadSettingsIndex = (_gamepadSettingsIndex + nav + optionCount) % optionCount;
+            PlaySfx(240.0f, 20.0f, 0.06f, 0.1f, 0.01f, 1);
+        }
+        SetGamepadFocus(SettingsOptionRect(_gamepadSettingsIndex));
+        int horizontalNav = ConsumeSettingsHorizontalNav();
+        if (horizontalNav != 0 && IsAdjustableSettingsOption(_gamepadSettingsIndex))
+        {
+            AdjustSettingsOption(_gamepadSettingsIndex, horizontalNav);
+            return;
+        }
+
         Vector2 mouse = GetGlobalMousePosition();
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
+        if (click)
+        {
+            _usingGamepad = false;
+        }
 
-        if ((KeyDown(Key.Escape) && !_lastBack) || (click && SettingsBackButtonRect().HasPoint(mouse)))
+        if ((CancelHeld() && !_lastCancel) || (click && SettingsBackButtonRect().HasPoint(mouse)))
         {
             _deleteSaveConfirmTimer = 0.0f;
             CloseSettings();
             return;
         }
 
-        if (click && SettingsGuideButtonRect().HasPoint(mouse))
+        if (ConfirmHeld() && !_lastConfirm)
+        {
+            ActivateSettingsOption(_gamepadSettingsIndex);
+            return;
+        }
+
+        for (int i = 0; i < optionCount; i++)
+        {
+            if (click && SettingsOptionRect(i).HasPoint(mouse))
+            {
+                _gamepadSettingsIndex = i;
+                if (IsAdjustableSettingsOption(i))
+                {
+                    Rect2 rect = SettingsOptionRect(i);
+                    int direction = mouse.X < rect.Position.X + rect.Size.X * 0.5f ? -1 : 1;
+                    AdjustSettingsOption(i, direction);
+                }
+                else
+                {
+                    ActivateSettingsOption(i);
+                }
+                return;
+            }
+        }
+    }
+
+    private int SettingsOptionCount()
+    {
+        return IsRunViewMode(_settingsReturnMode) ? 9 : 8;
+    }
+
+    private Rect2 SettingsOptionRect(int index)
+    {
+        return new Rect2(new Vector2(680.0f, 286.0f + index * 62.0f), new Vector2(560.0f, 50.0f));
+    }
+
+    private bool IsAdjustableSettingsOption(int index)
+    {
+        return index >= 1 && index <= 5;
+    }
+
+    private int ConsumeSettingsHorizontalNav()
+    {
+        int nav = ConsumeGamepadNavX();
+        if (nav != 0)
+        {
+            return nav;
+        }
+
+        bool left = KeyDown(Key.Left) || KeyDown(Key.A);
+        bool right = KeyDown(Key.Right) || KeyDown(Key.D);
+        if (left && !_lastSettingsLeft)
+        {
+            return -1;
+        }
+        if (right && !_lastSettingsRight)
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private void AdjustSettingsOption(int index, int direction)
+    {
+        _deleteSaveConfirmTimer = 0.0f;
+        switch (index)
+        {
+            case 1:
+                _musicVolume = Mathf.Clamp(_musicVolume + direction * 0.1f, 0.0f, 1.0f);
+                break;
+            case 2:
+                _sfxVolume = Mathf.Clamp(_sfxVolume + direction * 0.1f, 0.0f, 1.0f);
+                break;
+            case 3:
+                _language = LanguageCycle[WrapIndex(LanguageCycleIndex(_language) + direction, LanguageCycle.Length)];
+                RefreshUpgradeChoiceText();
+                break;
+            case 4:
+                _resolutionPreset = (DisplayResolutionPreset)WrapIndex((int)_resolutionPreset + direction, ResolutionPresetCount());
+                break;
+            case 5:
+                _visualQuality = (VisualQuality)WrapIndex((int)_visualQuality + direction, VisualQualityCount());
+                break;
+            default:
+                return;
+        }
+
+        if (index == 4)
+        {
+            ApplyWindowResolution();
+        }
+        else if (index == 5)
+        {
+            GenerateBackdrop();
+        }
+        SaveMetaProgress();
+        PlaySfx(460.0f, direction >= 0 ? 70.0f : -70.0f, 0.1f, 0.16f, 0.02f, 1);
+    }
+
+    private void ActivateSettingsOption(int index)
+    {
+        bool runSettings = IsRunViewMode(_settingsReturnMode);
+        int mainMenuIndex = runSettings ? 6 : -1;
+        int deleteIndex = runSettings ? 7 : 6;
+        int backIndex = runSettings ? 8 : 7;
+
+        if (index == 0)
         {
             _deleteSaveConfirmTimer = 0.0f;
+            _guidePage = 0;
             _mode = GameMode.Guide;
             PlaySfx(420.0f, 120.0f, 0.16f, 0.2f, 0.02f, 1);
             return;
         }
 
-        if (click && SettingsLanguageButtonRect().HasPoint(mouse))
+        if (IsAdjustableSettingsOption(index))
         {
-            _deleteSaveConfirmTimer = 0.0f;
-            ToggleLanguage();
+            AdjustSettingsOption(index, 1);
             return;
         }
 
-        if (click && SettingsDeleteSaveButtonRect().HasPoint(mouse))
+        if (index == mainMenuIndex)
+        {
+            _deleteSaveConfirmTimer = 0.0f;
+            ResetTitle();
+            PlaySfx(180.0f, -80.0f, 0.18f, 0.2f, 0.04f, 1);
+            return;
+        }
+
+        if (index == deleteIndex)
         {
             if (_deleteSaveConfirmTimer > 0.0f)
             {
@@ -1536,12 +2729,10 @@ public partial class MainGame : Node2D
             return;
         }
 
-        if (IsRunViewMode(_settingsReturnMode) && click && SettingsMainMenuButtonRect().HasPoint(mouse))
+        if (index == backIndex)
         {
             _deleteSaveConfirmTimer = 0.0f;
-            ResetTitle();
-            PlaySfx(180.0f, -80.0f, 0.18f, 0.2f, 0.04f, 1);
-            return;
+            CloseSettings();
         }
     }
 
@@ -1549,10 +2740,32 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
+        SetGamepadFocus(GuideBackButtonRect());
+        int nav = ConsumeSettingsHorizontalNav();
+        if (nav != 0)
+        {
+            _guidePage = WrapIndex(_guidePage + nav, GuidePageCount());
+            PlaySfx(340.0f, nav > 0 ? 70.0f : -70.0f, 0.08f, 0.13f, 0.01f, 1);
+            return;
+        }
+
         Vector2 mouse = GetGlobalMousePosition();
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
+        if (click)
+        {
+            _usingGamepad = false;
+            for (int i = 0; i < GuidePageCount(); i++)
+            {
+                if (GuideTabRect(i).HasPoint(mouse))
+                {
+                    _guidePage = i;
+                    PlaySfx(340.0f, 70.0f, 0.08f, 0.13f, 0.01f, 1);
+                    return;
+                }
+            }
+        }
 
-        if ((KeyDown(Key.Escape) && !_lastBack) || (click && GuideBackButtonRect().HasPoint(mouse)))
+        if ((CancelHeld() && !_lastCancel) || (ConfirmHeld() && !_lastConfirm) || (click && GuideBackButtonRect().HasPoint(mouse)))
         {
             _mode = GameMode.Settings;
             PlaySfx(300.0f, -80.0f, 0.12f, 0.18f, 0.02f, 1);
@@ -1564,6 +2777,7 @@ public partial class MainGame : Node2D
         _settingsReturnMode = returnMode;
         _mode = GameMode.Settings;
         _deleteSaveConfirmTimer = 0.0f;
+        _gamepadSettingsIndex = 0;
         PlaySfx(360.0f, 80.0f, 0.14f, 0.18f, 0.02f, 1);
     }
 
@@ -1577,12 +2791,36 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
+        _gamepadMetaIndex = Mathf.Clamp(_gamepadMetaIndex, 0, MetaUpgrades.Length - 1);
+        int navX = ConsumeGamepadNavX();
+        int navY = ConsumeGamepadNavY();
+        if (navX != 0 || navY != 0)
+        {
+            int row = _gamepadMetaIndex / 4;
+            int column = _gamepadMetaIndex % 4;
+            column = (column + navX + 4) % 4;
+            row = Mathf.Clamp(row + navY, 0, (MetaUpgrades.Length - 1) / 4);
+            _gamepadMetaIndex = Mathf.Clamp(row * 4 + column, 0, MetaUpgrades.Length - 1);
+            PlaySfx(230.0f + column * 18.0f, 18.0f, 0.055f, 0.1f, 0.01f, 1);
+        }
+        SetGamepadFocus(MetaUpgradeRect(_gamepadMetaIndex));
+
         Vector2 mouse = GetGlobalMousePosition();
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
+        if (click)
+        {
+            _usingGamepad = false;
+        }
 
-        if ((KeyDown(Key.Escape) && !_lastBack) || (click && MetaBackButtonRect().HasPoint(mouse)))
+        if ((CancelHeld() && !_lastCancel) || (click && MetaBackButtonRect().HasPoint(mouse)))
         {
             ResetTitle();
+            return;
+        }
+
+        if (ConfirmHeld() && !_lastConfirm)
+        {
+            TryBuyMetaUpgrade(MetaUpgrades[_gamepadMetaIndex]);
             return;
         }
 
@@ -1590,6 +2828,7 @@ public partial class MainGame : Node2D
         {
             if (MetaHotkeyPressed(i) || (click && MetaUpgradeRect(i).HasPoint(mouse)))
             {
+                _gamepadMetaIndex = i;
                 TryBuyMetaUpgrade(MetaUpgrades[i]);
                 return;
             }
@@ -1643,7 +2882,11 @@ public partial class MainGame : Node2D
     {
         Vector2 mouse = GetGlobalMousePosition();
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
-        if ((click && HudSettingsButtonRect().HasPoint(mouse)) || (KeyDown(Key.Escape) && !_lastBack))
+        if (click)
+        {
+            _usingGamepad = false;
+        }
+        if ((click && HudSettingsButtonRect().HasPoint(mouse)) || (PauseHeld() && !_lastPause))
         {
             OpenSettings(GameMode.Playing);
             return;
@@ -1651,27 +2894,25 @@ public partial class MainGame : Node2D
 
         float gameDt = dt * _slowMo;
         _slowMo = Approach(_slowMo, 1.0f, dt * 1.5f);
+        _runTimer += dt;
         _energy = Mathf.Clamp(_energy + dt * 3.0f, 0.0f, _maxEnergy);
         _fireTimer -= gameDt;
         _dashTimer -= gameDt;
         _dashCooldown -= gameDt;
         _invulnTimer -= gameDt;
         _polarityCooldown = Mathf.Max(0.0f, _polarityCooldown - gameDt);
+        _ultimateCooldown = Mathf.Max(0.0f, _ultimateCooldown - gameDt);
         _polarityDenyTextCooldown -= gameDt;
         _absorbTextCooldown -= gameDt;
         _counterTextCooldown -= gameDt;
         _polarityTipTimer -= gameDt;
+        _scoreCachePulse = Mathf.Max(0.0f, _scoreCachePulse - gameDt * 2.6f);
+        _xpPulse = Mathf.Max(0.0f, _xpPulse - gameDt * 3.2f);
+        _comboTierPulse = Mathf.Max(0.0f, _comboTierPulse - gameDt * 1.9f);
+        _waveIntelPulse = Mathf.Max(0.0f, _waveIntelPulse - gameDt * 0.72f);
         _assaultBurstTimer = Mathf.Max(0.0f, _assaultBurstTimer - gameDt);
-        if (IsCruiseStance(_playerPolarity))
-        {
-            _cruiseCharge = Mathf.Max(0.0f, _cruiseCharge - gameDt * 1.2f);
-        }
-        _comboTimer -= gameDt;
+        _cruiseCharge = Mathf.Max(0.0f, _cruiseCharge - gameDt * 0.45f);
         _timeSinceHit += gameDt;
-        if (_comboTimer <= 0.0f)
-        {
-            _combo = 0;
-        }
         if (_aegisRegen > 0.0f && _timeSinceHit > 4.0f && _playerHp > 0.0f)
         {
             _playerHp = Mathf.Clamp(_playerHp + _aegisRegen * gameDt, 0.0f, _playerMaxHp);
@@ -1688,62 +2929,67 @@ public partial class MainGame : Node2D
         ResolveCombat(gameDt);
         UpdateOrbiters(gameDt);
 
+        if (_mode != GameMode.Playing)
+        {
+            return;
+        }
+
         if (_enemies.Count == 0 && _pendingSpawns.Count == 0)
         {
             _waveClearTimer += gameDt;
-            if (_waveClearTimer > 1.0f)
+            float clearDelay = Mathf.Lerp(1.0f, 0.28f, ComboPace01());
+            if (_waveClearTimer > clearDelay)
             {
                 _nextWaveDamageBoost = 1.0f;
                 OnWaveCleared();
                 if (_wave >= TotalWaves)
                 {
                     WinRun();
+                    return;
                 }
-                else
+                if (_mode != GameMode.Playing)
                 {
-                    OpenUpgradeChoice();
+                    return;
                 }
+                GrantMomentumReward();
+                if (_mode != GameMode.Playing)
+                {
+                    return;
+                }
+                BeginNextWave();
             }
         }
     }
 
     private void UpdatePlayer(float dt)
     {
-        Vector2 move = Vector2.Zero;
-        if (KeyDown(Key.A) || KeyDown(Key.Left))
+        Vector2 move = ReadMoveInput();
+
+        Vector2 gamepadAim = ReadGamepadStick(JoyAxis.RightX, JoyAxis.RightY, GamepadAimDeadZone);
+        if (gamepadAim.LengthSquared() > 0.01f)
         {
-            move.X -= 1.0f;
+            _aimDir = gamepadAim.Normalized();
         }
-        if (KeyDown(Key.D) || KeyDown(Key.Right))
+        else if (_usingGamepad)
         {
-            move.X += 1.0f;
+            _aimDir = AimAssistDirection(move.LengthSquared() > 0.01f ? move.Normalized() : _aimDir);
         }
-        if (KeyDown(Key.W) || KeyDown(Key.Up))
+        else
         {
-            move.Y -= 1.0f;
-        }
-        if (KeyDown(Key.S) || KeyDown(Key.Down))
-        {
-            move.Y += 1.0f;
-        }
-        if (move.LengthSquared() > 1.0f)
-        {
-            move = move.Normalized();
+            Vector2 mouse = GetGlobalMousePosition();
+            Vector2 aim = mouse - _playerPos;
+            if (aim.LengthSquared() > 0.01f)
+            {
+                _aimDir = aim.Normalized();
+            }
         }
 
-        Vector2 mouse = GetGlobalMousePosition();
-        Vector2 aim = mouse - _playerPos;
-        if (aim.LengthSquared() > 0.01f)
-        {
-            _aimDir = aim.Normalized();
-        }
-
-        bool toggle = KeyDown(Key.Space);
-        if (toggle && !_lastToggle)
+        bool tactical = TacticalHeld();
+        if (tactical && !_lastToggle)
         {
             if (_polarityCooldown <= 0.0f)
             {
-                TogglePolarity();
+                CastTacticalSkill();
             }
             else if (_polarityDenyTextCooldown <= 0.0f)
             {
@@ -1753,13 +2999,19 @@ public partial class MainGame : Node2D
             }
         }
 
-        bool nova = KeyDown(Key.F) || KeyDown(Key.E);
-        if (nova && !_lastNova && _energy >= _novaCost)
+        bool nova = UltimateHeld();
+        if (nova && !_lastNova && _energy >= _novaCost && _ultimateCooldown <= 0.0f)
         {
             CastUltimate();
         }
+        else if (nova && !_lastNova)
+        {
+            string message = _ultimateCooldown > 0.0f ? Tf("ultimate.cooldown", Mathf.CeilToInt(_ultimateCooldown)) : Tf("ultimate.need_energy", Mathf.CeilToInt(_novaCost));
+            AddText(message, _playerPos + new Vector2(0.0f, -96.0f), Alpha(Paper, 0.72f), 18.0f);
+            PlaySfx(160.0f, -60.0f, 0.08f, 0.12f, 0.02f, 1);
+        }
 
-        bool dash = KeyDown(Key.Shift) || Input.IsMouseButtonPressed(MouseButton.Right);
+        bool dash = DashHeld();
         if (dash && !_lastDash && _dashCooldown <= 0.0f)
         {
             StartDash(move.LengthSquared() > 0.0f ? move.Normalized() : _aimDir);
@@ -1781,6 +3033,7 @@ public partial class MainGame : Node2D
         if (_enemies.Count > 0 && _fireTimer <= 0.0f)
         {
             FirePlayerShot();
+            FirePulseMagazine();
             _fireTimer = _fireInterval;
         }
 
@@ -1790,68 +3043,191 @@ public partial class MainGame : Node2D
         }
     }
 
-    private void TogglePolarity()
+    private void CastTacticalSkill()
     {
-        int previous = _playerPolarity;
-        _playerPolarity = OtherStance(_playerPolarity);
+        float focus01 = CruiseCharge01();
+        Color color = PilotAccent(_runPilot);
+        _playerPolarity = CruiseStance;
         _polarityCooldown = _polarityCooldownMax;
-        _polarityTipTimer = 2.4f;
-        _energy = Mathf.Clamp(_energy + 8.0f, 0.0f, _maxEnergy);
+        _polarityTipTimer = 2.35f;
+        _energy = Mathf.Clamp(_energy + (4.0f + focus01 * 8.0f) * _absorbEfficiency, 0.0f, _maxEnergy);
+        _assaultPower = 1.0f;
+        _assaultBurstTimer = 0.0f;
+        _cruiseCharge = 0.0f;
 
-        if (IsCruiseStance(previous) && IsAssaultStance(_playerPolarity))
+        switch (_runPilot)
         {
-            float charge01 = CruiseCharge01();
-            _assaultPower = 1.15f + charge01 * 0.62f;
-            _assaultBurstTimer = Mathf.Lerp(AssaultBurstMin, AssaultBurstMax, charge01);
-            _cruiseCharge = 0.0f;
-            if (charge01 > 0.18f)
-            {
-                AddText(AssaultText(_assaultPower), _playerPos + new Vector2(0.0f, -112.0f), PolarityAmber, 20.0f);
-            }
-        }
-        else if (IsAssaultStance(previous) && IsCruiseStance(_playerPolarity))
-        {
-            float clearRadius = 110.0f + Mathf.Clamp(_assaultPower - 1.0f, 0.0f, 0.8f) * 120.0f;
-            ClearBulletsNear(_playerPos, clearRadius, true);
-            _invulnTimer = Mathf.Max(_invulnTimer, 0.22f);
-            _assaultBurstTimer = 0.0f;
-            _assaultPower = 1.0f;
-            AddText(CruiseText(), _playerPos + new Vector2(0.0f, -112.0f), PolarityBlue, 20.0f);
+            case PilotKind.Vesper:
+                CastVesperTactical(focus01, color);
+                break;
+            case PilotKind.Kairo:
+                CastKairoTactical(focus01, color);
+                break;
+            case PilotKind.Sol:
+                CastSolTactical(focus01, color);
+                break;
+            case PilotKind.Nyx:
+                CastNyxTactical(focus01, color);
+                break;
+            case PilotKind.Rook:
+                CastRookTactical(focus01, color);
+                break;
+            case PilotKind.Lyra:
+                CastLyraTactical(focus01, color);
+                break;
+            case PilotKind.Orion:
+                CastOrionTactical(focus01, color);
+                break;
+            default:
+                CastAstraTactical(focus01, color);
+                break;
         }
 
-        Burst(_playerPos, PolarityColor(_playerPolarity), 34, 400.0f, 1.0f);
-        AddText(PolarityTipText(), _playerPos + new Vector2(0.0f, -86.0f), PolarityColor(_playerPolarity), 22.0f);
         if (_polarityStorm > 0)
         {
             FirePolarityStorm();
         }
-        PlaySfx(IsCruiseStance(_playerPolarity) ? 560.0f : 390.0f, 0.65f, 0.12f, 0.22f, 0.02f, 2);
+
+        Burst(_playerPos, color, 28 + Mathf.RoundToInt(focus01 * 18.0f), 410.0f, 0.78f);
+        AddText(TacticalTipText(), _playerPos + new Vector2(0.0f, -92.0f), color, 22.0f);
+        PlaySfx(430.0f + focus01 * 120.0f, 0.55f, 0.16f, 0.26f, 0.03f, 2);
+    }
+
+    private void CastAstraTactical(float focus01, Color color)
+    {
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
+        Vector2 start = _playerPos - dir * 26.0f;
+        Vector2 end = _playerPos + dir * (720.0f + focus01 * 240.0f + _astraNovaBloom * 42.0f);
+        _fireTimer = 0.0f;
+        _assaultPower = 1.18f + focus01 * 0.26f + _astraWake * 0.035f;
+        _assaultBurstTimer = 1.28f + focus01 * 0.72f + _astraWake * 0.1f;
+        ClearBulletsNear(_playerPos, 82.0f + focus01 * 72.0f, true);
+        ClearEnemyBulletsInBeam(start, end, 42.0f + focus01 * 48.0f, true);
+        if (IsUpgradeMaxed(UpgradeId.AstraTwinRefraction))
+        {
+            Vector2 right = new(-dir.Y, dir.X);
+            DamageVesperBeam(_playerPos - right * 560.0f, _playerPos + right * 560.0f, 22.0f + focus01 * 20.0f, 26.0f + focus01 * 28.0f + _astraTwinRefraction * 8.0f, color);
+        }
+
+        int count = 3 + _astraRefraction + _astraTwinRefraction + Mathf.RoundToInt(focus01 * 2.0f);
+        float spread = 0.18f + _astraTwinRefraction * 0.035f;
+        for (int i = 0; i < count; i++)
+        {
+            float offset = count == 1 ? 0.0f : (i - (count - 1) * 0.5f) * spread / Math.Max(1, count - 1);
+            Vector2 shotDir = dir.Rotated(offset);
+            SpawnPlayerShot(_playerPos + shotDir * 42.0f, shotDir, 1460.0f, 5.0f, (22.0f + _astraWake * 2.8f + focus01 * 18.0f) * _damageMultiplier, 0.78f, 1 + _astraTwinRefraction / 2, true);
+        }
+    }
+
+    private void CastVesperTactical(float focus01, Color color)
+    {
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
+        Vector2 start = _playerPos - dir * 44.0f;
+        Vector2 end = _playerPos + dir * (1040.0f + focus01 * 260.0f);
+        float width = 12.0f + _vesperCharge * 1.6f + _vesperJudgmentCoil * 2.2f + focus01 * 8.0f;
+        float damage = 32.0f + _vesperCharge * 6.5f + _vesperJudgmentCoil * 12.0f + focus01 * 34.0f;
+        _assaultPower = 1.04f + focus01 * 0.08f;
+        _assaultBurstTimer = 0.72f + focus01 * 0.28f;
+        DamageVesperBeam(start, end, width, damage, color);
+        if (IsUpgradeMaxed(UpgradeId.VesperJudgmentCoil))
+        {
+            BreakBossGuardInBeam(start, end, width + 42.0f, 0.42f, color);
+        }
+        LockEnemiesInBeam(start, end, width + 20.0f, 0.54f + focus01 * 0.5f, color);
+
+        if (_vesperFork + _vesperSeverLine > 0)
+        {
+            Vector2 right = new(-dir.Y, dir.X);
+            int lanes = Math.Min(3, _vesperFork + _vesperSeverLine);
+            for (int lane = 1; lane <= lanes; lane++)
+            {
+                float offset = 38.0f + lane * 24.0f;
+                DamageVesperBeam(start + right * offset, end + right * offset, width * 0.38f, damage * 0.28f, color);
+                DamageVesperBeam(start - right * offset, end - right * offset, width * 0.38f, damage * 0.28f, color);
+            }
+        }
+
+        _fireTimer = Math.Min(_fireTimer, 0.05f);
+    }
+
+    private void CastKairoTactical(float focus01, Color color)
+    {
+        int droneCount = Math.Min(9, Math.Max(_orbiters, 3 + _kairoDroneBay + _kairoOverrideMatrix));
+        _assaultPower = 1.08f + focus01 * 0.12f + _kairoSync * 0.018f;
+        _assaultBurstTimer = 1.05f + focus01 * 0.5f + _kairoRelayProtocol * 0.1f;
+        ClearBulletsNear(_playerPos, 112.0f + droneCount * 8.0f + focus01 * 64.0f, true);
+
+        for (int i = 0; i < droneCount; i++)
+        {
+            float angle = i * Mathf.Tau / droneCount + _time * 0.24f;
+            Vector2 origin = _playerPos + Vector2.Right.Rotated(angle) * (70.0f + focus01 * 28.0f);
+            ClearBulletsNear(origin, 24.0f + focus01 * 14.0f, false);
+            Enemy? target = FindNearestEnemy(origin, 1020.0f);
+            if (target != null)
+            {
+                FireOrbiterShot(origin, target);
+            }
+            else
+            {
+                SpawnPlayerShot(origin, Vector2.Right.Rotated(angle), 980.0f, 4.2f, (9.0f + _kairoSync * 1.8f + focus01 * 5.0f) * _damageMultiplier, 0.72f, _kairoRelayProtocol >= 2 ? 1 : 0, false);
+            }
+            AddParticle(origin, (origin - _playerPos).Normalized() * 150.0f, color, 7.0f, 0.22f);
+        }
+
+        _orbiterFireTimer = 0.0f;
+        _energy = Mathf.Clamp(_energy + _kairoRelayProtocol * (IsUpgradeMaxed(UpgradeId.KairoRelayProtocol) ? 7.0f : 4.0f), 0.0f, _maxEnergy);
+    }
+
+    private void CastSolTactical(float focus01, Color color)
+    {
+        float radius = 170.0f + _solBloom * 18.0f + _solFlareCore * 28.0f + focus01 * 120.0f;
+        ClearBulletsNear(_playerPos, radius, true);
+        _invulnTimer = Mathf.Max(_invulnTimer, 0.22f + _solRadiantMantle * 0.11f);
+        _playerHp = Mathf.Clamp(_playerHp + 8.0f + _solForge * 2.4f + _solRadiantMantle * 5.5f + focus01 * 16.0f, 0.0f, _playerMaxHp);
+        _assaultPower = 1.0f;
+        _assaultBurstTimer = 0.36f + focus01 * 0.28f;
+        if (IsUpgradeMaxed(UpgradeId.SolRadiantMantle))
+        {
+            _invulnTimer = Mathf.Max(_invulnTimer, 0.72f + focus01 * 0.35f);
+            _playerHp = Mathf.Clamp(_playerHp + 10.0f, 0.0f, _playerMaxHp);
+        }
+
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            float distance = enemy.Pos.DistanceTo(_playerPos);
+            if (distance < radius + enemy.Radius)
+            {
+                float damage = Mathf.Lerp(54.0f + _solForge * 5.0f + _solFlareCore * 7.0f, 10.0f, distance / Mathf.Max(1.0f, radius)) * _damageMultiplier;
+                enemy.Vel += (enemy.Pos - _playerPos).Normalized() * (120.0f + focus01 * 90.0f);
+                DamageEnemy(enemy, damage, _playerPos, false);
+            }
+        }
+        if (IsUpgradeMaxed(UpgradeId.SolFlareCore))
+        {
+            SolFlareCapstonePulse(_playerPos, radius, color);
+        }
     }
 
     private void CastUltimate()
     {
         _energy -= _novaCost;
-        _slowMo = 0.42f;
-        _shake = 1.0f;
-        _flash = 0.86f;
-        Color color = PolarityColor(_playerPolarity);
+        _ultimateCooldown = UltimateCooldownBase;
+        _slowMo = 0.68f;
+        _shake = 0.62f;
+        _flash = 0.46f;
+        Color color = PilotAccent(_runPilot);
         AddText(UltimateName(_runPilot), _playerPos + new Vector2(0.0f, -104.0f), PilotAccent(_runPilot), 30.0f);
+        CastUnifiedBulletClearUltimate(color);
+    }
 
-        switch (_runPilot)
-        {
-            case PilotKind.Vesper:
-                CastVesperUltimate(color);
-                break;
-            case PilotKind.Kairo:
-                CastKairoUltimate(color);
-                break;
-            case PilotKind.Sol:
-                CastSolUltimate(color);
-                break;
-            default:
-                CastAstraUltimate(color);
-                break;
-        }
+    private void CastUnifiedBulletClearUltimate(Color color)
+    {
+        float radius = 420.0f + MetaRank(MetaUpgradeId.NovaCatalyst) * 24.0f + Math.Max(0.0f, _maxEnergy - 100.0f) * 0.7f;
+        ClearBulletsNear(_playerPos, radius, false);
+        _invulnTimer = Mathf.Max(_invulnTimer, 0.38f);
+        Burst(_playerPos, color, 34, 520.0f, 0.85f);
+        PlaySfx(120.0f, 0.9f, 0.28f, 0.42f, 0.12f, 0);
     }
 
     private void CastAstraUltimate(Color color)
@@ -1876,6 +3252,17 @@ public partial class MainGame : Node2D
                 float angle = -i * Mathf.Tau / echoCount + _time * 0.2f;
                 Vector2 dir = Vector2.Right.Rotated(angle);
                 SpawnPlayerShot(_playerPos + dir * 24.0f, dir, 960.0f, 6.0f, (18.0f + _astraTwinRefraction * 4.0f) * _damageMultiplier, 1.02f, _astraTwinRefraction, true, 1 - i % 2);
+            }
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.AstraNovaBloom))
+        {
+            int starCount = _visualPressure > 0.8f ? 12 : 18;
+            for (int i = 0; i < starCount; i++)
+            {
+                float angle = -i * Mathf.Tau / starCount - _time * 0.18f;
+                Vector2 dir = Vector2.Right.Rotated(angle);
+                SpawnPlayerShot(_playerPos + dir * 78.0f, dir, 1040.0f, 5.8f, (22.0f + _astraNovaBloom * 5.0f) * _damageMultiplier, 0.96f, 2 + _astraTwinRefraction, true, i % 2);
             }
         }
 
@@ -1912,6 +3299,11 @@ public partial class MainGame : Node2D
             {
                 float along = Mathf.Clamp((enemy.Pos - _playerPos).Dot(dir) / 1760.0f, 0.0f, 1.0f);
                 float damage = Mathf.Lerp(360.0f + _vesperCharge * 34.0f + _vesperJudgmentCoil * 56.0f, 128.0f + _vesperJudgmentCoil * 20.0f, along) * _damageMultiplier;
+                if (IsUpgradeMaxed(UpgradeId.VesperJudgmentCoil) && enemy.Kind == EnemyKind.Boss)
+                {
+                    enemy.BossGuard = 0.0f;
+                    damage *= 1.16f;
+                }
                 DamageEnemy(enemy, damage, _playerPos, true);
                 Burst(enemy.Pos, color, 10, 360.0f, 0.48f);
             }
@@ -1926,6 +3318,11 @@ public partial class MainGame : Node2D
                 DamageVesperBeam(start + right * offset, end + right * offset, width * 0.38f, 112.0f + _vesperSeverLine * 26.0f, color);
                 DamageVesperBeam(start - right * offset, end - right * offset, width * 0.38f, 112.0f + _vesperSeverLine * 26.0f, color);
             }
+        }
+        if (IsUpgradeMaxed(UpgradeId.VesperSeverLine))
+        {
+            Vector2 cross = dir.Rotated(Mathf.Pi * 0.5f);
+            DamageVesperBeam(_playerPos - cross * 760.0f, _playerPos + cross * 760.0f, width * 0.34f, 128.0f + _vesperSeverLine * 34.0f, color);
         }
 
         for (int i = 0; i < 18; i++)
@@ -1959,12 +3356,50 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void LockEnemiesInBeam(Vector2 start, Vector2 end, float width, float lockTime, Color color)
+    {
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (DistancePointToSegment(enemy.Pos, start, end) > width + enemy.Radius)
+            {
+                continue;
+            }
+
+            enemy.Vel *= 0.18f;
+            enemy.Cooldown = Mathf.Max(enemy.Cooldown, lockTime);
+            enemy.Overheat = Mathf.Max(enemy.Overheat, 0.45f + lockTime * 0.35f);
+            enemy.OverheatMax = Mathf.Max(enemy.OverheatMax, enemy.Overheat);
+            AddParticle(enemy.Pos, RandomDirection() * 80.0f, color.Lerp(Paper, 0.42f), 6.0f, 0.26f);
+        }
+    }
+
+    private void BreakBossGuardInBeam(Vector2 start, Vector2 end, float width, float guardScale, Color color)
+    {
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (enemy.Kind != EnemyKind.Boss || DistancePointToSegment(enemy.Pos, start, end) > width + enemy.Radius)
+            {
+                continue;
+            }
+
+            enemy.BossGuard *= guardScale;
+            AddText("GUARD BREAK", enemy.Pos + new Vector2(0.0f, -enemy.Radius - 42.0f), color.Lerp(Paper, 0.2f), 18.0f);
+            Burst(enemy.Pos, color, 14, 360.0f, 0.45f);
+        }
+    }
+
     private void CastKairoUltimate(Color color)
     {
         int droneCount = Math.Min(10, Math.Max(_orbiters, 4 + _kairoDroneBay + _kairoOverrideMatrix * 2));
         int volleys = Math.Min(5, 3 + Math.Min(2, _kairoSync / 2) + _kairoRelayProtocol);
         Burst(_playerPos, PickupBlue, 86, 720.0f, 1.35f);
         ClearBulletsNear(_playerPos, 360.0f + droneCount * 18.0f + _kairoOverrideMatrix * 36.0f, true);
+        if (IsUpgradeMaxed(UpgradeId.KairoOverrideMatrix))
+        {
+            KairoOverrideTagAll(color);
+        }
 
         for (int volley = 0; volley < volleys; volley++)
         {
@@ -1988,6 +3423,19 @@ public partial class MainGame : Node2D
         _orbiterFireTimer = 0.0f;
         _energy = Mathf.Clamp(_energy + _kairoRelayProtocol * 7.0f, 0.0f, _maxEnergy);
         PlaySfx(220.0f, 0.95f, 0.42f, 0.5f, 0.08f, 2);
+    }
+
+    private void KairoOverrideTagAll(Color color)
+    {
+        int tagged = 0;
+        for (int i = _enemies.Count - 1; i >= 0 && tagged < 18; i--)
+        {
+            Enemy enemy = _enemies[i];
+            Vector2 dir = (enemy.Pos - _playerPos).LengthSquared() > 0.01f ? (enemy.Pos - _playerPos).Normalized() : RandomDirection();
+            SpawnPlayerShot(_playerPos + dir * 64.0f, dir, 1360.0f, 5.0f, (18.0f + _kairoOverrideMatrix * 5.0f) * _damageMultiplier, 0.72f, _kairoRelayProtocol >= 2 ? 1 : 0, true);
+            AddParticle(enemy.Pos, RandomDirection() * 120.0f, color, 7.0f, 0.26f);
+            tagged++;
+        }
     }
 
     private void CastSolUltimate(Color color)
@@ -2017,7 +3465,309 @@ public partial class MainGame : Node2D
 
         _playerHp = Mathf.Clamp(_playerHp + 14.0f + _solForge * 4.0f + _solRadiantMantle * 12.0f, 0.0f, _playerMaxHp);
         _invulnTimer = Mathf.Max(_invulnTimer, 0.55f + _solRadiantMantle * 0.35f);
+        if (IsUpgradeMaxed(UpgradeId.SolSolarForge))
+        {
+            _energy = Mathf.Clamp(_energy + 24.0f + _solForge * 5.0f, 0.0f, _maxEnergy);
+            for (int i = _enemies.Count - 1; i >= 0; i--)
+            {
+                EnterOverheat(_enemies[i]);
+            }
+        }
         PlaySfx(132.0f, 1.35f, 0.58f, 0.58f, 0.18f, 1);
+    }
+
+    private void SolFlareCapstonePulse(Vector2 center, float radius, Color color)
+    {
+        int pulsed = 0;
+        for (int i = _enemies.Count - 1; i >= 0 && pulsed < 10; i--)
+        {
+            Enemy enemy = _enemies[i];
+            float distance = enemy.Pos.DistanceTo(center);
+            if (distance > radius + 180.0f)
+            {
+                continue;
+            }
+
+            DamageEnemy(enemy, (24.0f + _solFlareCore * 8.0f) * _damageMultiplier, center, false);
+            SpawnChainArc(center, enemy.Pos, color);
+            pulsed++;
+        }
+    }
+
+    private void CastNyxTactical(float focus01, Color color)
+    {
+        Vector2 center = _playerPos;
+        Enemy? target = FindNearestEnemy(_playerPos, 860.0f + _nyxSingularity * 80.0f);
+        if (target != null)
+        {
+            center = target.Pos;
+        }
+
+        float radius = 170.0f + _nyxSingularity * 34.0f + _nyxGravityCantor * 42.0f + focus01 * 110.0f;
+        ClearBulletsNear(center, radius * 0.72f, true);
+        int pulled = 0;
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            Vector2 delta = center - enemy.Pos;
+            float distance = delta.Length();
+            if (distance > radius + enemy.Radius)
+            {
+                continue;
+            }
+
+            Vector2 pull = distance > 1.0f ? delta / distance : RandomDirection();
+            enemy.Vel += pull * (220.0f + _nyxEventHorizon * 42.0f + focus01 * 150.0f);
+            enemy.Cooldown = Mathf.Max(enemy.Cooldown, 0.24f + _nyxEventHorizon * 0.08f);
+            DamageEnemy(enemy, (22.0f + _nyxSingularity * 6.0f + _nyxGravityCantor * 7.0f + focus01 * 24.0f) * _damageMultiplier, center, false);
+            if (IsUpgradeMaxed(UpgradeId.NyxEventHorizon))
+            {
+                EnterOverheat(enemy);
+            }
+            pulled++;
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.NyxGravityCantor))
+        {
+            int blades = Math.Min(10, 4 + _nyxOrbit + _nyxGravityCantor);
+            for (int i = 0; i < blades; i++)
+            {
+                Vector2 dir = Vector2.Right.Rotated(_time * 0.4f + i * Mathf.Tau / blades);
+                SpawnPlayerShot(center + dir * 48.0f, dir, 860.0f, 5.4f, (18.0f + _nyxSingularity * 3.0f) * _damageMultiplier, 0.82f, 1, true);
+            }
+        }
+
+        _assaultPower = 1.08f + focus01 * 0.16f;
+        _assaultBurstTimer = 0.95f + focus01 * 0.42f;
+        Burst(center, color, 32 + pulled, 460.0f, 0.78f);
+    }
+
+    private void CastRookTactical(float focus01, Color color)
+    {
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
+        Vector2 start = _playerPos - dir * 36.0f;
+        Vector2 end = _playerPos + dir * (620.0f + _rookSiegeBattery * 80.0f + focus01 * 180.0f);
+        float width = 62.0f + _rookBulwarkCore * 12.0f + _rookCitadelProtocol * 18.0f;
+        ClearEnemyBulletsInBeam(start, end, width, true);
+        _invulnTimer = Mathf.Max(_invulnTimer, 0.36f + _rookAegisRelay * 0.12f + focus01 * 0.22f);
+        _playerHp = Mathf.Clamp(_playerHp + 5.0f + _rookAegisRelay * 4.0f, 0.0f, _playerMaxHp);
+
+        int slammed = 0;
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (DistancePointToSegment(enemy.Pos, start, end) > width + enemy.Radius)
+            {
+                continue;
+            }
+
+            enemy.Vel += dir * (260.0f + _rookSiegeBattery * 42.0f);
+            DamageEnemy(enemy, (42.0f + _rookBulwarkCore * 6.0f + _rookCitadelProtocol * 12.0f + focus01 * 38.0f) * _damageMultiplier, _playerPos, true);
+            slammed++;
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.RookCitadelProtocol))
+        {
+            _mirrorReduction *= 0.96f;
+            _dashCooldown = Mathf.Min(_dashCooldown, 0.1f);
+        }
+
+        _assaultPower = 1.0f;
+        _assaultBurstTimer = 0.7f + focus01 * 0.24f;
+        Burst(_playerPos + dir * 90.0f, color, 22 + slammed * 2, 520.0f, 0.72f);
+    }
+
+    private void CastLyraTactical(float focus01, Color color)
+    {
+        int pulses = Math.Min(7, 3 + _lyraResonanceChord + _lyraEncoreField);
+        float baseRadius = 130.0f + _lyraTempoBloom * 18.0f + focus01 * 80.0f;
+        for (int pulse = 0; pulse < pulses; pulse++)
+        {
+            float radius = baseRadius + pulse * (34.0f + _lyraHarmonicCascade * 6.0f);
+            ClearBulletsNear(_playerPos, radius * 0.34f, pulse == 0);
+            for (int i = _enemies.Count - 1; i >= 0; i--)
+            {
+                Enemy enemy = _enemies[i];
+                float distance = enemy.Pos.DistanceTo(_playerPos);
+                if (Mathf.Abs(distance - radius) <= 42.0f + enemy.Radius)
+                {
+                    DamageEnemy(enemy, (16.0f + _lyraResonanceChord * 4.0f + _lyraHarmonicCascade * 5.0f + pulse * 2.0f) * _damageMultiplier, _playerPos, false);
+                    if (_lyraHarmonicCascade > 0)
+                    {
+                        SpawnChainArc(_playerPos, enemy.Pos, color);
+                    }
+                }
+            }
+            DrawPulseParticles(_playerPos, radius, color);
+        }
+
+        _fireTimer = 0.0f;
+        _assaultPower = 1.14f + _lyraTempoBloom * 0.035f + focus01 * 0.18f;
+        _assaultBurstTimer = 1.05f + _lyraEncoreField * 0.12f + focus01 * 0.42f;
+        _energy = Mathf.Clamp(_energy + 8.0f + _lyraTempoBloom * 2.5f, 0.0f, _maxEnergy);
+        if (IsUpgradeMaxed(UpgradeId.LyraEncoreField))
+        {
+            _echoChance = Mathf.Min(0.65f, _echoChance + 0.02f);
+        }
+    }
+
+    private void CastOrionTactical(float focus01, Color color)
+    {
+        int marks = Math.Min(7, 2 + _orionDeadeyeMark + _orionStarfallQuiver + Mathf.RoundToInt(focus01 * 2.0f));
+        Vector2 origin = _playerPos;
+        Enemy? previous = null;
+        for (int i = 0; i < marks; i++)
+        {
+            Enemy? target = FindChainTarget(origin, previous, 860.0f + _orionPerihelionVector * 80.0f);
+            if (target == null)
+            {
+                break;
+            }
+
+            Vector2 dir = (target.Pos - _playerPos).LengthSquared() > 0.01f ? (target.Pos - _playerPos).Normalized() : _aimDir;
+            SpawnPlayerShot(_playerPos + dir * 44.0f, dir, 1880.0f + _orionCometSpear * 70.0f, 4.4f, (34.0f + _orionCometSpear * 7.0f + focus01 * 14.0f) * _damageMultiplier, 0.72f, 3 + _orionDeadeyeMark / 2, true);
+            DamageEnemy(target, (28.0f + _orionDeadeyeMark * 8.0f) * _damageMultiplier, _playerPos, true);
+            AddParticle(target.Pos, RandomDirection() * 100.0f, color, 7.0f, 0.24f);
+            origin = target.Pos;
+            previous = target;
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.OrionPerihelionVector))
+        {
+            _dashCooldown = 0.0f;
+            _playerVel += _aimDir * 260.0f;
+        }
+        _assaultPower = 1.1f + focus01 * 0.12f;
+        _assaultBurstTimer = 0.8f + focus01 * 0.34f;
+        ClearBulletsNear(_playerPos, 76.0f + _orionPerihelionVector * 18.0f, true);
+    }
+
+    private void DrawPulseParticles(Vector2 center, float radius, Color color)
+    {
+        int sparks = _visualPressure > 0.8f ? 4 : 8;
+        for (int i = 0; i < sparks; i++)
+        {
+            float angle = i * Mathf.Tau / sparks + _time * 0.12f;
+            Vector2 pos = center + Vector2.Right.Rotated(angle) * radius;
+            AddParticle(pos, Vector2.Right.Rotated(angle) * 90.0f, color, 5.0f, 0.2f);
+        }
+    }
+
+    private void CastNyxUltimate(Color color)
+    {
+        Enemy? target = FindNearestEnemy(_playerPos, 1280.0f);
+        Vector2 center = target?.Pos ?? _playerPos;
+        float radius = 520.0f + _nyxSingularity * 46.0f + _nyxGravityCantor * 64.0f;
+        ClearBulletsNear(center, radius, true);
+        Burst(center, color, 98, 760.0f, 1.45f);
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            float distance = enemy.Pos.DistanceTo(center);
+            if (distance > radius + enemy.Radius)
+            {
+                continue;
+            }
+
+            Vector2 pull = (center - enemy.Pos).LengthSquared() > 1.0f ? (center - enemy.Pos).Normalized() : RandomDirection();
+            enemy.Vel += pull * (420.0f + _nyxEventHorizon * 60.0f);
+            float damage = Mathf.Lerp(270.0f + _nyxSingularity * 34.0f, 72.0f + _nyxGravityCantor * 15.0f, distance / radius) * _damageMultiplier;
+            DamageEnemy(enemy, damage, center, true);
+        }
+
+        int blades = Math.Min(30, 14 + _nyxOrbit * 2 + _nyxGravityCantor * 3);
+        for (int i = 0; i < blades; i++)
+        {
+            Vector2 dir = Vector2.Right.Rotated(i * Mathf.Tau / blades + _time * 0.4f);
+            SpawnPlayerShot(center + dir * 72.0f, dir, 940.0f, 5.6f, (24.0f + _nyxOrbit * 3.0f) * _damageMultiplier, 0.9f, 2, true);
+        }
+        PlaySfx(88.0f, 1.5f, 0.48f, 0.54f, 0.2f, 0);
+    }
+
+    private void CastRookUltimate(Color color)
+    {
+        float radius = 600.0f + _rookBulwarkCore * 50.0f + _rookCitadelProtocol * 60.0f;
+        ClearBulletsNear(_playerPos, radius * 0.9f, true);
+        _invulnTimer = Mathf.Max(_invulnTimer, 1.05f + _rookAegisRelay * 0.35f);
+        _playerHp = Mathf.Clamp(_playerHp + 20.0f + _rookAegisRelay * 12.0f, 0.0f, _playerMaxHp);
+        Burst(_playerPos, color, 140, 820.0f, 1.65f);
+
+        int waves = Math.Min(5, 2 + _rookSiegeBattery / 2 + _rookCitadelProtocol);
+        for (int wave = 0; wave < waves; wave++)
+        {
+            int spokes = 10 + wave * 2;
+            for (int i = 0; i < spokes; i++)
+            {
+                Vector2 dir = Vector2.Right.Rotated(i * Mathf.Tau / spokes + wave * 0.18f);
+                SpawnPlayerShot(_playerPos + dir * (42.0f + wave * 24.0f), dir, 760.0f + wave * 80.0f, 7.4f, (32.0f + _rookSiegeBattery * 5.0f) * _damageMultiplier, 0.78f, 2 + _rookBulwarkCore / 2, false);
+            }
+        }
+
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            float distance = enemy.Pos.DistanceTo(_playerPos);
+            if (distance < radius + enemy.Radius)
+            {
+                DamageEnemy(enemy, Mathf.Lerp(240.0f + _rookSiegeBattery * 24.0f, 58.0f, distance / radius) * _damageMultiplier, _playerPos, true);
+            }
+        }
+        PlaySfx(64.0f, 1.6f, 0.5f, 0.55f, 0.22f, 0);
+    }
+
+    private void CastLyraUltimate(Color color)
+    {
+        ClearBulletsNear(_playerPos, 680.0f + _lyraHarmonicCascade * 52.0f, true);
+        Burst(_playerPos, color, 112, 760.0f, 1.42f);
+        int rings = Math.Min(5, 3 + _lyraEncoreField);
+        for (int ring = 0; ring < rings; ring++)
+        {
+            int notes = Math.Min(42, 14 + _lyraResonanceChord * 2 + ring * 4);
+            float speed = 820.0f + ring * 120.0f + _lyraTempoBloom * 45.0f;
+            for (int i = 0; i < notes; i++)
+            {
+                Vector2 dir = Vector2.Right.Rotated(i * Mathf.Tau / notes + ring * 0.25f);
+                SpawnPlayerShot(_playerPos + dir * (36.0f + ring * 26.0f), dir, speed, 4.4f, (17.0f + _lyraHarmonicCascade * 3.0f + ring * 1.8f) * _damageMultiplier, 0.86f, _lyraHarmonicCascade >= 3 ? 1 : 0, true);
+            }
+        }
+
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = _enemies[i];
+            float distance = enemy.Pos.DistanceTo(_playerPos);
+            if (distance < 700.0f)
+            {
+                DamageEnemy(enemy, (96.0f + _lyraResonanceChord * 12.0f + _lyraHarmonicCascade * 18.0f) * _damageMultiplier, _playerPos, false);
+            }
+        }
+        _energy = Mathf.Clamp(_energy + _lyraEncoreField * 8.0f, 0.0f, _maxEnergy);
+        PlaySfx(280.0f, 1.1f, 0.46f, 0.48f, 0.08f, 2);
+    }
+
+    private void CastOrionUltimate(Color color)
+    {
+        int spears = Math.Min(14, 6 + _orionCometSpear + _orionStarfallQuiver * 2);
+        Burst(_playerPos, color, 90, 760.0f, 1.35f);
+        ClearBulletsNear(_playerPos, 300.0f + _orionPerihelionVector * 40.0f, true);
+        for (int i = 0; i < spears; i++)
+        {
+            Enemy? target = FindNearestEnemy(_playerPos + RandomDirection() * i * 18.0f, 1400.0f);
+            Vector2 dir = target != null && (target.Pos - _playerPos).LengthSquared() > 1.0f
+                ? (target.Pos - _playerPos).Normalized()
+                : _aimDir.Rotated((i - (spears - 1) * 0.5f) * 0.12f);
+            Vector2 side = new(-dir.Y, dir.X);
+            Vector2 origin = _playerPos + side * (i - (spears - 1) * 0.5f) * 18.0f;
+            SpawnPlayerShot(origin + dir * 68.0f, dir, 2180.0f, 5.2f, (86.0f + _orionCometSpear * 12.0f + _orionDeadeyeMark * 8.0f) * _damageMultiplier, 0.82f, 6 + _orionDeadeyeMark, true);
+            if (target != null)
+            {
+                DamageEnemy(target, (72.0f + _orionDeadeyeMark * 15.0f) * _damageMultiplier, origin, true);
+            }
+        }
+        if (IsUpgradeMaxed(UpgradeId.OrionStarfallQuiver))
+        {
+            _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, 1.18f);
+        }
+        PlaySfx(118.0f, 1.8f, 0.5f, 0.56f, 0.12f, 1);
     }
 
     private void StartDash(Vector2 direction)
@@ -2046,6 +3796,18 @@ public partial class MainGame : Node2D
                 return;
             case PilotKind.Sol:
                 FireSolShot();
+                return;
+            case PilotKind.Nyx:
+                FireNyxShot();
+                return;
+            case PilotKind.Rook:
+                FireRookShot();
+                return;
+            case PilotKind.Lyra:
+                FireLyraShot();
+                return;
+            case PilotKind.Orion:
+                FireOrionShot();
                 return;
         }
 
@@ -2096,14 +3858,34 @@ public partial class MainGame : Node2D
             }
         }
 
+        if (IsUpgradeMaxed(UpgradeId.AstraRefraction))
+        {
+            Vector2 right = new(-_aimDir.Y, _aimDir.X);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector2 origin = _playerPos + _aimDir * 34.0f + right * side * 54.0f;
+                SpawnPlayerShot(origin, _aimDir.Rotated(side * 0.035f), 1180.0f, 4.2f, (10.0f + _astraRefraction * 2.4f) * _damageMultiplier, 0.62f, 1, true);
+            }
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.AstraPrismWake) && _shots.Count < MaxShots * 0.88f)
+        {
+            Vector2 echoDir = _aimDir.Rotated(Mathf.Sin(_time * 5.0f) * 0.08f);
+            SpawnPlayerShot(_playerPos + echoDir * 30.0f, echoDir, 1500.0f, 4.6f, (14.0f + _astraWake * 2.6f) * _damageMultiplier, 0.56f, 1, true);
+        }
+
         AddParticle(_playerPos + _aimDir * 32.0f, _aimDir * 180.0f, color, 10.0f, 0.18f);
-        PlaySfx(IsCruiseStance(_playerPolarity) ? 690.0f : 520.0f, -140.0f, 0.06f, 0.14f, 0.01f, 1);
+        PlaySfx(690.0f, -140.0f, 0.06f, 0.14f, 0.01f, 1);
     }
 
     private void FireVesperShot()
     {
         Color color = PolarityColor(_playerPolarity);
         SpawnPlayerShot(_playerPos + _aimDir * 42.0f, _aimDir, 1740.0f, 5.5f, (55.0f + _vesperCharge * 7.5f + (_riftNeedle ? 8.0f : 0.0f)) * _damageMultiplier, 0.7f, 4 + _vesperCharge / 2 + (_riftNeedle ? 1 : 0), true);
+        if (IsUpgradeMaxed(UpgradeId.VesperCapacitor))
+        {
+            SpawnPlayerShot(_playerPos + _aimDir * 18.0f, _aimDir, 1180.0f, 7.2f, (31.0f + _vesperCharge * 4.2f) * _damageMultiplier, 0.48f, 3, true);
+        }
 
         int sideRails = Math.Min(3, _vesperFork + Math.Max(0, _multiShot - 1));
         if (sideRails > 0)
@@ -2115,16 +3897,21 @@ public partial class MainGame : Node2D
                 SpawnPlayerShot(_playerPos + _aimDir * 36.0f, _aimDir.Rotated(-angle), 1560.0f, 4.0f, (19.0f + _vesperCharge * 2.2f) * _damageMultiplier, 0.58f, 2, true);
             }
         }
+        if (IsUpgradeMaxed(UpgradeId.VesperSplitRail))
+        {
+            SpawnPlayerShot(_playerPos + _aimDir * 32.0f, _aimDir.Rotated(0.18f), 1420.0f, 4.4f, (22.0f + _vesperFork * 4.0f) * _damageMultiplier, 0.55f, 2, true);
+            SpawnPlayerShot(_playerPos + _aimDir * 32.0f, _aimDir.Rotated(-0.18f), 1420.0f, 4.4f, (22.0f + _vesperFork * 4.0f) * _damageMultiplier, 0.55f, 2, true);
+        }
 
         AddParticle(_playerPos + _aimDir * 34.0f, _aimDir * 220.0f, color, 9.0f, 0.16f);
-        PlaySfx(IsCruiseStance(_playerPolarity) ? 430.0f : 330.0f, -180.0f, 0.08f, 0.18f, 0.01f, 1);
+        PlaySfx(430.0f, -180.0f, 0.08f, 0.18f, 0.01f, 1);
     }
 
     private void FireKairoShot()
     {
         Enemy? target = FindNearestEnemy(_playerPos, 760.0f);
         Vector2 dir = target == null ? _aimDir : (target.Pos - _playerPos).Normalized();
-        int count = Math.Min(3, 1 + Math.Max(0, _multiShot - 1) / 2 + (_kairoSync >= 3 ? 1 : 0));
+        int count = Math.Min(IsUpgradeMaxed(UpgradeId.KairoSwarmSync) ? 4 : 3, 1 + Math.Max(0, _multiShot - 1) / 2 + (_kairoSync >= 3 ? 1 : 0) + (IsUpgradeMaxed(UpgradeId.KairoSwarmSync) ? 1 : 0));
         for (int i = 0; i < count; i++)
         {
             float offset = count == 1 ? 0.0f : (i == 0 ? -0.08f : 0.08f);
@@ -2133,13 +3920,13 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + dir * 28.0f, dir * 120.0f, PolarityColor(_playerPolarity), 7.0f, 0.14f);
-        PlaySfx(IsCruiseStance(_playerPolarity) ? 760.0f : 610.0f, -120.0f, 0.05f, 0.1f, 0.01f, 1);
+        PlaySfx(760.0f, -120.0f, 0.05f, 0.1f, 0.01f, 1);
     }
 
     private void FireSolShot()
     {
-        int count = 4 + _solBloom + Math.Max(0, _multiShot - 1);
-        float spread = 0.13f + _solBloom * 0.012f;
+        int count = 4 + _solBloom + Math.Max(0, _multiShot - 1) + (IsUpgradeMaxed(UpgradeId.SolCoronaBloom) ? 3 : 0);
+        float spread = (IsUpgradeMaxed(UpgradeId.SolCoronaBloom) ? 0.19f : 0.13f) + _solBloom * 0.012f;
         Color color = PolarityColor(_playerPolarity);
         for (int i = 0; i < count; i++)
         {
@@ -2149,7 +3936,118 @@ public partial class MainGame : Node2D
         }
 
         AddParticle(_playerPos + _aimDir * 28.0f, _aimDir * 160.0f, color, 12.0f, 0.16f);
-        PlaySfx(IsCruiseStance(_playerPolarity) ? 590.0f : 470.0f, -150.0f, 0.07f, 0.16f, 0.02f, 1);
+        PlaySfx(590.0f, -150.0f, 0.07f, 0.16f, 0.02f, 1);
+    }
+
+    private void FireNyxShot()
+    {
+        Enemy? target = FindNearestEnemy(_playerPos, 900.0f + _nyxSingularity * 60.0f);
+        Vector2 baseDir = target != null && (target.Pos - _playerPos).LengthSquared() > 0.01f ? (target.Pos - _playerPos).Normalized() : _aimDir;
+        int blades = Math.Min(7, 2 + _nyxOrbit + Math.Max(0, _multiShot - 1) / 2);
+        float arc = 0.16f + _nyxGravityCantor * 0.018f;
+        for (int i = 0; i < blades; i++)
+        {
+            float offset = (i - (blades - 1) * 0.5f) * arc;
+            Vector2 dir = baseDir.Rotated(offset);
+            SpawnPlayerShot(_playerPos + dir * 38.0f + dir.Orthogonal() * offset * 52.0f, dir, 1040.0f + _nyxEventHorizon * 30.0f, 5.0f, (16.0f + _nyxSingularity * 3.2f + (_riftNeedle ? 3.0f : 0.0f)) * _damageMultiplier, 0.9f, _nyxGravityCantor >= 2 ? 1 : 0, true);
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.NyxOrbit) && _shots.Count < MaxShots * 0.88f)
+        {
+            Vector2 side = baseDir.Rotated(Mathf.Pi * 0.5f);
+            SpawnPlayerShot(_playerPos + side * 34.0f, baseDir.Rotated(0.28f), 940.0f, 4.6f, (14.0f + _nyxOrbit * 2.4f) * _damageMultiplier, 0.75f, 1, true);
+            SpawnPlayerShot(_playerPos - side * 34.0f, baseDir.Rotated(-0.28f), 940.0f, 4.6f, (14.0f + _nyxOrbit * 2.4f) * _damageMultiplier, 0.75f, 1, true);
+        }
+
+        AddParticle(_playerPos + baseDir * 28.0f, baseDir * 130.0f, PilotAccent(_runPilot), 9.0f, 0.16f);
+        PlaySfx(520.0f, -150.0f, 0.06f, 0.14f, 0.01f, 1);
+    }
+
+    private void FireRookShot()
+    {
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
+        int shells = Math.Min(4, 1 + _rookSiegeBattery / 2 + Math.Max(0, _multiShot - 1) / 3);
+        for (int i = 0; i < shells; i++)
+        {
+            float offset = shells == 1 ? 0.0f : (i - (shells - 1) * 0.5f) * 0.12f;
+            SpawnPlayerShot(_playerPos + dir.Rotated(offset) * 46.0f, dir.Rotated(offset), 1040.0f, 8.0f + _rookBulwarkCore * 0.35f, (56.0f + _rookSiegeBattery * 9.0f + _rookCitadelProtocol * 6.0f) * _damageMultiplier, 0.82f, 2 + _rookBulwarkCore / 2 + (_riftNeedle ? 1 : 0), _riftNeedle);
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.RookSiegeBattery))
+        {
+            SpawnPlayerShot(_playerPos + dir * 28.0f, dir, 840.0f, 11.0f, (36.0f + _rookSiegeBattery * 5.0f) * _damageMultiplier, 0.62f, 1, false);
+        }
+
+        AddParticle(_playerPos + dir * 34.0f, dir * 230.0f, PilotAccent(_runPilot), 12.0f, 0.18f);
+        PlaySfx(260.0f, -210.0f, 0.09f, 0.2f, 0.02f, 1);
+    }
+
+    private void FireLyraShot()
+    {
+        _lyraBeat++;
+        int chord = 2 + _lyraResonanceChord / 2 + Math.Max(0, _multiShot - 1) / 2;
+        if (_lyraBeat % 3 == 0)
+        {
+            chord += 1 + _lyraTempoBloom / 2;
+        }
+        chord = Math.Min(8, chord + (IsUpgradeMaxed(UpgradeId.LyraResonanceChord) ? 1 : 0));
+        float spread = 0.1f + _lyraResonanceChord * 0.01f;
+        for (int i = 0; i < chord; i++)
+        {
+            float offset = (i - (chord - 1) * 0.5f) * spread;
+            Vector2 dir = _aimDir.Rotated(offset);
+            SpawnPlayerShot(_playerPos + dir * 34.0f, dir, 1160.0f + _lyraTempoBloom * 36.0f, 4.4f, (12.0f + _lyraHarmonicCascade * 2.6f + (_lyraBeat % 3 == 0 ? 5.0f : 0.0f)) * _damageMultiplier, 0.72f, _lyraHarmonicCascade >= 2 ? 1 : 0, true);
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.LyraTempoBloom) && _shots.Count < MaxShots * 0.88f)
+        {
+            Vector2 back = -_aimDir;
+            SpawnPlayerShot(_playerPos + back * 20.0f, back, 760.0f, 4.2f, (9.0f + _lyraTempoBloom * 2.0f) * _damageMultiplier, 0.52f, 0, true);
+        }
+
+        AddParticle(_playerPos + _aimDir * 26.0f, _aimDir * 120.0f, PilotAccent(_runPilot), 8.0f, 0.14f);
+        PlaySfx(820.0f + (_lyraBeat % 3) * 72.0f, -90.0f, 0.045f, 0.11f, 0.01f, 2);
+    }
+
+    private void FireOrionShot()
+    {
+        Enemy? target = FindNearestEnemy(_playerPos, 1220.0f + _orionDeadeyeMark * 70.0f);
+        Vector2 dir = target != null && (target.Pos - _playerPos).LengthSquared() > 0.01f ? (target.Pos - _playerPos).Normalized() : _aimDir;
+        SpawnPlayerShot(_playerPos + dir * 52.0f, dir, 2060.0f + _orionCometSpear * 80.0f, 4.8f, (72.0f + _orionCometSpear * 10.0f + _orionDeadeyeMark * 6.0f + (_riftNeedle ? 8.0f : 0.0f)) * _damageMultiplier, 0.78f, 5 + _orionDeadeyeMark / 2 + (_riftNeedle ? 1 : 0), true);
+        if (_orionStarfallQuiver > 0)
+        {
+            int side = Math.Min(4, _orionStarfallQuiver + Math.Max(0, _multiShot - 1) / 2);
+            for (int i = 1; i <= side; i++)
+            {
+                float offset = 0.055f * i;
+                SpawnPlayerShot(_playerPos + dir * 38.0f, dir.Rotated(offset), 1720.0f, 3.8f, (25.0f + _orionCometSpear * 4.0f) * _damageMultiplier, 0.56f, 2, true);
+                SpawnPlayerShot(_playerPos + dir * 38.0f, dir.Rotated(-offset), 1720.0f, 3.8f, (25.0f + _orionCometSpear * 4.0f) * _damageMultiplier, 0.56f, 2, true);
+            }
+        }
+
+        if (IsUpgradeMaxed(UpgradeId.OrionDeadeyeMark) && target != null)
+        {
+            SpawnChainArc(_playerPos, target.Pos, PilotAccent(_runPilot));
+        }
+        AddParticle(_playerPos + dir * 34.0f, dir * 260.0f, PilotAccent(_runPilot), 9.0f, 0.16f);
+        PlaySfx(360.0f, -220.0f, 0.08f, 0.18f, 0.01f, 1);
+    }
+
+    private void FirePulseMagazine()
+    {
+        if (_pulseMagazine <= 0 || _shots.Count > MaxShots * 0.9f)
+        {
+            return;
+        }
+
+        int count = Math.Min(5, 1 + _pulseMagazine / 2 + (IsUpgradeMaxed(UpgradeId.PulseMagazine) ? 1 : 0));
+        float spread = 0.18f + _pulseMagazine * 0.012f;
+        for (int i = 0; i < count; i++)
+        {
+            float offset = count == 1 ? 0.0f : (i - (count - 1) * 0.5f) * spread;
+            Vector2 dir = _aimDir.Rotated(offset);
+            SpawnPlayerShot(_playerPos + dir * 30.0f, dir, 1180.0f, 4.0f, (7.0f + _pulseMagazine * 1.8f) * _damageMultiplier, 0.52f, _ricochetMatrix >= 3 ? 1 : 0, _riftNeedle);
+        }
     }
 
     private void SpawnPlayerShot(Vector2 pos, Vector2 dir, float speed, float radius, float damage, float life, int pierce, bool rift, int polarity = -1)
@@ -2170,7 +4068,7 @@ public partial class MainGame : Node2D
         shot.Life = life;
         shot.MaxLife = life;
         shot.Polarity = shotPolarity;
-        shot.Pierce = pierce;
+        shot.Pierce = pierce + (_ricochetMatrix >= 3 ? 1 : 0);
         shot.Rift = rift;
         ResetShotTrail(shot, shot.Pos);
     }
@@ -2178,7 +4076,7 @@ public partial class MainGame : Node2D
     private void FirePolarityStorm()
     {
         int count = 8 + _polarityStorm * 2;
-        Color color = PolarityColor(_playerPolarity);
+        Color color = PilotAccent(_runPilot);
         for (int i = 0; i < count; i++)
         {
             Vector2 dir = Vector2.Right.Rotated(_time * 0.6f + i * Mathf.Tau / count);
@@ -2376,12 +4274,11 @@ public partial class MainGame : Node2D
     private void UpdateBoss(Enemy boss, float dt)
     {
         _bossPatternTimer += dt;
+        boss.BossGuard = Mathf.Max(0.0f, boss.BossGuard - dt);
+        boss.BossIntentPulse = Mathf.Max(0.0f, boss.BossIntentPulse - dt);
         int sector = CurrentSectorIndex();
-        float threat = ThreatLevel();
         float hpRatio = Mathf.Clamp(boss.Hp / boss.MaxHp, 0.0f, 1.0f);
-        float targetX = ScreenCenter.X + Mathf.Sin(_time * (0.78f + sector * 0.05f)) * (520.0f - sector * 24.0f) + Mathf.Sin(_time * 1.7f) * 110.0f;
-        float targetY = Arena.Position.Y + 150.0f + sector * 18.0f + Mathf.Sin(_time * 1.1f) * 44.0f;
-        Vector2 desired = new Vector2(targetX, targetY) - boss.Pos;
+        Vector2 desired = BossMovementTarget(boss, sector, hpRatio) - boss.Pos;
         if (EnemyIsCharging(boss))
         {
             float charge = EnemyTelegraph01(boss);
@@ -2389,85 +4286,437 @@ public partial class MainGame : Node2D
         }
         else
         {
-            boss.Vel = boss.Vel.Lerp(desired * 1.5f, 1.0f - Mathf.Exp(-dt * 1.9f));
+            boss.Vel = boss.Vel.Lerp(desired * BossMoveResponsiveness(boss.BossArchetype), 1.0f - Mathf.Exp(-dt * BossMoveLerp(boss.BossArchetype)));
         }
         boss.Pos += boss.Vel * dt;
         boss.Pos = ClampToArena(boss.Pos, boss.Radius);
 
         if (boss.Cooldown <= 0.0f)
         {
-            Vector2 dir = (_playerPos - boss.Pos).Normalized();
-            int pattern = ((int)(_bossPatternTimer / Mathf.Max(1.25f, 2.0f - sector * 0.12f))) % (4 + Math.Min(3, sector));
-            if (pattern == 0)
+            ExecuteBossPattern(boss, ChooseBossPattern(boss, sector, hpRatio), sector, hpRatio);
+        }
+    }
+
+    private Vector2 BossMovementTarget(Enemy boss, int sector, float hpRatio)
+    {
+        float t = _time + boss.Phase;
+        float enrage = 1.0f - hpRatio;
+        return boss.BossArchetype switch
+        {
+            BossArchetype.Prism => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (1.12f + enrage * 0.22f)) * (600.0f - sector * 22.0f) + Mathf.Sin(t * 2.65f) * 86.0f,
+                Arena.Position.Y + 132.0f + sector * 14.0f + Mathf.Sin(t * 1.8f) * 64.0f),
+            BossArchetype.Swarm => new Vector2(
+                Mathf.Lerp(ScreenCenter.X + Mathf.Sin(t * 0.82f) * 460.0f, _playerPos.X, 0.28f + enrage * 0.08f),
+                Arena.Position.Y + 138.0f + sector * 16.0f + Mathf.Cos(t * 1.25f) * 58.0f),
+            BossArchetype.Forge => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * 0.55f) * (420.0f - sector * 14.0f),
+                Arena.Position.Y + 188.0f + sector * 20.0f + Mathf.Sin(t * 0.9f) * 32.0f),
+            BossArchetype.Rift => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (0.88f + enrage * 0.18f)) * (650.0f - sector * 18.0f) + Mathf.Sin(t * 2.15f) * 120.0f,
+                Arena.Position.Y + 158.0f + sector * 18.0f + Mathf.Cos(t * 1.55f) * 72.0f),
+            BossArchetype.Mirror => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (0.92f + enrage * 0.18f)) * (560.0f - sector * 20.0f),
+                Arena.Position.Y + 145.0f + sector * 14.0f + Mathf.Sin(t * 2.1f) * 54.0f),
+            BossArchetype.Tempest => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (1.28f + enrage * 0.28f)) * (640.0f - sector * 18.0f) + Mathf.Cos(t * 2.8f) * 84.0f,
+                Arena.Position.Y + 125.0f + sector * 14.0f + Mathf.Cos(t * 1.9f) * 70.0f),
+            BossArchetype.Bastion => new Vector2(
+                Mathf.Lerp(ScreenCenter.X + Mathf.Sin(t * 0.46f) * 320.0f, _playerPos.X, 0.12f),
+                Arena.Position.Y + 205.0f + sector * 14.0f + Mathf.Sin(t * 0.72f) * 24.0f),
+            BossArchetype.Serpent => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (1.05f + enrage * 0.2f)) * (620.0f - sector * 18.0f),
+                Arena.Position.Y + 154.0f + sector * 16.0f + Mathf.Sin(t * 2.35f) * 82.0f),
+            BossArchetype.Oracle => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * 0.72f) * (500.0f - sector * 18.0f) + Mathf.Sin(t * 2.4f) * 62.0f,
+                Arena.Position.Y + 136.0f + sector * 12.0f + Mathf.Cos(t * 1.18f) * 44.0f),
+            _ => new Vector2(
+                ScreenCenter.X + Mathf.Sin(t * (0.78f + sector * 0.05f)) * (520.0f - sector * 24.0f) + Mathf.Sin(t * 1.7f) * 110.0f,
+                Arena.Position.Y + 150.0f + sector * 18.0f + Mathf.Sin(t * 1.1f) * 44.0f),
+        };
+    }
+
+    private static float BossMoveResponsiveness(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 1.75f,
+            BossArchetype.Swarm => 1.55f,
+            BossArchetype.Forge => 1.08f,
+            BossArchetype.Rift => 1.62f,
+            BossArchetype.Mirror => 1.72f,
+            BossArchetype.Tempest => 1.9f,
+            BossArchetype.Bastion => 0.94f,
+            BossArchetype.Serpent => 1.7f,
+            BossArchetype.Oracle => 1.42f,
+            _ => 1.5f,
+        };
+    }
+
+    private static float BossMoveLerp(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => 2.35f,
+            BossArchetype.Swarm => 2.05f,
+            BossArchetype.Forge => 1.45f,
+            BossArchetype.Rift => 2.15f,
+            BossArchetype.Mirror => 2.25f,
+            BossArchetype.Tempest => 2.55f,
+            BossArchetype.Bastion => 1.25f,
+            BossArchetype.Serpent => 2.35f,
+            BossArchetype.Oracle => 1.82f,
+            _ => 1.9f,
+        };
+    }
+
+    private BossPatternKind ChooseBossPattern(Enemy boss, int sector, float hpRatio)
+    {
+        BossPatternKind chosen = BossPatternKind.AimedFan;
+        for (int attempt = 0; attempt < 4; attempt++)
+        {
+            chosen = RollBossPattern(boss.BossArchetype, sector, hpRatio);
+            if ((int)chosen != boss.BossLastPattern || attempt == 3)
             {
-                int count = ScaledEnemyPatternCount(boss.Kind, 9 + sector * 2);
+                break;
+            }
+        }
+
+        boss.BossLastPattern = (int)chosen;
+        return chosen;
+    }
+
+    private BossPatternKind RollBossPattern(BossArchetype archetype, int sector, float hpRatio)
+    {
+        float roll = _rng.Randf();
+        float enrage = 1.0f - hpRatio;
+        BossPatternKind pattern = archetype switch
+        {
+            BossArchetype.Prism => roll switch
+            {
+                < 0.28f => BossPatternKind.HeavyLance,
+                < 0.52f => BossPatternKind.CrossBloom,
+                < 0.72f => BossPatternKind.AimedFan,
+                < 0.88f => BossPatternKind.SpiralRing,
+                _ => enrage > 0.35f ? BossPatternKind.ReverseSpiral : BossPatternKind.HazardFan,
+            },
+            BossArchetype.Swarm => roll switch
+            {
+                < 0.34f => BossPatternKind.SummonWing,
+                < 0.55f => BossPatternKind.MineDrift,
+                < 0.72f => BossPatternKind.SpiralRing,
+                < 0.88f => BossPatternKind.AimedFan,
+                _ => sector >= 3 ? BossPatternKind.WardenCall : BossPatternKind.CrossBloom,
+            },
+            BossArchetype.Forge => roll switch
+            {
+                < 0.3f => BossPatternKind.HazardFan,
+                < 0.52f => BossPatternKind.HeavyLance,
+                < 0.72f => BossPatternKind.MineDrift,
+                < 0.88f => BossPatternKind.CrossBloom,
+                _ => BossPatternKind.AimedFan,
+            },
+            BossArchetype.Rift => roll switch
+            {
+                < 0.28f => BossPatternKind.ReverseSpiral,
+                < 0.5f => BossPatternKind.HazardFan,
+                < 0.68f => BossPatternKind.CrossBloom,
+                < 0.84f => BossPatternKind.HeavyLance,
+                _ => sector >= 2 ? BossPatternKind.WardenCall : BossPatternKind.SpiralRing,
+            },
+            BossArchetype.Mirror => roll switch
+            {
+                < 0.34f => BossPatternKind.MirrorFork,
+                < 0.56f => BossPatternKind.HeavyLance,
+                < 0.74f => BossPatternKind.CrossBloom,
+                < 0.9f => BossPatternKind.AimedFan,
+                _ => enrage > 0.4f ? BossPatternKind.ReverseSpiral : BossPatternKind.HazardFan,
+            },
+            BossArchetype.Tempest => roll switch
+            {
+                < 0.36f => BossPatternKind.TempestWheel,
+                < 0.58f => BossPatternKind.SpiralRing,
+                < 0.76f => BossPatternKind.ReverseSpiral,
+                < 0.9f => BossPatternKind.HazardFan,
+                _ => BossPatternKind.SummonWing,
+            },
+            BossArchetype.Bastion => roll switch
+            {
+                < 0.32f => BossPatternKind.BastionWall,
+                < 0.54f => BossPatternKind.HeavyLance,
+                < 0.72f => BossPatternKind.WardenCall,
+                < 0.88f => BossPatternKind.HazardFan,
+                _ => BossPatternKind.MineDrift,
+            },
+            BossArchetype.Serpent => roll switch
+            {
+                < 0.36f => BossPatternKind.SerpentCoil,
+                < 0.56f => BossPatternKind.MineDrift,
+                < 0.74f => BossPatternKind.ReverseSpiral,
+                < 0.9f => BossPatternKind.AimedFan,
+                _ => BossPatternKind.CrossBloom,
+            },
+            BossArchetype.Oracle => roll switch
+            {
+                < 0.34f => BossPatternKind.OracleSnipe,
+                < 0.54f => BossPatternKind.HeavyLance,
+                < 0.72f => BossPatternKind.CrossBloom,
+                < 0.88f => BossPatternKind.WardenCall,
+                _ => BossPatternKind.HazardFan,
+            },
+            _ => roll switch
+            {
+                < 0.24f => BossPatternKind.AimedFan,
+                < 0.45f => BossPatternKind.SpiralRing,
+                < 0.62f => BossPatternKind.HeavyLance,
+                < 0.8f => BossPatternKind.SummonWing,
+                < 0.92f => BossPatternKind.HazardFan,
+                _ => sector >= 3 ? BossPatternKind.WardenCall : BossPatternKind.ReverseSpiral,
+            },
+        };
+
+        return pattern;
+    }
+
+    private void ExecuteBossPattern(Enemy boss, BossPatternKind pattern, int sector, float hpRatio)
+    {
+        float threat = ThreatLevel();
+        Vector2 dir = (_playerPos - boss.Pos).LengthSquared() > 0.01f ? (_playerPos - boss.Pos).Normalized() : Vector2.Down;
+        float enrage = 1.0f - hpRatio;
+        SetBossIntent(boss, pattern);
+        switch (pattern)
+        {
+            case BossPatternKind.AimedFan:
+            {
+                int count = ScaledEnemyPatternCount(boss.Kind, 9 + sector * 2 + (boss.BossArchetype == BossArchetype.Prism ? 2 : 0));
+                float spread = boss.BossArchetype == BossArchetype.Forge ? 0.13f : 0.105f;
                 for (int i = 0; i < count; i++)
                 {
-                    float offset = (i - (count - 1) * 0.5f) * 0.105f;
-                    FireEnemy(boss, dir.Rotated(offset), 360.0f + threat * 6.0f + (1.0f - hpRatio) * 180.0f, 1, 0.0f, 12.0f);
+                    float offset = (i - (count - 1) * 0.5f) * spread;
+                    FireEnemy(boss, dir.Rotated(offset), 350.0f + threat * 6.0f + enrage * 170.0f, 1, 0.0f, 12.0f);
                 }
-                boss.Cooldown = 0.9f - (1.0f - hpRatio) * 0.22f;
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.02f, hpRatio);
+                break;
             }
-            else if (pattern == 1)
+            case BossPatternKind.SpiralRing:
             {
                 int count = ScaledEnemyPatternCount(boss.Kind, 18 + sector * 3);
-                float spin = _time * (hpRatio > 0.5f ? 0.6f : -1.0f);
+                float spin = _time * (hpRatio > 0.5f ? 0.62f : -1.05f) + boss.Phase;
                 for (int i = 0; i < count; i++)
                 {
-                    FireEnemy(boss, Vector2.Right.Rotated(spin + i * Mathf.Tau / count), 250.0f + sector * 18.0f + (1.0f - hpRatio) * 100.0f, 1, 0.0f, 9.0f);
+                    FireEnemy(boss, Vector2.Right.Rotated(spin + i * Mathf.Tau / count), 245.0f + sector * 18.0f + enrage * 96.0f, 1, 0.0f, 9.0f);
                 }
-                boss.Cooldown = 1.15f;
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.2f, hpRatio);
                 boss.Polarity = OtherStance(boss.Polarity);
+                break;
             }
-            else if (pattern == 2)
+            case BossPatternKind.HeavyLance:
             {
-                int count = ScaledEnemyPatternCount(boss.Kind, 5);
+                int count = ScaledEnemyPatternCount(boss.Kind, boss.BossArchetype == BossArchetype.Prism ? 7 : 5);
                 for (int i = 0; i < count; i++)
                 {
-                    float offset = (i - (count - 1) * 0.5f) * 0.36f;
-                    FireEnemy(boss, dir.Rotated(offset), 520.0f, 1, 0.0f, 16.0f);
+                    float offset = (i - (count - 1) * 0.5f) * (boss.BossArchetype == BossArchetype.Rift ? 0.3f : 0.36f);
+                    FireEnemy(boss, dir.Rotated(offset), 510.0f + sector * 16.0f, 1, 0.0f, 15.0f);
                 }
-                boss.Cooldown = 0.78f;
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 0.92f, hpRatio);
+                break;
             }
-            else if (pattern == 3)
-            {
-                if (_enemies.Count < 13)
-                {
-                    SpawnEnemy(sector >= 2 ? EnemyKind.Shard : EnemyKind.Weaver, boss.Pos + RandomDirection() * 110.0f, boss.Polarity);
-                    SpawnEnemy(sector >= 3 ? EnemyKind.Mine : EnemyKind.Chaser, boss.Pos + RandomDirection() * 130.0f, OtherStance(boss.Polarity));
-                }
-                boss.Cooldown = 1.65f;
-            }
-            else if (pattern == 4)
+            case BossPatternKind.SummonWing:
+                SpawnBossAdds(boss, sector, boss.BossArchetype == BossArchetype.Swarm ? 4 : 2);
+                EnterOverheat(boss);
+                Burst(boss.Pos, BossAccent(boss.BossArchetype), 18 + sector * 3, 340.0f, 0.75f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.82f, hpRatio);
+                break;
+            case BossPatternKind.HazardFan:
             {
                 SpawnHazardLine(sector, true);
-                int count = ScaledEnemyPatternCount(boss.Kind, 5);
+                int count = ScaledEnemyPatternCount(boss.Kind, 5 + (boss.BossArchetype == BossArchetype.Forge ? 2 : 0));
                 for (int i = 0; i < count; i++)
                 {
                     float offset = (i - (count - 1) * 0.5f) * 0.24f;
-                    FireEnemy(boss, dir.Rotated(offset), 460.0f + threat * 10.0f, 1, 0.0f, 13.0f);
+                    FireEnemy(boss, dir.Rotated(offset), 450.0f + threat * 9.0f, 1, 0.0f, 13.0f);
                 }
-                boss.Cooldown = 1.05f;
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.28f, hpRatio);
+                break;
             }
-            else if (pattern == 5)
+            case BossPatternKind.ReverseSpiral:
             {
                 int count = ScaledEnemyPatternCount(boss.Kind, 10 + sector * 2);
+                float baseAngle = -_time * (1.25f + enrage * 0.35f) + boss.Phase;
                 for (int i = 0; i < count; i++)
                 {
-                    Vector2 spiral = Vector2.Right.Rotated(-_time * 1.4f + i * Mathf.Tau / count);
-                    FireEnemy(boss, spiral, 330.0f + i * 8.0f, 1, 0.0f, 8.0f);
+                    Vector2 spiral = Vector2.Right.Rotated(baseAngle + i * Mathf.Tau / count);
+                    FireEnemy(boss, spiral, 318.0f + i * 8.0f + sector * 8.0f, 1, 0.0f, 8.0f);
                 }
-                boss.Cooldown = 0.7f;
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 0.86f, hpRatio);
+                break;
             }
-            else
+            case BossPatternKind.WardenCall:
+                SpawnBossGuardian(boss, sector);
+                FireEnemy(boss, dir, 430.0f + threat * 8.0f, 5, 0.24f, 12.0f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.65f, hpRatio);
+                break;
+            case BossPatternKind.CrossBloom:
             {
-                if (_enemies.Count < 18 + sector * 4)
+                int count = ScaledEnemyPatternCount(boss.Kind, 8 + sector * 2);
+                float baseAngle = boss.Phase + (boss.BossArchetype == BossArchetype.Prism ? Mathf.Pi * 0.25f : 0.0f);
+                for (int i = 0; i < count; i++)
                 {
-                    SpawnEnemy(EnemyKind.Warden, ClampToArena(boss.Pos + RandomDirection() * 170.0f, 70.0f), boss.Polarity);
+                    Vector2 spoke = Vector2.Right.Rotated(baseAngle + i * Mathf.Tau / count);
+                    FireEnemy(boss, spoke, 355.0f + sector * 14.0f + enrage * 70.0f, 1, 0.0f, 10.0f);
                 }
-                boss.Cooldown = 1.3f;
+                FireEnemy(boss, dir, 470.0f + sector * 12.0f, 3, 0.18f, 12.0f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.18f, hpRatio);
+                break;
+            }
+            case BossPatternKind.MineDrift:
+                SpawnBossAdds(boss, sector, boss.BossArchetype == BossArchetype.Forge ? 3 : 2, true);
+                FireEnemy(boss, Vector2.Down, 285.0f + sector * 12.0f, 7, 0.3f, 9.0f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.55f, hpRatio);
+                break;
+            case BossPatternKind.MirrorFork:
+            {
+                int lanes = ScaledEnemyPatternCount(boss.Kind, 7 + sector);
+                Vector2 mirrorDir = new(-dir.X, dir.Y);
+                for (int i = 0; i < lanes; i++)
+                {
+                    float offset = (i - (lanes - 1) * 0.5f) * 0.16f;
+                    FireEnemy(boss, dir.Rotated(offset), 390.0f + threat * 8.0f + enrage * 120.0f, 1, 0.0f, 10.0f);
+                    FireEnemy(boss, mirrorDir.Rotated(-offset), 390.0f + threat * 8.0f + enrage * 120.0f, 1, 0.0f, 10.0f);
+                }
+                SpawnBossLineHazard(boss.Pos, Vector2.Right, sector, BossAccent(boss.BossArchetype), 28.0f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.18f, hpRatio);
+                break;
+            }
+            case BossPatternKind.TempestWheel:
+            {
+                int count = ScaledEnemyPatternCount(boss.Kind, 24 + sector * 3);
+                float spin = _time * (1.7f + enrage * 0.6f) + boss.Phase;
+                for (int i = 0; i < count; i++)
+                {
+                    Vector2 spoke = Vector2.Right.Rotated(spin + i * Mathf.Tau / count);
+                    FireEnemy(boss, spoke, 260.0f + (i % 3) * 38.0f + sector * 12.0f, 1, 0.0f, 8.5f);
+                }
+                boss.Vel += RandomDirection() * (160.0f + enrage * 120.0f);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.06f, hpRatio);
+                break;
+            }
+            case BossPatternKind.BastionWall:
+            {
+                boss.BossGuard = Mathf.Max(boss.BossGuard, 1.35f + sector * 0.08f);
+                SpawnBossLineHazard(boss.Pos + new Vector2(0.0f, 120.0f), Vector2.Right, sector, BossAccent(boss.BossArchetype), 42.0f);
+                SpawnBossAdds(boss, sector, 2 + Math.Min(2, sector), false);
+                int count = ScaledEnemyPatternCount(boss.Kind, 5 + sector);
+                for (int i = 0; i < count; i++)
+                {
+                    float offset = (i - (count - 1) * 0.5f) * 0.28f;
+                    FireEnemy(boss, dir.Rotated(offset), 470.0f + sector * 20.0f, 1, 0.0f, 14.0f);
+                }
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.78f, hpRatio);
+                break;
+            }
+            case BossPatternKind.SerpentCoil:
+            {
+                int count = ScaledEnemyPatternCount(boss.Kind, 16 + sector * 2);
+                float spin = boss.Phase - _time * (1.0f + enrage * 0.35f);
+                for (int i = 0; i < count; i++)
+                {
+                    Vector2 coil = Vector2.Right.Rotated(spin + i * Mathf.Tau / count);
+                    FireEnemy(boss, coil, 285.0f + (i % 4) * 26.0f + sector * 10.0f, 1, 0.0f, 8.5f);
+                }
+                SpawnBossAdds(boss, sector, 2 + (enrage > 0.45f ? 1 : 0), true);
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.26f, hpRatio);
+                break;
+            }
+            case BossPatternKind.OracleSnipe:
+            {
+                Vector2 predicted = _playerPos + _playerVel * (0.38f + enrage * 0.2f);
+                Vector2 aim = (predicted - boss.Pos).LengthSquared() > 0.01f ? (predicted - boss.Pos).Normalized() : dir;
+                SpawnBossLineHazard(predicted, aim, sector, BossAccent(boss.BossArchetype), 22.0f);
+                FireEnemy(boss, aim, 620.0f + sector * 28.0f + enrage * 120.0f, 3, 0.11f, 12.0f);
+                if (enrage > 0.35f)
+                {
+                    FireEnemy(boss, aim.Rotated(0.36f), 500.0f + sector * 24.0f, 1, 0.0f, 10.0f);
+                    FireEnemy(boss, aim.Rotated(-0.36f), 500.0f + sector * 24.0f, 1, 0.0f, 10.0f);
+                }
+                boss.Cooldown = BossPatternCooldown(boss.BossArchetype, 1.42f, hpRatio);
+                break;
             }
         }
+
+        if (_rng.Randf() < 0.32f + enrage * 0.18f)
+        {
+            boss.Polarity = OtherStance(boss.Polarity);
+        }
+    }
+
+    private static void SetBossIntent(Enemy boss, BossPatternKind pattern, float pulse = 1.45f)
+    {
+        boss.BossIntent = pattern;
+        boss.BossIntentPulse = Math.Max(boss.BossIntentPulse, pulse);
+    }
+
+    private float BossPatternCooldown(BossArchetype archetype, float baseCooldown, float hpRatio)
+    {
+        float styleScale = archetype switch
+        {
+            BossArchetype.Prism => 0.9f,
+            BossArchetype.Swarm => 1.04f,
+            BossArchetype.Forge => 1.12f,
+            BossArchetype.Rift => 0.96f,
+            BossArchetype.Mirror => 0.92f,
+            BossArchetype.Tempest => 0.88f,
+            BossArchetype.Bastion => 1.18f,
+            BossArchetype.Serpent => 0.98f,
+            BossArchetype.Oracle => 1.04f,
+            _ => 1.0f,
+        };
+        return Mathf.Max(0.48f, baseCooldown * styleScale * (0.92f - (1.0f - hpRatio) * 0.22f));
+    }
+
+    private void SpawnBossAdds(Enemy boss, int sector, int count, bool preferMines = false)
+    {
+        int cap = boss.BossArchetype == BossArchetype.Swarm ? 18 + sector * 3 : 13 + sector * 2;
+        for (int i = 0; i < count && _enemies.Count < cap; i++)
+        {
+            EnemyKind kind = BossAddKind(boss.BossArchetype, sector, preferMines, i);
+            Vector2 pos = ClampToArena(boss.Pos + RandomDirection() * _rng.RandfRange(100.0f, 185.0f), 52.0f);
+            SpawnEnemy(kind, pos, i % 2 == 0 ? boss.Polarity : OtherStance(boss.Polarity));
+        }
+    }
+
+    private static EnemyKind BossAddKind(BossArchetype archetype, int sector, bool preferMines, int index)
+    {
+        if (preferMines)
+        {
+            return sector >= 1 && index % 2 == 0 ? EnemyKind.Mine : EnemyKind.Drifter;
+        }
+
+        return archetype switch
+        {
+            BossArchetype.Prism => index % 2 == 0 ? EnemyKind.Weaver : EnemyKind.Lance,
+            BossArchetype.Swarm => sector >= 3 && index == 0 ? EnemyKind.Harrier : index % 2 == 0 ? EnemyKind.Shard : EnemyKind.Chaser,
+            BossArchetype.Forge => index % 2 == 0 ? EnemyKind.Mine : EnemyKind.Bulwark,
+            BossArchetype.Rift => index % 2 == 0 ? EnemyKind.Drifter : EnemyKind.Shard,
+            BossArchetype.Mirror => index % 2 == 0 ? EnemyKind.Lance : EnemyKind.Weaver,
+            BossArchetype.Tempest => index % 2 == 0 ? EnemyKind.Harrier : EnemyKind.Shard,
+            BossArchetype.Bastion => index % 2 == 0 ? EnemyKind.Bulwark : EnemyKind.Warden,
+            BossArchetype.Serpent => index % 2 == 0 ? EnemyKind.Drifter : EnemyKind.Mine,
+            BossArchetype.Oracle => index % 2 == 0 ? EnemyKind.Siren : EnemyKind.Lance,
+            _ => sector >= 2 && index == 0 ? EnemyKind.Shard : index % 2 == 0 ? EnemyKind.Weaver : EnemyKind.Chaser,
+        };
+    }
+
+    private void SpawnBossGuardian(Enemy boss, int sector)
+    {
+        if (_enemies.Count >= 18 + sector * 4)
+        {
+            return;
+        }
+
+        EnemyKind kind = sector >= 3 ? EnemyKind.Warden : sector >= 1 ? EnemyKind.Bulwark : EnemyKind.Lance;
+        Vector2 pos = ClampToArena(boss.Pos + RandomDirection() * 170.0f, 70.0f);
+        SpawnEnemy(kind, pos, boss.Polarity);
     }
 
     private void FireEnemy(Enemy enemy, Vector2 direction, float speed, int count, float spread, float radius = EnemyBulletRadius)
@@ -2479,6 +4728,30 @@ public partial class MainGame : Node2D
         direction = direction.Normalized();
         EnterOverheat(enemy);
         int shotCount = ScaledEnemyBulletCount(enemy.Kind, count);
+        float bulletLoad = ActiveEnemyBulletCount() / (float)Math.Max(1, EnemyBulletCap());
+        float pressure = PerformancePressure();
+        if (enemy.Kind == EnemyKind.Boss)
+        {
+            if (bulletLoad > 0.9f || pressure > 0.92f)
+            {
+                shotCount = Math.Max(1, Mathf.CeilToInt(shotCount * 0.68f));
+            }
+            else if (bulletLoad > 0.78f || pressure > 0.82f)
+            {
+                shotCount = Math.Max(1, Mathf.CeilToInt(shotCount * 0.84f));
+            }
+        }
+        else
+        {
+            if (bulletLoad > 0.88f || pressure > 0.92f)
+            {
+                shotCount = Math.Max(1, Mathf.CeilToInt(shotCount * 0.55f));
+            }
+            else if (bulletLoad > 0.74f || pressure > 0.82f)
+            {
+                shotCount = Math.Max(1, Mathf.CeilToInt(shotCount * 0.75f));
+            }
+        }
         float shotSpeed = ScaledEnemyBulletSpeed(enemy.Kind, speed);
         float shotLife = EnemyBulletLife();
         for (int i = 0; i < shotCount; i++)
@@ -2495,7 +4768,7 @@ public partial class MainGame : Node2D
             shot.Prev = enemy.Pos;
             shot.Vel = dir * shotSpeed;
             shot.Radius = radius;
-            shot.Damage = enemy.Kind == EnemyKind.Boss ? 18.0f + CurrentSectorIndex() * 2.0f : 9.0f + ThreatLevel() * 0.65f;
+            shot.Damage = enemy.Kind == EnemyKind.Boss ? 20.0f + CurrentSectorIndex() * 3.0f : 9.0f + ThreatLevel() * 0.65f;
             shot.Life = shotLife;
             shot.MaxLife = shotLife;
             shot.Polarity = -1;
@@ -2511,13 +4784,24 @@ public partial class MainGame : Node2D
         {
             Shot shot = _shots[i];
             shot.Prev = shot.Pos;
-            PushShotTrail(shot, shot.Pos);
+            if (ShouldRecordShotTrail(shot))
+            {
+                PushShotTrail(shot, shot.Pos);
+            }
+            else
+            {
+                shot.TrailCount = 0;
+            }
             shot.Pos += shot.Vel * dt;
             shot.Life -= dt;
 
             if (!shot.FromPlayer && _enemySlow < 0.99f)
             {
                 shot.Vel *= 1.0f - dt * 0.06f;
+            }
+            if (!shot.FromPlayer && _stasisField > 0)
+            {
+                shot.Vel *= 1.0f - dt * Mathf.Min(0.18f, 0.035f * _stasisField);
             }
 
             if (shot.Life <= 0.0f || !ExpandedArena(180.0f).HasPoint(shot.Pos))
@@ -2529,58 +4813,83 @@ public partial class MainGame : Node2D
 
     private void ResolveCombat(float dt)
     {
+        BuildEnemyGrid();
         for (int i = _shots.Count - 1; i >= 0; i--)
         {
             Shot shot = _shots[i];
             if (shot.FromPlayer)
             {
                 bool removeShot = false;
-                for (int j = _enemies.Count - 1; j >= 0; j--)
+                int cellX = EnemyGridCoordX(shot.Pos.X);
+                int cellY = EnemyGridCoordY(shot.Pos.Y);
+                for (int y = Math.Max(0, cellY - 1); y <= Math.Min(EnemyGridRows - 1, cellY + 1) && !removeShot; y++)
                 {
-                    Enemy enemy = _enemies[j];
-                    float hitRadius = shot.Radius + enemy.Radius;
-                    float dx = Mathf.Abs(shot.Pos.X - enemy.Pos.X);
-                    float dy = Mathf.Abs(shot.Pos.Y - enemy.Pos.Y);
-                    if (dx <= hitRadius && dy <= hitRadius && shot.Pos.DistanceSquaredTo(enemy.Pos) <= hitRadius * hitRadius)
+                    for (int x = Math.Max(0, cellX - 1); x <= Math.Min(EnemyGridColumns - 1, cellX + 1) && !removeShot; x++)
                     {
-                        bool assaultShot = IsAssaultStance(shot.Polarity);
-                        bool overheated = EnemyOverheat01(enemy) > 0.0f;
-                        float windowBonus = overheated ? (assaultShot ? _critMultiplier + (enemy.Elite ? 0.18f : 0.0f) : 1.08f) : (assaultShot ? 1.08f : 0.96f);
-                        float damage = shot.Damage * windowBonus * _nextWaveDamageBoost;
-                        bool lethal = enemy.Hp - damage <= 0.0f;
-                        DamageEnemy(enemy, damage, shot.Pos, false);
-                        if (!assaultShot)
+                        List<Enemy> bucket = _enemyGrid[y * EnemyGridColumns + x];
+                        for (int j = bucket.Count - 1; j >= 0; j--)
                         {
-                            AddCruiseCharge(overheated ? 1.2f : 1.9f, enemy.Pos);
-                        }
-                        else if (overheated && lethal && _assaultBurstTimer > 0.0f)
-                        {
-                            _assaultBurstTimer = Mathf.Min(AssaultBurstMax, _assaultBurstTimer + 0.26f);
-                        }
-                        float textChance = _visualPressure > 0.86f ? 0.04f : _visualPressure > 0.68f ? 0.1f : 0.22f;
-                        if (_damageTexts.Count < MaxDamageTexts * 0.6f || _rng.Randf() < textChance)
-                        {
-                            string damageLabel = overheated && assaultShot ? $"{(int)damage}!" : ((int)damage).ToString();
-                            AddText(damageLabel, enemy.Pos + RandomDirection() * 26.0f, PolarityColor(shot.Polarity), overheated && assaultShot ? 23.0f : 20.0f);
-                        }
-                        if (overheated && assaultShot && _counterTextCooldown <= 0.0f)
-                        {
-                            AddText(CounterText(), enemy.Pos + new Vector2(0.0f, -60.0f), Gold, 19.0f);
-                            _counterTextCooldown = 0.42f;
-                        }
-                        Burst(shot.Pos, PolarityColor(shot.Polarity), shot.Rift ? 8 : 5, shot.Rift ? 360.0f : 210.0f, 0.42f);
-                        _energy = Mathf.Clamp(_energy + (overheated && assaultShot ? 2.0f : 0.75f) * _absorbEfficiency, 0.0f, _maxEnergy);
+                            Enemy enemy = bucket[j];
+                            if (enemy.Hp <= 0.0f)
+                            {
+                                continue;
+                            }
 
-                        if (shot.Pierce > 0)
-                        {
-                            shot.Pierce--;
-                            shot.Damage *= 0.72f;
+                            float hitRadius = shot.Radius + enemy.Radius;
+                            float dx = Mathf.Abs(shot.Pos.X - enemy.Pos.X);
+                            float dy = Mathf.Abs(shot.Pos.Y - enemy.Pos.Y);
+                            if (dx <= hitRadius && dy <= hitRadius && shot.Pos.DistanceSquaredTo(enemy.Pos) <= hitRadius * hitRadius)
+                            {
+                                bool tacticalShot = _assaultBurstTimer > 0.0f;
+                                bool overheated = EnemyOverheat01(enemy) > 0.0f;
+                                float windowBonus = overheated
+                                    ? (tacticalShot ? 1.18f + (_critMultiplier - 1.0f) * 0.72f + (enemy.Elite ? 0.14f : 0.0f) : 1.06f)
+                                    : (tacticalShot ? 1.08f : 1.0f);
+                                float damage = shot.Damage * windowBonus * _nextWaveDamageBoost;
+                                if (_executionMark > 0 && (overheated || enemy.Hp / Mathf.Max(1.0f, enemy.MaxHp) < 0.34f || (enemy.Kind == EnemyKind.Boss && enemy.BossGuard <= 0.0f)))
+                                {
+                                    damage *= 1.0f + _executionMark * 0.075f + (IsUpgradeMaxed(UpgradeId.ExecutionMark) ? 0.12f : 0.0f);
+                                }
+                                bool lethal = enemy.Hp - damage <= 0.0f;
+                                Vector2 hitPos = enemy.Pos;
+                                DamageEnemy(enemy, damage, shot.Pos, false, shot.ChainDepth, shot.SplitDepth);
+                                TryChainReaction(shot, enemy, hitPos, damage, overheated);
+                                TryRicochetMatrix(shot, enemy, hitPos, damage);
+                                if (!tacticalShot)
+                                {
+                                    AddCruiseCharge(overheated ? 1.2f : 1.9f, hitPos);
+                                }
+                                else if (overheated && lethal)
+                                {
+                                    _assaultBurstTimer = Mathf.Min(AssaultBurstMax, _assaultBurstTimer + 0.26f);
+                                }
+                                float pressure = PerformancePressure();
+                                float textChance = pressure > 0.86f ? 0.04f : pressure > 0.68f ? 0.1f : 0.22f;
+                                if (_damageTexts.Count < MaxDamageTexts * 0.6f || _rng.Randf() < textChance)
+                                {
+                                    string damageLabel = overheated && tacticalShot ? $"{(int)damage}!" : ((int)damage).ToString();
+                                    AddText(damageLabel, hitPos + RandomDirection() * 26.0f, PolarityColor(shot.Polarity), overheated && tacticalShot ? 23.0f : 20.0f);
+                                }
+                                if (overheated && tacticalShot && _counterTextCooldown <= 0.0f)
+                                {
+                                    AddText(CounterText(), hitPos + new Vector2(0.0f, -60.0f), Gold, 19.0f);
+                                    _counterTextCooldown = 0.42f;
+                                }
+                                Burst(shot.Pos, PolarityColor(shot.Polarity), pressure > 0.82f ? (shot.Rift ? 4 : 3) : (shot.Rift ? 8 : 5), shot.Rift ? 360.0f : 210.0f, 0.42f);
+                                _energy = Mathf.Clamp(_energy + (overheated && tacticalShot ? 1.8f : 0.75f) * _absorbEfficiency, 0.0f, _maxEnergy);
+
+                                if (shot.Pierce > 0)
+                                {
+                                    shot.Pierce--;
+                                    shot.Damage *= 0.72f;
+                                }
+                                else
+                                {
+                                    removeShot = true;
+                                }
+                                break;
+                            }
                         }
-                        else
-                        {
-                            removeShot = true;
-                        }
-                        break;
                     }
                 }
 
@@ -2593,7 +4902,7 @@ public partial class MainGame : Node2D
             {
                 float hitRadius = shot.Radius + PlayerRadius;
                 float distanceSquared = shot.Pos.DistanceSquaredTo(_playerPos);
-                if (!shot.Grazed && IsCruiseStance(_playerPolarity) && _dashTimer <= 0.0f)
+                if (!shot.Grazed && _dashTimer <= 0.0f)
                 {
                     float grazeRadius = hitRadius + CruiseGrazeRadius;
                     if (distanceSquared <= grazeRadius * grazeRadius && distanceSquared > hitRadius * hitRadius)
@@ -2601,11 +4910,9 @@ public partial class MainGame : Node2D
                         shot.Grazed = true;
                         AddCruiseCharge(5.2f, shot.Pos);
                         _energy = Mathf.Clamp(_energy + 1.15f * _absorbEfficiency, 0.0f, _maxEnergy);
-                        _score += 8 + Math.Min(_combo, 40);
-                        _combo++;
-                        RefreshRunBestCombo();
+                        AddRunScore(8 + Math.Min(_combo, 40), shot.Pos, PolarityBlue);
+                        IncreaseCombo(shot.Pos);
                         AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
-                        _comboTimer = 2.0f;
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(ChargeText(), _playerPos + new Vector2(0.0f, -72.0f), PolarityBlue, 18.0f);
@@ -2620,11 +4927,9 @@ public partial class MainGame : Node2D
                     {
                         float absorbGain = 4.0f * _absorbEfficiency;
                         _energy = Mathf.Clamp(_energy + absorbGain, 0.0f, _maxEnergy);
-                        _score += 15 + _combo;
-                        _combo++;
-                        RefreshRunBestCombo();
+                        AddRunScore(15 + _combo, shot.Pos, EnemyBulletColor());
+                        IncreaseCombo(shot.Pos);
                         AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
-                        _comboTimer = 2.0f;
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(AbsorbText(absorbGain), _playerPos + new Vector2(0.0f, -72.0f), EnemyBulletColor(), 20.0f);
@@ -2635,11 +4940,8 @@ public partial class MainGame : Node2D
                     }
                     else
                     {
-                        float incoming = shot.Damage * (IsCruiseStance(_playerPolarity) ? 0.78f : 1.08f);
-                        if (IsCruiseStance(_playerPolarity))
-                        {
-                            AddCruiseCharge(3.0f, shot.Pos);
-                        }
+                        float incoming = shot.Damage * 0.92f;
+                        AddCruiseCharge(3.0f, shot.Pos);
                         DamagePlayer(incoming, shot.Pos);
                     }
                     RemoveShotAt(i);
@@ -2656,7 +4958,7 @@ public partial class MainGame : Node2D
                 if (_dashTimer > 0.0f)
                 {
                     DamageEnemy(enemy, _dashDamage * _damageMultiplier, _playerPos, false);
-                    Burst(enemy.Pos, PolarityColor(_playerPolarity), 12, 420.0f, 0.55f);
+                    Burst(enemy.Pos, PilotAccent(_runPilot), 12, 420.0f, 0.55f);
                 }
                 else if (enemy.ContactTimer <= 0.0f)
                 {
@@ -2667,19 +4969,375 @@ public partial class MainGame : Node2D
         }
     }
 
-    private void DamageEnemy(Enemy enemy, float damage, Vector2 source, bool heavy)
+    private void DamageEnemy(Enemy enemy, float damage, Vector2 source, bool heavy, int chainDepth = 0, int splitDepth = 0)
     {
-        enemy.Hp -= damage / Mathf.Max(0.1f, enemy.Armor);
+        enemy.LastHitChainDepth = Math.Max(0, chainDepth);
+        enemy.LastHitSplitDepth = Math.Max(0, splitDepth);
+        float previousHp = enemy.Hp;
+        float finalDamage = damage / Mathf.Max(0.1f, enemy.Armor);
+        if (enemy.Kind == EnemyKind.Boss)
+        {
+            finalDamage *= BossDamageTakenScale(enemy, heavy, chainDepth, splitDepth);
+        }
+        enemy.Hp -= finalDamage;
         Vector2 knock = enemy.Pos - source;
         if (knock.LengthSquared() > 0.01f)
         {
             enemy.Vel += knock.Normalized() * (heavy ? 180.0f : 46.0f);
         }
 
+        if (enemy.Kind == EnemyKind.Boss && TryTriggerBossPhase(enemy, previousHp))
+        {
+            return;
+        }
+
         if (enemy.Hp <= 0.0f)
         {
             KillEnemy(enemy);
         }
+    }
+
+    private static float BossDamageTakenScale(Enemy boss, bool heavy, int chainDepth, int splitDepth)
+    {
+        float scale = heavy ? 0.82f : 0.74f;
+        if (chainDepth > 0)
+        {
+            scale *= Mathf.Lerp(0.76f, 0.54f, Mathf.Clamp(chainDepth / 4.0f, 0.0f, 1.0f));
+        }
+        if (splitDepth > 0)
+        {
+            scale *= splitDepth >= 2 ? 0.42f : 0.58f;
+        }
+        if (boss.BossGuard > 0.0f)
+        {
+            scale *= Mathf.Lerp(0.24f, 0.58f, 1.0f - Mathf.Clamp(boss.BossGuard / 1.2f, 0.0f, 1.0f));
+        }
+        return scale;
+    }
+
+    private bool TryTriggerBossPhase(Enemy boss, float previousHp)
+    {
+        if (boss.BossPhase >= BossPhaseThresholds.Length)
+        {
+            return false;
+        }
+
+        float previousRatio = Mathf.Clamp(previousHp / Mathf.Max(1.0f, boss.MaxHp), 0.0f, 1.0f);
+        float currentRatio = Mathf.Clamp(boss.Hp / Mathf.Max(1.0f, boss.MaxHp), 0.0f, 1.0f);
+        float threshold = BossPhaseThresholds[boss.BossPhase];
+        if (previousRatio <= threshold || currentRatio > threshold)
+        {
+            return false;
+        }
+
+        boss.Hp = Mathf.Max(boss.Hp, boss.MaxHp * threshold);
+        boss.BossPhase++;
+        TriggerBossPhaseShift(boss, threshold);
+        return true;
+    }
+
+    private void TriggerBossPhaseShift(Enemy boss, float threshold)
+    {
+        int sector = CurrentSectorIndex();
+        Color color = BossAccent(boss.BossArchetype);
+        boss.BossGuard = 0.86f + boss.BossPhase * 0.18f;
+        boss.Cooldown = 0.18f;
+        boss.Overheat = 0.0f;
+        boss.Phase += 0.72f + boss.BossPhase * 0.18f;
+        _shake = Mathf.Max(_shake, 0.72f);
+        _flash = Mathf.Max(_flash, 0.42f);
+
+        string text = Tf("boss.phase", boss.BossPhase + 1);
+        AddText(text, boss.Pos + new Vector2(0.0f, -boss.Radius - 42.0f), color, 30.0f);
+        ClearBulletsNear(_playerPos, 170.0f + boss.BossPhase * 28.0f, false);
+        Burst(boss.Pos, color, PerformancePressure() > 0.8f ? 36 : 68, 660.0f + sector * 80.0f, 1.08f);
+        TriggerBossSignatureShift(boss, sector, color);
+
+        int addCount = boss.BossArchetype == BossArchetype.Swarm ? 3 + boss.BossPhase : 1 + boss.BossPhase;
+        if (boss.BossPhase >= 2)
+        {
+            SpawnBossAdds(boss, sector, addCount, boss.BossArchetype == BossArchetype.Forge);
+        }
+
+        int ringCount = ScaledEnemyPatternCount(boss.Kind, 7 + sector + boss.BossPhase * 2);
+        float spin = boss.Phase + boss.BossPhase * 0.33f;
+        for (int i = 0; i < ringCount; i++)
+        {
+            Vector2 dir = Vector2.Right.Rotated(spin + i * Mathf.Tau / ringCount);
+            FireEnemy(boss, dir, 285.0f + sector * 22.0f + boss.BossPhase * 34.0f, 1, 0.0f, 9.0f + boss.BossPhase);
+        }
+        boss.Overheat = 0.0f;
+        boss.OverheatMax = 1.0f;
+        boss.Cooldown = 0.52f;
+
+        if (threshold <= 0.43f)
+        {
+            SpawnHazardLine(sector, true);
+        }
+    }
+
+    private void TriggerBossSignatureShift(Enemy boss, int sector, Color color)
+    {
+        float pressure = PerformancePressure();
+        Vector2 aim = (_playerPos - boss.Pos).LengthSquared() > 0.01f ? (_playerPos - boss.Pos).Normalized() : Vector2.Down;
+        int phase = boss.BossPhase;
+        switch (boss.BossArchetype)
+        {
+            case BossArchetype.Prism:
+                SetBossIntent(boss, BossPatternKind.CrossBloom, 1.9f);
+                SpawnBossLineHazard(boss.Pos, Vector2.Right.Rotated(Mathf.Pi * 0.25f), sector, color, 20.0f);
+                if (pressure < 0.86f || phase >= 2)
+                {
+                    SpawnBossLineHazard(boss.Pos, Vector2.Right.Rotated(-Mathf.Pi * 0.25f), sector, color, 18.0f);
+                }
+                break;
+            case BossArchetype.Swarm:
+                SetBossIntent(boss, BossPatternKind.SummonWing, 1.9f);
+                SpawnBossAdds(boss, sector, 2 + phase, false);
+                if (pressure < 0.82f)
+                {
+                    FireEnemy(boss, Vector2.Down, 240.0f + sector * 18.0f, 5 + phase, 0.32f, 8.5f);
+                }
+                break;
+            case BossArchetype.Forge:
+                SetBossIntent(boss, BossPatternKind.BastionWall, 1.9f);
+                boss.BossGuard = Mathf.Max(boss.BossGuard, 1.18f + phase * 0.16f);
+                SpawnBossLineHazard(boss.Pos + new Vector2(0.0f, 92.0f), Vector2.Right, sector, color, 34.0f);
+                SpawnBossAdds(boss, sector, phase >= 2 ? 3 : 2, true);
+                break;
+            case BossArchetype.Rift:
+                SetBossIntent(boss, BossPatternKind.HazardFan, 1.9f);
+                SpawnBossLineHazard(boss.Pos, Vector2.Down.Rotated(0.38f), sector, color, 24.0f);
+                if (phase >= 2 && pressure < 0.88f)
+                {
+                    SpawnBossLineHazard(boss.Pos, Vector2.Down.Rotated(-0.38f), sector, color, 20.0f);
+                }
+                break;
+            case BossArchetype.Mirror:
+            {
+                SetBossIntent(boss, BossPatternKind.MirrorFork, 1.9f);
+                Vector2 mirror = new(-aim.X, aim.Y);
+                FireEnemy(boss, aim.Rotated(0.18f), 360.0f + sector * 22.0f, 2 + phase, 0.18f, 9.0f);
+                FireEnemy(boss, mirror.Rotated(-0.18f), 360.0f + sector * 22.0f, 2 + phase, 0.18f, 9.0f);
+                break;
+            }
+            case BossArchetype.Tempest:
+                SetBossIntent(boss, BossPatternKind.TempestWheel, 1.9f);
+                boss.Vel += RandomDirection() * (220.0f + phase * 70.0f);
+                if (pressure < 0.86f)
+                {
+                    int count = ScaledEnemyPatternCount(boss.Kind, 12 + sector + phase * 2);
+                    for (int i = 0; i < count; i++)
+                    {
+                        Vector2 dir = Vector2.Right.Rotated(boss.Phase + i * Mathf.Tau / count);
+                        FireEnemy(boss, dir, 250.0f + (i % 3) * 30.0f + phase * 18.0f, 1, 0.0f, 8.0f);
+                    }
+                }
+                break;
+            case BossArchetype.Bastion:
+                SetBossIntent(boss, BossPatternKind.BastionWall, 1.9f);
+                boss.BossGuard = Mathf.Max(boss.BossGuard, 1.35f + phase * 0.2f);
+                SpawnBossLineHazard(boss.Pos + new Vector2(0.0f, 130.0f), Vector2.Right, sector, color, 46.0f);
+                SpawnBossGuardian(boss, sector);
+                break;
+            case BossArchetype.Serpent:
+                SetBossIntent(boss, BossPatternKind.SerpentCoil, 1.9f);
+                SpawnBossAdds(boss, sector, 1 + phase, true);
+                if (pressure < 0.88f)
+                {
+                    int count = ScaledEnemyPatternCount(boss.Kind, 9 + phase * 2);
+                    for (int i = 0; i < count; i++)
+                    {
+                        Vector2 coil = Vector2.Right.Rotated(boss.Phase - _time * 0.6f + i * Mathf.Tau / count);
+                        FireEnemy(boss, coil, 250.0f + (i % 4) * 24.0f + sector * 10.0f, 1, 0.0f, 8.0f);
+                    }
+                }
+                break;
+            case BossArchetype.Oracle:
+            {
+                SetBossIntent(boss, BossPatternKind.OracleSnipe, 1.9f);
+                Vector2 predicted = _playerPos + _playerVel * (0.42f + phase * 0.08f);
+                Vector2 snipe = (predicted - boss.Pos).LengthSquared() > 0.01f ? (predicted - boss.Pos).Normalized() : aim;
+                SpawnBossLineHazard(predicted, snipe, sector, color, 20.0f + phase * 2.0f);
+                FireEnemy(boss, snipe, 540.0f + sector * 24.0f + phase * 40.0f, 2 + phase, 0.1f, 10.0f);
+                break;
+            }
+            default:
+                SetBossIntent(boss, BossPatternKind.SpiralRing, 1.9f);
+                break;
+        }
+
+        AddText(BossSignatureText(boss.BossArchetype), boss.Pos + new Vector2(0.0f, boss.Radius + 42.0f), Alpha(color.Lerp(Paper, 0.12f), 0.88f), 18.0f);
+    }
+
+    private void TryChainReaction(Shot shot, Enemy excluded, Vector2 start, float baseDamage, bool overheated)
+    {
+        int rank = _chainRelay;
+        if (_runPilot == PilotKind.Kairo)
+        {
+            rank += _kairoRelayProtocol;
+        }
+        if (_runPilot == PilotKind.Sol)
+        {
+            rank += _solFlareCore / 2;
+        }
+        rank = Math.Min(rank, 8);
+        if (rank <= 0 || baseDamage <= 0.0f)
+        {
+            return;
+        }
+
+        bool capstone = IsUpgradeMaxed(UpgradeId.ChainRelay);
+        float chance = 0.18f + rank * 0.07f + (overheated ? 0.12f : 0.0f) + (shot.Rift ? 0.04f : 0.0f);
+        if (capstone)
+        {
+            chance += 0.28f;
+        }
+        if (shot.SplitDepth > 0)
+        {
+            chance *= capstone ? 0.72f : 0.55f;
+        }
+        if (_rng.Randf() > Mathf.Clamp(chance, 0.0f, capstone ? 0.94f : 0.78f))
+        {
+            return;
+        }
+
+        int jumps = Math.Min(capstone ? 6 : 4, 1 + rank / 2 + (shot.Rift && rank >= 4 ? 1 : 0) + (capstone ? 1 : 0));
+        if (_visualPressure > 0.9f)
+        {
+            jumps = Math.Min(jumps, 2);
+        }
+        else if (_visualPressure > 0.76f)
+        {
+            jumps = Math.Min(jumps, 3);
+        }
+        float radius = 245.0f + rank * 34.0f + (capstone ? 70.0f : 0.0f);
+        float chainDamage = baseDamage * (0.24f + rank * 0.035f + (capstone ? 0.05f : 0.0f)) * (shot.SplitDepth > 0 ? 0.72f : 1.0f);
+        Vector2 from = start;
+        Enemy? previous = excluded;
+        Color color = UpgradeAccent(UpgradeId.ChainRelay);
+        int actualJumps = 0;
+
+        for (int i = 0; i < jumps; i++)
+        {
+            Enemy? target = FindChainTarget(from, previous, radius);
+            if (target == null)
+            {
+                break;
+            }
+
+            Vector2 targetPos = target.Pos;
+            SpawnChainArc(from, targetPos, color);
+            DamageEnemy(target, chainDamage, from, false, shot.ChainDepth + i + 1, shot.SplitDepth);
+            AddRunScore(14 + rank * 4, targetPos, color);
+            from = targetPos;
+            previous = target;
+            chainDamage *= 0.68f;
+            actualJumps++;
+        }
+
+        if (capstone && actualJumps >= 2 && PerformancePressure() < 0.92f)
+        {
+            SpawnRelayCapstoneBurst(from, color, baseDamage);
+        }
+    }
+
+    private void TryRicochetMatrix(Shot shot, Enemy excluded, Vector2 start, float baseDamage)
+    {
+        if (_ricochetMatrix <= 0 || shot.ChainDepth > 3 || _shots.Count > MaxShots * 0.9f)
+        {
+            return;
+        }
+
+        float chance = 0.16f + _ricochetMatrix * 0.055f + (shot.Rift ? 0.05f : 0.0f);
+        if (IsUpgradeMaxed(UpgradeId.RicochetMatrix))
+        {
+            chance += 0.18f;
+        }
+        if (_rng.Randf() > Mathf.Clamp(chance, 0.0f, 0.82f))
+        {
+            return;
+        }
+
+        int bounces = Math.Min(IsUpgradeMaxed(UpgradeId.RicochetMatrix) ? 3 : 2, 1 + _ricochetMatrix / 3);
+        if (PerformancePressure() > 0.84f)
+        {
+            bounces = Math.Min(bounces, 1);
+        }
+        for (int i = 0; i < bounces; i++)
+        {
+            Enemy? target = FindChainTarget(start, excluded, 360.0f + _ricochetMatrix * 38.0f);
+            if (target == null)
+            {
+                break;
+            }
+
+            Vector2 dir = (target.Pos - start).LengthSquared() > 0.01f ? (target.Pos - start).Normalized() : RandomDirection();
+            SpawnPlayerShot(start + dir * 18.0f, dir, 1180.0f, Mathf.Max(3.8f, shot.Radius * 0.82f), Mathf.Max(6.0f, baseDamage * (0.22f + _ricochetMatrix * 0.018f)), 0.42f, 0, true, shot.Polarity);
+            SpawnChainArc(start, target.Pos, UpgradeAccent(UpgradeId.RicochetMatrix));
+            start = target.Pos;
+            excluded = target;
+        }
+    }
+
+    private void SpawnRelayCapstoneBurst(Vector2 pos, Color color, float baseDamage)
+    {
+        if (_shots.Count > MaxShots * 0.86f)
+        {
+            return;
+        }
+
+        float pressure = PerformancePressure();
+        int shards = pressure > 0.8f ? 3 : 5;
+        float damage = Mathf.Max(7.0f, baseDamage * 0.16f);
+        for (int i = 0; i < shards; i++)
+        {
+            Vector2 dir = Vector2.Right.Rotated(_time * 0.5f + i * Mathf.Tau / shards);
+            SpawnPlayerShot(pos + dir * 18.0f, dir, 900.0f, 4.2f, damage, 0.46f, 0, true);
+        }
+        Burst(pos, color, pressure > 0.82f ? 5 : 10, 280.0f, 0.32f);
+    }
+
+    private Enemy? FindChainTarget(Vector2 from, Enemy? excluded, float radius)
+    {
+        Enemy? best = null;
+        float bestDistance = radius * radius;
+        foreach (Enemy enemy in _enemies)
+        {
+            if (ReferenceEquals(enemy, excluded))
+            {
+                continue;
+            }
+
+            float distance = enemy.Pos.DistanceSquaredTo(from);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = enemy;
+            }
+        }
+        return best;
+    }
+
+    private void SpawnChainArc(Vector2 from, Vector2 to, Color color)
+    {
+        Vector2 delta = to - from;
+        Vector2 forward = delta.LengthSquared() > 0.01f ? delta.Normalized() : Vector2.Right;
+        float pressure = PerformancePressure();
+        if (pressure > 0.92f)
+        {
+            AddParticle(from.Lerp(to, 0.5f), forward * 120.0f, color, 4.0f, 0.18f);
+            return;
+        }
+
+        int sparks = pressure > 0.78f ? 2 : 6;
+        for (int i = 0; i < sparks; i++)
+        {
+            float t = (i + 1.0f) / (sparks + 1.0f);
+            Vector2 point = from.Lerp(to, t) + RandomDirection() * _rng.RandfRange(4.0f, 18.0f);
+            AddParticle(point, RandomDirection() * _rng.RandfRange(80.0f, 220.0f) + forward * 90.0f, color, 5.0f, 0.22f);
+        }
+        Burst(to, color, pressure > 0.82f ? 4 : 8, 240.0f, 0.36f);
     }
 
     private void KillEnemy(Enemy enemy)
@@ -2693,14 +5351,17 @@ public partial class MainGame : Node2D
         Burst(enemy.Pos, color, enemy.Kind == EnemyKind.Boss ? 180 : 28, enemy.Kind == EnemyKind.Boss ? 980.0f : 440.0f, enemy.Kind == EnemyKind.Boss ? 2.2f : 0.9f);
         _shake = Mathf.Max(_shake, enemy.Kind == EnemyKind.Boss ? 1.0f : 0.24f);
         _flash = Mathf.Max(_flash, enemy.Kind == EnemyKind.Boss ? 0.75f : 0.12f);
-        _combo++;
-        RefreshRunBestCombo();
-        _comboTimer = 2.7f;
-        _score += enemy.Value * Math.Max(1, _combo / 4);
+        IncreaseCombo(enemy.Pos);
+        int multiplier = ScoreMultiplier();
+        int scoreGain = enemy.Value * multiplier;
+        if (enemy.Kind == EnemyKind.Boss)
+        {
+            scoreGain *= 2;
+        }
+        AddRunScore(scoreGain, enemy.Pos, color);
         _energy = Mathf.Clamp(_energy + 6.0f, 0.0f, _maxEnergy);
         _runKills++;
         AddObjectiveProgress(RunObjectiveKind.DefeatEnemies, 1);
-        AddText($"+{enemy.Value}", enemy.Pos + new Vector2(0.0f, -38.0f), color, 24.0f);
         if (enemy.Kind == EnemyKind.Boss)
         {
             _runBossKills++;
@@ -2712,12 +5373,14 @@ public partial class MainGame : Node2D
         int drops = enemy.Kind == EnemyKind.Boss ? 32 + CurrentSectorIndex() * 6 : 2 + (enemy.Kind == EnemyKind.Splitter ? 2 : 0) + (enemy.Elite ? 4 : 0);
         for (int i = 0; i < drops; i++)
         {
-            SpawnPickup(enemy.Pos, i % 5 == 0 ? PickupKind.Energy : PickupKind.Dust);
+            SpawnPickup(enemy.Pos, PickupKind.Dust);
         }
         if (_rng.Randf() < 0.08f + _leechChance + (CurrentSectorIndex() == 2 ? 0.06f : 0.0f) + (enemy.Elite ? 0.05f : 0.0f))
         {
             SpawnPickup(enemy.Pos, PickupKind.Repair);
         }
+
+        SpawnFractalSplit(enemy);
 
         if (enemy.Kind == EnemyKind.Splitter && enemy.SplitDepth < 1)
         {
@@ -2725,6 +5388,105 @@ public partial class MainGame : Node2D
             SpawnEnemy(EnemyKind.Chaser, ClampToArena(enemy.Pos + new Vector2(42.0f, 36.0f), 30.0f), enemy.Polarity, enemy.SplitDepth + 1);
         }
         RecycleEnemy(enemy);
+    }
+
+    private void SpawnFractalSplit(Enemy enemy)
+    {
+        int rank = _fractalSplit;
+        if (_runPilot == PilotKind.Astra)
+        {
+            rank += _astraTwinRefraction;
+        }
+        if (_runPilot == PilotKind.Vesper)
+        {
+            rank += _vesperFork / 2;
+        }
+        rank = Math.Min(rank, 8);
+        if (rank <= 0 || _shots.Count > MaxShots * 0.82f)
+        {
+            return;
+        }
+
+        bool capstone = IsUpgradeMaxed(UpgradeId.FractalSplit);
+        int sourceSplitDepth = Math.Max(0, enemy.LastHitSplitDepth);
+        if (sourceSplitDepth >= (capstone ? 3 : 2))
+        {
+            return;
+        }
+
+        if (sourceSplitDepth == 1)
+        {
+            float cascadeChance = 0.08f + rank * 0.035f + (enemy.LastHitChainDepth > 0 ? 0.05f : 0.0f) + (capstone ? 0.36f : 0.0f);
+            if (PerformancePressure() > 0.84f)
+            {
+                cascadeChance *= 0.45f;
+            }
+            if (rank < 4 || _rng.Randf() > cascadeChance)
+            {
+                return;
+            }
+        }
+
+        bool boss = enemy.Kind == EnemyKind.Boss;
+        int count = boss ? 8 + rank * 2 : 2 + Math.Min(rank, 5) + (enemy.Elite ? 1 : 0) + (capstone && sourceSplitDepth == 0 ? 2 : 0);
+        if (sourceSplitDepth > 0)
+        {
+            count = Math.Min(count, capstone ? 4 : rank >= 6 ? 3 : 2);
+        }
+        else if (enemy.LastHitChainDepth > 0 && !boss)
+        {
+            count = Math.Max(2, count - 1);
+        }
+        float pressure = PerformancePressure();
+        if (pressure > 0.82f)
+        {
+            count = Math.Min(count, boss ? 8 : 4);
+        }
+        if (pressure > 0.92f)
+        {
+            count = Math.Min(count, boss ? 5 : 2);
+        }
+
+        float baseAngle = _rng.RandfRange(0.0f, Mathf.Tau);
+        float damage = (5.5f + rank * 1.45f + CurrentSectorIndex() * 0.7f) * _damageMultiplier * (enemy.Elite ? 1.18f : 1.0f);
+        if (sourceSplitDepth > 0)
+        {
+            damage *= 0.58f;
+        }
+        float speed = 720.0f + rank * 45.0f;
+        Color color = UpgradeAccent(UpgradeId.FractalSplit);
+        int shardSplitDepth = sourceSplitDepth + 1;
+        for (int i = 0; i < count; i++)
+        {
+            float angle = baseAngle + i * Mathf.Tau / count + _rng.RandfRange(-0.08f, 0.08f);
+            SpawnFractalShard(enemy.Pos, Vector2.Right.Rotated(angle), speed, damage, rank, shardSplitDepth);
+        }
+
+        Burst(enemy.Pos, color, pressure > 0.82f ? 8 : 14, 280.0f, 0.44f);
+    }
+
+    private void SpawnFractalShard(Vector2 pos, Vector2 dir, float speed, float damage, int rank, int splitDepth)
+    {
+        Shot? shard = AddShot(true);
+        if (shard == null)
+        {
+            return;
+        }
+
+        dir = dir.LengthSquared() < 0.01f ? Vector2.Right : dir.Normalized();
+        shard.Pos = pos + dir * 18.0f;
+        shard.Prev = pos;
+        shard.Vel = dir * speed;
+        shard.Radius = 3.6f + Math.Min(rank, 5) * 0.18f;
+        shard.Damage = damage * PlayerShotDamageScale(_playerPolarity);
+        shard.Life = 0.42f + Math.Min(rank, 6) * 0.035f;
+        shard.MaxLife = shard.Life;
+        shard.Polarity = _playerPolarity;
+        shard.Pierce = IsUpgradeMaxed(UpgradeId.FractalSplit) && splitDepth <= 1 ? 1 : rank >= 5 ? 1 : 0;
+        shard.ChainDepth = 0;
+        shard.SplitDepth = splitDepth;
+        shard.Rift = true;
+        ResetShotTrail(shard, shard.Pos);
     }
 
     private void DamagePlayer(float amount, Vector2 source)
@@ -2739,6 +5501,15 @@ public partial class MainGame : Node2D
         _playerHp -= finalDamage;
         _timeSinceHit = 0.0f;
         _invulnTimer = 0.86f;
+        if (_combo > 0)
+        {
+            _combo = 0;
+            _comboTimer = 0.0f;
+            _comboTier = 0;
+            _comboTierPulse = 0.0f;
+            _waveSpawnTimer = Math.Max(_waveSpawnTimer, 0.75f);
+            AddText(T("score.combo_break"), _playerPos + new Vector2(0.0f, -92.0f), Rose, 20.0f);
+        }
         _shake = Mathf.Max(_shake, 0.72f);
         _flash = Mathf.Max(_flash, 0.45f);
         Burst(_playerPos, Rose, 34, 470.0f, 1.0f);
@@ -2787,7 +5558,12 @@ public partial class MainGame : Node2D
 
     private void SpawnPickup(Vector2 pos, PickupKind kind)
     {
-        float radius = kind == PickupKind.Repair ? 12.0f : 8.0f;
+        float radius = kind switch
+        {
+            PickupKind.Dust => 6.2f,
+            PickupKind.Repair => 12.0f,
+            _ => 8.0f,
+        };
         Pickup? pickup = AddPickup();
         if (pickup == null)
         {
@@ -2798,7 +5574,12 @@ public partial class MainGame : Node2D
         pickup.Pos = pos;
         pickup.Vel = RandomDirection() * _rng.RandfRange(80.0f, 240.0f);
         pickup.Radius = radius;
-        pickup.Life = kind == PickupKind.Repair ? 9.0f : 7.0f;
+        pickup.Life = kind switch
+        {
+            PickupKind.Dust => 5.6f,
+            PickupKind.Repair => 9.0f,
+            _ => 7.0f,
+        };
     }
 
     private void CollectPickup(Pickup pickup)
@@ -2809,15 +5590,24 @@ public partial class MainGame : Node2D
         switch (pickup.Kind)
         {
             case PickupKind.Dust:
-                _score += 30 + _combo;
-                _energy = Mathf.Clamp(_energy + 2.5f, 0.0f, _maxEnergy);
+                AddExperience(XpPickupValue(), pickup.Pos);
+                if (_magnetizedCore > 0)
+                {
+                    _energy = Mathf.Clamp(_energy + 0.8f + _magnetizedCore * 0.45f, 0.0f, _maxEnergy);
+                    if (_rng.Randf() < 0.12f + _magnetizedCore * 0.035f)
+                    {
+                        MagnetizedCorePulse(pickup.Pos);
+                    }
+                }
                 break;
             case PickupKind.Energy:
-                _score += 50 + _combo;
                 _energy = Mathf.Clamp(_energy + 12.0f, 0.0f, _maxEnergy);
+                if (_magnetizedCore > 0)
+                {
+                    ClearBulletsNear(pickup.Pos, 42.0f + _magnetizedCore * 12.0f, true);
+                }
                 break;
             case PickupKind.Repair:
-                _score += 80;
                 _playerHp = Mathf.Clamp(_playerHp + 18.0f, 0.0f, _playerMaxHp);
                 AddText(T("repair"), _playerPos + new Vector2(0.0f, -70.0f), Jade, 22.0f);
                 break;
@@ -2825,6 +5615,26 @@ public partial class MainGame : Node2D
 
         _comboTimer = 2.0f;
         Burst(pickup.Pos, PickupColor(pickup.Kind), 5, 180.0f, 0.38f);
+    }
+
+    private void MagnetizedCorePulse(Vector2 point)
+    {
+        Color color = UpgradeAccent(UpgradeId.MagnetizedCore);
+        float radius = 120.0f + _magnetizedCore * 24.0f;
+        int hits = 0;
+        for (int i = _enemies.Count - 1; i >= 0 && hits < 8; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (enemy.Pos.DistanceSquaredTo(point) > (radius + enemy.Radius) * (radius + enemy.Radius))
+            {
+                continue;
+            }
+
+            DamageEnemy(enemy, (12.0f + _magnetizedCore * 3.5f) * _damageMultiplier, point, false);
+            hits++;
+        }
+        ClearBulletsNear(point, radius * 0.42f, true);
+        Burst(point, color, _visualPressure > 0.82f ? 4 : 9, 260.0f, 0.34f);
     }
 
     private void UpdateParticles(float dt)
@@ -2895,11 +5705,8 @@ public partial class MainGame : Node2D
                     }
                     else
                     {
-                        if (IsCruiseStance(_playerPolarity))
-                        {
-                            AddCruiseCharge(6.0f, (hazard.A + hazard.B) * 0.5f);
-                        }
-                        DamagePlayer(hazard.Damage * (IsCruiseStance(_playerPolarity) ? 0.82f : 1.08f), (hazard.A + hazard.B) * 0.5f);
+                        AddCruiseCharge(6.0f, (hazard.A + hazard.B) * 0.5f);
+                        DamagePlayer(hazard.Damage * 0.94f, (hazard.A + hazard.B) * 0.5f);
                     }
                 }
             }
@@ -2959,6 +5766,30 @@ public partial class MainGame : Node2D
         });
     }
 
+    private void SpawnBossLineHazard(Vector2 center, Vector2 direction, int sector, Color color, float width)
+    {
+        if (_hazards.Count > 10)
+        {
+            _hazards.RemoveAt(0);
+        }
+
+        Vector2 dir = direction.LengthSquared() > 0.01f ? direction.Normalized() : Vector2.Right;
+        Vector2 a = center - dir * 1180.0f;
+        Vector2 b = center + dir * 1180.0f;
+        _hazards.Add(new HazardLine
+        {
+            A = a,
+            B = b,
+            Color = color.Lerp(EnemyBulletColor(), 0.24f),
+            Life = 1.55f,
+            MaxLife = 1.55f,
+            Warmup = 0.76f,
+            Width = width + sector * 4.0f,
+            Damage = 20.0f + sector * 5.0f,
+            Polarity = -1,
+        });
+    }
+
     private void UpdateOrbiters(float dt)
     {
         if (_orbiters <= 0)
@@ -2980,6 +5811,10 @@ public partial class MainGame : Node2D
         for (int i = 0; i < _orbiters && fired < shotsToFire; i++)
         {
             Vector2 origin = OrbiterPosition(_playerPos, i, _orbiters);
+            if (_runPilot == PilotKind.Kairo && IsUpgradeMaxed(UpgradeId.KairoDroneBay))
+            {
+                ClearBulletsNear(origin, 34.0f, false);
+            }
             Enemy? target = FindNearestEnemy(origin, _runPilot == PilotKind.Kairo ? 820.0f : 680.0f);
             if (target == null)
             {
@@ -3023,7 +5858,14 @@ public partial class MainGame : Node2D
         shot.MaxLife = 0.78f;
         shot.Polarity = _playerPolarity;
         shot.Pierce = _runPilot == PilotKind.Kairo && (_kairoSync >= 4 || _kairoRelayProtocol >= 2) ? 1 : 0;
-        shot.Rift = false;
+        if (_runPilot == PilotKind.Kairo && IsUpgradeMaxed(UpgradeId.KairoRelayProtocol))
+        {
+            shot.Rift = true;
+        }
+        else
+        {
+            shot.Rift = false;
+        }
         ResetShotTrail(shot, shot.Pos);
 
         AddParticle(origin, dir * 180.0f, PolarityColor(_playerPolarity), 7.0f, 0.16f);
@@ -3046,9 +5888,45 @@ public partial class MainGame : Node2D
         return best;
     }
 
+    private void BuildEnemyGrid()
+    {
+        for (int i = 0; i < _enemyGrid.Length; i++)
+        {
+            _enemyGrid[i].Clear();
+        }
+
+        for (int i = 0; i < _enemies.Count; i++)
+        {
+            Enemy enemy = _enemies[i];
+            if (enemy.Hp <= 0.0f)
+            {
+                continue;
+            }
+
+            _enemyGrid[EnemyGridIndex(enemy.Pos)].Add(enemy);
+        }
+    }
+
+    private static int EnemyGridIndex(Vector2 pos)
+    {
+        return EnemyGridCoordY(pos.Y) * EnemyGridColumns + EnemyGridCoordX(pos.X);
+    }
+
+    private static int EnemyGridCoordX(float x)
+    {
+        return Mathf.Clamp((int)(x / EnemyGridCellSize), 0, EnemyGridColumns - 1);
+    }
+
+    private static int EnemyGridCoordY(float y)
+    {
+        return Mathf.Clamp((int)(y / EnemyGridCellSize), 0, EnemyGridRows - 1);
+    }
+
     private void ClearBulletsNear(Vector2 point, float radius, bool score)
     {
         float r2 = radius * radius;
+        int cleared = 0;
+        int burstBudget = _visualPressure > 0.86f ? 8 : _visualPressure > 0.68f ? 16 : 34;
         for (int i = _shots.Count - 1; i >= 0; i--)
         {
             Shot shot = _shots[i];
@@ -3056,10 +5934,14 @@ public partial class MainGame : Node2D
             {
                 if (score)
                 {
-                    _score += 5;
+                    AddRunScore(5, shot.Pos, EnemyBulletColor());
                     _energy = Mathf.Clamp(_energy + 1.2f, 0.0f, _maxEnergy);
                 }
-                Burst(shot.Pos, EnemyBulletColor(), 3, 160.0f, 0.3f);
+                if (cleared < burstBudget || _rng.Randf() < 0.08f)
+                {
+                    Burst(shot.Pos, EnemyBulletColor(), _visualPressure > 0.82f ? 1 : 3, 160.0f, 0.3f);
+                }
+                cleared++;
                 RemoveShotAt(i);
             }
         }
@@ -3067,6 +5949,8 @@ public partial class MainGame : Node2D
 
     private void ClearEnemyBulletsInBeam(Vector2 start, Vector2 end, float width, bool score)
     {
+        int cleared = 0;
+        int burstBudget = _visualPressure > 0.86f ? 8 : _visualPressure > 0.68f ? 16 : 34;
         for (int i = _shots.Count - 1; i >= 0; i--)
         {
             Shot shot = _shots[i];
@@ -3079,10 +5963,14 @@ public partial class MainGame : Node2D
             {
                 if (score)
                 {
-                    _score += 5;
+                    AddRunScore(5, shot.Pos, EnemyBulletColor());
                     _energy = Mathf.Clamp(_energy + 1.2f, 0.0f, _maxEnergy);
                 }
-                Burst(shot.Pos, EnemyBulletColor(), 3, 160.0f, 0.3f);
+                if (cleared < burstBudget || _rng.Randf() < 0.08f)
+                {
+                    Burst(shot.Pos, EnemyBulletColor(), _visualPressure > 0.82f ? 1 : 3, 160.0f, 0.3f);
+                }
+                cleared++;
                 RemoveShotAt(i);
             }
         }
@@ -3106,31 +5994,125 @@ public partial class MainGame : Node2D
         RemoveMaxed(commonPool);
         RemoveMaxed(pilotPool);
 
-        int pilotSlots = Math.Min(2, pilotPool.Count);
+        int pilotSlots = Math.Min(_wave <= 24 ? 2 : 1, pilotPool.Count);
         for (int i = 0; i < pilotSlots; i++)
         {
             AddRandomUpgradeChoice(pilotPool);
         }
 
-        while (_upgradeChoices.Count < 4 && commonPool.Count > 0)
+        TryAddFlowUpgradeChoice(commonPool);
+
+        while (_upgradeChoices.Count < 3 && commonPool.Count > 0)
         {
             AddRandomUpgradeChoice(commonPool);
         }
 
-        while (_upgradeChoices.Count < 4 && pilotPool.Count > 0)
+        while (_upgradeChoices.Count < 3 && pilotPool.Count > 0)
         {
             AddRandomUpgradeChoice(pilotPool);
         }
 
-        const float cardWidth = 342.0f;
+        const float cardWidth = 386.0f;
         const float cardHeight = 386.0f;
-        const float cardGap = 32.0f;
-        float startX = (ScreenWidth - cardWidth * 4.0f - cardGap * 3.0f) * 0.5f;
+        const float cardGap = 42.0f;
+        float startX = (ScreenWidth - cardWidth * 3.0f - cardGap * 2.0f) * 0.5f;
         for (int i = 0; i < _upgradeChoices.Count; i++)
         {
             UpgradeCard card = _upgradeChoices[i];
             card.Rect = new Rect2(new Vector2(startX + i * (cardWidth + cardGap), 342.0f), new Vector2(cardWidth, cardHeight));
             _upgradeChoices[i] = card;
+        }
+
+        _gamepadUpgradeIndex = Mathf.Clamp(_gamepadUpgradeIndex, 0, Math.Max(0, _upgradeChoices.Count - 1));
+    }
+
+    private void TryAddFlowUpgradeChoice(List<UpgradeId> commonPool)
+    {
+        if (_upgradeChoices.Count >= 3 || commonPool.Count <= 0)
+        {
+            return;
+        }
+
+        List<UpgradeId> candidates = FlowUpgradeCandidates(commonPool);
+        if (candidates.Count <= 0)
+        {
+            return;
+        }
+
+        bool earlyBuild = _runLevel <= 5;
+        bool hasFlowCore = _chainRelay > 0 || _fractalSplit > 0;
+        bool waveWantsFlow = _currentWavePace == WavePaceKind.Swarm
+            || _currentWavePace == WavePaceKind.Pressure
+            || _currentWavePace == WavePaceKind.Elite
+            || _currentWavePace == WavePaceKind.Boss;
+        if (!earlyBuild && !hasFlowCore && !waveWantsFlow && _rng.Randf() > 0.36f)
+        {
+            return;
+        }
+
+        UpgradeId choice = candidates[_rng.RandiRange(0, candidates.Count - 1)];
+        _upgradeChoices.Add(CreateCard(choice));
+        commonPool.Remove(choice);
+    }
+
+    private List<UpgradeId> FlowUpgradeCandidates(List<UpgradeId> commonPool)
+    {
+        List<UpgradeId> candidates = new();
+        AddFlowCandidate(candidates, commonPool, _runPilot == PilotKind.Kairo || _runPilot == PilotKind.Sol ? UpgradeId.ChainRelay : UpgradeId.FractalSplit);
+
+        switch (_currentWavePace)
+        {
+            case WavePaceKind.Swarm:
+            case WavePaceKind.Pressure:
+                AddFlowCandidate(candidates, commonPool, UpgradeId.ChainRelay);
+                break;
+            case WavePaceKind.Elite:
+            case WavePaceKind.Boss:
+                AddFlowCandidate(candidates, commonPool, UpgradeId.FractalSplit);
+                break;
+        }
+
+        if (_chainRelay > 0)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.FractalSplit);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.QuantumEcho);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.RiftNeedle);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+        }
+
+        if (_fractalSplit > 0)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.ChainRelay);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.RiftNeedle);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.MoonWisp);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.PulseMagazine);
+        }
+        if (_executionMark > 0)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.StasisField);
+        }
+        if (_magnetizedCore > 0)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.GravityWell);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.PulseMagazine);
+        }
+
+        AddFlowCandidate(candidates, commonPool, UpgradeId.ChainRelay);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.FractalSplit);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.PulseMagazine);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.ExecutionMark);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.StasisField);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.MagnetizedCore);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+        return candidates;
+    }
+
+    private static void AddFlowCandidate(List<UpgradeId> candidates, List<UpgradeId> commonPool, UpgradeId id)
+    {
+        if (commonPool.Contains(id) && !candidates.Contains(id))
+        {
+            candidates.Add(id);
         }
     }
 
@@ -3141,9 +6123,337 @@ public partial class MainGame : Node2D
             return;
         }
 
-        int index = _rng.RandiRange(0, pool.Count - 1);
+        int index = WeightedUpgradeIndex(pool);
         _upgradeChoices.Add(CreateCard(pool[index]));
         pool.RemoveAt(index);
+    }
+
+    private int WeightedUpgradeIndex(List<UpgradeId> pool)
+    {
+        float total = 0.0f;
+        float[] weights = new float[pool.Count];
+        for (int i = 0; i < pool.Count; i++)
+        {
+            weights[i] = UpgradeDraftWeight(pool[i]);
+            total += weights[i];
+        }
+
+        float roll = _rng.RandfRange(0.0f, Math.Max(0.001f, total));
+        float accum = 0.0f;
+        for (int i = 0; i < pool.Count; i++)
+        {
+            accum += weights[i];
+            if (roll <= accum)
+            {
+                return i;
+            }
+        }
+        return _rng.RandiRange(0, pool.Count - 1);
+    }
+
+    private float UpgradeDraftWeight(UpgradeId id)
+    {
+        int bias = UpgradeBiasIndex(id) switch
+        {
+            0 => _draftBiasWeapon,
+            1 => _draftBiasDefense,
+            2 => _draftBiasSkill,
+            3 => _draftBiasFlow,
+            4 => _draftBiasEconomy,
+            _ => 0,
+        };
+
+        float weight = 1.0f + Math.Min(8, bias) * 0.18f;
+        int rank = GetRank(id);
+        int maxRank = MaxRank(id);
+        if (maxRank < 20 && rank > 0)
+        {
+            weight += 0.28f + rank * 0.08f;
+            if (rank + 1 >= maxRank)
+            {
+                weight += 0.42f;
+            }
+        }
+
+        if (IsPilotUpgrade(_runPilot, id))
+        {
+            weight += _wave <= 20 ? 0.72f : 0.38f;
+        }
+        if (IsSynergyUpgrade(id))
+        {
+            weight += 0.42f;
+        }
+        return Mathf.Max(0.1f, weight);
+    }
+
+    private bool IsSynergyUpgrade(UpgradeId id)
+    {
+        return id switch
+        {
+            UpgradeId.RicochetMatrix => _chainRelay > 0 || _executionMark > 0 || _orionDeadeyeMark > 0,
+            UpgradeId.PulseMagazine => _multiShot > 1 || _fractalSplit > 0 || _lyraResonanceChord > 0,
+            UpgradeId.StasisField => _executionMark > 0 || _nyxEventHorizon > 0 || _rookBulwarkCore > 0,
+            UpgradeId.MagnetizedCore => _pickupMagnet > 280.0f || _magnetizedCore > 0,
+            UpgradeId.ExecutionMark => _critMultiplier > 1.7f || _orionCometSpear > 0 || _vesperCharge > 0,
+            UpgradeId.ChainRelay => _ricochetMatrix > 0 || _kairoRelayProtocol > 0 || _solFlareCore > 0,
+            UpgradeId.FractalSplit => _pulseMagazine > 0 || _astraTwinRefraction > 0 || _lyraHarmonicCascade > 0,
+            UpgradeId.NovaCapacitor => _novaCost > UltimateCostFloor + 0.5f,
+            UpgradeId.GravityWell => _magnetizedCore > 0,
+            _ => false,
+        };
+    }
+
+    private string UpgradeMomentumText()
+    {
+        int bias = DominantDraftBiasIndex();
+        int value = DraftBiasValue(bias);
+        if (value < 3)
+        {
+            return T("choice.momentum.open");
+        }
+
+        return Tf("choice.momentum.focus", UpgradePathLabel(bias));
+    }
+
+    private string UpgradeBadgeText(UpgradeId id)
+    {
+        int rank = GetRank(id);
+        int maxRank = MaxRank(id);
+        if (maxRank < 20 && rank + 1 >= maxRank && CapstoneBody(id).Length > 0)
+        {
+            return T("choice.badge.capstone");
+        }
+
+        if (IsPilotUpgrade(_runPilot, id))
+        {
+            return T("choice.badge.pilot");
+        }
+
+        if (IsSynergyUpgrade(id))
+        {
+            return T("choice.badge.synergy");
+        }
+
+        int bias = UpgradeBiasIndex(id);
+        if (DraftBiasValue(bias) >= 3 && DominantDraftBiasIndex() == bias)
+        {
+            return T("choice.badge.momentum");
+        }
+
+        return UpgradePathLabel(bias);
+    }
+
+    private int DominantDraftBiasIndex()
+    {
+        int bestIndex = 0;
+        int bestValue = DraftBiasValue(0);
+        for (int i = 1; i <= 4; i++)
+        {
+            int value = DraftBiasValue(i);
+            if (value > bestValue)
+            {
+                bestIndex = i;
+                bestValue = value;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private int DraftBiasValue(int bias)
+    {
+        return bias switch
+        {
+            1 => _draftBiasDefense,
+            2 => _draftBiasSkill,
+            3 => _draftBiasFlow,
+            4 => _draftBiasEconomy,
+            _ => _draftBiasWeapon,
+        };
+    }
+
+    private string UpgradePathLabel(int bias)
+    {
+        return bias switch
+        {
+            1 => T("choice.path.defense"),
+            2 => T("choice.path.skill"),
+            3 => T("choice.path.flow"),
+            4 => T("choice.path.economy"),
+            _ => T("choice.path.weapon"),
+        };
+    }
+
+    private static Color BuildPathAccent(int bias)
+    {
+        return bias switch
+        {
+            1 => Jade,
+            2 => Violet,
+            3 => Cyan,
+            4 => Gold,
+            _ => Rose,
+        };
+    }
+
+    private void UpdateDraftBias(UpgradeId id)
+    {
+        int chosen = UpgradeBiasIndex(id);
+        _draftBiasWeapon = Math.Max(0, _draftBiasWeapon - 1);
+        _draftBiasDefense = Math.Max(0, _draftBiasDefense - 1);
+        _draftBiasSkill = Math.Max(0, _draftBiasSkill - 1);
+        _draftBiasFlow = Math.Max(0, _draftBiasFlow - 1);
+        _draftBiasEconomy = Math.Max(0, _draftBiasEconomy - 1);
+        switch (chosen)
+        {
+            case 0:
+                _draftBiasWeapon += 3;
+                break;
+            case 1:
+                _draftBiasDefense += 3;
+                break;
+            case 2:
+                _draftBiasSkill += 3;
+                break;
+            case 3:
+                _draftBiasFlow += 3;
+                break;
+            case 4:
+                _draftBiasEconomy += 3;
+                break;
+        }
+    }
+
+    private void TryGrantBuildMilestones(UpgradeId id)
+    {
+        int path = UpgradeBiasIndex(id);
+        int value = DraftBiasValue(path);
+        for (int tier = 0; tier < BuildMilestoneThresholds.Length; tier++)
+        {
+            if (value >= BuildMilestoneThresholds[tier] && !HasBuildMilestone(path, tier))
+            {
+                GrantBuildMilestone(path, tier);
+            }
+        }
+    }
+
+    private bool HasBuildMilestone(int path, int tier)
+    {
+        int bit = BuildMilestoneBit(path, tier);
+        return (_buildMilestoneMask & bit) != 0;
+    }
+
+    private void MarkBuildMilestone(int path, int tier)
+    {
+        _buildMilestoneMask |= BuildMilestoneBit(path, tier);
+    }
+
+    private static int BuildMilestoneBit(int path, int tier)
+    {
+        return 1 << Mathf.Clamp(path * BuildMilestoneThresholds.Length + tier, 0, 30);
+    }
+
+    private static string BuildMilestoneTierLabel(int tier)
+    {
+        return tier switch
+        {
+            0 => "I",
+            1 => "II",
+            _ => "III",
+        };
+    }
+
+    private string BuildMilestoneBody(int path)
+    {
+        return path switch
+        {
+            1 => T("build.breakthrough.defense"),
+            2 => T("build.breakthrough.skill"),
+            3 => T("build.breakthrough.flow"),
+            4 => T("build.breakthrough.economy"),
+            _ => T("build.breakthrough.weapon"),
+        };
+    }
+
+    private void GrantBuildMilestone(int path, int tier)
+    {
+        MarkBuildMilestone(path, tier);
+        Color accent = BuildPathAccent(path);
+        float tierScale = tier + 1;
+
+        switch (path)
+        {
+            case 1:
+                _playerMaxHp += 12.0f + tierScale * 8.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 22.0f + tierScale * 12.0f, 0.0f, _playerMaxHp);
+                _mirrorReduction *= 0.965f - tier * 0.015f;
+                _invulnTimer = Mathf.Max(_invulnTimer, 0.35f + tier * 0.16f);
+                break;
+            case 2:
+                _maxEnergy += 8.0f + tierScale * 6.0f;
+                _energy = Mathf.Clamp(_energy + 24.0f + tierScale * 8.0f, 0.0f, _maxEnergy);
+                _novaCost = Mathf.Max(UltimateCostFloor, _novaCost - 2.0f - tierScale * 1.5f);
+                _polarityCooldownMax = Mathf.Max(PolaritySwitchCooldownMin, _polarityCooldownMax - 0.14f - tier * 0.08f);
+                _polarityCooldown = Mathf.Min(_polarityCooldown, _polarityCooldownMax);
+                if (tier >= 2)
+                {
+                    ClearBulletsNear(_playerPos, 260.0f, true);
+                }
+                break;
+            case 3:
+                _chainRelay = Math.Min(6, _chainRelay + 1);
+                if (tier >= 1)
+                {
+                    _fractalSplit = Math.Min(6, _fractalSplit + 1);
+                }
+                _echoChance = Mathf.Min(0.68f, _echoChance + 0.035f + tier * 0.025f);
+                _ricochetMatrix = Math.Max(_ricochetMatrix, tier >= 2 ? 1 : _ricochetMatrix);
+                break;
+            case 4:
+                _pickupMagnet += 42.0f + tierScale * 32.0f;
+                _nextWaveRewardBoost = Mathf.Max(_nextWaveRewardBoost, 1.16f + tier * 0.12f);
+                if (tier >= 1)
+                {
+                    _baseRerolls = Math.Min(5, _baseRerolls + 1);
+                }
+                if (tier >= 2)
+                {
+                    SpawnPickup(_playerPos + new Vector2(-48.0f, -22.0f), PickupKind.Energy);
+                    SpawnPickup(_playerPos + new Vector2(48.0f, -22.0f), PickupKind.Repair);
+                }
+                break;
+            default:
+                _damageMultiplier += 0.07f + tier * 0.045f;
+                _fireInterval = Mathf.Max(0.09f, _fireInterval - 0.012f - tier * 0.004f);
+                if (tier >= 1)
+                {
+                    _critMultiplier += 0.08f + tier * 0.04f;
+                }
+                if (tier >= 2)
+                {
+                    _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, 1.24f);
+                }
+                break;
+        }
+
+        ClampUltimateCost();
+        string title = Tf("build.breakthrough", UpgradePathLabel(path), BuildMilestoneTierLabel(tier));
+        AddText(title.ToUpperInvariant(), ScreenCenter + new Vector2(0.0f, -92.0f), accent, 25.0f);
+        AddText(BuildMilestoneBody(path), ScreenCenter + new Vector2(0.0f, -58.0f), Alpha(Paper, 0.76f), 18.0f);
+        Burst(ScreenCenter + new Vector2(0.0f, -54.0f), accent, 28 + tier * 10, 360.0f + tier * 70.0f, 0.78f);
+        PlaySfx(460.0f + tier * 70.0f, 170.0f, 0.18f, 0.24f, 0.02f, 1);
+    }
+
+    private static int UpgradeBiasIndex(UpgradeId id)
+    {
+        return id switch
+        {
+            UpgradeId.VitalShell or UpgradeId.MirrorSkin or UpgradeId.AegisBloom or UpgradeId.StasisField or UpgradeId.RookBulwarkCore or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.SolRadiantMantle => 1,
+            UpgradeId.NovaCapacitor or UpgradeId.PolarityStorm or UpgradeId.CometTrail or UpgradeId.OneWaveOverdrive or UpgradeId.BulletTransmute or UpgradeId.AstraNovaBloom or UpgradeId.VesperJudgmentCoil or UpgradeId.KairoOverrideMatrix or UpgradeId.SolFlareCore or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.LyraEncoreField or UpgradeId.OrionPerihelionVector => 2,
+            UpgradeId.MoonWisp or UpgradeId.QuantumEcho or UpgradeId.ChainRelay or UpgradeId.FractalSplit or UpgradeId.RicochetMatrix or UpgradeId.KairoDroneBay or UpgradeId.KairoRelayProtocol or UpgradeId.LyraHarmonicCascade or UpgradeId.NyxGravityCantor => 3,
+            UpgradeId.GravityWell or UpgradeId.ResonanceLeech or UpgradeId.BountyContract or UpgradeId.HarmonicMap or UpgradeId.MagnetizedCore or UpgradeId.SolSolarForge => 4,
+            _ => 0,
+        };
     }
 
     private void RemoveMaxed(List<UpgradeId> pool)
@@ -3176,6 +6486,8 @@ public partial class MainGame : Node2D
             UpgradeId.CometTrail,
             UpgradeId.AegisBloom,
             UpgradeId.QuantumEcho,
+            UpgradeId.ChainRelay,
+            UpgradeId.FractalSplit,
             UpgradeId.SolarThesis,
             UpgradeId.EmergencyRepair,
             UpgradeId.OneWaveOverdrive,
@@ -3183,6 +6495,11 @@ public partial class MainGame : Node2D
             UpgradeId.BountyContract,
             UpgradeId.BulletTransmute,
             UpgradeId.HarmonicMap,
+            UpgradeId.PulseMagazine,
+            UpgradeId.ExecutionMark,
+            UpgradeId.StasisField,
+            UpgradeId.MagnetizedCore,
+            UpgradeId.RicochetMatrix,
         };
     }
 
@@ -3193,7 +6510,26 @@ public partial class MainGame : Node2D
             PilotKind.Vesper => new List<UpgradeId> { UpgradeId.VesperCapacitor, UpgradeId.VesperSplitRail, UpgradeId.VesperJudgmentCoil, UpgradeId.VesperSeverLine },
             PilotKind.Kairo => new List<UpgradeId> { UpgradeId.KairoDroneBay, UpgradeId.KairoSwarmSync, UpgradeId.KairoOverrideMatrix, UpgradeId.KairoRelayProtocol },
             PilotKind.Sol => new List<UpgradeId> { UpgradeId.SolCoronaBloom, UpgradeId.SolSolarForge, UpgradeId.SolFlareCore, UpgradeId.SolRadiantMantle },
+            PilotKind.Nyx => new List<UpgradeId> { UpgradeId.NyxOrbit, UpgradeId.NyxSingularity, UpgradeId.NyxEventHorizon, UpgradeId.NyxGravityCantor },
+            PilotKind.Rook => new List<UpgradeId> { UpgradeId.RookBulwarkCore, UpgradeId.RookSiegeBattery, UpgradeId.RookAegisRelay, UpgradeId.RookCitadelProtocol },
+            PilotKind.Lyra => new List<UpgradeId> { UpgradeId.LyraResonanceChord, UpgradeId.LyraTempoBloom, UpgradeId.LyraHarmonicCascade, UpgradeId.LyraEncoreField },
+            PilotKind.Orion => new List<UpgradeId> { UpgradeId.OrionCometSpear, UpgradeId.OrionDeadeyeMark, UpgradeId.OrionStarfallQuiver, UpgradeId.OrionPerihelionVector },
             _ => new List<UpgradeId> { UpgradeId.AstraRefraction, UpgradeId.AstraPrismWake, UpgradeId.AstraNovaBloom, UpgradeId.AstraTwinRefraction },
+        };
+    }
+
+    private static bool IsPilotUpgrade(PilotKind pilot, UpgradeId id)
+    {
+        return pilot switch
+        {
+            PilotKind.Vesper => id is UpgradeId.VesperCapacitor or UpgradeId.VesperSplitRail or UpgradeId.VesperJudgmentCoil or UpgradeId.VesperSeverLine,
+            PilotKind.Kairo => id is UpgradeId.KairoDroneBay or UpgradeId.KairoSwarmSync or UpgradeId.KairoOverrideMatrix or UpgradeId.KairoRelayProtocol,
+            PilotKind.Sol => id is UpgradeId.SolCoronaBloom or UpgradeId.SolSolarForge or UpgradeId.SolFlareCore or UpgradeId.SolRadiantMantle,
+            PilotKind.Nyx => id is UpgradeId.NyxOrbit or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.NyxGravityCantor,
+            PilotKind.Rook => id is UpgradeId.RookBulwarkCore or UpgradeId.RookSiegeBattery or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol,
+            PilotKind.Lyra => id is UpgradeId.LyraResonanceChord or UpgradeId.LyraTempoBloom or UpgradeId.LyraHarmonicCascade or UpgradeId.LyraEncoreField,
+            PilotKind.Orion => id is UpgradeId.OrionCometSpear or UpgradeId.OrionDeadeyeMark or UpgradeId.OrionStarfallQuiver or UpgradeId.OrionPerihelionVector,
+            _ => id is UpgradeId.AstraRefraction or UpgradeId.AstraPrismWake or UpgradeId.AstraNovaBloom or UpgradeId.AstraTwinRefraction,
         };
     }
 
@@ -3201,13 +6537,29 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
+        if (_upgradeChoices.Count > 0)
+        {
+            _gamepadUpgradeIndex = Mathf.Clamp(_gamepadUpgradeIndex, 0, _upgradeChoices.Count - 1);
+            int nav = ConsumeGamepadNavX();
+            if (nav != 0)
+            {
+                _gamepadUpgradeIndex = (_gamepadUpgradeIndex + nav + _upgradeChoices.Count) % _upgradeChoices.Count;
+                PlaySfx(250.0f + _gamepadUpgradeIndex * 30.0f, 18.0f, 0.055f, 0.1f, 0.01f, 1);
+            }
+            SetGamepadFocus(_upgradeChoices[_gamepadUpgradeIndex].Rect);
+        }
+
         bool one = KeyDown(Key.Key1);
         bool two = KeyDown(Key.Key2);
         bool three = KeyDown(Key.Key3);
         bool four = KeyDown(Key.Key4);
-        bool reroll = KeyDown(Key.R);
+        bool reroll = RerollHeld();
         bool click = Input.IsMouseButtonPressed(MouseButton.Left);
         Vector2 mouse = GetGlobalMousePosition();
+        if (click && !_lastClick)
+        {
+            _usingGamepad = false;
+        }
 
         if (one && !_lastOne)
         {
@@ -3225,6 +6577,10 @@ public partial class MainGame : Node2D
         {
             ChooseUpgrade(3);
         }
+        else if (ConfirmHeld() && !_lastConfirm)
+        {
+            ChooseUpgrade(_gamepadUpgradeIndex);
+        }
         else if (reroll && !_lastReroll && _rerollsRemaining > 0)
         {
             _rerollsRemaining--;
@@ -3238,6 +6594,7 @@ public partial class MainGame : Node2D
             {
                 if (_upgradeChoices[i].Rect.HasPoint(mouse))
                 {
+                    _gamepadUpgradeIndex = i;
                     ChooseUpgrade(i);
                     break;
                 }
@@ -3258,12 +6615,24 @@ public partial class MainGame : Node2D
             _upgradeOrder.Add(card.Id);
         }
         _upgradeRanks[card.Id] = GetRank(card.Id) + 1;
+        UpdateDraftBias(card.Id);
         ApplyUpgrade(card.Id);
+        TryGrantBuildMilestones(card.Id);
         AddText(card.Title.ToUpperInvariant(), ScreenCenter + new Vector2(0.0f, -170.0f), card.Accent, 32.0f);
+        if (GetRank(card.Id) >= MaxRank(card.Id) && MaxRank(card.Id) < 20 && CapstoneBody(card.Id).Length > 0)
+        {
+            AddText(T("choice.capstone").ToUpperInvariant(), ScreenCenter + new Vector2(0.0f, -122.0f), card.Accent.Lerp(Paper, 0.18f), 25.0f);
+        }
         Burst(ScreenCenter, card.Accent, 64, 620.0f, 1.2f);
         PlaySfx(420.0f, 220.0f, 0.34f, 0.34f, 0.03f, 1);
-        _mode = GameMode.Playing;
-        BeginNextWave();
+        if (_queuedLevelUps > 0)
+        {
+            OpenLevelUpChoice(ScreenCenter);
+        }
+        else
+        {
+            _mode = GameMode.Playing;
+        }
     }
 
     private void ApplyUpgrade(UpgradeId id)
@@ -3334,6 +6703,14 @@ public partial class MainGame : Node2D
                 _echoChance = Mathf.Min(0.55f, _echoChance + 0.11f);
                 _damageMultiplier += 0.06f;
                 break;
+            case UpgradeId.ChainRelay:
+                _chainRelay = Math.Min(6, _chainRelay + 1);
+                _damageMultiplier += 0.035f;
+                break;
+            case UpgradeId.FractalSplit:
+                _fractalSplit = Math.Min(6, _fractalSplit + 1);
+                _damageMultiplier += 0.035f;
+                break;
             case UpgradeId.SolarThesis:
                 _critMultiplier += 0.22f;
                 _damageMultiplier += 0.1f;
@@ -3361,7 +6738,32 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.HarmonicMap:
                 _baseRerolls = Math.Min(4, _baseRerolls + 1);
-                _score += 500;
+                AddRunScore(500, ScreenCenter, UpgradeAccent(id), true);
+                break;
+            case UpgradeId.PulseMagazine:
+                _pulseMagazine = Math.Min(5, _pulseMagazine + 1);
+                _fireInterval = Mathf.Max(0.1f, _fireInterval - 0.012f);
+                break;
+            case UpgradeId.ExecutionMark:
+                _executionMark = Math.Min(5, _executionMark + 1);
+                _critMultiplier += 0.08f;
+                _damageMultiplier += 0.035f;
+                break;
+            case UpgradeId.StasisField:
+                _stasisField = Math.Min(5, _stasisField + 1);
+                _enemySlow *= 0.965f;
+                _pickupMagnet += 18.0f;
+                break;
+            case UpgradeId.MagnetizedCore:
+                _magnetizedCore = Math.Min(4, _magnetizedCore + 1);
+                _pickupMagnet += 72.0f;
+                _maxEnergy += 6.0f;
+                _energy = Mathf.Clamp(_energy + 10.0f, 0.0f, _maxEnergy);
+                break;
+            case UpgradeId.RicochetMatrix:
+                _ricochetMatrix = Math.Min(5, _ricochetMatrix + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
+                _echoChance = Mathf.Min(0.62f, _echoChance + 0.04f);
                 break;
             case UpgradeId.AstraRefraction:
                 _astraRefraction = Math.Min(4, _astraRefraction + 1);
@@ -3379,6 +6781,7 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.VesperSplitRail:
                 _vesperFork = Math.Min(3, _vesperFork + 1);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
                 _fireInterval = Mathf.Max(0.32f, _fireInterval - 0.026f);
                 break;
             case UpgradeId.KairoDroneBay:
@@ -3410,6 +6813,7 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.AstraTwinRefraction:
                 _astraTwinRefraction = Math.Min(3, _astraTwinRefraction + 1);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
                 _damageMultiplier += 0.05f;
                 break;
             case UpgradeId.VesperJudgmentCoil:
@@ -3428,11 +6832,13 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.KairoRelayProtocol:
                 _kairoRelayProtocol = Math.Min(3, _kairoRelayProtocol + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
                 _damageMultiplier += 0.04f;
                 _orbiterFireTimer = Mathf.Min(_orbiterFireTimer, 0.06f);
                 break;
             case UpgradeId.SolFlareCore:
                 _solFlareCore = Math.Min(4, _solFlareCore + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
                 _maxEnergy += 10.0f;
                 _energy = Mathf.Clamp(_energy + 16.0f, 0.0f, _maxEnergy);
                 _damageMultiplier += 0.04f;
@@ -3443,14 +6849,208 @@ public partial class MainGame : Node2D
                 _playerHp = Mathf.Clamp(_playerHp + 18.0f, 0.0f, _playerMaxHp);
                 _novaCost = Mathf.Max(36.0f, _novaCost - 4.0f);
                 break;
+            case UpgradeId.NyxOrbit:
+                _nyxOrbit = Math.Min(5, _nyxOrbit + 1);
+                _fireInterval = Mathf.Max(0.17f, _fireInterval - 0.025f);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
+                break;
+            case UpgradeId.NyxSingularity:
+                _nyxSingularity = Math.Min(5, _nyxSingularity + 1);
+                _damageMultiplier += 0.06f;
+                _pickupMagnet += 24.0f;
+                break;
+            case UpgradeId.NyxEventHorizon:
+                _nyxEventHorizon = Math.Min(4, _nyxEventHorizon + 1);
+                _stasisField = Math.Max(_stasisField, 1);
+                _novaCost = Mathf.Max(34.0f, _novaCost - 4.0f);
+                break;
+            case UpgradeId.NyxGravityCantor:
+                _nyxGravityCantor = Math.Min(3, _nyxGravityCantor + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
+                _damageMultiplier += 0.04f;
+                break;
+            case UpgradeId.RookBulwarkCore:
+                _rookBulwarkCore = Math.Min(5, _rookBulwarkCore + 1);
+                _playerMaxHp += 18.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 24.0f, 0.0f, _playerMaxHp);
+                _mirrorReduction *= 0.94f;
+                break;
+            case UpgradeId.RookSiegeBattery:
+                _rookSiegeBattery = Math.Min(5, _rookSiegeBattery + 1);
+                _damageMultiplier += 0.08f;
+                _fireInterval = Mathf.Max(0.46f, _fireInterval - 0.035f);
+                break;
+            case UpgradeId.RookAegisRelay:
+                _rookAegisRelay = Math.Min(4, _rookAegisRelay + 1);
+                _aegisRegen += 0.42f;
+                _maxEnergy += 8.0f;
+                _energy = Mathf.Clamp(_energy + 12.0f, 0.0f, _maxEnergy);
+                break;
+            case UpgradeId.RookCitadelProtocol:
+                _rookCitadelProtocol = Math.Min(3, _rookCitadelProtocol + 1);
+                _dashDamage += 22.0f;
+                _novaCost = Mathf.Max(36.0f, _novaCost - 5.0f);
+                break;
+            case UpgradeId.LyraResonanceChord:
+                _lyraResonanceChord = Math.Min(5, _lyraResonanceChord + 1);
+                _multiShot = Math.Min(5, _multiShot + (_lyraResonanceChord % 2 == 1 ? 1 : 0));
+                _damageMultiplier += 0.04f;
+                break;
+            case UpgradeId.LyraTempoBloom:
+                _lyraTempoBloom = Math.Min(5, _lyraTempoBloom + 1);
+                _fireInterval = Mathf.Max(0.13f, _fireInterval - 0.028f);
+                _echoChance = Mathf.Min(0.62f, _echoChance + 0.025f);
+                break;
+            case UpgradeId.LyraHarmonicCascade:
+                _lyraHarmonicCascade = Math.Min(4, _lyraHarmonicCascade + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
+                break;
+            case UpgradeId.LyraEncoreField:
+                _lyraEncoreField = Math.Min(3, _lyraEncoreField + 1);
+                _maxEnergy += 12.0f;
+                _energy = Mathf.Clamp(_energy + 18.0f, 0.0f, _maxEnergy);
+                _novaCost = Mathf.Max(34.0f, _novaCost - 5.0f);
+                break;
+            case UpgradeId.OrionCometSpear:
+                _orionCometSpear = Math.Min(5, _orionCometSpear + 1);
+                _damageMultiplier += 0.09f;
+                break;
+            case UpgradeId.OrionDeadeyeMark:
+                _orionDeadeyeMark = Math.Min(5, _orionDeadeyeMark + 1);
+                _executionMark = Math.Max(_executionMark, 1);
+                _critMultiplier += 0.1f;
+                break;
+            case UpgradeId.OrionStarfallQuiver:
+                _orionStarfallQuiver = Math.Min(4, _orionStarfallQuiver + 1);
+                _fireInterval = Mathf.Max(0.38f, _fireInterval - 0.04f);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
+                break;
+            case UpgradeId.OrionPerihelionVector:
+                _orionPerihelionVector = Math.Min(3, _orionPerihelionVector + 1);
+                _playerSpeed += 22.0f;
+                _dashPower += 70.0f;
+                _novaCost = Mathf.Max(34.0f, _novaCost - 5.0f);
+                break;
         }
+
+        if (IsUpgradeMaxed(id) && CapstoneBody(id).Length > 0)
+        {
+            ApplyCapstoneBonus(id);
+        }
+        ClampUltimateCost();
+    }
+
+    private void ApplyCapstoneBonus(UpgradeId id)
+    {
+        Color color = UpgradeAccent(id);
+        switch (id)
+        {
+            case UpgradeId.ChainRelay:
+                _energy = Mathf.Clamp(_energy + 22.0f, 0.0f, _maxEnergy);
+                break;
+            case UpgradeId.FractalSplit:
+                _damageMultiplier += 0.08f;
+                break;
+            case UpgradeId.PulseMagazine:
+                _fireInterval = Mathf.Max(0.09f, _fireInterval - 0.025f);
+                break;
+            case UpgradeId.ExecutionMark:
+                _critMultiplier += 0.2f;
+                break;
+            case UpgradeId.StasisField:
+                ClearBulletsNear(ScreenCenter, 1600.0f, true);
+                break;
+            case UpgradeId.MagnetizedCore:
+                _pickupMagnet += 180.0f;
+                break;
+            case UpgradeId.RicochetMatrix:
+                _chainRelay = Math.Max(_chainRelay, 3);
+                break;
+            case UpgradeId.AstraRefraction:
+            case UpgradeId.AstraPrismWake:
+                _fireInterval = Mathf.Max(0.09f, _fireInterval - 0.025f);
+                break;
+            case UpgradeId.AstraNovaBloom:
+            case UpgradeId.AstraTwinRefraction:
+                _novaCost = Mathf.Max(32.0f, _novaCost - 8.0f);
+                break;
+            case UpgradeId.VesperCapacitor:
+            case UpgradeId.VesperJudgmentCoil:
+                _damageMultiplier += 0.08f;
+                break;
+            case UpgradeId.VesperSplitRail:
+            case UpgradeId.VesperSeverLine:
+                _fireInterval = Mathf.Max(0.28f, _fireInterval - 0.035f);
+                break;
+            case UpgradeId.KairoDroneBay:
+                _orbiters = Math.Min(9, _orbiters + 2);
+                break;
+            case UpgradeId.KairoSwarmSync:
+            case UpgradeId.KairoRelayProtocol:
+                _orbiterFireTimer = 0.0f;
+                _energy = Mathf.Clamp(_energy + 18.0f, 0.0f, _maxEnergy);
+                break;
+            case UpgradeId.KairoOverrideMatrix:
+                _novaCost = Mathf.Max(30.0f, _novaCost - 8.0f);
+                break;
+            case UpgradeId.SolCoronaBloom:
+            case UpgradeId.SolFlareCore:
+                _damageMultiplier += 0.06f;
+                break;
+            case UpgradeId.SolSolarForge:
+                _maxEnergy += 20.0f;
+                _energy = Mathf.Clamp(_energy + 40.0f, 0.0f, _maxEnergy);
+                break;
+            case UpgradeId.SolRadiantMantle:
+                _playerMaxHp += 20.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 36.0f, 0.0f, _playerMaxHp);
+                break;
+            case UpgradeId.NyxOrbit:
+            case UpgradeId.NyxSingularity:
+                _fireInterval = Mathf.Max(0.14f, _fireInterval - 0.018f);
+                break;
+            case UpgradeId.NyxEventHorizon:
+            case UpgradeId.NyxGravityCantor:
+                _novaCost = Mathf.Max(30.0f, _novaCost - 8.0f);
+                break;
+            case UpgradeId.RookBulwarkCore:
+            case UpgradeId.RookAegisRelay:
+                _playerMaxHp += 18.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 36.0f, 0.0f, _playerMaxHp);
+                break;
+            case UpgradeId.RookSiegeBattery:
+            case UpgradeId.RookCitadelProtocol:
+                _damageMultiplier += 0.1f;
+                break;
+            case UpgradeId.LyraResonanceChord:
+            case UpgradeId.LyraTempoBloom:
+                _fireInterval = Mathf.Max(0.11f, _fireInterval - 0.02f);
+                break;
+            case UpgradeId.LyraHarmonicCascade:
+            case UpgradeId.LyraEncoreField:
+                _echoChance = Mathf.Min(0.72f, _echoChance + 0.1f);
+                break;
+            case UpgradeId.OrionCometSpear:
+            case UpgradeId.OrionDeadeyeMark:
+                _damageMultiplier += 0.1f;
+                break;
+            case UpgradeId.OrionStarfallQuiver:
+            case UpgradeId.OrionPerihelionVector:
+                _dashCooldown = 0.0f;
+                _energy = Mathf.Clamp(_energy + 22.0f, 0.0f, _maxEnergy);
+                break;
+        }
+
+        Burst(ScreenCenter, color, 42, 520.0f, 0.88f);
+        PlaySfx(520.0f, 180.0f, 0.2f, 0.28f, 0.02f, 1);
     }
 
     private UpgradeCard CreateCard(UpgradeId id)
     {
         int nextRank = GetRank(id) + 1;
         string rank = Tf("rank", nextRank);
-        return id switch
+        UpgradeCard card = id switch
         {
             UpgradeId.PrismArray => new UpgradeCard { Id = id, Title = T("upgrade.prism.title"), Tag = rank, Body = T("upgrade.prism.body"), Accent = Cyan },
             UpgradeId.RailHeart => new UpgradeCard { Id = id, Title = T("upgrade.rail.title"), Tag = rank, Body = T("upgrade.rail.body"), Accent = Rose },
@@ -3467,6 +7067,8 @@ public partial class MainGame : Node2D
             UpgradeId.CometTrail => new UpgradeCard { Id = id, Title = T("upgrade.comet.title"), Tag = rank, Body = T("upgrade.comet.body"), Accent = new Color(1.0f, 0.38f, 0.2f) },
             UpgradeId.AegisBloom => new UpgradeCard { Id = id, Title = T("upgrade.aegis.title"), Tag = rank, Body = T("upgrade.aegis.body"), Accent = new Color(0.48f, 1.0f, 0.64f) },
             UpgradeId.QuantumEcho => new UpgradeCard { Id = id, Title = T("upgrade.echo.title"), Tag = rank, Body = T("upgrade.echo.body"), Accent = new Color(0.68f, 0.56f, 1.0f) },
+            UpgradeId.ChainRelay => new UpgradeCard { Id = id, Title = T("upgrade.chain.title"), Tag = rank, Body = T("upgrade.chain.body"), Accent = new Color(0.34f, 0.9f, 1.0f) },
+            UpgradeId.FractalSplit => new UpgradeCard { Id = id, Title = T("upgrade.fractal.title"), Tag = rank, Body = T("upgrade.fractal.body"), Accent = new Color(0.92f, 0.74f, 1.0f) },
             UpgradeId.SolarThesis => new UpgradeCard { Id = id, Title = T("upgrade.solar.title"), Tag = rank, Body = T("upgrade.solar.body"), Accent = new Color(1.0f, 0.86f, 0.32f) },
             UpgradeId.EmergencyRepair => new UpgradeCard { Id = id, Title = T("upgrade.repair.title"), Tag = T("choice.instant"), Body = T("upgrade.repair.body"), Accent = Jade },
             UpgradeId.OneWaveOverdrive => new UpgradeCard { Id = id, Title = T("upgrade.overdrive.title"), Tag = T("choice.tactic"), Body = T("upgrade.overdrive.body"), Accent = Rose },
@@ -3474,6 +7076,11 @@ public partial class MainGame : Node2D
             UpgradeId.BountyContract => new UpgradeCard { Id = id, Title = T("upgrade.bounty.title"), Tag = T("choice.contract"), Body = T("upgrade.bounty.body"), Accent = Gold },
             UpgradeId.BulletTransmute => new UpgradeCard { Id = id, Title = T("upgrade.transmute.title"), Tag = T("choice.instant"), Body = T("upgrade.transmute.body"), Accent = Cyan },
             UpgradeId.HarmonicMap => new UpgradeCard { Id = id, Title = T("upgrade.map.title"), Tag = T("choice.meta"), Body = T("upgrade.map.body"), Accent = Violet },
+            UpgradeId.PulseMagazine => new UpgradeCard { Id = id, Title = T("upgrade.pulse.title"), Tag = rank, Body = T("upgrade.pulse.body"), Accent = new Color(0.74f, 0.9f, 1.0f) },
+            UpgradeId.ExecutionMark => new UpgradeCard { Id = id, Title = T("upgrade.execution.title"), Tag = rank, Body = T("upgrade.execution.body"), Accent = new Color(1.0f, 0.46f, 0.34f) },
+            UpgradeId.StasisField => new UpgradeCard { Id = id, Title = T("upgrade.stasis.title"), Tag = rank, Body = T("upgrade.stasis.body"), Accent = new Color(0.6f, 0.8f, 1.0f) },
+            UpgradeId.MagnetizedCore => new UpgradeCard { Id = id, Title = T("upgrade.magnet.title"), Tag = rank, Body = T("upgrade.magnet.body"), Accent = new Color(0.64f, 1.0f, 0.72f) },
+            UpgradeId.RicochetMatrix => new UpgradeCard { Id = id, Title = T("upgrade.ricochet.title"), Tag = rank, Body = T("upgrade.ricochet.body"), Accent = new Color(0.96f, 0.76f, 1.0f) },
             UpgradeId.AstraRefraction => new UpgradeCard { Id = id, Title = T("upgrade.astra.refraction.title"), Tag = rank, Body = T("upgrade.astra.refraction.body"), Accent = PolarityBlue },
             UpgradeId.AstraPrismWake => new UpgradeCard { Id = id, Title = T("upgrade.astra.wake.title"), Tag = rank, Body = T("upgrade.astra.wake.body"), Accent = PolarityAmber },
             UpgradeId.VesperCapacitor => new UpgradeCard { Id = id, Title = T("upgrade.vesper.charge.title"), Tag = rank, Body = T("upgrade.vesper.charge.body"), Accent = AlertRed },
@@ -3490,7 +7097,90 @@ public partial class MainGame : Node2D
             UpgradeId.KairoRelayProtocol => new UpgradeCard { Id = id, Title = T("upgrade.kairo.relay.title"), Tag = rank, Body = T("upgrade.kairo.relay.body"), Accent = XpGreen },
             UpgradeId.SolFlareCore => new UpgradeCard { Id = id, Title = T("upgrade.sol.flare.title"), Tag = rank, Body = T("upgrade.sol.flare.body"), Accent = Gold },
             UpgradeId.SolRadiantMantle => new UpgradeCard { Id = id, Title = T("upgrade.sol.mantle.title"), Tag = rank, Body = T("upgrade.sol.mantle.body"), Accent = new Color(1.0f, 0.72f, 0.34f) },
+            UpgradeId.NyxOrbit => new UpgradeCard { Id = id, Title = T("upgrade.nyx.orbit.title"), Tag = rank, Body = T("upgrade.nyx.orbit.body"), Accent = PilotAccent(PilotKind.Nyx) },
+            UpgradeId.NyxSingularity => new UpgradeCard { Id = id, Title = T("upgrade.nyx.singularity.title"), Tag = rank, Body = T("upgrade.nyx.singularity.body"), Accent = PilotAccent(PilotKind.Nyx).Lerp(Paper, 0.18f) },
+            UpgradeId.NyxEventHorizon => new UpgradeCard { Id = id, Title = T("upgrade.nyx.horizon.title"), Tag = rank, Body = T("upgrade.nyx.horizon.body"), Accent = Violet },
+            UpgradeId.NyxGravityCantor => new UpgradeCard { Id = id, Title = T("upgrade.nyx.cantor.title"), Tag = rank, Body = T("upgrade.nyx.cantor.body"), Accent = new Color(0.54f, 0.7f, 1.0f) },
+            UpgradeId.RookBulwarkCore => new UpgradeCard { Id = id, Title = T("upgrade.rook.bulwark.title"), Tag = rank, Body = T("upgrade.rook.bulwark.body"), Accent = PilotAccent(PilotKind.Rook) },
+            UpgradeId.RookSiegeBattery => new UpgradeCard { Id = id, Title = T("upgrade.rook.siege.title"), Tag = rank, Body = T("upgrade.rook.siege.body"), Accent = Gold },
+            UpgradeId.RookAegisRelay => new UpgradeCard { Id = id, Title = T("upgrade.rook.aegis.title"), Tag = rank, Body = T("upgrade.rook.aegis.body"), Accent = Jade },
+            UpgradeId.RookCitadelProtocol => new UpgradeCard { Id = id, Title = T("upgrade.rook.citadel.title"), Tag = rank, Body = T("upgrade.rook.citadel.body"), Accent = new Color(1.0f, 0.84f, 0.42f) },
+            UpgradeId.LyraResonanceChord => new UpgradeCard { Id = id, Title = T("upgrade.lyra.chord.title"), Tag = rank, Body = T("upgrade.lyra.chord.body"), Accent = PilotAccent(PilotKind.Lyra) },
+            UpgradeId.LyraTempoBloom => new UpgradeCard { Id = id, Title = T("upgrade.lyra.tempo.title"), Tag = rank, Body = T("upgrade.lyra.tempo.body"), Accent = new Color(0.5f, 0.98f, 0.9f) },
+            UpgradeId.LyraHarmonicCascade => new UpgradeCard { Id = id, Title = T("upgrade.lyra.cascade.title"), Tag = rank, Body = T("upgrade.lyra.cascade.body"), Accent = new Color(0.62f, 0.86f, 1.0f) },
+            UpgradeId.LyraEncoreField => new UpgradeCard { Id = id, Title = T("upgrade.lyra.encore.title"), Tag = rank, Body = T("upgrade.lyra.encore.body"), Accent = Violet },
+            UpgradeId.OrionCometSpear => new UpgradeCard { Id = id, Title = T("upgrade.orion.spear.title"), Tag = rank, Body = T("upgrade.orion.spear.body"), Accent = PilotAccent(PilotKind.Orion) },
+            UpgradeId.OrionDeadeyeMark => new UpgradeCard { Id = id, Title = T("upgrade.orion.deadeye.title"), Tag = rank, Body = T("upgrade.orion.deadeye.body"), Accent = Rose },
+            UpgradeId.OrionStarfallQuiver => new UpgradeCard { Id = id, Title = T("upgrade.orion.quiver.title"), Tag = rank, Body = T("upgrade.orion.quiver.body"), Accent = new Color(0.9f, 0.78f, 1.0f) },
+            UpgradeId.OrionPerihelionVector => new UpgradeCard { Id = id, Title = T("upgrade.orion.perihelion.title"), Tag = rank, Body = T("upgrade.orion.perihelion.body"), Accent = Cyan },
             _ => new UpgradeCard { Id = id, Title = T("upgrade.unknown.title"), Tag = Tf("rank", 1), Body = T("upgrade.unknown.body"), Accent = Paper },
+        };
+        return ApplyCapstonePreview(card, nextRank);
+    }
+
+    private UpgradeCard ApplyCapstonePreview(UpgradeCard card, int nextRank)
+    {
+        int maxRank = MaxRank(card.Id);
+        if (maxRank >= 20 || nextRank < maxRank)
+        {
+            return card;
+        }
+
+        string body = CapstoneBody(card.Id);
+        if (body.Length <= 0)
+        {
+            return card;
+        }
+
+        card.Tag = T("choice.capstone");
+        card.Body = $"{card.Body}\n{body}";
+        return card;
+    }
+
+    private string CapstoneBody(UpgradeId id)
+    {
+        return id switch
+        {
+            UpgradeId.ChainRelay => T("capstone.chain"),
+            UpgradeId.FractalSplit => T("capstone.fractal"),
+            UpgradeId.PulseMagazine => T("capstone.pulse"),
+            UpgradeId.ExecutionMark => T("capstone.execution"),
+            UpgradeId.StasisField => T("capstone.stasis"),
+            UpgradeId.MagnetizedCore => T("capstone.magnet"),
+            UpgradeId.RicochetMatrix => T("capstone.ricochet"),
+            UpgradeId.AstraRefraction => T("capstone.astra.refraction"),
+            UpgradeId.AstraPrismWake => T("capstone.astra.wake"),
+            UpgradeId.AstraNovaBloom => T("capstone.astra.nova"),
+            UpgradeId.AstraTwinRefraction => T("capstone.astra.twin"),
+            UpgradeId.VesperCapacitor => T("capstone.vesper.charge"),
+            UpgradeId.VesperSplitRail => T("capstone.vesper.fork"),
+            UpgradeId.VesperJudgmentCoil => T("capstone.vesper.judgment"),
+            UpgradeId.VesperSeverLine => T("capstone.vesper.sever"),
+            UpgradeId.KairoDroneBay => T("capstone.kairo.bay"),
+            UpgradeId.KairoSwarmSync => T("capstone.kairo.sync"),
+            UpgradeId.KairoOverrideMatrix => T("capstone.kairo.override"),
+            UpgradeId.KairoRelayProtocol => T("capstone.kairo.relay"),
+            UpgradeId.SolCoronaBloom => T("capstone.sol.bloom"),
+            UpgradeId.SolSolarForge => T("capstone.sol.forge"),
+            UpgradeId.SolFlareCore => T("capstone.sol.flare"),
+            UpgradeId.SolRadiantMantle => T("capstone.sol.mantle"),
+            UpgradeId.NyxOrbit => T("capstone.nyx.orbit"),
+            UpgradeId.NyxSingularity => T("capstone.nyx.singularity"),
+            UpgradeId.NyxEventHorizon => T("capstone.nyx.horizon"),
+            UpgradeId.NyxGravityCantor => T("capstone.nyx.cantor"),
+            UpgradeId.RookBulwarkCore => T("capstone.rook.bulwark"),
+            UpgradeId.RookSiegeBattery => T("capstone.rook.siege"),
+            UpgradeId.RookAegisRelay => T("capstone.rook.aegis"),
+            UpgradeId.RookCitadelProtocol => T("capstone.rook.citadel"),
+            UpgradeId.LyraResonanceChord => T("capstone.lyra.chord"),
+            UpgradeId.LyraTempoBloom => T("capstone.lyra.tempo"),
+            UpgradeId.LyraHarmonicCascade => T("capstone.lyra.cascade"),
+            UpgradeId.LyraEncoreField => T("capstone.lyra.encore"),
+            UpgradeId.OrionCometSpear => T("capstone.orion.spear"),
+            UpgradeId.OrionDeadeyeMark => T("capstone.orion.deadeye"),
+            UpgradeId.OrionStarfallQuiver => T("capstone.orion.quiver"),
+            UpgradeId.OrionPerihelionVector => T("capstone.orion.perihelion"),
+            _ => string.Empty,
         };
     }
 
@@ -3513,6 +7203,8 @@ public partial class MainGame : Node2D
             UpgradeId.CometTrail => T("upgrade.comet.title"),
             UpgradeId.AegisBloom => T("upgrade.aegis.title"),
             UpgradeId.QuantumEcho => T("upgrade.echo.title"),
+            UpgradeId.ChainRelay => T("upgrade.chain.title"),
+            UpgradeId.FractalSplit => T("upgrade.fractal.title"),
             UpgradeId.SolarThesis => T("upgrade.solar.title"),
             UpgradeId.EmergencyRepair => T("upgrade.repair.title"),
             UpgradeId.OneWaveOverdrive => T("upgrade.overdrive.title"),
@@ -3520,6 +7212,11 @@ public partial class MainGame : Node2D
             UpgradeId.BountyContract => T("upgrade.bounty.title"),
             UpgradeId.BulletTransmute => T("upgrade.transmute.title"),
             UpgradeId.HarmonicMap => T("upgrade.map.title"),
+            UpgradeId.PulseMagazine => T("upgrade.pulse.title"),
+            UpgradeId.ExecutionMark => T("upgrade.execution.title"),
+            UpgradeId.StasisField => T("upgrade.stasis.title"),
+            UpgradeId.MagnetizedCore => T("upgrade.magnet.title"),
+            UpgradeId.RicochetMatrix => T("upgrade.ricochet.title"),
             UpgradeId.AstraRefraction => T("upgrade.astra.refraction.title"),
             UpgradeId.AstraPrismWake => T("upgrade.astra.wake.title"),
             UpgradeId.VesperCapacitor => T("upgrade.vesper.charge.title"),
@@ -3536,6 +7233,22 @@ public partial class MainGame : Node2D
             UpgradeId.KairoRelayProtocol => T("upgrade.kairo.relay.title"),
             UpgradeId.SolFlareCore => T("upgrade.sol.flare.title"),
             UpgradeId.SolRadiantMantle => T("upgrade.sol.mantle.title"),
+            UpgradeId.NyxOrbit => T("upgrade.nyx.orbit.title"),
+            UpgradeId.NyxSingularity => T("upgrade.nyx.singularity.title"),
+            UpgradeId.NyxEventHorizon => T("upgrade.nyx.horizon.title"),
+            UpgradeId.NyxGravityCantor => T("upgrade.nyx.cantor.title"),
+            UpgradeId.RookBulwarkCore => T("upgrade.rook.bulwark.title"),
+            UpgradeId.RookSiegeBattery => T("upgrade.rook.siege.title"),
+            UpgradeId.RookAegisRelay => T("upgrade.rook.aegis.title"),
+            UpgradeId.RookCitadelProtocol => T("upgrade.rook.citadel.title"),
+            UpgradeId.LyraResonanceChord => T("upgrade.lyra.chord.title"),
+            UpgradeId.LyraTempoBloom => T("upgrade.lyra.tempo.title"),
+            UpgradeId.LyraHarmonicCascade => T("upgrade.lyra.cascade.title"),
+            UpgradeId.LyraEncoreField => T("upgrade.lyra.encore.title"),
+            UpgradeId.OrionCometSpear => T("upgrade.orion.spear.title"),
+            UpgradeId.OrionDeadeyeMark => T("upgrade.orion.deadeye.title"),
+            UpgradeId.OrionStarfallQuiver => T("upgrade.orion.quiver.title"),
+            UpgradeId.OrionPerihelionVector => T("upgrade.orion.perihelion.title"),
             _ => T("upgrade.unknown.title"),
         };
     }
@@ -3559,6 +7272,8 @@ public partial class MainGame : Node2D
             UpgradeId.CometTrail => new Color(1.0f, 0.38f, 0.2f),
             UpgradeId.AegisBloom => new Color(0.48f, 1.0f, 0.64f),
             UpgradeId.QuantumEcho => new Color(0.68f, 0.56f, 1.0f),
+            UpgradeId.ChainRelay => new Color(0.34f, 0.9f, 1.0f),
+            UpgradeId.FractalSplit => new Color(0.92f, 0.74f, 1.0f),
             UpgradeId.SolarThesis => new Color(1.0f, 0.86f, 0.32f),
             UpgradeId.EmergencyRepair => Jade,
             UpgradeId.OneWaveOverdrive => Rose,
@@ -3566,6 +7281,11 @@ public partial class MainGame : Node2D
             UpgradeId.BountyContract => Gold,
             UpgradeId.BulletTransmute => Cyan,
             UpgradeId.HarmonicMap => Violet,
+            UpgradeId.PulseMagazine => new Color(0.74f, 0.9f, 1.0f),
+            UpgradeId.ExecutionMark => new Color(1.0f, 0.46f, 0.34f),
+            UpgradeId.StasisField => new Color(0.6f, 0.8f, 1.0f),
+            UpgradeId.MagnetizedCore => new Color(0.64f, 1.0f, 0.72f),
+            UpgradeId.RicochetMatrix => new Color(0.96f, 0.76f, 1.0f),
             UpgradeId.AstraRefraction => PolarityBlue,
             UpgradeId.AstraPrismWake => PolarityAmber,
             UpgradeId.VesperCapacitor => AlertRed,
@@ -3582,6 +7302,22 @@ public partial class MainGame : Node2D
             UpgradeId.KairoRelayProtocol => XpGreen,
             UpgradeId.SolFlareCore => Gold,
             UpgradeId.SolRadiantMantle => new Color(1.0f, 0.72f, 0.34f),
+            UpgradeId.NyxOrbit => new Color(0.5f, 0.62f, 1.0f),
+            UpgradeId.NyxSingularity => new Color(0.62f, 0.72f, 1.0f),
+            UpgradeId.NyxEventHorizon => Violet,
+            UpgradeId.NyxGravityCantor => new Color(0.54f, 0.7f, 1.0f),
+            UpgradeId.RookBulwarkCore => new Color(0.88f, 0.78f, 0.58f),
+            UpgradeId.RookSiegeBattery => Gold,
+            UpgradeId.RookAegisRelay => Jade,
+            UpgradeId.RookCitadelProtocol => new Color(1.0f, 0.84f, 0.42f),
+            UpgradeId.LyraResonanceChord => new Color(0.48f, 1.0f, 0.86f),
+            UpgradeId.LyraTempoBloom => new Color(0.5f, 0.98f, 0.9f),
+            UpgradeId.LyraHarmonicCascade => new Color(0.62f, 0.86f, 1.0f),
+            UpgradeId.LyraEncoreField => Violet,
+            UpgradeId.OrionCometSpear => new Color(1.0f, 0.68f, 0.28f),
+            UpgradeId.OrionDeadeyeMark => Rose,
+            UpgradeId.OrionStarfallQuiver => new Color(0.9f, 0.78f, 1.0f),
+            UpgradeId.OrionPerihelionVector => Cyan,
             _ => Paper,
         };
     }
@@ -3591,6 +7327,12 @@ public partial class MainGame : Node2D
         return _upgradeRanks.TryGetValue(id, out int rank) ? rank : 0;
     }
 
+    private bool IsUpgradeMaxed(UpgradeId id)
+    {
+        int maxRank = MaxRank(id);
+        return maxRank < 20 && GetRank(id) >= maxRank;
+    }
+
     private int MetaRank(MetaUpgradeId id)
     {
         return _metaRanks.TryGetValue(id, out int rank) ? rank : 0;
@@ -3598,7 +7340,7 @@ public partial class MainGame : Node2D
 
     private static int MetaUpgradeCost(MetaUpgradeDef def, int currentRank)
     {
-        return def.BaseCost + currentRank * def.StepCost + currentRank * currentRank * 5 + Math.Max(0, currentRank - 2) * 8;
+        return def.BaseCost + currentRank * def.StepCost + currentRank * currentRank * 18 + Math.Max(0, currentRank - 2) * 35;
     }
 
     private int MaxRank(UpgradeId id)
@@ -3610,6 +7352,8 @@ public partial class MainGame : Node2D
             UpgradeId.PrismArray => 4,
             UpgradeId.PolarityStorm => 6,
             UpgradeId.QuantumEcho => 5,
+            UpgradeId.ChainRelay => 6,
+            UpgradeId.FractalSplit => 6,
             UpgradeId.NovaCapacitor => 5,
             UpgradeId.EmergencyRepair => 99,
             UpgradeId.OneWaveOverdrive => 99,
@@ -3617,6 +7361,11 @@ public partial class MainGame : Node2D
             UpgradeId.BountyContract => 99,
             UpgradeId.BulletTransmute => 99,
             UpgradeId.HarmonicMap => 3,
+            UpgradeId.PulseMagazine => 5,
+            UpgradeId.ExecutionMark => 5,
+            UpgradeId.StasisField => 5,
+            UpgradeId.MagnetizedCore => 4,
+            UpgradeId.RicochetMatrix => 5,
             UpgradeId.AstraRefraction => 4,
             UpgradeId.AstraPrismWake => 5,
             UpgradeId.VesperCapacitor => 5,
@@ -3633,6 +7382,22 @@ public partial class MainGame : Node2D
             UpgradeId.KairoRelayProtocol => 3,
             UpgradeId.SolFlareCore => 4,
             UpgradeId.SolRadiantMantle => 3,
+            UpgradeId.NyxOrbit => 5,
+            UpgradeId.NyxSingularity => 5,
+            UpgradeId.NyxEventHorizon => 4,
+            UpgradeId.NyxGravityCantor => 3,
+            UpgradeId.RookBulwarkCore => 5,
+            UpgradeId.RookSiegeBattery => 5,
+            UpgradeId.RookAegisRelay => 4,
+            UpgradeId.RookCitadelProtocol => 3,
+            UpgradeId.LyraResonanceChord => 5,
+            UpgradeId.LyraTempoBloom => 5,
+            UpgradeId.LyraHarmonicCascade => 4,
+            UpgradeId.LyraEncoreField => 3,
+            UpgradeId.OrionCometSpear => 5,
+            UpgradeId.OrionDeadeyeMark => 5,
+            UpgradeId.OrionStarfallQuiver => 4,
+            UpgradeId.OrionPerihelionVector => 3,
             _ => 5,
         };
     }
@@ -3667,19 +7432,19 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
-        if (KeyDown(Key.U) && !_lastMeta)
+        if (MetaHeld() && !_lastMeta)
         {
             ResetTitle();
             _mode = GameMode.Meta;
             return;
         }
 
-        bool restart = KeyDown(Key.Enter) || Input.IsMouseButtonPressed(MouseButton.Left);
+        bool restart = ConfirmHeld() || StartHeld() || Input.IsMouseButtonPressed(MouseButton.Left);
         if (restart && !_lastRestart)
         {
             StartRun();
         }
-        if (KeyDown(Key.Escape))
+        if (CancelHeld() && !_lastCancel)
         {
             ResetTitle();
         }
@@ -3689,7 +7454,8 @@ public partial class MainGame : Node2D
     {
         _stars.Clear();
         _nebulas.Clear();
-        for (int i = 0; i < 260; i++)
+        int starCount = QualityStarCount();
+        for (int i = 0; i < starCount; i++)
         {
             float depth = _rng.RandfRange(0.15f, 1.0f);
             Color color = i % 11 == 0 ? GridLine : new Color(0.48f, 0.56f, 0.62f);
@@ -3705,8 +7471,14 @@ public partial class MainGame : Node2D
 
         _nebulas.Add(new Nebula { Pos = new Vector2(350.0f, 240.0f), Radius = 560.0f, Color = new Color(0.12f, 0.38f, 0.7f), Drift = 0.12f });
         _nebulas.Add(new Nebula { Pos = new Vector2(1500.0f, 300.0f), Radius = 680.0f, Color = new Color(0.16f, 0.22f, 0.28f), Drift = -0.08f });
-        _nebulas.Add(new Nebula { Pos = new Vector2(1010.0f, 910.0f), Radius = 620.0f, Color = new Color(0.22f, 0.18f, 0.12f), Drift = 0.06f });
-        _nebulas.Add(new Nebula { Pos = new Vector2(1860.0f, 940.0f), Radius = 420.0f, Color = new Color(0.1f, 0.24f, 0.2f), Drift = -0.13f });
+        if ((int)_visualQuality >= (int)VisualQuality.Medium)
+        {
+            _nebulas.Add(new Nebula { Pos = new Vector2(1010.0f, 910.0f), Radius = 620.0f, Color = new Color(0.22f, 0.18f, 0.12f), Drift = 0.06f });
+        }
+        if ((int)_visualQuality >= (int)VisualQuality.High)
+        {
+            _nebulas.Add(new Nebula { Pos = new Vector2(1860.0f, 940.0f), Radius = 420.0f, Color = new Color(0.1f, 0.24f, 0.2f), Drift = -0.13f });
+        }
     }
 
     private void DrawBackdrop()
@@ -3853,7 +7625,7 @@ public partial class MainGame : Node2D
     private void DrawPlayer()
     {
         Vector2 p = _playerPos + ShakeOffset();
-        Color polarity = PolarityColor(_playerPolarity);
+        Color polarity = PilotAccent(_runPilot);
         float invuln = _invulnTimer > 0.0f ? 0.5f + 0.5f * Mathf.Sin(_time * 36.0f) : 1.0f;
         Vector2 forward = _aimDir;
 
@@ -3922,7 +7694,7 @@ public partial class MainGame : Node2D
         Vector2 center = playerPos + new Vector2(32.0f, -32.0f);
         float ready = PolaritySwitchReady01();
         float radius = 9.5f;
-        Color next = PolarityColor(OtherStance(_playerPolarity));
+        Color next = PilotAccent(_runPilot).Lerp(Paper, 0.22f);
 
         DrawCircle(center, radius + 2.0f, Alpha(Void, 0.62f));
         DrawCircle(center, radius, Alpha(Graphite, 0.84f));
@@ -3999,6 +7771,76 @@ public partial class MainGame : Node2D
                 DrawCircle(center, 18.0f * scale, Alpha(polarity, 0.16f * invuln), false, 1.2f * scale, true);
                 break;
             }
+            case PilotKind.Nyx:
+            {
+                Vector2[] hull =
+                {
+                    center + forward * 28.0f * scale,
+                    center + right * 24.0f * scale + forward * 4.0f * scale,
+                    center + right * 12.0f * scale - forward * 28.0f * scale,
+                    center - forward * 12.0f * scale,
+                    center - right * 12.0f * scale - forward * 28.0f * scale,
+                    center - right * 24.0f * scale + forward * 4.0f * scale,
+                };
+                DrawColoredPolygon(hull, body, Array.Empty<Vector2>(), null);
+                DrawPolyline(ClosePolygon(hull), line, 2.0f * scale, true);
+                DrawCircle(center, 22.0f * scale, Alpha(polarity, 0.18f * invuln), false, 1.4f * scale, true);
+                DrawArc(center, 15.0f * scale, forward.Angle() - 1.2f, forward.Angle() + 1.2f, 22, Alpha(Paper, 0.42f * invuln), 1.3f * scale, true);
+                DrawCircle(center, 7.0f * scale, Alpha(polarity, 0.78f * invuln));
+                break;
+            }
+            case PilotKind.Rook:
+            {
+                Vector2[] hull =
+                {
+                    center + forward * 28.0f * scale,
+                    center + right * 31.0f * scale + forward * 5.0f * scale,
+                    center + right * 27.0f * scale - forward * 24.0f * scale,
+                    center - forward * 32.0f * scale,
+                    center - right * 27.0f * scale - forward * 24.0f * scale,
+                    center - right * 31.0f * scale + forward * 5.0f * scale,
+                };
+                DrawColoredPolygon(hull, body, Array.Empty<Vector2>(), null);
+                DrawPolyline(ClosePolygon(hull), line, 2.0f * scale, true);
+                DrawLine(center - right * 24.0f * scale, center + right * 24.0f * scale, Alpha(polarity, 0.42f * invuln), 2.0f * scale, true);
+                DrawDiamond(center, 10.0f * scale, Alpha(polarity, 0.78f * invuln), 0.0f);
+                break;
+            }
+            case PilotKind.Lyra:
+            {
+                Vector2[] hull =
+                {
+                    center + forward * 34.0f * scale,
+                    center + right * 14.0f * scale + forward * 6.0f * scale,
+                    center + right * 26.0f * scale - forward * 16.0f * scale,
+                    center - forward * 24.0f * scale,
+                    center - right * 26.0f * scale - forward * 16.0f * scale,
+                    center - right * 14.0f * scale + forward * 6.0f * scale,
+                };
+                DrawColoredPolygon(hull, body, Array.Empty<Vector2>(), null);
+                DrawPolyline(ClosePolygon(hull), line, 2.0f * scale, true);
+                DrawCircle(center, 17.0f * scale, Alpha(polarity, 0.16f * invuln), false, 1.2f * scale, true);
+                DrawCircle(center, 9.0f * scale, Alpha(polarity, 0.78f * invuln), false, 2.0f * scale, true);
+                DrawLine(center - right * 20.0f * scale, center + right * 20.0f * scale, softLine, 1.2f * scale, true);
+                break;
+            }
+            case PilotKind.Orion:
+            {
+                Vector2[] hull =
+                {
+                    center + forward * 46.0f * scale,
+                    center + right * 12.0f * scale + forward * 6.0f * scale,
+                    center + right * 22.0f * scale - forward * 24.0f * scale,
+                    center - forward * 16.0f * scale,
+                    center - right * 22.0f * scale - forward * 24.0f * scale,
+                    center - right * 12.0f * scale + forward * 6.0f * scale,
+                };
+                DrawColoredPolygon(hull, body, Array.Empty<Vector2>(), null);
+                DrawPolyline(ClosePolygon(hull), line, 2.0f * scale, true);
+                DrawLine(center - forward * 12.0f * scale, center + forward * 42.0f * scale, Alpha(polarity, 0.7f * invuln), 1.8f * scale, true);
+                DrawCircle(center + forward * 9.0f * scale, 6.5f * scale, Alpha(Paper, 0.52f * invuln));
+                break;
+            }
             default:
             {
                 Vector2[] hull =
@@ -4025,9 +7867,10 @@ public partial class MainGame : Node2D
         Color color = EnemyStateColor(enemy);
         float hp = Mathf.Clamp(enemy.Hp / enemy.MaxHp, 0.0f, 1.0f);
         float pulse = 1.0f + enemy.SpawnPulse * 0.7f + Mathf.Sin(_time * 5.0f + enemy.Phase) * 0.05f;
-        bool heavyVisualLoad = _visualPressure > 0.72f && enemy.Kind != EnemyKind.Boss && !enemy.Elite;
         float charge = EnemyTelegraph01(enemy);
         float overheat = EnemyOverheat01(enemy);
+        bool importantState = charge > 0.0f || overheat > 0.0f;
+        bool heavyVisualLoad = _visualPressure > 0.72f && enemy.Kind != EnemyKind.Boss && !enemy.Elite && !importantState;
 
         if (!heavyVisualLoad)
         {
@@ -4051,6 +7894,13 @@ public partial class MainGame : Node2D
             return;
         }
 
+        float rotation = _time * (enemy.Kind == EnemyKind.Turret ? -0.8f : 1.2f) + enemy.Phase;
+        if (heavyVisualLoad)
+        {
+            DrawSimpleEnemy(enemy, p, color, hp, rotation);
+            return;
+        }
+
         int sides = enemy.Kind switch
         {
             EnemyKind.Chaser => 3,
@@ -4067,7 +7917,6 @@ public partial class MainGame : Node2D
             EnemyKind.Harrier => 3,
             _ => 5,
         };
-        float rotation = _time * (enemy.Kind == EnemyKind.Turret ? -0.8f : 1.2f) + enemy.Phase;
         Vector2[] body = RegularPolygon(p, enemy.Radius * (0.95f + enemy.SpawnPulse * 0.28f), sides, rotation);
         Color bodyColor = enemy.Elite ? Steel.Lerp(Paper, 0.12f) : Steel.Lerp(Graphite, 0.28f);
         DrawColoredPolygon(body, Alpha(bodyColor, 0.72f), Array.Empty<Vector2>(), null);
@@ -4081,6 +7930,43 @@ public partial class MainGame : Node2D
         DrawEnemyMark(enemy, p, color, rotation);
         DrawRect(new Rect2(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f, 5.0f)), Alpha(Paper, 0.13f), true);
         DrawRect(new Rect2(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f * hp, 5.0f)), Alpha(color, 0.78f), true);
+    }
+
+    private void DrawSimpleEnemy(Enemy enemy, Vector2 p, Color color, float hp, float rotation)
+    {
+        float r = enemy.Radius;
+        DrawCircle(p, r * 0.82f, Alpha(Graphite, 0.76f));
+        DrawCircle(p, r * 0.76f, Alpha(color, 0.58f), false, UiHairline, true);
+
+        Vector2 a = Vector2.Right.Rotated(rotation);
+        Vector2 b = Vector2.Down.Rotated(rotation);
+        switch (enemy.Kind)
+        {
+            case EnemyKind.Chaser:
+            case EnemyKind.Harrier:
+                DrawLine(p - a * r * 0.3f, p + a * r * 0.48f, Alpha(Paper, 0.5f), UiHairline, true);
+                break;
+            case EnemyKind.Turret:
+            case EnemyKind.Mine:
+            case EnemyKind.Siren:
+                DrawCircle(p, r * 0.32f, Alpha(Paper, 0.24f), false, UiHairline, true);
+                break;
+            case EnemyKind.Bulwark:
+            case EnemyKind.Warden:
+                DrawLine(p - a * r * 0.42f, p + a * r * 0.42f, Alpha(Paper, 0.42f), UiHairline, true);
+                DrawLine(p - b * r * 0.42f, p + b * r * 0.42f, Alpha(Paper, 0.34f), UiHairline, true);
+                break;
+            default:
+                DrawLine(p - a * r * 0.42f, p + a * r * 0.42f, Alpha(Paper, 0.42f), UiHairline, true);
+                break;
+        }
+
+        if (hp < 0.995f)
+        {
+            Rect2 bar = new(p + new Vector2(-r * 0.72f, r + 9.0f), new Vector2(r * 1.44f, 3.0f));
+            DrawRect(bar, Alpha(Paper, 0.1f), true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * hp, bar.Size.Y)), Alpha(color, 0.62f), true);
+        }
     }
 
     private void DrawEnemyMark(Enemy enemy, Vector2 p, Color color, float rotation)
@@ -4145,21 +8031,124 @@ public partial class MainGame : Node2D
 
     private void DrawBoss(Enemy enemy, Vector2 p, Color color, float hp)
     {
-        float rotation = _time * 0.35f;
-        Vector2[] core = RegularPolygon(p, enemy.Radius, 8, rotation);
+        BossArchetype archetype = enemy.BossArchetype;
+        Color accent = BossAccent(archetype);
+        color = color.Lerp(accent, 0.32f);
+        float rotation = _time * (archetype == BossArchetype.Prism ? 0.58f : archetype == BossArchetype.Forge ? 0.18f : 0.35f);
+        int sides = archetype switch
+        {
+            BossArchetype.Prism => 6,
+            BossArchetype.Swarm => 10,
+            BossArchetype.Forge => 4,
+            BossArchetype.Rift => 7,
+            BossArchetype.Mirror => 6,
+            BossArchetype.Tempest => 9,
+            BossArchetype.Bastion => 4,
+            BossArchetype.Serpent => 11,
+            BossArchetype.Oracle => 5,
+            _ => 8,
+        };
+        Vector2[] core = RegularPolygon(p, enemy.Radius, sides, rotation);
         DrawColoredPolygon(core, Alpha(Graphite, 0.86f), Array.Empty<Vector2>(), null);
-        DrawPolyline(ClosePolygon(core), Alpha(color, 0.86f), 3.0f, true);
-        DrawPolyline(ClosePolygon(RegularPolygon(p, enemy.Radius * 1.38f, 8, rotation)), Alpha(GridLine, 0.28f), 2.0f, true);
+        DrawPolyline(ClosePolygon(core), Alpha(color, 0.86f), 2.4f, true);
+        DrawPolyline(ClosePolygon(RegularPolygon(p, enemy.Radius * 1.38f, sides, -rotation * 0.65f)), Alpha(GridLine, 0.28f), 1.8f, true);
         DrawCircle(p, enemy.Radius * 0.52f, Alpha(Ink, 0.88f));
-        DrawCircle(p, enemy.Radius * 0.34f, Alpha(color, 0.84f), false, 4.0f, true);
-        DrawLine(p - Vector2.Right.Rotated(rotation) * enemy.Radius * 0.62f, p + Vector2.Right.Rotated(rotation) * enemy.Radius * 0.62f, Alpha(Paper, 0.45f), 2.0f, true);
-        DrawLine(p - Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, p + Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, Alpha(Paper, 0.28f), 2.0f, true);
+        DrawCircle(p, enemy.Radius * 0.34f, Alpha(color, 0.84f), false, 3.0f, true);
+        if (enemy.BossGuard > 0.0f)
+        {
+            float guard = Mathf.Clamp(enemy.BossGuard / 1.2f, 0.0f, 1.0f);
+            DrawCircle(p, enemy.Radius * (1.58f + guard * 0.18f), Alpha(Paper, 0.08f + guard * 0.12f), false, UiStroke, true);
+            DrawArc(p, enemy.Radius * 1.7f, -Mathf.Pi * 0.5f, -Mathf.Pi * 0.5f + Mathf.Tau * guard, 48, Alpha(accent, 0.34f + guard * 0.28f), UiStroke, true);
+        }
+        if (enemy.BossIntentPulse > 0.0f)
+        {
+            float intent = Mathf.Clamp(enemy.BossIntentPulse / 1.45f, 0.0f, 1.0f);
+            float ring = enemy.Radius * (1.62f + (1.0f - intent) * 0.28f);
+            Color cue = Alpha(accent.Lerp(Paper, intent * 0.18f), 0.22f + intent * 0.34f);
+            Vector2 aim = (_playerPos - enemy.Pos).LengthSquared() > 0.01f ? (_playerPos - enemy.Pos).Normalized() : Vector2.Down;
+            DrawCircle(p, ring, cue, false, UiHairline, true);
+            if (enemy.BossIntent is BossPatternKind.HeavyLance or BossPatternKind.OracleSnipe or BossPatternKind.HazardFan)
+            {
+                DrawLine(p, p + aim * ring * 1.18f, Alpha(EnemyBulletColor(), 0.22f + intent * 0.22f), UiStroke, true);
+            }
+            else if (enemy.BossIntent is BossPatternKind.SpiralRing or BossPatternKind.ReverseSpiral or BossPatternKind.TempestWheel or BossPatternKind.SerpentCoil)
+            {
+                DrawArc(p, ring * 0.92f, rotation, rotation + Mathf.Pi * 1.6f, 36, cue, UiStroke, true);
+            }
+            else if (enemy.BossIntent is BossPatternKind.SummonWing or BossPatternKind.WardenCall or BossPatternKind.MineDrift)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    Vector2 node = p + Vector2.Right.Rotated(rotation + i * Mathf.Tau / 4.0f) * ring * 0.62f;
+                    DrawDiamond(node, enemy.Radius * 0.08f, cue, rotation);
+                }
+            }
+        }
 
-        Rect2 bossBar = new(new Vector2(360.0f, 48.0f), new Vector2(1200.0f, 18.0f));
-        DrawRect(bossBar, Alpha(Paper, 0.16f), true);
-        DrawRect(new Rect2(bossBar.Position, new Vector2(bossBar.Size.X * hp, bossBar.Size.Y)), Alpha(Rose, 0.9f), true);
-        DrawRect(bossBar, Alpha(Paper, 0.62f), false, UiStroke, true);
-        DrawText(Tf("boss.sector", T(CurrentSector().NameKey)), bossBar.Position + new Vector2(0.0f, -8.0f), 22, Alpha(Paper, 0.72f), HorizontalAlignment.Left, 420.0f, true, 3);
+        if (archetype == BossArchetype.Swarm)
+        {
+            int nodes = 6;
+            for (int i = 0; i < nodes; i++)
+            {
+                Vector2 node = p + Vector2.Right.Rotated(rotation + i * Mathf.Tau / nodes) * enemy.Radius * 0.68f;
+                DrawCircle(node, enemy.Radius * 0.08f, Alpha(accent, 0.72f), false, UiStroke, true);
+                DrawLine(p, node, Alpha(accent, 0.2f), UiHairline, true);
+            }
+        }
+        else if (archetype == BossArchetype.Forge)
+        {
+            DrawLine(p - Vector2.Right.Rotated(rotation) * enemy.Radius * 0.72f, p + Vector2.Right.Rotated(rotation) * enemy.Radius * 0.72f, Alpha(Gold, 0.48f), 2.0f, true);
+            DrawLine(p - Vector2.Down.Rotated(rotation) * enemy.Radius * 0.72f, p + Vector2.Down.Rotated(rotation) * enemy.Radius * 0.72f, Alpha(Rose, 0.34f), 2.0f, true);
+            DrawArc(p, enemy.Radius * 0.68f, rotation, rotation + Mathf.Pi * 1.2f, 30, Alpha(accent, 0.5f), UiStroke, true);
+        }
+        else if (archetype == BossArchetype.Rift)
+        {
+            DrawArc(p, enemy.Radius * 0.7f, -rotation, -rotation + Mathf.Pi * 1.55f, 34, Alpha(Violet, 0.58f), UiStroke, true);
+            DrawArc(p, enemy.Radius * 0.46f, rotation * 1.4f, rotation * 1.4f + Mathf.Pi, 24, Alpha(Cyan, 0.34f), UiHairline, true);
+        }
+        else if (archetype == BossArchetype.Mirror)
+        {
+            DrawLine(p - Vector2.Right.Rotated(rotation) * enemy.Radius * 0.72f, p + Vector2.Right.Rotated(rotation) * enemy.Radius * 0.72f, Alpha(Paper, 0.48f), 1.7f, true);
+            DrawLine(p - Vector2.Right.Rotated(-rotation) * enemy.Radius * 0.72f, p + Vector2.Right.Rotated(-rotation) * enemy.Radius * 0.72f, Alpha(accent, 0.42f), 1.7f, true);
+            DrawCircle(p, enemy.Radius * 0.72f, Alpha(Paper, 0.1f), false, UiHairline, true);
+        }
+        else if (archetype == BossArchetype.Tempest)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                DrawArc(p, enemy.Radius * (0.58f + i * 0.16f), rotation + i * 1.2f, rotation + i * 1.2f + Mathf.Pi * 1.35f, 28, Alpha(accent, 0.34f), UiStroke, true);
+            }
+        }
+        else if (archetype == BossArchetype.Bastion)
+        {
+            DrawDiamond(p, enemy.Radius * 0.72f, Alpha(accent, 0.54f), rotation);
+            DrawLine(p - Vector2.Right * enemy.Radius * 0.64f, p + Vector2.Right * enemy.Radius * 0.64f, Alpha(Paper, 0.35f), 1.8f, true);
+            DrawLine(p - Vector2.Down * enemy.Radius * 0.64f, p + Vector2.Down * enemy.Radius * 0.64f, Alpha(Paper, 0.28f), 1.8f, true);
+        }
+        else if (archetype == BossArchetype.Serpent)
+        {
+            int nodes = 5;
+            Vector2 last = p;
+            for (int i = 0; i < nodes; i++)
+            {
+                Vector2 node = p + new Vector2(Mathf.Sin(rotation + i * 0.82f) * enemy.Radius * 0.52f, (i - 2) * enemy.Radius * 0.18f);
+                DrawLine(last, node, Alpha(accent, 0.28f), UiStroke, true);
+                DrawCircle(node, enemy.Radius * 0.07f, Alpha(accent, 0.66f));
+                last = node;
+            }
+        }
+        else if (archetype == BossArchetype.Oracle)
+        {
+            DrawDiamond(p, enemy.Radius * 0.58f, Alpha(accent, 0.48f), rotation);
+            DrawCircle(p, enemy.Radius * 0.18f, Alpha(Paper, 0.58f), false, UiStroke, true);
+            DrawLine(p, p + (_playerPos - enemy.Pos).Normalized() * enemy.Radius * 0.78f, Alpha(EnemyBulletColor(), 0.38f), UiHairline, true);
+        }
+        else
+        {
+            DrawLine(p - Vector2.Right.Rotated(rotation) * enemy.Radius * 0.62f, p + Vector2.Right.Rotated(rotation) * enemy.Radius * 0.62f, Alpha(Paper, 0.45f), 1.8f, true);
+            DrawLine(p - Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, p + Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, Alpha(Paper, 0.28f), 1.8f, true);
+        }
+
     }
 
     private void DrawShot(Shot shot)
@@ -4169,11 +8158,18 @@ public partial class MainGame : Node2D
         if (shot.FromPlayer)
         {
             bool heavyVisualLoad = _visualPressure > 0.78f;
-            DrawShotTrail(shot, pos, color, heavyVisualLoad);
+            if (_visualPressure < 0.9f || shot.Rift)
+            {
+                DrawShotTrail(shot, pos, color, heavyVisualLoad);
+            }
             if (!heavyVisualLoad)
             {
                 DrawCircle(pos, shot.Radius * 1.05f, Alpha(Paper, 0.78f));
                 DrawCircle(pos, shot.Radius * 1.8f, Alpha(color, 0.32f), false, 1.0f, true);
+            }
+            else
+            {
+                DrawCircle(pos, shot.Radius * 0.92f, Alpha(color, 0.72f));
             }
         }
         else
@@ -4197,8 +8193,12 @@ public partial class MainGame : Node2D
         {
             return;
         }
+        if (heavyVisualLoad && !shot.FromPlayer && _visualPressure > 0.88f)
+        {
+            return;
+        }
 
-        int maxSegments = shot.FromPlayer ? (heavyVisualLoad ? 2 : (shot.Rift ? 4 : 3)) : (heavyVisualLoad ? 1 : 2);
+        int maxSegments = shot.FromPlayer ? (heavyVisualLoad ? 1 : (shot.Rift ? 4 : 3)) : (heavyVisualLoad ? 1 : 2);
         int count = Math.Min(shot.TrailCount, maxSegments);
         Vector2 shake = ShakeOffset();
         Vector2 from = current;
@@ -4237,6 +8237,24 @@ public partial class MainGame : Node2D
         }
     }
 
+    private bool ShouldRecordShotTrail(Shot shot)
+    {
+        float pressure = PerformancePressure();
+        if (shot.FromPlayer)
+        {
+            if (shot.Rift)
+            {
+                return pressure < 0.96f;
+            }
+
+            return pressure < 0.93f;
+        }
+
+        return _visualQuality != VisualQuality.Low
+            ? pressure < 0.82f
+            : pressure < 0.62f;
+    }
+
     private static Vector2 ShotTrailPoint(Shot shot, int index)
     {
         return index switch
@@ -4253,6 +8271,15 @@ public partial class MainGame : Node2D
         Color accent = PickupColor(pickup.Kind);
         Vector2 pos = pickup.Pos + ShakeOffset();
         float pulse = 1.0f + Mathf.Sin(_time * 7.0f + pickup.Pos.X) * 0.08f;
+        if (pickup.Kind == PickupKind.Dust)
+        {
+            float size = pickup.Radius * 1.95f * pulse;
+            Rect2 shard = new(pos - new Vector2(size, size) * 0.5f, new Vector2(size, size));
+            DrawRect(shard, Alpha(accent, 0.7f), true);
+            DrawRect(shard, Alpha(Paper, 0.18f), false, UiHairline, true);
+            return;
+        }
+
         float radius = pickup.Radius * (pickup.Kind == PickupKind.Repair ? 1.42f : 1.68f) * pulse;
         float rotation = Mathf.Pi * 0.25f;
         Vector2[] outer = RegularPolygon(pos, radius, 4, rotation);
@@ -4325,7 +8352,7 @@ public partial class MainGame : Node2D
 
     private void DrawHud()
     {
-        Color polarity = PolarityColor(_playerPolarity);
+        Color polarity = PilotAccent(_runPilot);
         Rect2 top = new(new Vector2(74.0f, 16.0f), new Vector2(1772.0f, 62.0f));
         DrawGlow(top.Position + top.Size * 0.5f, CurrentSector().Accent, 230.0f, 0.026f, 4);
         DrawPanel(top, Alpha(Graphite, 0.82f), Alpha(GridLine, 0.34f));
@@ -4335,17 +8362,17 @@ public partial class MainGame : Node2D
         DrawPanel(polarityCard, Alpha(Ink, 0.46f), Alpha(polarity, 0.5f));
         DrawCircle(polarityCard.Position + new Vector2(25.0f, 20.0f), 11.0f, Alpha(Graphite, 0.95f));
         DrawCircle(polarityCard.Position + new Vector2(25.0f, 20.0f), 8.0f, Alpha(polarity, 0.9f), false, UiStroke, true);
-        DrawText(IsCruiseStance(_playerPolarity) ? T("hud.cyan_resonance") : T("hud.gold_resonance"), polarityCard.Position + new Vector2(46.0f, 22.0f), 15, Paper, HorizontalAlignment.Left, 165.0f, true, 2);
+        DrawText(TacticalSkillName(_runPilot), polarityCard.Position + new Vector2(46.0f, 22.0f), 15, Paper, HorizontalAlignment.Left, 165.0f, true, 2);
         string switchText = _polarityCooldown > 0.0f
             ? Tf("hud.resonance_cooldown", _polarityCooldown)
-            : IsCruiseStance(_playerPolarity)
-                ? $"{T("hud.cruise_charge")} {Mathf.RoundToInt(CruiseCharge01() * 100.0f)}%"
-                : _assaultBurstTimer > 0.0f ? Tf("hud.assault_window", _assaultBurstTimer) : T("hud.resonance_ready");
+            : _assaultBurstTimer > 0.0f
+                ? Tf("hud.assault_window", _assaultBurstTimer)
+                : $"{T("hud.cruise_charge")} {Mathf.RoundToInt(CruiseCharge01() * 100.0f)}%";
         DrawText(switchText, polarityCard.Position + new Vector2(46.0f, 39.0f), 11, Alpha(_polarityCooldown <= 0.0f ? XpGreen : Paper, 0.68f), HorizontalAlignment.Left, 165.0f, false, 0);
         Rect2 polarityBar = new(polarityCard.Position + new Vector2(14.0f, 41.0f), new Vector2(polarityCard.Size.X - 28.0f, 3.0f));
         DrawRect(polarityBar, Alpha(Paper, 0.08f), true);
-        float stanceMeter = IsCruiseStance(_playerPolarity) ? CruiseCharge01() : Mathf.Clamp(_assaultBurstTimer / AssaultBurstMax, 0.0f, 1.0f);
-        float meter = _polarityCooldown > 0.0f ? PolaritySwitchReady01() : stanceMeter;
+        float skillMeter = _assaultBurstTimer > 0.0f ? Mathf.Clamp(_assaultBurstTimer / AssaultBurstMax, 0.0f, 1.0f) : CruiseCharge01();
+        float meter = _polarityCooldown > 0.0f ? PolaritySwitchReady01() : skillMeter;
         DrawRect(new Rect2(polarityBar.Position, new Vector2(polarityBar.Size.X * meter, polarityBar.Size.Y)), Alpha(polarity, _polarityCooldown <= 0.0f ? 0.9f : 0.58f), true);
 
         DrawBar(new Rect2(new Vector2(342.0f, 46.0f), new Vector2(280.0f, 12.0f)), _hudHullValue, _hudHullTrail, AlertRed, T("hud.hull"), $"{Mathf.CeilToInt(_playerHp)}/{Mathf.CeilToInt(_playerMaxHp)}");
@@ -4354,13 +8381,95 @@ public partial class MainGame : Node2D
         DrawBar(new Rect2(new Vector2(954.0f, 46.0f), new Vector2(200.0f, 12.0f)), _hudDashValue, _hudDashTrail, XpGreen, T("hud.dash"), $"{Mathf.RoundToInt(dashReady * 100.0f)}%");
 
         DrawHudMetric(new Rect2(new Vector2(1184.0f, 26.0f), new Vector2(130.0f, 42.0f)), T("hud.sector.label"), $"{CurrentSectorIndex() + 1}/5", CurrentSector().Accent);
-        DrawHudMetric(new Rect2(new Vector2(1328.0f, 26.0f), new Vector2(150.0f, 42.0f)), T("hud.wave.label"), $"{_wave}/40", Paper);
-        DrawHudMetric(new Rect2(new Vector2(1492.0f, 26.0f), new Vector2(230.0f, 42.0f)), T("hud.score.label"), $"{_score:000000}", Paper);
-        DrawHudMetric(new Rect2(new Vector2(1728.0f, 26.0f), new Vector2(68.0f, 42.0f)), T("hud.combo.label"), $"{Math.Max(1, _combo)}", _combo > 8 ? XpGreen : Paper);
+        DrawHudMetric(new Rect2(new Vector2(1338.0f, 26.0f), new Vector2(158.0f, 42.0f)), T("hud.route.label"), WavePaceShortText(_currentWavePace), CurrentSector().Accent);
+        Color comboAccent = _comboTierPulse > 0.0f ? Gold.Lerp(Paper, 0.18f) : _combo > 8 ? XpGreen : Paper;
+        DrawHudMetric(new Rect2(new Vector2(1522.0f, 26.0f), new Vector2(126.0f, 42.0f)), T("hud.combo.label"), Tf("combo.value", _combo), comboAccent);
+        DrawSpawnMetric(new Rect2(new Vector2(1668.0f, 26.0f), new Vector2(116.0f, 42.0f)));
         DrawSettingsButton(HudSettingsButtonRect(), false);
+        DrawBossHealthHud();
+        DrawWaveIntelHud();
         DrawUpgradeIcons();
         DrawRunObjectives();
+        DrawBottomExperienceBar();
         DrawTransientPolarityTip(polarity);
+    }
+
+    private void DrawWaveIntelHud()
+    {
+        if (_wave <= 0 || _currentWavePace == WavePaceKind.Boss)
+        {
+            return;
+        }
+
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        EnemyKind primary = WavePrimaryEnemyKind(sector, waveInSector);
+        EnemyKind support = WaveSupportEnemyKind(sector, waveInSector);
+        Color accent = _waveIntelPulse > 0.0f ? CurrentSector().Accent.Lerp(Paper, _waveIntelPulse * 0.18f) : CurrentSector().Accent;
+        Rect2 panel = new(new Vector2(520.0f, 88.0f), new Vector2(880.0f, 58.0f));
+        int remaining = Math.Max(0, _pendingSpawns.Count + _enemies.Count);
+        float progress = _waveBudget <= 0 ? 0.0f : Mathf.Clamp(1.0f - remaining / (float)Math.Max(1, _waveBudget), 0.0f, 1.0f);
+        string supportText = support == primary ? T("wave.intel.clear") : Tf("wave.intel.support", EnemyName(support));
+
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 220.0f, 0.018f + _waveIntelPulse * 0.018f, 4);
+        DrawPanel(panel, Alpha(Ink, 0.48f), Alpha(accent, 0.32f + _waveIntelPulse * 0.18f));
+        DrawText(Tf("wave.intel.wave", _wave, TotalWaves), panel.Position + new Vector2(18.0f, 22.0f), 13, Alpha(Paper, 0.58f), HorizontalAlignment.Left, 118.0f, false, 0);
+        DrawText(WavePaceShortText(_currentWavePace).ToUpperInvariant(), panel.Position + new Vector2(18.0f, 42.0f), 15, Alpha(accent, 0.86f), HorizontalAlignment.Left, 132.0f, true, 1);
+
+        DrawText(Tf("wave.intel.primary", EnemyName(primary)).ToUpperInvariant(), panel.Position + new Vector2(164.0f, 22.0f), 14, Alpha(Paper, 0.82f), HorizontalAlignment.Left, 270.0f, true, 1);
+        DrawText(EnemyRole(primary), panel.Position + new Vector2(164.0f, 42.0f), 12, Alpha(Paper, 0.48f), HorizontalAlignment.Left, 344.0f, false, 0);
+        DrawText(supportText.ToUpperInvariant(), panel.Position + new Vector2(526.0f, 25.0f), 13, Alpha(support == primary ? Paper : accent, support == primary ? 0.46f : 0.74f), HorizontalAlignment.Left, 182.0f, true, 1);
+        DrawText(Tf("wave.intel.incoming", remaining), panel.Position + new Vector2(panel.Size.X - 160.0f, 25.0f), 13, Alpha(Paper, 0.58f), HorizontalAlignment.Right, 140.0f, false, 0);
+        DrawText(SpawnSpeedText(), panel.Position + new Vector2(panel.Size.X - 160.0f, 44.0f), 17, Alpha(SpawnRateMultiplier() > 1.65f ? Gold : accent, 0.82f), HorizontalAlignment.Right, 140.0f, true, 1);
+
+        Rect2 bar = new(panel.Position + new Vector2(18.0f, panel.Size.Y - 7.0f), new Vector2(panel.Size.X - 36.0f, 3.0f));
+        DrawRect(bar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.68f), true);
+    }
+
+    private void DrawBossHealthHud()
+    {
+        Enemy? boss = ActiveBoss();
+        if (boss == null)
+        {
+            return;
+        }
+
+        Color accent = BossAccent(boss.BossArchetype);
+        float hp = SafeRatio(boss.Hp, boss.MaxHp);
+        Rect2 panel = new(new Vector2(520.0f, 88.0f), new Vector2(880.0f, 60.0f));
+        Rect2 bar = new(panel.Position + new Vector2(24.0f, 31.0f), new Vector2(panel.Size.X - 48.0f, 9.0f));
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 260.0f, 0.035f, 5);
+        DrawPanel(panel, Alpha(Ink, 0.58f), Alpha(accent, 0.5f));
+        DrawText(BossTitle(boss.BossArchetype, CurrentSectorIndex()).ToUpperInvariant(), panel.Position + new Vector2(24.0f, 22.0f), 17, Alpha(Paper, 0.82f), HorizontalAlignment.Left, 430.0f, true, 2);
+        DrawText(Tf("boss.phase_hud", boss.BossPhase + 1, BossPhaseThresholds.Length + 1), panel.Position + new Vector2(panel.Size.X - 360.0f, 22.0f), 13, Alpha(accent, 0.78f), HorizontalAlignment.Right, 132.0f, true, 1);
+        DrawText($"{Mathf.CeilToInt(Mathf.Max(0.0f, boss.Hp))}/{Mathf.CeilToInt(boss.MaxHp)}", panel.Position + new Vector2(panel.Size.X - 212.0f, 22.0f), 15, Alpha(accent, 0.86f), HorizontalAlignment.Right, 188.0f, true, 1);
+        DrawRect(bar.Grow(2.0f), Alpha(Paper, 0.08f), true);
+        DrawRect(bar, Alpha(Paper, 0.14f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * hp, bar.Size.Y)), Alpha(accent, 0.9f), true);
+        if (boss.BossGuard > 0.0f)
+        {
+            float guard = Mathf.Clamp(boss.BossGuard / 1.4f, 0.0f, 1.0f);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * guard, 2.0f)), Alpha(Paper, 0.62f), true);
+            DrawText(Tf("boss.guard_hud", Mathf.RoundToInt(guard * 100.0f)), panel.Position + new Vector2(24.0f, 49.0f), 10, Alpha(Paper, 0.5f), HorizontalAlignment.Left, 180.0f, false, 0);
+        }
+        else
+        {
+            DrawText(BossNextPhaseText(boss), panel.Position + new Vector2(24.0f, 49.0f), 10, Alpha(Paper, 0.38f), HorizontalAlignment.Left, 260.0f, false, 0);
+        }
+        if (boss.BossIntentPulse > 0.0f || boss.BossLastPattern >= 0)
+        {
+            float intentPulse = Mathf.Clamp(boss.BossIntentPulse / 1.45f, 0.0f, 1.0f);
+            Color intentColor = intentPulse > 0.0f ? accent.Lerp(Paper, intentPulse * 0.2f) : Paper;
+            DrawText(Tf("boss.intent_hud", BossPatternText(boss.BossIntent)).ToUpperInvariant(), panel.Position + new Vector2(panel.Size.X - 330.0f, 51.0f), 11, Alpha(intentColor, 0.44f + intentPulse * 0.34f), HorizontalAlignment.Right, 306.0f, false, 0);
+        }
+        for (int i = 0; i < BossPhaseThresholds.Length; i++)
+        {
+            float marker = BossPhaseThresholds[i];
+            float x = bar.Position.X + bar.Size.X * marker;
+            DrawLine(new Vector2(x, bar.Position.Y - 4.0f), new Vector2(x, bar.End.Y + 4.0f), Alpha(Paper, i < boss.BossPhase ? 0.22f : 0.58f), UiHairline, true);
+        }
+        DrawRect(bar, Alpha(Paper, 0.48f), false, UiHairline, true);
     }
 
     private void DrawTransientPolarityTip(Color current)
@@ -4371,9 +8480,9 @@ public partial class MainGame : Node2D
         }
 
         float a = Mathf.Clamp(_polarityTipTimer / 2.4f, 0.0f, 1.0f);
-        Rect2 tip = new(new Vector2(702.0f, 88.0f), new Vector2(516.0f, 36.0f));
+        Rect2 tip = new(new Vector2(702.0f, ActiveBoss() == null ? 88.0f : 148.0f), new Vector2(516.0f, 36.0f));
         DrawPanel(tip, Alpha(Ink, 0.42f * a), Alpha(current, 0.3f + a * 0.34f));
-        DrawText(PolarityTipText(), tip.Position + new Vector2(0.0f, 25.0f), 17, Alpha(current, 0.42f + a * 0.48f), HorizontalAlignment.Center, tip.Size.X, true, 2);
+        DrawText(TacticalTipText(), tip.Position + new Vector2(0.0f, 25.0f), 17, Alpha(current, 0.42f + a * 0.48f), HorizontalAlignment.Center, tip.Size.X, true, 2);
     }
 
     private void DrawUpgradeIcons()
@@ -4429,12 +8538,24 @@ public partial class MainGame : Node2D
     private void DrawUpgradeIcon(Rect2 rect, UpgradeId id, int rank, Color accent, bool hover)
     {
         Rect2 drawRect = hover ? rect.Grow(3.0f) : rect;
+        bool capstone = IsUpgradeMaxed(id) && CapstoneBody(id).Length > 0;
+        if (capstone)
+        {
+            DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 58.0f : 42.0f, hover ? 0.05f : 0.032f, 3);
+        }
         DrawPanel(drawRect, Alpha(Graphite, hover ? 0.76f : 0.58f), Alpha(accent, hover ? 0.72f : 0.42f));
+        if (capstone)
+        {
+            Vector2 center = drawRect.Position + drawRect.Size * 0.5f;
+            DrawPolyline(ClosePolygon(RegularPolygon(center, drawRect.Size.X * 0.64f, 4, Mathf.Pi * 0.25f)), Alpha(accent, hover ? 0.9f : 0.64f), UiHairline, true);
+            DrawLine(center - Vector2.Right * drawRect.Size.X * 0.22f, center + Vector2.Right * drawRect.Size.X * 0.22f, Alpha(Paper, 0.42f), UiHairline, true);
+            DrawLine(center - Vector2.Down * drawRect.Size.X * 0.22f, center + Vector2.Down * drawRect.Size.X * 0.22f, Alpha(Paper, 0.42f), UiHairline, true);
+        }
         DrawUpgradeGlyph(id, drawRect.Position + drawRect.Size * 0.5f, drawRect.Size.X * 0.42f, accent);
 
         Vector2 badge = drawRect.End - new Vector2(7.0f, 7.0f);
         DrawCircle(badge, 8.0f, Alpha(Ink, 0.92f));
-        DrawCircle(badge, 8.0f, Alpha(accent, 0.78f), false, UiStroke, true);
+        DrawCircle(badge, 8.0f, Alpha(accent, capstone ? 0.96f : 0.78f), false, UiStroke, true);
         string rankText = rank > 9 ? "+" : rank.ToString(System.Globalization.CultureInfo.InvariantCulture);
         DrawText(rankText, badge + new Vector2(-8.0f, 5.5f), 12, Paper, HorizontalAlignment.Center, 16.0f, false, 0);
     }
@@ -4450,6 +8571,9 @@ public partial class MainGame : Node2D
             case UpgradeId.AstraPrismWake:
             case UpgradeId.AstraNovaBloom:
             case UpgradeId.AstraTwinRefraction:
+            case UpgradeId.PulseMagazine:
+            case UpgradeId.LyraResonanceChord:
+            case UpgradeId.LyraTempoBloom:
                 for (int i = -1; i <= 1; i++)
                 {
                     DrawLine(center + new Vector2(-radius * 0.75f, i * radius * 0.34f), center + new Vector2(radius * 0.75f, i * radius * 0.34f), line, UiStroke, true);
@@ -4459,6 +8583,7 @@ public partial class MainGame : Node2D
             case UpgradeId.CometTrail:
             case UpgradeId.SolCoronaBloom:
             case UpgradeId.SolFlareCore:
+            case UpgradeId.OrionPerihelionVector:
                 DrawLine(center + new Vector2(-radius * 0.6f, -radius * 0.5f), center + new Vector2(radius * 0.15f, 0.0f), line, UiStroke, true);
                 DrawLine(center + new Vector2(-radius * 0.6f, radius * 0.5f), center + new Vector2(radius * 0.15f, 0.0f), line, UiStroke, true);
                 DrawLine(center + new Vector2(0.0f, -radius * 0.5f), center + new Vector2(radius * 0.72f, 0.0f), Alpha(Paper, 0.6f), UiHairline, true);
@@ -4467,22 +8592,40 @@ public partial class MainGame : Node2D
             case UpgradeId.VitalShell:
             case UpgradeId.MirrorSkin:
             case UpgradeId.AegisBloom:
+            case UpgradeId.RookBulwarkCore:
+            case UpgradeId.RookAegisRelay:
+            case UpgradeId.RookCitadelProtocol:
                 DrawDiamond(center, radius * 0.72f, accent, 0.0f);
                 DrawLine(center - Vector2.Right * radius * 0.45f, center + Vector2.Right * radius * 0.45f, Alpha(Paper, 0.65f), UiHairline, true);
                 break;
             case UpgradeId.GravityWell:
             case UpgradeId.ResonanceLeech:
+            case UpgradeId.ChainRelay:
             case UpgradeId.KairoSwarmSync:
             case UpgradeId.KairoRelayProtocol:
+            case UpgradeId.StasisField:
+            case UpgradeId.MagnetizedCore:
+            case UpgradeId.NyxSingularity:
+            case UpgradeId.NyxEventHorizon:
+            case UpgradeId.NyxGravityCantor:
+            case UpgradeId.LyraHarmonicCascade:
+            case UpgradeId.LyraEncoreField:
                 DrawCircle(center, radius * 0.72f, soft);
                 DrawCircle(center, radius * 0.72f, line, false, UiStroke, true);
                 DrawCircle(center, radius * 0.22f, Alpha(Paper, 0.74f));
+                if (id == UpgradeId.ChainRelay)
+                {
+                    DrawLine(center - new Vector2(radius * 0.62f, radius * 0.36f), center, Alpha(Paper, 0.62f), UiHairline, true);
+                    DrawLine(center, center + new Vector2(radius * 0.62f, -radius * 0.36f), Alpha(Paper, 0.62f), UiHairline, true);
+                }
                 break;
             case UpgradeId.MoonWisp:
             case UpgradeId.QuantumEcho:
             case UpgradeId.PolarityStorm:
             case UpgradeId.KairoDroneBay:
             case UpgradeId.KairoOverrideMatrix:
+            case UpgradeId.NyxOrbit:
+            case UpgradeId.RicochetMatrix:
                 DrawCircle(center, radius * 0.6f, Alpha(accent, 0.12f), false, UiStroke, true);
                 DrawCircle(center + new Vector2(radius * 0.46f, -radius * 0.28f), radius * 0.2f, line);
                 DrawCircle(center - new Vector2(radius * 0.42f, -radius * 0.24f), radius * 0.16f, Alpha(Paper, 0.58f));
@@ -4494,6 +8637,11 @@ public partial class MainGame : Node2D
             case UpgradeId.VesperSplitRail:
             case UpgradeId.VesperJudgmentCoil:
             case UpgradeId.VesperSeverLine:
+            case UpgradeId.ExecutionMark:
+            case UpgradeId.RookSiegeBattery:
+            case UpgradeId.OrionCometSpear:
+            case UpgradeId.OrionDeadeyeMark:
+            case UpgradeId.OrionStarfallQuiver:
                 DrawLine(center - Vector2.Right * radius * 0.72f, center + Vector2.Right * radius * 0.72f, line, UiAccentStroke, true);
                 DrawCircle(center + Vector2.Right * radius * 0.42f, radius * 0.18f, Alpha(Paper, 0.72f));
                 break;
@@ -4511,8 +8659,14 @@ public partial class MainGame : Node2D
             case UpgradeId.OneWaveOverdrive:
             case UpgradeId.HarmonicMap:
             case UpgradeId.EmergencyRepair:
+            case UpgradeId.FractalSplit:
                 DrawDiamond(center, radius * 0.68f, accent, Mathf.Pi * 0.25f);
                 DrawCircle(center, radius * 0.18f, Alpha(Paper, 0.72f));
+                if (id == UpgradeId.FractalSplit)
+                {
+                    DrawDiamond(center + new Vector2(radius * 0.48f, -radius * 0.34f), radius * 0.22f, Alpha(Paper, 0.72f), 0.0f);
+                    DrawDiamond(center - new Vector2(radius * 0.48f, -radius * 0.3f), radius * 0.18f, Alpha(Paper, 0.56f), 0.0f);
+                }
                 break;
         }
     }
@@ -4542,7 +8696,8 @@ public partial class MainGame : Node2D
         Rect2 panel = new(new Vector2(1416.0f, 92.0f), new Vector2(408.0f, 46.0f + _runObjectives.Count * 36.0f));
         DrawPanel(panel, Alpha(Ink, 0.44f), Alpha(CurrentSector().Accent, 0.28f));
         DrawText(T("hud.objectives"), panel.Position + new Vector2(14.0f, 22.0f), 13, Alpha(Paper, 0.62f), HorizontalAlignment.Left, 210.0f, false, 0);
-        string bonusText = _language == GameLanguage.Chinese ? $"奖励 +{_runObjectiveBonusDust}" : $"BONUS +{_runObjectiveBonusDust}";
+        int visibleBonusDust = _runObjectiveBonusDust + _runScoreBonusDust;
+        string bonusText = Tf("objective.bonus", visibleBonusDust);
         DrawText(bonusText, panel.Position + new Vector2(panel.Size.X - 132.0f, 22.0f), 13, Alpha(Gold, 0.72f), HorizontalAlignment.Right, 116.0f, false, 0);
         DrawLine(panel.Position + new Vector2(12.0f, 30.0f), panel.Position + new Vector2(panel.Size.X - 12.0f, 30.0f), Alpha(CurrentSector().Accent, 0.18f), UiHairline, true);
 
@@ -4556,7 +8711,7 @@ public partial class MainGame : Node2D
             DrawRect(row, Alpha(Graphite, objective.Completed ? 0.34f : 0.22f), true);
             DrawCircle(row.Position + new Vector2(11.0f, 15.0f), 4.5f, Alpha(accent, objective.Completed ? 0.86f : 0.52f));
             DrawText(ObjectiveText(objective), row.Position + new Vector2(24.0f, 16.0f), 13, objective.Completed ? Alpha(Jade, 0.9f) : Alpha(Paper, 0.74f), HorizontalAlignment.Left, row.Size.X - 112.0f, false, 0);
-            DrawText(objective.Completed ? (_language == GameLanguage.Chinese ? "完成" : "DONE") : $"{objective.Progress}/{objective.Target}", row.Position + new Vector2(row.Size.X - 88.0f, 16.0f), 13, Alpha(accent, 0.84f), HorizontalAlignment.Right, 78.0f, false, 0);
+            DrawText(objective.Completed ? T("ui.done") : $"{objective.Progress}/{objective.Target}", row.Position + new Vector2(row.Size.X - 88.0f, 16.0f), 13, Alpha(accent, 0.84f), HorizontalAlignment.Right, 78.0f, false, 0);
             DrawRect(bar, Alpha(Paper, 0.08f), true);
             DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, objective.Completed ? 0.86f : 0.62f), true);
         }
@@ -4565,11 +8720,13 @@ public partial class MainGame : Node2D
     private void DrawTitle()
     {
         float pulse = 0.55f + 0.45f * Mathf.Sin(_time * 3.2f);
-        DrawText(TitleName(), new Vector2(0.0f, 192.0f), _language == GameLanguage.Chinese ? 72 : 66, Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(TitleName(), new Vector2(0.0f, 192.0f), TitleFontSize(), Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         DrawText(TitleStartPrompt(), new Vector2(0.0f, 596.0f), 28, Alpha(Gold, 0.34f + pulse * 0.24f), HorizontalAlignment.Center, ScreenWidth, false, 0);
 
         DrawText(Tf("meta.wallet", _starDust), new Vector2(56.0f, 70.0f), 18, Alpha(Gold, 0.62f), HorizontalAlignment.Left, 340.0f, false, 0);
         DrawText(Tf("meta.best", _bestWave, _bestScore, _runsCompleted), new Vector2(56.0f, 100.0f), 15, Alpha(Paper, 0.36f), HorizontalAlignment.Left, 760.0f, false, 0);
+        DrawNextGoalPanel(TitleNextGoalRect(), true);
+        DrawTitleLeaderboard();
         DrawPilotSelect();
 
         DrawTitleTextButton(MetaButtonRect(), T("menu.meta"), Gold);
@@ -4577,46 +8734,146 @@ public partial class MainGame : Node2D
 
         if (_wonOnce)
         {
-            DrawText(T("title.won_once"), new Vector2(0.0f, 990.0f), 16, Alpha(Gold, 0.54f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+            DrawText(T("title.won_once"), new Vector2(0.0f, 1006.0f), 16, Alpha(Gold, 0.54f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         }
     }
 
-    private void DrawTitleShuttle(Vector2 center, float scale)
+    private void DrawTitleLeaderboard()
     {
-        Vector2 forward = Vector2.Up;
-        Vector2 right = Vector2.Right;
-        float trailPulse = 0.65f + 0.35f * Mathf.Sin(_time * 9.0f);
+        Rect2 panel = LeaderboardPanelRect();
+        Color accent = Gold;
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 260.0f, 0.028f, 5);
+        DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.34f));
+        DrawText(T("leader.title"), panel.Position + new Vector2(0.0f, 34.0f), 20, Alpha(Paper, 0.74f), HorizontalAlignment.Center, panel.Size.X, true, 2);
 
-        for (int i = 0; i < 9; i++)
+        var rows = LeaderboardRows();
+        for (int i = 0; i < rows.Length; i++)
         {
-            float t = i / 8.0f;
-            float length = Mathf.Lerp(52.0f, 220.0f, t) * scale;
-            float alpha = (1.0f - t) * (0.28f + trailPulse * 0.18f);
-            Vector2 basePos = center - forward * 28.0f * scale + right * (i - 4) * 2.2f * scale;
-            DrawLine(basePos, basePos - forward * length + right * (i - 4) * 0.4f * scale, Alpha(Paper, alpha), Mathf.Lerp(4.0f, 1.0f, t) * scale, true);
+            var rowData = rows[i];
+            Rect2 row = new(panel.Position + new Vector2(52.0f, 76.0f + i * 34.0f), new Vector2(panel.Size.X - 104.0f, 30.0f));
+            DrawLine(row.Position + new Vector2(0.0f, row.Size.Y - 1.0f), row.Position + new Vector2(row.Size.X, row.Size.Y - 1.0f), Alpha(Paper, 0.06f), UiHairline, true);
+            DrawText(rowData.Label, row.Position + new Vector2(0.0f, 21.0f), 15, Alpha(rowData.Accent, 0.74f), HorizontalAlignment.Left, 180.0f, true, 1);
+            DrawText(rowData.Value, row.Position + new Vector2(row.Size.X - 260.0f, 21.0f), 17, Alpha(rowData.Accent, 0.84f), HorizontalAlignment.Right, 260.0f, true, 1);
+        }
+    }
+
+    private (string Label, string Value, Color Accent)[] LeaderboardRows()
+    {
+        (string Label, string Value, Color Accent)[] rows = new (string Label, string Value, Color Accent)[ClearRecordCount];
+        for (int i = 0; i < rows.Length; i++)
+        {
+            bool hasRecord = i < _clearTimeRecords.Count;
+            rows[i] = (
+                Tf("leader.rank", i + 1),
+                hasRecord ? FormatRecordTime(_clearTimeRecords[i]) : T("leader.no_record"),
+                LeaderboardRankAccent(i, hasRecord)
+            );
         }
 
-        Vector2[] hull =
+        return rows;
+    }
+
+    private void DrawNextGoalPanel(Rect2 panel, bool compact)
+    {
+        Color accent = NextGoalAccent();
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, compact ? 150.0f : 190.0f, compact ? 0.018f : 0.026f, compact ? 3 : 4);
+        DrawPanel(panel, Alpha(Ink, compact ? 0.28f : 0.46f), Alpha(accent, compact ? 0.24f : 0.36f));
+        DrawLine(panel.Position + new Vector2(16.0f, panel.Size.Y - 8.0f), panel.Position + new Vector2(panel.Size.X - 16.0f, panel.Size.Y - 8.0f), Alpha(accent, 0.24f), UiHairline, true);
+        DrawText(T("goal.title").ToUpperInvariant(), panel.Position + new Vector2(18.0f, compact ? 25.0f : 29.0f), compact ? 12 : 13, Alpha(accent, 0.72f), HorizontalAlignment.Left, 132.0f, false, 0);
+        DrawText(NextGoalText(), panel.Position + new Vector2(154.0f, compact ? 26.0f : 31.0f), compact ? 16 : 18, Alpha(Paper, compact ? 0.66f : 0.74f), HorizontalAlignment.Left, panel.Size.X - 176.0f, true, compact ? 1 : 2);
+    }
+
+    private string NextGoalText()
+    {
+        PilotKind? lockedPilot = NextLockedPilot();
+        if (lockedPilot.HasValue)
         {
-            center + forward * 38.0f * scale,
-            center + right * 13.0f * scale - forward * 1.0f * scale,
-            center + right * 24.0f * scale - forward * 26.0f * scale,
-            center + right * 6.0f * scale - forward * 17.0f * scale,
-            center - forward * 34.0f * scale,
-            center - right * 6.0f * scale - forward * 17.0f * scale,
-            center - right * 24.0f * scale - forward * 26.0f * scale,
-            center - right * 13.0f * scale - forward * 1.0f * scale,
+            PilotKind previous = PreviousPilot(lockedPilot.Value);
+            return Tf("goal.unlock_pilot", PilotName(previous), PilotName(lockedPilot.Value));
+        }
+
+        if (!_wonOnce)
+        {
+            return T("goal.clear_40");
+        }
+
+        if (_clearTimeRecords.Count > 0)
+        {
+            return Tf("goal.beat_record", FormatRecordTime(_clearTimeRecords[0]));
+        }
+
+        return T("goal.set_record");
+    }
+
+    private Color NextGoalAccent()
+    {
+        PilotKind? lockedPilot = NextLockedPilot();
+        if (lockedPilot.HasValue)
+        {
+            return PilotAccent(lockedPilot.Value);
+        }
+
+        return _wonOnce ? Gold : Jade;
+    }
+
+    private PilotKind? NextLockedPilot()
+    {
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            if (!IsPilotUnlocked(pilot))
+            {
+                return pilot;
+            }
+        }
+
+        return null;
+    }
+
+    private static PilotKind? NextPilot(PilotKind pilot)
+    {
+        int index = PilotIndex(pilot);
+        if (index < 0 || index >= PilotCount() - 1)
+        {
+            return null;
+        }
+
+        return PilotFromIndex(index + 1);
+    }
+
+    private string FormatRecordTime(float seconds)
+    {
+        if (seconds <= 0.0f)
+        {
+            return T("leader.no_record");
+        }
+
+        int centiseconds = TimeToCentiseconds(seconds);
+        int minutes = centiseconds / 6000;
+        int secondsPart = centiseconds / 100 % 60;
+        int fraction = centiseconds % 100;
+        return $"{minutes:00}:{secondsPart:00}.{fraction:00}";
+    }
+
+    private static Color LeaderboardRankAccent(int index, bool hasRecord)
+    {
+        if (!hasRecord)
+        {
+            return Paper.Lerp(Graphite, 0.35f);
+        }
+
+        return index switch
+        {
+            0 => Gold,
+            1 => PickupBlue,
+            2 => Jade,
+            _ => Paper.Lerp(PickupBlue, 0.28f),
         };
-        DrawGlow(center, Paper, 92.0f * scale, 0.026f, 4);
-        DrawColoredPolygon(hull, Alpha(Paper, 0.88f), Array.Empty<Vector2>(), null);
-        DrawPolyline(ClosePolygon(hull), Alpha(new Color(0.74f, 0.78f, 0.84f), 0.82f), 1.6f * scale, true);
-        DrawLine(center + forward * 28.0f * scale, center - forward * 26.0f * scale, Alpha(Graphite, 0.55f), 1.4f * scale, true);
-        DrawCircle(center + forward * 3.0f * scale, 4.2f * scale, Alpha(Cyan, 0.72f));
     }
 
     private void DrawPilotSelect()
     {
-        DrawText(T("menu.pilot"), new Vector2(0.0f, 678.0f), 16, Alpha(Paper, 0.38f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(T("menu.pilot"), new Vector2(0.0f, 636.0f), 16, Alpha(Paper, 0.38f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         for (int i = 0; i < PilotCount(); i++)
         {
             DrawPilotCard(i, PilotFromIndex(i), PilotCardRect(i));
@@ -4627,21 +8884,21 @@ public partial class MainGame : Node2D
     {
         bool unlocked = IsPilotUnlocked(pilot);
         bool selected = _selectedPilot == pilot;
-        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
         Color accent = unlocked ? PilotAccent(pilot) : GridLine;
         Rect2 drawRect = hover ? rect.Grow(4.0f) : rect;
         DrawPanel(drawRect, Alpha(Graphite, selected ? 0.46f : 0.24f), Alpha(accent, selected ? 0.72f : 0.22f));
-        DrawPilotGlyph(pilot, drawRect.Position + new Vector2(34.0f, 43.0f), accent, unlocked);
-        DrawText(PilotName(pilot).ToUpperInvariant(), drawRect.Position + new Vector2(72.0f, 32.0f), 20, unlocked ? Paper : Alpha(Paper, 0.38f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, true, 2);
-        DrawText(PilotWeapon(pilot), drawRect.Position + new Vector2(72.0f, 55.0f), 15, Alpha(accent, unlocked ? 0.88f : 0.42f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, false, 0);
-        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), drawRect.Position + new Vector2(18.0f, 76.0f), unlocked ? 14 : 13, Alpha(Paper, unlocked ? 0.62f : 0.48f), drawRect.Size.X - 36.0f, unlocked ? 18.0f : 16.0f);
+        DrawPilotGlyph(pilot, drawRect.Position + new Vector2(34.0f, 38.0f), accent, unlocked);
+        DrawText(PilotName(pilot).ToUpperInvariant(), drawRect.Position + new Vector2(72.0f, 27.0f), 18, unlocked ? Paper : Alpha(Paper, 0.38f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, true, 2);
+        DrawText(PilotWeapon(pilot), drawRect.Position + new Vector2(72.0f, 49.0f), 14, Alpha(accent, unlocked ? 0.88f : 0.42f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, false, 0);
+        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), drawRect.Position + new Vector2(18.0f, 68.0f), unlocked ? 12 : 11, Alpha(Paper, unlocked ? 0.62f : 0.48f), drawRect.Size.X - 36.0f, unlocked ? 15.0f : 13.0f);
         if (selected)
         {
             DrawLine(drawRect.Position + new Vector2(12.0f, drawRect.Size.Y - 10.0f), drawRect.End - new Vector2(12.0f, 10.0f), Alpha(accent, 0.9f), UiAccentStroke, true);
         }
         if (!unlocked)
         {
-            DrawText("LOCK", drawRect.Position + new Vector2(drawRect.Size.X - 66.0f, 28.0f), 13, Alpha(Rose, 0.74f), HorizontalAlignment.Center, 50.0f, true, 2);
+            DrawText(T("ui.lock"), drawRect.Position + new Vector2(drawRect.Size.X - 66.0f, 28.0f), 13, Alpha(Rose, 0.74f), HorizontalAlignment.Center, 50.0f, true, 2);
             Rect2 bar = new(drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 14.0f), new Vector2(drawRect.Size.X - 36.0f, 5.0f));
             float progress = PilotUnlockProgress(pilot);
             DrawRect(bar, Alpha(Paper, 0.08f), true);
@@ -4662,32 +8919,36 @@ public partial class MainGame : Node2D
     {
         DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), Alpha(Void, 0.56f), true);
         bool runSettings = IsRunViewMode(_settingsReturnMode);
-        Rect2 panel = new(new Vector2(650.0f, runSettings ? 220.0f : 246.0f), new Vector2(620.0f, runSettings ? 640.0f : 560.0f));
+        Rect2 panel = new(new Vector2(580.0f, 130.0f), new Vector2(760.0f, 820.0f));
         DrawGlow(panel.Position + panel.Size * 0.5f, CurrentSector().Accent, 380.0f, 0.04f, 7);
         DrawPanel(panel, Alpha(Graphite, 0.9f), Alpha(GridLine, 0.48f));
         DrawSettingsButton(new Rect2(panel.Position + new Vector2(30.0f, 30.0f), new Vector2(42.0f, 42.0f)), true);
         DrawText(T("settings.title"), panel.Position + new Vector2(0.0f, 92.0f), 44, Paper, HorizontalAlignment.Center, panel.Size.X, true, 4);
         DrawText(T("settings.subtitle"), panel.Position + new Vector2(58.0f, 138.0f), 19, Alpha(Paper, 0.64f), HorizontalAlignment.Center, panel.Size.X - 116.0f, true, 2);
 
-        DrawMenuButton(SettingsGuideButtonRect(), T("settings.guide"), XpGreen, true);
-        DrawMenuButton(SettingsLanguageButtonRect(), T("menu.language"), PolarityColor(_playerPolarity), false);
+        DrawMenuButton(SettingsOptionRect(0), T("settings.guide"), XpGreen, true);
+        DrawSettingsValueRow(SettingsOptionRect(1), T("settings.music"), $"{Mathf.RoundToInt(_musicVolume * 100.0f)}%", Cyan, _musicVolume);
+        DrawSettingsValueRow(SettingsOptionRect(2), T("settings.sfx"), $"{Mathf.RoundToInt(_sfxVolume * 100.0f)}%", Gold, _sfxVolume);
+        DrawSettingsValueRow(SettingsOptionRect(3), T("settings.language"), LanguageDisplayName(_language), PolarityColor(_playerPolarity), -1.0f);
+        DrawSettingsValueRow(SettingsOptionRect(4), T("settings.resolution"), ResolutionDisplayName(_resolutionPreset), PickupBlue, -1.0f);
+        DrawSettingsValueRow(SettingsOptionRect(5), T("settings.quality"), QualityDisplayName(_visualQuality), Jade, (int)_visualQuality / (float)(VisualQualityCount() - 1));
         if (runSettings)
         {
-            DrawMenuButton(SettingsMainMenuButtonRect(), T("settings.main_menu"), Rose, false);
+            DrawMenuButton(SettingsOptionRect(6), T("settings.main_menu"), Rose, false);
         }
         string deleteLabel = _deleteSaveConfirmTimer > 0.0f ? T("settings.delete_confirm") : T("settings.delete_save");
-        DrawMenuButton(SettingsDeleteSaveButtonRect(), deleteLabel, _deleteSaveConfirmTimer > 0.0f ? Rose : AlertRed.Lerp(Paper, 0.2f), false);
+        DrawMenuButton(SettingsOptionRect(runSettings ? 7 : 6), deleteLabel, _deleteSaveConfirmTimer > 0.0f ? Rose : AlertRed.Lerp(Paper, 0.2f), false);
         if (_deleteSaveConfirmTimer > 0.0f)
         {
-            DrawText(T("settings.delete_warning"), panel.Position + new Vector2(70.0f, runSettings ? 462.0f : 382.0f), 15, Alpha(Rose, 0.76f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
+            DrawText(T("settings.delete_warning"), panel.Position + new Vector2(70.0f, 728.0f), 15, Alpha(Rose, 0.76f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
         }
         else if (_deleteSaveNoticeTimer > 0.0f)
         {
-            DrawText(T("settings.delete_notice"), panel.Position + new Vector2(70.0f, runSettings ? 462.0f : 382.0f), 16, Alpha(Jade, 0.78f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
+            DrawText(T("settings.delete_notice"), panel.Position + new Vector2(70.0f, 728.0f), 16, Alpha(Jade, 0.78f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
         }
         string backLabel = runSettings ? T("settings.resume") : T("settings.back");
-        DrawMenuButton(SettingsBackButtonRect(), backLabel, GridLine, false);
-        DrawText(T("language.hint"), panel.Position + new Vector2(0.0f, runSettings ? 578.0f : 492.0f), 17, Alpha(Paper, 0.42f), HorizontalAlignment.Center, panel.Size.X, true, 2);
+        DrawMenuButton(SettingsOptionRect(runSettings ? 8 : 7), backLabel, GridLine, false);
+        DrawText(T("settings.adjust_hint"), panel.Position + new Vector2(0.0f, 778.0f), 17, Alpha(Paper, 0.42f), HorizontalAlignment.Center, panel.Size.X, true, 2);
     }
 
     private void DrawGuide()
@@ -4699,25 +8960,36 @@ public partial class MainGame : Node2D
         DrawText(T("guide.title"), panel.Position + new Vector2(0.0f, 82.0f), 48, Paper, HorizontalAlignment.Center, panel.Size.X, true, 5);
         DrawText(T("guide.subtitle"), panel.Position + new Vector2(100.0f, 128.0f), 20, Alpha(Paper, 0.6f), HorizontalAlignment.Center, panel.Size.X - 200.0f, true, 2);
 
+        for (int i = 0; i < GuidePageCount(); i++)
+        {
+            Rect2 tab = GuideTabRect(i);
+            bool selected = i == _guidePage;
+            bool hover = tab.HasPoint(GetGlobalMousePosition());
+            Color accent = selected ? XpGreen : GridLine;
+            DrawPanel(tab, Alpha(Ink, selected ? 0.68f : 0.34f), Alpha(accent, selected || hover ? 0.64f : 0.28f));
+            DrawText(T($"guide.tab.{i}"), tab.Position + new Vector2(0.0f, 27.0f), 15, selected ? Paper : Alpha(Paper, 0.58f), HorizontalAlignment.Center, tab.Size.X, true, 1);
+        }
+
         string[] lines = GuideLines();
         for (int i = 0; i < lines.Length; i++)
         {
-            float y = 196.0f + i * 74.0f;
-            Rect2 row = new(panel.Position + new Vector2(84.0f, y), new Vector2(912.0f, 54.0f));
+            float y = 242.0f + i * 82.0f;
+            Rect2 row = new(panel.Position + new Vector2(84.0f, y), new Vector2(912.0f, 62.0f));
             Color accent = i switch
             {
                 0 => Paper,
-                1 => PolarityColor(_playerPolarity),
-                2 => PolarityColor(OtherStance(_playerPolarity)),
+                1 => EnemyBulletColor(),
+                2 => PilotAccent(_runPilot),
                 3 => XpGreen,
                 4 => PickupBlue,
                 _ => AlertRed,
             };
             DrawPanel(row, Alpha(Ink, 0.34f), Alpha(accent, 0.3f));
-            DrawCircle(row.Position + new Vector2(28.0f, 27.0f), 9.0f, Alpha(accent, 0.88f));
-            DrawWrapped(lines[i], row.Position + new Vector2(54.0f, 17.0f), 19, Alpha(Paper, 0.78f), row.Size.X - 78.0f, 25.0f);
+            DrawCircle(row.Position + new Vector2(28.0f, 31.0f), 9.0f, Alpha(accent, 0.88f));
+            DrawWrapped(lines[i], row.Position + new Vector2(54.0f, 17.0f), 18, Alpha(Paper, 0.78f), row.Size.X - 78.0f, 23.0f);
         }
 
+        DrawText(T("guide.page_hint"), panel.Position + new Vector2(0.0f, 638.0f), 17, Alpha(Paper, 0.45f), HorizontalAlignment.Center, panel.Size.X, true, 1);
         DrawMenuButton(GuideBackButtonRect(), T("settings.back"), GridLine, false);
     }
 
@@ -4741,7 +9013,7 @@ public partial class MainGame : Node2D
             bool maxed = rank >= def.MaxRank;
             int cost = maxed ? 0 : MetaUpgradeCost(def, rank);
             Rect2 rect = MetaUpgradeRect(i);
-            bool hover = rect.HasPoint(mouse);
+            bool hover = rect.HasPoint(mouse) || IsGamepadFocused(rect);
             Rect2 drawRect = hover ? rect.Grow(5.0f) : rect;
             Color accent = def.Accent;
             DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 82.0f, hover ? 0.065f : 0.034f, 4);
@@ -4769,14 +9041,16 @@ public partial class MainGame : Node2D
     {
         DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, 0.56f), true);
         DrawText(T("upgrade.title"), new Vector2(0.0f, 218.0f), 42, Paper, HorizontalAlignment.Center, ScreenWidth, true, 5);
-        DrawText($"{T("upgrade.hint")}    REROLL {_rerollsRemaining}    {T("language.hint")}", new Vector2(0.0f, 266.0f), 19, Alpha(Paper, 0.62f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText($"{T("upgrade.hint")}    {Tf("upgrade.reroll", _rerollsRemaining)}    {T("language.hint")}", new Vector2(0.0f, 266.0f), 19, Alpha(Paper, 0.62f), HorizontalAlignment.Center, ScreenWidth, true, 2);
         DrawText(NextWavePreviewText(), new Vector2(0.0f, 304.0f), 18, Alpha(CurrentSector().Accent, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText(UpgradeMomentumText(), new Vector2(0.0f, 330.0f), 14, Alpha(Paper, 0.42f), HorizontalAlignment.Center, ScreenWidth, true, 1);
+        DrawBuildDirectionPanel();
 
         Vector2 mouse = GetGlobalMousePosition();
         for (int i = 0; i < _upgradeChoices.Count; i++)
         {
             UpgradeCard card = _upgradeChoices[i];
-            bool hover = card.Rect.HasPoint(mouse);
+            bool hover = card.Rect.HasPoint(mouse) || IsGamepadFocused(card.Rect);
             Rect2 rect = hover ? card.Rect.Grow(7.0f) : card.Rect;
             Color border = Alpha(card.Accent, hover ? 0.86f : 0.46f);
             DrawGlow(rect.Position + rect.Size * 0.5f, card.Accent, hover ? 178.0f : 116.0f, hover ? 0.075f : 0.034f, 5);
@@ -4799,19 +9073,63 @@ public partial class MainGame : Node2D
             DrawUpgradeGlyph(card.Id, iconCenter, 23.0f, card.Accent);
 
             DrawText(card.Tag.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 38.0f), 15, Alpha(card.Accent, 0.96f), HorizontalAlignment.Left, rect.Size.X - 118.0f, true, 1);
+            string badgeText = UpgradeBadgeText(card.Id);
+            float badgeWidth = Mathf.Clamp(EstimateTextPixelWidth(badgeText.ToUpperInvariant(), 11) + 20.0f, 76.0f, 196.0f);
+            Rect2 badge = new(rect.Position + new Vector2(26.0f, 52.0f), new Vector2(badgeWidth, 22.0f));
+            DrawRect(badge, Alpha(card.Accent, hover ? 0.18f : 0.1f), true);
+            DrawRect(badge, Alpha(card.Accent, hover ? 0.44f : 0.26f), false, UiHairline, true);
+            DrawText(badgeText.ToUpperInvariant(), badge.Position + new Vector2(9.0f, 15.5f), 11, Alpha(card.Accent.Lerp(Paper, 0.18f), 0.9f), HorizontalAlignment.Left, badge.Size.X - 18.0f, false, 0);
             DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 82.0f), 27, Paper, HorizontalAlignment.Left, rect.Size.X - 122.0f, true, 3);
             DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 152.0f), 20, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 31.0f);
 
             int rank = GetRank(card.Id);
             int maxRank = MaxRank(card.Id);
             int nextRank = Math.Min(rank + 1, maxRank);
-            string rankText = _language == GameLanguage.Chinese ? $"等级 {rank}  >  {nextRank}" : $"RANK {rank}  >  {nextRank}";
-            string slotText = _language == GameLanguage.Chinese ? $"按 {i + 1} 选择" : $"PRESS {i + 1}";
+            string rankText = Tf("upgrade.rank_change", rank, nextRank);
+            string slotText = IsGamepadFocused(card.Rect)
+                ? T("upgrade.select_gamepad")
+                : Tf("upgrade.select_key", i + 1);
             Rect2 footer = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 58.0f), new Vector2(rect.Size.X - 48.0f, 36.0f));
             DrawRect(footer, Alpha(Graphite, 0.34f), true);
             DrawRect(footer, Alpha(card.Accent, hover ? 0.36f : 0.2f), false, UiHairline, true);
             DrawText(rankText, footer.Position + new Vector2(12.0f, 23.0f), 14, Alpha(card.Accent, 0.94f), HorizontalAlignment.Left, footer.Size.X - 24.0f, false, 0);
             DrawText(slotText, footer.Position + new Vector2(0.0f, 23.0f), 14, Alpha(Paper, hover ? 0.78f : 0.52f), HorizontalAlignment.Right, footer.Size.X - 12.0f, false, 0);
+        }
+    }
+
+    private void DrawBuildDirectionPanel()
+    {
+        Rect2 panel = new(new Vector2(470.0f, 756.0f), new Vector2(980.0f, 86.0f));
+        int dominant = DominantDraftBiasIndex();
+        int dominantValue = DraftBiasValue(dominant);
+        Color accent = dominantValue >= 3 ? BuildPathAccent(dominant) : Alpha(Paper, 0.62f);
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 210.0f, 0.018f, 4);
+        DrawPanel(panel, Alpha(Ink, 0.48f), Alpha(accent, dominantValue >= 3 ? 0.38f : 0.22f));
+        DrawText(T("build.panel.title").ToUpperInvariant(), panel.Position + new Vector2(22.0f, 28.0f), 13, Alpha(Paper, 0.54f), HorizontalAlignment.Left, 180.0f, false, 0);
+        string focus = dominantValue >= 3
+            ? Tf("build.panel.focus", UpgradePathLabel(dominant))
+            : T("build.panel.open");
+        DrawText(focus.ToUpperInvariant(), panel.Position + new Vector2(22.0f, 52.0f), 18, Alpha(accent, 0.86f), HorizontalAlignment.Left, 260.0f, true, 1);
+
+        for (int i = 0; i < 5; i++)
+        {
+            float x = panel.Position.X + 318.0f + i * 126.0f;
+            int value = DraftBiasValue(i);
+            float maxMilestone = BuildMilestoneThresholds[BuildMilestoneThresholds.Length - 1];
+            float progress = Mathf.Clamp(value / maxMilestone, 0.0f, 1.0f);
+            Color pathAccent = BuildPathAccent(i);
+            Rect2 bar = new(new Vector2(x, panel.Position.Y + 48.0f), new Vector2(88.0f, 5.0f));
+            DrawText(UpgradePathLabel(i).ToUpperInvariant(), new Vector2(x, panel.Position.Y + 28.0f), 12, Alpha(pathAccent, i == dominant && dominantValue >= 3 ? 0.92f : 0.58f), HorizontalAlignment.Left, 104.0f, false, 0);
+            DrawRect(bar, Alpha(Paper, 0.08f), true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(pathAccent, 0.66f), true);
+            DrawRect(bar, Alpha(pathAccent, 0.28f), false, UiHairline, true);
+            for (int tier = 0; tier < BuildMilestoneThresholds.Length; tier++)
+            {
+                float tickX = bar.Position.X + bar.Size.X * (BuildMilestoneThresholds[tier] / maxMilestone);
+                bool claimed = HasBuildMilestone(i, tier);
+                Color tickColor = claimed ? pathAccent.Lerp(Paper, 0.16f) : Alpha(Paper, 0.22f);
+                DrawLine(new Vector2(tickX, bar.Position.Y - 5.0f), new Vector2(tickX, bar.End.Y + 5.0f), Alpha(tickColor, claimed ? 0.86f : 0.58f), claimed ? UiStroke : UiHairline, true);
+            }
         }
     }
 
@@ -4821,17 +9139,39 @@ public partial class MainGame : Node2D
         Color color = victory ? Gold : Rose;
         DrawGlow(ScreenCenter, color, victory ? 620.0f : 460.0f, 0.07f, 9);
         DrawText(victory ? T("end.victory.title") : T("end.defeat.title"), new Vector2(0.0f, 430.0f), 82, color, HorizontalAlignment.Center, ScreenWidth, true, 7);
-        DrawText(Tf("end.score", _score), new Vector2(0.0f, 506.0f), 32, Paper, HorizontalAlignment.Center, ScreenWidth, true, 4);
+        DrawText(Tf("end.wave", _lastRunWave, TotalWaves), new Vector2(0.0f, 506.0f), 32, Paper, HorizontalAlignment.Center, ScreenWidth, true, 4);
         DrawText(victory ? T("end.victory.body") : T("end.defeat.body"), new Vector2(0.0f, 568.0f), 24, Alpha(Paper, 0.72f), HorizontalAlignment.Center, ScreenWidth, true, 3);
         DrawText(Tf("end.reward", _lastDustEarned, _lastRunWave), new Vector2(0.0f, 620.0f), 25, Gold, HorizontalAlignment.Center, ScreenWidth, true, 3);
+        float bonusY = 656.0f;
+        if (_lastScoreBonusDust > 0)
+        {
+            DrawText(Tf("end.score_bonus", _lastScoreBonusDust), new Vector2(0.0f, bonusY), 20, Alpha(Gold, 0.86f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+            bonusY += 30.0f;
+        }
         if (_lastObjectiveBonusDust > 0)
         {
-            DrawText(Tf("end.objective_bonus", _lastObjectiveBonusDust), new Vector2(0.0f, 656.0f), 20, Alpha(Jade, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+            DrawText(Tf("end.objective_bonus", _lastObjectiveBonusDust), new Vector2(0.0f, bonusY), 20, Alpha(Jade, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
         }
         DrawPanel(new Rect2(new Vector2(760.0f, 700.0f), new Vector2(400.0f, 58.0f)), Alpha(Ink, 0.72f), Alpha(color, 0.48f));
         DrawText(T("end.restart"), new Vector2(760.0f, 738.0f), 23, Paper, HorizontalAlignment.Center, 400.0f, true, 3);
-        DrawText(T("end.meta_hint"), new Vector2(0.0f, 800.0f), 20, Alpha(Paper, 0.64f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-        DrawText(T("language.hint"), new Vector2(0.0f, 830.0f), 20, Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        float hintY = 786.0f;
+        if (_lastUnlockedPilot.HasValue)
+        {
+            DrawText(Tf("end.unlock_pilot", PilotName(_lastUnlockedPilot.Value)), new Vector2(0.0f, hintY), 22, Alpha(PilotAccent(_lastUnlockedPilot.Value), 0.9f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+            hintY += 34.0f;
+        }
+        if (victory && _lastClearTime > 0.0f)
+        {
+            string recordText = _lastClearRecordRank > 0
+                ? Tf("end.clear_record", _lastClearRecordRank, FormatRecordTime(_lastClearTime))
+                : Tf("end.clear_time", FormatRecordTime(_lastClearTime));
+            DrawText(recordText, new Vector2(0.0f, hintY), 20, Alpha(_lastClearRecordRank > 0 ? Gold : Paper, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+            hintY += 34.0f;
+        }
+        DrawNextGoalPanel(new Rect2(new Vector2(600.0f, hintY), new Vector2(720.0f, 52.0f)), false);
+        hintY += 76.0f;
+        DrawText(T("end.meta_hint"), new Vector2(0.0f, hintY), 20, Alpha(Paper, 0.64f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText(T("language.hint"), new Vector2(0.0f, hintY + 30.0f), 20, Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, true, 2);
     }
 
     private void DrawHudMetric(Rect2 rect, string label, string value, Color accent)
@@ -4841,9 +9181,75 @@ public partial class MainGame : Node2D
         DrawText(value, rect.Position + new Vector2(10.0f, 35.0f), 18, accent, HorizontalAlignment.Left, rect.Size.X - 20.0f, true, 2);
     }
 
+    private void DrawSpawnMetric(Rect2 rect)
+    {
+        float rate = SpawnRateMultiplier();
+        Color accent = rate >= 1.65f ? Gold : Alpha(Paper, 0.72f);
+        int comboBonus = ComboSpawnBonusPercent();
+        string label = comboBonus > 0 ? Tf("hud.spawn.combo", comboBonus) : T("hud.spawn.label");
+        DrawPanel(rect, Alpha(Ink, 0.34f), Alpha(GridLine, 0.22f));
+        DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(10.0f, 16.0f), 10, Alpha(comboBonus > 0 ? Gold : Paper, comboBonus > 0 ? 0.62f : 0.44f), HorizontalAlignment.Left, rect.Size.X - 20.0f, false, 0);
+        DrawText(SpawnSpeedText(), rect.Position + new Vector2(10.0f, 34.0f), 17, accent, HorizontalAlignment.Left, rect.Size.X - 20.0f, true, 2);
+
+        Rect2 bar = new(rect.Position + new Vector2(10.0f, rect.Size.Y - 6.0f), new Vector2(rect.Size.X - 20.0f, 3.0f));
+        float base01 = SpawnRate01(ProgressSpawnRate());
+        float total01 = _hudSpawnValue;
+        DrawRect(bar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * _hudSpawnTrail, bar.Size.Y)), Alpha(Paper, 0.12f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * Mathf.Min(base01, total01), bar.Size.Y)), Alpha(PickupBlue, 0.62f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * total01, bar.Size.Y)), Alpha(accent, 0.72f + _comboTierPulse * 0.2f), true);
+    }
+
+    private void DrawScoreCacheMeter(Rect2 rect)
+    {
+        int previous = _scoreCacheLevel <= 0 ? 0 : ScoreCacheThreshold(_scoreCacheLevel - 1);
+        int span = Math.Max(1, _nextScoreCache - previous);
+        float progress = Mathf.Clamp((_score - previous) / (float)span, 0.0f, 1.0f);
+        Color accent = _scoreCachePulse > 0.0f ? Gold : XpGreen;
+        Rect2 bar = new(rect.Position + new Vector2(10.0f, rect.Size.Y - 6.0f), new Vector2(rect.Size.X - 20.0f, 3.0f));
+        DrawRect(bar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.74f + _scoreCachePulse * 0.22f), true);
+        DrawText($"{T("hud.cache.label")} {Mathf.RoundToInt(progress * 100.0f)}%", rect.Position + new Vector2(rect.Size.X - 92.0f, 16.0f), 10, Alpha(accent, 0.62f + _scoreCachePulse * 0.26f), HorizontalAlignment.Right, 82.0f, false, 0);
+    }
+
+    private void DrawExperienceMeter(Rect2 rect)
+    {
+        float progress = Mathf.Clamp(_xp / (float)Math.Max(1, _xpToNext), 0.0f, 1.0f);
+        Color accent = XpGray().Lerp(Paper, 0.18f + _xpPulse * 0.28f);
+        Rect2 bar = new(rect.Position + new Vector2(10.0f, rect.Size.Y - 6.0f), new Vector2(rect.Size.X - 20.0f, 3.0f));
+        DrawRect(bar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.74f + _xpPulse * 0.2f), true);
+        DrawText($"{Mathf.RoundToInt(progress * 100.0f)}%", rect.Position + new Vector2(rect.Size.X - 60.0f, 16.0f), 10, Alpha(accent, 0.62f + _xpPulse * 0.26f), HorizontalAlignment.Right, 50.0f, false, 0);
+    }
+
+    private void DrawBottomExperienceBar()
+    {
+        Rect2 panel = new(new Vector2(330.0f, 1002.0f), new Vector2(1260.0f, 44.0f));
+        float progress = Mathf.Clamp(_xp / (float)Math.Max(1, _xpToNext), 0.0f, 1.0f);
+        Color accent = XpGray().Lerp(Paper, 0.2f + _xpPulse * 0.32f);
+        DrawPanel(panel, Alpha(Ink, 0.52f), Alpha(accent, 0.3f + _xpPulse * 0.28f));
+        DrawLine(panel.Position + new Vector2(14.0f, panel.Size.Y - 7.0f), panel.Position + new Vector2(panel.Size.X - 14.0f, panel.Size.Y - 7.0f), Alpha(Paper, 0.08f), UiHairline, true);
+
+        Rect2 levelBox = new(panel.Position + new Vector2(14.0f, 8.0f), new Vector2(78.0f, 28.0f));
+        DrawRect(levelBox, Alpha(Graphite, 0.58f), true);
+        DrawRect(levelBox, Alpha(accent, 0.38f + _xpPulse * 0.22f), false, UiHairline, true);
+        DrawText($"{T("hud.level.label")} {_runLevel}", levelBox.Position + new Vector2(0.0f, 20.0f), 14, Alpha(Paper, 0.82f + _xpPulse * 0.14f), HorizontalAlignment.Center, levelBox.Size.X, true, 1);
+
+        Rect2 bar = new(panel.Position + new Vector2(112.0f, 15.0f), new Vector2(panel.Size.X - 250.0f, 14.0f));
+        DrawRect(bar.Grow(2.0f), Alpha(Paper, 0.07f), true);
+        DrawRect(bar, Alpha(Graphite, 0.8f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.68f + _xpPulse * 0.26f), true);
+        DrawLine(bar.Position + new Vector2(0.0f, 2.0f), bar.Position + new Vector2(bar.Size.X * progress, 2.0f), Alpha(Paper, 0.22f + _xpPulse * 0.24f), UiHairline, true);
+
+        string value = $"{_xp}/{_xpToNext}";
+        DrawText(T("hud.xp.label"), bar.Position + new Vector2(0.0f, -5.0f), 12, Alpha(Paper, 0.5f), HorizontalAlignment.Left, 100.0f, false, 0);
+        DrawText(value, bar.Position + new Vector2(bar.Size.X + 12.0f, 10.0f), 14, Alpha(Paper, 0.72f), HorizontalAlignment.Left, 100.0f, false, 0);
+        DrawText($"{Mathf.RoundToInt(progress * 100.0f)}%", bar.Position + new Vector2(0.0f, 10.0f), 13, Alpha(Paper, 0.62f + _xpPulse * 0.22f), HorizontalAlignment.Center, bar.Size.X, false, 0);
+    }
+
     private void DrawSettingsButton(Rect2 rect, bool withLabel)
     {
-        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
         Color accent = hover ? XpGreen : GridLine;
         DrawPanel(rect, Alpha(Ink, hover ? 0.7f : 0.42f), Alpha(accent, hover ? 0.72f : 0.34f));
         Vector2 center = rect.Position + rect.Size * 0.5f;
@@ -4883,9 +9289,26 @@ public partial class MainGame : Node2D
         DrawLine(rect.Position, rect.Position + new Vector2(rect.Size.X, 0.0f), Alpha(Paper, 0.08f), UiHairline, true);
     }
 
+    private void DrawSettingsValueRow(Rect2 rect, string label, string value, Color accent, float fill01)
+    {
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
+        Rect2 drawRect = hover ? rect.Grow(5.0f) : rect;
+        DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 120.0f : 72.0f, hover ? 0.056f : 0.028f, 4);
+        DrawPanel(drawRect, Alpha(Ink, hover ? 0.72f : 0.58f), Alpha(accent, hover ? 0.78f : 0.38f));
+        DrawText(label.ToUpperInvariant(), drawRect.Position + new Vector2(24.0f, 32.0f), 17, Alpha(Paper, hover ? 0.9f : 0.68f), HorizontalAlignment.Left, drawRect.Size.X - 280.0f, true, 2);
+        DrawText("<", drawRect.Position + new Vector2(drawRect.Size.X - 204.0f, 32.0f), 18, Alpha(accent, hover ? 0.9f : 0.5f), HorizontalAlignment.Center, 34.0f, true, 1);
+        DrawText(value, drawRect.Position + new Vector2(drawRect.Size.X - 170.0f, 32.0f), 17, Alpha(Paper, hover ? 0.92f : 0.68f), HorizontalAlignment.Center, 126.0f, true, 2);
+        DrawText(">", drawRect.Position + new Vector2(drawRect.Size.X - 44.0f, 32.0f), 18, Alpha(accent, hover ? 0.9f : 0.5f), HorizontalAlignment.Center, 34.0f, true, 1);
+
+        Rect2 line = new(drawRect.Position + new Vector2(22.0f, drawRect.Size.Y - 8.0f), new Vector2(drawRect.Size.X - 44.0f, 2.0f));
+        DrawRect(line, Alpha(Paper, 0.07f), true);
+        float progress = fill01 >= 0.0f ? Mathf.Clamp(fill01, 0.0f, 1.0f) : 1.0f;
+        DrawRect(new Rect2(line.Position, new Vector2(line.Size.X * progress, line.Size.Y)), Alpha(accent, fill01 >= 0.0f ? 0.66f : 0.28f), true);
+    }
+
     private void DrawMenuButton(Rect2 rect, string label, Color accent, bool primary)
     {
-        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
         Rect2 drawRect = hover ? rect.Grow(primary ? 8.0f : 5.0f) : rect;
         DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, primary ? 150.0f : 90.0f, hover ? 0.08f : 0.045f, 4);
         DrawPanel(drawRect, Alpha(Ink, primary ? 0.78f : 0.62f), Alpha(accent, hover ? 0.82f : 0.42f));
@@ -4894,7 +9317,7 @@ public partial class MainGame : Node2D
 
     private void DrawTitleTextButton(Rect2 rect, string label, Color accent)
     {
-        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
         Color textColor = hover ? accent.Lerp(Paper, 0.28f) : Alpha(accent, 0.68f);
         DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(0.0f, 28.0f), 18, textColor, HorizontalAlignment.Center, rect.Size.X, false, 0);
         DrawLine(rect.Position + new Vector2(rect.Size.X * 0.22f, rect.Size.Y - 5.0f), rect.Position + new Vector2(rect.Size.X * 0.78f, rect.Size.Y - 5.0f), Alpha(accent, hover ? 0.58f : 0.24f), UiHairline, true);
@@ -4905,14 +9328,17 @@ public partial class MainGame : Node2D
         float hullTarget = SafeRatio(_playerHp, _playerMaxHp);
         float energyTarget = SafeRatio(_energy, _maxEnergy);
         float dashTarget = Mathf.Clamp(1.0f - Mathf.Max(_dashCooldown, 0.0f) / 0.86f, 0.0f, 1.0f);
+        float spawnTarget = SpawnRate01(SpawnRateMultiplier());
 
         _hudHullValue = EaseHudValue(_hudHullValue, hullTarget, hullTarget > _hudHullValue ? 10.0f : 8.0f, dt);
         _hudEnergyValue = EaseHudValue(_hudEnergyValue, energyTarget, energyTarget > _hudEnergyValue ? 7.5f : 10.5f, dt);
         _hudDashValue = EaseHudValue(_hudDashValue, dashTarget, dashTarget > _hudDashValue ? 12.0f : 18.0f, dt);
+        _hudSpawnValue = EaseHudValue(_hudSpawnValue, spawnTarget, spawnTarget > _hudSpawnValue ? 9.0f : 5.0f, dt);
 
         _hudHullTrail = EaseHudValue(_hudHullTrail, hullTarget, hullTarget < _hudHullTrail ? 2.4f : 13.0f, dt);
         _hudEnergyTrail = EaseHudValue(_hudEnergyTrail, energyTarget, energyTarget < _hudEnergyTrail ? 3.0f : 9.0f, dt);
         _hudDashTrail = EaseHudValue(_hudDashTrail, dashTarget, dashTarget < _hudDashTrail ? 5.0f : 11.0f, dt);
+        _hudSpawnTrail = EaseHudValue(_hudSpawnTrail, spawnTarget, spawnTarget < _hudSpawnTrail ? 2.0f : 10.0f, dt);
     }
 
     private void SnapHudBars()
@@ -4923,6 +9349,8 @@ public partial class MainGame : Node2D
         _hudEnergyTrail = _hudEnergyValue;
         _hudDashValue = Mathf.Clamp(1.0f - Mathf.Max(_dashCooldown, 0.0f) / 0.86f, 0.0f, 1.0f);
         _hudDashTrail = _hudDashValue;
+        _hudSpawnValue = SpawnRate01(SpawnRateMultiplier());
+        _hudSpawnTrail = _hudSpawnValue;
     }
 
     private static float EaseHudValue(float current, float target, float speed, float dt)
@@ -4950,13 +9378,231 @@ public partial class MainGame : Node2D
         return Mathf.Clamp(value / (float)target, 0.0f, 1.0f);
     }
 
+    private float ComboPace01()
+    {
+        return Mathf.Clamp(_combo / 80.0f, 0.0f, 1.0f);
+    }
+
+    private float ProgressSpawnRate()
+    {
+        float progress = Mathf.Pow(RunProgress01(), 0.85f);
+        return Mathf.Lerp(0.92f, 1.58f, progress);
+    }
+
+    private float ComboSpawnRate()
+    {
+        if (_combo <= 0)
+        {
+            return 1.0f;
+        }
+
+        float combo01 = Mathf.Clamp(Mathf.Sqrt(Mathf.Min(_combo, 100)) / 10.0f, 0.0f, 1.0f);
+        return 1.0f + combo01 * 0.62f;
+    }
+
+    private int ComboSpawnBonusPercent()
+    {
+        return Mathf.RoundToInt(Mathf.Max(0.0f, ComboSpawnRate() - 1.0f) * 100.0f);
+    }
+
+    private float SpawnRateMultiplier()
+    {
+        float paceRate = 1.0f / Math.Max(0.01f, WaveSpawnIntervalScale(_currentWavePace));
+        return Mathf.Clamp(ProgressSpawnRate() * ComboSpawnRate() * paceRate, 0.72f, 2.65f);
+    }
+
+    private static float SpawnRate01(float rate)
+    {
+        return Mathf.Clamp((rate - 0.72f) / (2.65f - 0.72f), 0.0f, 1.0f);
+    }
+
+    private float NextSpawnInterval(float spawnRate)
+    {
+        float interval = 1.16f / Mathf.Clamp(spawnRate, 0.72f, 2.65f);
+        return Mathf.Clamp(interval + _rng.RandfRange(-0.06f, 0.09f), 0.3f, 1.45f);
+    }
+
+    private string SpawnSpeedText()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return T("hud.spawn.boss");
+        }
+
+        return $"x{SpawnRateMultiplier():0.00}";
+    }
+
+    private Enemy? ActiveBoss()
+    {
+        Enemy? best = null;
+        float bestHp = -1.0f;
+        foreach (Enemy enemy in _enemies)
+        {
+            if (enemy.Kind != EnemyKind.Boss)
+            {
+                continue;
+            }
+
+            if (enemy.Hp > bestHp)
+            {
+                bestHp = enemy.Hp;
+                best = enemy;
+            }
+        }
+
+        return best;
+    }
+
+    private string BossNextPhaseText(Enemy boss)
+    {
+        if (boss.BossPhase >= BossPhaseThresholds.Length)
+        {
+            return T("boss.final_hud");
+        }
+
+        int thresholdPercent = Mathf.RoundToInt(BossPhaseThresholds[boss.BossPhase] * 100.0f);
+        return Tf("boss.next_hud", thresholdPercent);
+    }
+
+    private string BossPatternText(BossPatternKind pattern)
+    {
+        return pattern switch
+        {
+            BossPatternKind.SpiralRing => T("boss.pattern.spiral"),
+            BossPatternKind.HeavyLance => T("boss.pattern.lance"),
+            BossPatternKind.SummonWing => T("boss.pattern.summon"),
+            BossPatternKind.HazardFan => T("boss.pattern.hazard"),
+            BossPatternKind.ReverseSpiral => T("boss.pattern.reverse"),
+            BossPatternKind.WardenCall => T("boss.pattern.warden"),
+            BossPatternKind.CrossBloom => T("boss.pattern.cross"),
+            BossPatternKind.MineDrift => T("boss.pattern.mine"),
+            BossPatternKind.MirrorFork => T("boss.pattern.mirror"),
+            BossPatternKind.TempestWheel => T("boss.pattern.tempest"),
+            BossPatternKind.BastionWall => T("boss.pattern.bastion"),
+            BossPatternKind.SerpentCoil => T("boss.pattern.serpent"),
+            BossPatternKind.OracleSnipe => T("boss.pattern.oracle"),
+            _ => T("boss.pattern.fan"),
+        };
+    }
+
+    private int QualityParticleCap()
+    {
+        int cap = _visualQuality switch
+        {
+            VisualQuality.Low => 240,
+            VisualQuality.Medium => 360,
+            VisualQuality.Ultra => 680,
+            _ => 520,
+        };
+
+        float pressure = PerformancePressure();
+        if (pressure > 0.9f)
+        {
+            cap = Mathf.RoundToInt(cap * 0.62f);
+        }
+        else if (pressure > 0.76f)
+        {
+            cap = Mathf.RoundToInt(cap * 0.78f);
+        }
+
+        return Math.Max(140, cap);
+    }
+
+    private int QualityDamageTextCap()
+    {
+        int cap = _visualQuality switch
+        {
+            VisualQuality.Low => 36,
+            VisualQuality.Medium => 48,
+            VisualQuality.Ultra => MaxDamageTexts,
+            _ => 60,
+        };
+
+        float pressure = PerformancePressure();
+        if (pressure > 0.86f)
+        {
+            cap = Math.Min(cap, 28);
+        }
+        else if (pressure > 0.72f)
+        {
+            cap = Math.Min(cap, 40);
+        }
+
+        return cap;
+    }
+
+    private int QualityStarCount()
+    {
+        return _visualQuality switch
+        {
+            VisualQuality.Low => 90,
+            VisualQuality.Medium => 170,
+            VisualQuality.Ultra => 360,
+            _ => 260,
+        };
+    }
+
+    private float QualityBurstScale()
+    {
+        return _visualQuality switch
+        {
+            VisualQuality.Low => 0.45f,
+            VisualQuality.Medium => 0.72f,
+            VisualQuality.Ultra => 1.18f,
+            _ => 1.0f,
+        };
+    }
+
+    private int QualityGlowLayers(int layers)
+    {
+        int qualityLayers = _visualQuality switch
+        {
+            VisualQuality.Low => Math.Min(layers, 2),
+            VisualQuality.Medium => Math.Min(layers, 4),
+            VisualQuality.Ultra => layers + 1,
+            _ => layers,
+        };
+
+        float pressure = PerformancePressure();
+        if (pressure > 0.9f)
+        {
+            return Math.Min(qualityLayers, 2);
+        }
+        if (pressure > 0.76f)
+        {
+            return Math.Min(qualityLayers, 3);
+        }
+        return qualityLayers;
+    }
+
     private float CalculateVisualPressure()
     {
-        float shotPressure = _shots.Count / 360.0f;
-        float enemyPressure = _enemies.Count / 58.0f;
-        float particlePressure = _particles.Count / (float)MaxParticles;
-        float textPressure = _damageTexts.Count / (float)MaxDamageTexts;
+        float shotPressure = _shots.Count / 320.0f;
+        float enemyPressure = _enemies.Count / 52.0f;
+        float particlePressure = _particles.Count / (float)QualityParticleCap();
+        float textPressure = _damageTexts.Count / (float)QualityDamageTextCap();
         return Mathf.Clamp(Mathf.Max(shotPressure, Mathf.Max(enemyPressure, particlePressure * 0.9f)) + textPressure * 0.08f, 0.0f, 1.0f);
+    }
+
+    private float PerformancePressure()
+    {
+        return Mathf.Max(_visualPressure, _frameRatePressure);
+    }
+
+    private void UpdatePerformancePressure(float dt)
+    {
+        float fps = (float)Engine.GetFramesPerSecond();
+        float target = 0.0f;
+        if (fps > 1.0f && fps < 45.0f)
+        {
+            target = 1.0f;
+        }
+        else if (fps > 1.0f && fps < 54.0f)
+        {
+            target = 0.55f;
+        }
+
+        _frameRatePressure = EaseHudValue(_frameRatePressure, target, target > _frameRatePressure ? 2.2f : 0.75f, dt);
     }
 
     private static float DistancePointToSegment(Vector2 point, Vector2 start, Vector2 end)
@@ -4975,6 +9621,7 @@ public partial class MainGame : Node2D
     private void DrawText(string text, Vector2 pos, int size, Color color, HorizontalAlignment alignment, float width, bool outline, int outlineSize)
     {
         Font font = _uiFont ?? ThemeDB.FallbackFont;
+        size = LocalizedFontSize(text, size, width);
         if (outline && outlineSize > 0)
         {
             DrawStringOutline(font, pos, text, alignment, width, size, outlineSize, Alpha(Void, 0.78f));
@@ -5172,6 +9819,7 @@ public partial class MainGame : Node2D
             }
 
             if (string.Compare(text, index, term, 0, term.Length, StringComparison.OrdinalIgnoreCase) == 0 &&
+                IsStandaloneHighlightMatch(text, index, term) &&
                 (best is null || term.Length > best.Length))
             {
                 best = term;
@@ -5179,6 +9827,62 @@ public partial class MainGame : Node2D
         }
 
         return best;
+    }
+
+    private static bool IsStandaloneHighlightMatch(string text, int index, string term)
+    {
+        if (!RequiresHighlightBoundary(term))
+        {
+            return true;
+        }
+
+        int before = index - 1;
+        int after = index + term.Length;
+        if (before >= 0 && IsHighlightWordChar(text[before]))
+        {
+            return false;
+        }
+        if (after < text.Length && IsHighlightWordChar(text[after]))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool RequiresHighlightBoundary(string term)
+    {
+        foreach (char c in term)
+        {
+            if (IsCjkOrKana(c))
+            {
+                return false;
+            }
+        }
+
+        foreach (char c in term)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsHighlightWordChar(char c)
+    {
+        return char.IsLetterOrDigit(c) || c == '_' || c == '-';
+    }
+
+    private static bool IsCjkOrKana(char c)
+    {
+        return (c >= '\u3400' && c <= '\u9fff') ||
+            (c >= '\uf900' && c <= '\ufaff') ||
+            (c >= '\u3040' && c <= '\u30ff') ||
+            (c >= '\u31f0' && c <= '\u31ff') ||
+            (c >= '\uac00' && c <= '\ud7af');
     }
 
     private static void AppendRichSegment(List<RichTextSegment> segments, string text, bool highlight)
@@ -5254,6 +9958,12 @@ public partial class MainGame : Node2D
 
     private void DrawGlow(Vector2 pos, Color color, float radius, float alpha, int layers)
     {
+        layers = QualityGlowLayers(layers);
+        if (layers <= 0)
+        {
+            return;
+        }
+
         for (int i = layers; i >= 1; i--)
         {
             float t = i / (float)layers;
@@ -5263,7 +9973,14 @@ public partial class MainGame : Node2D
 
     private void AddParticle(Vector2 pos, Vector2 vel, Color color, float size, float life)
     {
-        if (_visualPressure > 0.86f && _particles.Count > MaxParticles * 0.62f && _rng.Randf() < 0.5f)
+        int particleCap = QualityParticleCap();
+        if (_particles.Count >= particleCap)
+        {
+            return;
+        }
+
+        float pressure = PerformancePressure();
+        if (pressure > 0.86f && _particles.Count > particleCap * 0.62f && _rng.Randf() < 0.5f)
         {
             return;
         }
@@ -5280,24 +9997,27 @@ public partial class MainGame : Node2D
 
     private void Burst(Vector2 pos, Color color, int count, float speed, float life)
     {
-        if (_visualPressure > 0.9f)
+        count = Mathf.Max(1, Mathf.RoundToInt(count * QualityBurstScale()));
+        float pressure = PerformancePressure();
+        if (pressure > 0.9f)
         {
             count = Mathf.Max(1, count / 4);
         }
-        else if (_visualPressure > 0.72f)
+        else if (pressure > 0.72f)
         {
             count = Mathf.Max(2, count / 3);
         }
-        else if (_visualPressure > 0.55f)
+        else if (pressure > 0.55f)
         {
             count = Mathf.Max(3, count / 2);
         }
 
-        if (_particles.Count > MaxParticles * 0.78f)
+        int particleCap = QualityParticleCap();
+        if (_particles.Count > particleCap * 0.78f)
         {
             count = Mathf.Max(1, count / 3);
         }
-        else if (_particles.Count > MaxParticles * 0.58f)
+        else if (_particles.Count > particleCap * 0.58f)
         {
             count = Mathf.Max(2, count / 2);
         }
@@ -5337,6 +10057,29 @@ public partial class MainGame : Node2D
         return Vector2.Right.Rotated(_rng.RandfRange(0.0f, Mathf.Tau));
     }
 
+    private Vector2 AimAssistDirection(Vector2 fallback)
+    {
+        float bestDistance = float.MaxValue;
+        Vector2 bestDirection = fallback.LengthSquared() > 0.01f ? fallback : Vector2.Right;
+        foreach (Enemy enemy in _enemies)
+        {
+            if (enemy.Hp <= 0.0f)
+            {
+                continue;
+            }
+
+            Vector2 delta = enemy.Pos - _playerPos;
+            float distance = delta.LengthSquared();
+            if (distance > 0.01f && distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestDirection = delta.Normalized();
+            }
+        }
+
+        return bestDirection;
+    }
+
     private static Rect2 StartButtonRect()
     {
         return new Rect2(new Vector2(760.0f, 560.0f), new Vector2(400.0f, 78.0f));
@@ -5344,22 +10087,48 @@ public partial class MainGame : Node2D
 
     private static Rect2 MetaButtonRect()
     {
-        return new Rect2(new Vector2(690.0f, 874.0f), new Vector2(260.0f, 42.0f));
+        return new Rect2(new Vector2(690.0f, 948.0f), new Vector2(260.0f, 42.0f));
     }
 
     private static Rect2 TitleSettingsButtonRect()
     {
-        return new Rect2(new Vector2(970.0f, 874.0f), new Vector2(260.0f, 42.0f));
+        return new Rect2(new Vector2(970.0f, 948.0f), new Vector2(260.0f, 42.0f));
+    }
+
+    private static Rect2 LeaderboardPanelRect()
+    {
+        return new Rect2(new Vector2(650.0f, 304.0f), new Vector2(620.0f, 258.0f));
+    }
+
+    private static Rect2 TitleNextGoalRect()
+    {
+        return new Rect2(new Vector2(600.0f, 246.0f), new Vector2(720.0f, 44.0f));
     }
 
     private static Rect2 PilotCardRect(int index)
     {
-        return new Rect2(new Vector2(230.0f + index * 365.0f, 692.0f), new Vector2(330.0f, 132.0f));
+        int col = index % 4;
+        int row = index / 4;
+        return new Rect2(new Vector2(230.0f + col * 365.0f, 654.0f + row * 124.0f), new Vector2(330.0f, 112.0f));
     }
 
     private static int PilotCount()
     {
-        return 4;
+        return 8;
+    }
+
+    private int UnlockedPilotCount()
+    {
+        int count = 0;
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            if (IsPilotUnlocked(PilotFromIndex(i)))
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static PilotKind PilotFromIndex(int index)
@@ -5367,32 +10136,56 @@ public partial class MainGame : Node2D
         return index switch
         {
             1 => PilotKind.Vesper,
-            2 => PilotKind.Kairo,
-            3 => PilotKind.Sol,
+            2 => PilotKind.Rook,
+            3 => PilotKind.Kairo,
+            4 => PilotKind.Nyx,
+            5 => PilotKind.Lyra,
+            6 => PilotKind.Sol,
+            7 => PilotKind.Orion,
             _ => PilotKind.Astra,
+        };
+    }
+
+    private static int PilotIndex(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Vesper => 1,
+            PilotKind.Rook => 2,
+            PilotKind.Kairo => 3,
+            PilotKind.Nyx => 4,
+            PilotKind.Lyra => 5,
+            PilotKind.Sol => 6,
+            PilotKind.Orion => 7,
+            _ => 0,
         };
     }
 
     private bool IsPilotUnlocked(PilotKind pilot)
     {
-        return pilot == PilotKind.Astra || _wonOnce || PilotUnlockProgress(pilot) >= 1.0f;
+        return pilot == PilotKind.Astra || PilotUnlockProgress(pilot) >= 1.0f;
     }
 
     private float PilotUnlockProgress(PilotKind pilot)
     {
-        return pilot switch
+        PilotKind previous = PreviousPilot(pilot);
+        if (previous == pilot)
         {
-            PilotKind.Vesper => Mathf.Max(
-                Progress01(_bestWave, VesperUnlockWave),
-                Progress01(_careerKills, VesperUnlockKills)),
-            PilotKind.Kairo => Mathf.Max(
-                Progress01(_bestWave, KairoUnlockWave),
-                Mathf.Max(Progress01(_careerPickups, KairoUnlockPickups), Progress01(_runsCompleted, KairoUnlockRuns))),
-            PilotKind.Sol => Mathf.Max(
-                Progress01(_bestWave, SolUnlockWave),
-                Mathf.Max(Progress01(_careerBossKills, SolUnlockBosses), Progress01(_careerPerfectWaves, SolUnlockPerfectWaves))),
-            _ => 1.0f,
-        };
+            return 1.0f;
+        }
+
+        return Progress01(PilotRunCount(previous), 1);
+    }
+
+    private PilotKind PreviousPilot(PilotKind pilot)
+    {
+        int index = PilotIndex(pilot);
+        return index <= 0 ? PilotKind.Astra : PilotFromIndex(index - 1);
+    }
+
+    private int PilotRunCount(PilotKind pilot)
+    {
+        return _pilotRuns.TryGetValue(pilot, out int runs) ? Math.Max(0, runs) : 0;
     }
 
     private string PilotName(PilotKind pilot)
@@ -5402,18 +10195,22 @@ public partial class MainGame : Node2D
             PilotKind.Vesper => T("pilot.vesper.name"),
             PilotKind.Kairo => T("pilot.kairo.name"),
             PilotKind.Sol => T("pilot.sol.name"),
+            PilotKind.Nyx => T("pilot.nyx.name"),
+            PilotKind.Rook => T("pilot.rook.name"),
+            PilotKind.Lyra => T("pilot.lyra.name"),
+            PilotKind.Orion => T("pilot.orion.name"),
             _ => T("pilot.astra.name"),
         };
     }
 
     private string TitleName()
     {
-        return _language == GameLanguage.Chinese ? "穿越星际" : "Interstellar";
+        return T("title.name");
     }
 
     private string TitleStartPrompt()
     {
-        return _language == GameLanguage.Chinese ? "点击开始" : "Tap To Start";
+        return T("title.start");
     }
 
     private string PilotBody(PilotKind pilot)
@@ -5423,6 +10220,10 @@ public partial class MainGame : Node2D
             PilotKind.Vesper => T("pilot.vesper.body"),
             PilotKind.Kairo => T("pilot.kairo.body"),
             PilotKind.Sol => T("pilot.sol.body"),
+            PilotKind.Nyx => T("pilot.nyx.body"),
+            PilotKind.Rook => T("pilot.rook.body"),
+            PilotKind.Lyra => T("pilot.lyra.body"),
+            PilotKind.Orion => T("pilot.orion.body"),
             _ => T("pilot.astra.body"),
         };
     }
@@ -5434,41 +10235,28 @@ public partial class MainGame : Node2D
             PilotKind.Vesper => T("pilot.vesper.weapon"),
             PilotKind.Kairo => T("pilot.kairo.weapon"),
             PilotKind.Sol => T("pilot.sol.weapon"),
+            PilotKind.Nyx => T("pilot.nyx.weapon"),
+            PilotKind.Rook => T("pilot.rook.weapon"),
+            PilotKind.Lyra => T("pilot.lyra.weapon"),
+            PilotKind.Orion => T("pilot.orion.weapon"),
             _ => T("pilot.astra.weapon"),
         };
     }
 
     private string UltimateName(PilotKind pilot)
     {
-        return pilot switch
-        {
-            PilotKind.Vesper => T("ultimate.vesper"),
-            PilotKind.Kairo => T("ultimate.kairo"),
-            PilotKind.Sol => T("ultimate.sol"),
-            _ => T("ultimate.astra"),
-        };
+        return T("ultimate.common");
     }
 
     private string PilotUnlockText(PilotKind pilot)
     {
-        if (_language == GameLanguage.Chinese)
+        if (pilot == PilotKind.Astra)
         {
-            return pilot switch
-            {
-                PilotKind.Vesper => $"解锁：敌人 {Math.Min(_careerKills, VesperUnlockKills)}/{VesperUnlockKills} 或波次 {Math.Min(_bestWave, VesperUnlockWave)}/{VesperUnlockWave}",
-                PilotKind.Kairo => $"解锁：掉落 {Math.Min(_careerPickups, KairoUnlockPickups)}/{KairoUnlockPickups} / 远征 {Math.Min(_runsCompleted, KairoUnlockRuns)}/{KairoUnlockRuns} / 波次 {Math.Min(_bestWave, KairoUnlockWave)}/{KairoUnlockWave}",
-                PilotKind.Sol => $"解锁：Boss {Math.Min(_careerBossKills, SolUnlockBosses)}/{SolUnlockBosses} / 无伤 {Math.Min(_careerPerfectWaves, SolUnlockPerfectWaves)}/{SolUnlockPerfectWaves} / 波次 {Math.Min(_bestWave, SolUnlockWave)}/{SolUnlockWave}",
-                _ => T("pilot.unlock.free"),
-            };
+            return T("pilot.unlock.free");
         }
 
-        return pilot switch
-        {
-            PilotKind.Vesper => $"Kills {Math.Min(_careerKills, VesperUnlockKills)}/{VesperUnlockKills} or Wave {Math.Min(_bestWave, VesperUnlockWave)}/{VesperUnlockWave}",
-            PilotKind.Kairo => $"Drops {Math.Min(_careerPickups, KairoUnlockPickups)}/{KairoUnlockPickups} / Runs {Math.Min(_runsCompleted, KairoUnlockRuns)}/{KairoUnlockRuns} / Wave {Math.Min(_bestWave, KairoUnlockWave)}/{KairoUnlockWave}",
-            PilotKind.Sol => $"Boss {Math.Min(_careerBossKills, SolUnlockBosses)}/{SolUnlockBosses} / Clean {Math.Min(_careerPerfectWaves, SolUnlockPerfectWaves)}/{SolUnlockPerfectWaves} / Wave {Math.Min(_bestWave, SolUnlockWave)}/{SolUnlockWave}",
-            _ => T("pilot.unlock.free"),
-        };
+        PilotKind previous = PreviousPilot(pilot);
+        return Tf("pilot.unlock.chain", PilotName(previous), Math.Min(PilotRunCount(previous), 1), 1);
     }
 
     private static Color PilotAccent(PilotKind pilot)
@@ -5478,6 +10266,10 @@ public partial class MainGame : Node2D
             PilotKind.Vesper => AlertRed,
             PilotKind.Kairo => PickupBlue,
             PilotKind.Sol => Gold,
+            PilotKind.Nyx => new Color(0.5f, 0.62f, 1.0f),
+            PilotKind.Rook => new Color(0.88f, 0.78f, 0.58f),
+            PilotKind.Lyra => new Color(0.48f, 1.0f, 0.86f),
+            PilotKind.Orion => new Color(1.0f, 0.68f, 0.28f),
             _ => PolarityBlue,
         };
     }
@@ -5487,36 +10279,32 @@ public partial class MainGame : Node2D
         return new Rect2(new Vector2(1804.0f, 26.0f), new Vector2(42.0f, 42.0f));
     }
 
-    private static Rect2 SettingsGuideButtonRect()
-    {
-        return new Rect2(new Vector2(760.0f, 402.0f), new Vector2(400.0f, 58.0f));
-    }
-
-    private static Rect2 SettingsLanguageButtonRect()
-    {
-        return new Rect2(new Vector2(790.0f, 478.0f), new Vector2(340.0f, 48.0f));
-    }
-
-    private static Rect2 SettingsMainMenuButtonRect()
-    {
-        return new Rect2(new Vector2(790.0f, 550.0f), new Vector2(340.0f, 48.0f));
-    }
-
     private Rect2 SettingsDeleteSaveButtonRect()
     {
-        float y = IsRunViewMode(_settingsReturnMode) ? 622.0f : 550.0f;
-        return new Rect2(new Vector2(790.0f, y), new Vector2(340.0f, 48.0f));
+        return SettingsOptionRect(IsRunViewMode(_settingsReturnMode) ? 7 : 6);
     }
 
     private Rect2 SettingsBackButtonRect()
     {
-        float y = IsRunViewMode(_settingsReturnMode) ? 702.0f : 630.0f;
-        return new Rect2(new Vector2(790.0f, y), new Vector2(340.0f, 50.0f));
+        return SettingsOptionRect(IsRunViewMode(_settingsReturnMode) ? 8 : 7);
     }
 
     private static Rect2 GuideBackButtonRect()
     {
         return new Rect2(new Vector2(790.0f, 828.0f), new Vector2(340.0f, 50.0f));
+    }
+
+    private static int GuidePageCount()
+    {
+        return 4;
+    }
+
+    private static Rect2 GuideTabRect(int index)
+    {
+        const float width = 200.0f;
+        const float height = 38.0f;
+        const float gap = 20.0f;
+        return new Rect2(new Vector2(520.0f + index * (width + gap), 318.0f), new Vector2(width, height));
     }
 
     private static Rect2 MetaBackButtonRect()
@@ -5555,14 +10343,156 @@ public partial class MainGame : Node2D
         }
     }
 
-    private static EnemyKind SelectEnemyKind(int index, int sector, int waveInSector, EnemyKind primary, EnemyKind support)
+    private static WavePaceKind WavePaceFor(int wave)
+    {
+        if (wave <= 0)
+        {
+            return WavePaceKind.Standard;
+        }
+
+        int sector = (wave - 1) / WavesPerSector;
+        int waveInSector = ((wave - 1) % WavesPerSector) + 1;
+        if (waveInSector == WavesPerSector)
+        {
+            return WavePaceKind.Boss;
+        }
+
+        if (sector == 0)
+        {
+            return waveInSector switch
+            {
+                3 => WavePaceKind.Swarm,
+                5 => WavePaceKind.Recovery,
+                6 => WavePaceKind.Elite,
+                7 => WavePaceKind.Pressure,
+                _ => WavePaceKind.Standard,
+            };
+        }
+
+        if (sector == 1)
+        {
+            return waveInSector switch
+            {
+                2 => WavePaceKind.Swarm,
+                4 => WavePaceKind.Elite,
+                5 => WavePaceKind.Recovery,
+                6 => WavePaceKind.Pressure,
+                7 => WavePaceKind.Elite,
+                _ => WavePaceKind.Standard,
+            };
+        }
+
+        return waveInSector switch
+        {
+            2 => WavePaceKind.Swarm,
+            4 => WavePaceKind.Elite,
+            5 => WavePaceKind.Recovery,
+            6 => WavePaceKind.Pressure,
+            7 => WavePaceKind.Elite,
+            _ => WavePaceKind.Standard,
+        };
+    }
+
+    private static int WaveBaseBudget(int sector, int waveInSector)
+    {
+        return sector switch
+        {
+            0 => 2 + waveInSector,
+            1 => 4 + waveInSector * 2,
+            2 => 6 + waveInSector * 2,
+            3 => 8 + waveInSector * 2 + waveInSector / 2,
+            _ => 10 + waveInSector * 3,
+        };
+    }
+
+    private static float WaveBudgetScale(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => 1.34f,
+            WavePaceKind.Elite => 0.78f,
+            WavePaceKind.Recovery => 0.62f,
+            WavePaceKind.Pressure => 1.18f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float WaveRewardScale(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Elite => 1.35f,
+            WavePaceKind.Recovery => 1.2f,
+            WavePaceKind.Pressure => 1.15f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float WaveOpeningScale(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => 1.45f,
+            WavePaceKind.Elite => 0.72f,
+            WavePaceKind.Recovery => 0.8f,
+            WavePaceKind.Pressure => 1.15f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float WaveSpawnIntervalScale(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => 0.72f,
+            WavePaceKind.Elite => 1.22f,
+            WavePaceKind.Recovery => 1.35f,
+            WavePaceKind.Pressure => 0.86f,
+            _ => 1.0f,
+        };
+    }
+
+    private string WavePaceText(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => T("wave.pace.swarm"),
+            WavePaceKind.Elite => T("wave.pace.elite"),
+            WavePaceKind.Recovery => T("wave.pace.recovery"),
+            WavePaceKind.Pressure => T("wave.pace.pressure"),
+            WavePaceKind.Boss => T("wave.pace.boss"),
+            _ => T("wave.pace.standard"),
+        };
+    }
+
+    private string WavePaceShortText(WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => T("wave.pace.short.swarm"),
+            WavePaceKind.Elite => T("wave.pace.short.elite"),
+            WavePaceKind.Recovery => T("wave.pace.short.recovery"),
+            WavePaceKind.Pressure => T("wave.pace.short.pressure"),
+            WavePaceKind.Boss => T("wave.pace.short.boss"),
+            _ => T("wave.pace.short.standard"),
+        };
+    }
+
+    private static EnemyKind SelectEnemyKind(int index, int sector, int waveInSector, EnemyKind primary, EnemyKind support, WavePaceKind pace)
     {
         if (support == primary)
         {
             return primary;
         }
 
-        int supportEvery = sector >= 3 || waveInSector >= 6 ? 4 : 5;
+        int supportEvery = pace switch
+        {
+            WavePaceKind.Swarm => 6,
+            WavePaceKind.Elite => 3,
+            WavePaceKind.Pressure => 2,
+            WavePaceKind.Recovery => 5,
+            _ => sector >= 3 || waveInSector >= 6 ? 4 : 5,
+        };
         return index > 0 && index % supportEvery == supportEvery - 1 ? support : primary;
     }
 
@@ -5575,40 +10505,40 @@ public partial class MainGame : Node2D
                 1 => EnemyKind.Chaser,
                 2 => EnemyKind.Weaver,
                 3 => EnemyKind.Chaser,
-                4 => EnemyKind.Drifter,
+                4 => EnemyKind.Weaver,
                 5 => EnemyKind.Turret,
-                6 => EnemyKind.Splitter,
-                _ => EnemyKind.Lance,
+                6 => EnemyKind.Turret,
+                _ => EnemyKind.Drifter,
             },
             1 => waveInSector switch
             {
-                1 => EnemyKind.Lance,
+                1 => EnemyKind.Drifter,
                 2 => EnemyKind.Mine,
-                3 => EnemyKind.Bulwark,
+                3 => EnemyKind.Lance,
                 4 => EnemyKind.Weaver,
-                5 => EnemyKind.Turret,
-                6 => EnemyKind.Splitter,
-                _ => EnemyKind.Drifter,
+                5 => EnemyKind.Mine,
+                6 => EnemyKind.Lance,
+                _ => EnemyKind.Splitter,
             },
             2 => waveInSector switch
             {
-                1 => EnemyKind.Shard,
+                1 => EnemyKind.Splitter,
                 2 => EnemyKind.Mine,
                 3 => EnemyKind.Siren,
                 4 => EnemyKind.Bulwark,
                 5 => EnemyKind.Turret,
-                6 => EnemyKind.Splitter,
-                _ => EnemyKind.Shard,
+                6 => EnemyKind.Siren,
+                _ => EnemyKind.Bulwark,
             },
             3 => waveInSector switch
             {
-                1 => EnemyKind.Harrier,
+                1 => EnemyKind.Shard,
                 2 => EnemyKind.Shard,
                 3 => EnemyKind.Warden,
-                4 => EnemyKind.Mine,
+                4 => EnemyKind.Harrier,
                 5 => EnemyKind.Siren,
                 6 => EnemyKind.Bulwark,
-                _ => EnemyKind.Lance,
+                _ => EnemyKind.Warden,
             },
             _ => waveInSector switch
             {
@@ -5632,34 +10562,36 @@ public partial class MainGame : Node2D
                 3 => EnemyKind.Weaver,
                 5 => EnemyKind.Chaser,
                 6 => EnemyKind.Weaver,
-                7 => EnemyKind.Chaser,
+                7 => EnemyKind.Turret,
                 _ => WavePrimaryEnemyKind(sector, waveInSector),
             },
             1 => waveInSector switch
             {
                 1 => EnemyKind.Chaser,
-                4 => EnemyKind.Mine,
+                3 => EnemyKind.Chaser,
+                4 => EnemyKind.Drifter,
                 5 => EnemyKind.Lance,
                 6 => EnemyKind.Mine,
-                7 => EnemyKind.Lance,
+                7 => EnemyKind.Drifter,
                 _ => WavePrimaryEnemyKind(sector, waveInSector),
             },
             2 => waveInSector switch
             {
+                1 => EnemyKind.Lance,
                 2 => EnemyKind.Chaser,
-                4 => EnemyKind.Weaver,
-                5 => EnemyKind.Shard,
+                4 => EnemyKind.Mine,
+                5 => EnemyKind.Splitter,
                 6 => EnemyKind.Mine,
                 7 => EnemyKind.Siren,
                 _ => WavePrimaryEnemyKind(sector, waveInSector),
             },
             3 => waveInSector switch
             {
-                2 => EnemyKind.Harrier,
+                2 => EnemyKind.Drifter,
                 4 => EnemyKind.Harrier,
                 5 => EnemyKind.Warden,
                 6 => EnemyKind.Shard,
-                7 => EnemyKind.Warden,
+                7 => EnemyKind.Harrier,
                 _ => WavePrimaryEnemyKind(sector, waveInSector),
             },
             _ => waveInSector switch
@@ -5682,15 +10614,15 @@ public partial class MainGame : Node2D
         {
             EnemyKind.Chaser => 1,
             EnemyKind.Weaver => 2,
-            EnemyKind.Drifter => 4,
+            EnemyKind.Drifter => 7,
             EnemyKind.Turret => 5,
-            EnemyKind.Splitter => 6,
-            EnemyKind.Lance => 7,
+            EnemyKind.Lance => 11,
             EnemyKind.Mine => 10,
-            EnemyKind.Bulwark => 11,
-            EnemyKind.Shard => 17,
+            EnemyKind.Splitter => 15,
+            EnemyKind.Bulwark => 20,
+            EnemyKind.Shard => 25,
             EnemyKind.Siren => 19,
-            EnemyKind.Harrier => 25,
+            EnemyKind.Harrier => 28,
             EnemyKind.Warden => 27,
             _ => 1,
         };
@@ -5699,6 +10631,55 @@ public partial class MainGame : Node2D
     private string EnemyName(EnemyKind kind)
     {
         return T($"enemy.{EnemyKey(kind)}.name");
+    }
+
+    private string BossTitle(BossArchetype archetype, int sector)
+    {
+        return Tf("boss.title", T(Sectors[Mathf.Clamp(sector, 0, SectorCount - 1)].NameKey), BossName(archetype));
+    }
+
+    private string BossName(BossArchetype archetype)
+    {
+        return T($"boss.{BossKey(archetype)}.name");
+    }
+
+    private string BossSignatureText(BossArchetype archetype)
+    {
+        return T($"boss.{BossKey(archetype)}.signature");
+    }
+
+    private static string BossKey(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => "prism",
+            BossArchetype.Swarm => "swarm",
+            BossArchetype.Forge => "forge",
+            BossArchetype.Rift => "rift",
+            BossArchetype.Mirror => "mirror",
+            BossArchetype.Tempest => "tempest",
+            BossArchetype.Bastion => "bastion",
+            BossArchetype.Serpent => "serpent",
+            BossArchetype.Oracle => "oracle",
+            _ => "choir",
+        };
+    }
+
+    private static Color BossAccent(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Prism => Cyan,
+            BossArchetype.Swarm => Jade,
+            BossArchetype.Forge => Gold,
+            BossArchetype.Rift => Violet,
+            BossArchetype.Mirror => new Color(0.68f, 0.82f, 1.0f),
+            BossArchetype.Tempest => Cyan,
+            BossArchetype.Bastion => new Color(1.0f, 0.82f, 0.46f),
+            BossArchetype.Serpent => new Color(0.58f, 1.0f, 0.72f),
+            BossArchetype.Oracle => new Color(1.0f, 0.58f, 0.86f),
+            _ => Rose,
+        };
     }
 
     private string EnemyRole(EnemyKind kind)
@@ -5780,10 +10761,11 @@ public partial class MainGame : Node2D
 
         float progress = RunProgress01();
         float density = kind == EnemyKind.Boss
-            ? Mathf.Lerp(0.62f, 1.0f, progress)
+            ? Mathf.Lerp(0.8f, 1.12f, progress)
             : Mathf.Lerp(0.46f, 1.0f, progress);
         int scaled = Mathf.RoundToInt(baseCount * density);
-        return Mathf.Clamp(scaled, 1, baseCount);
+        int max = kind == EnemyKind.Boss ? baseCount + Mathf.CeilToInt(baseCount * 0.18f) : baseCount;
+        return Mathf.Clamp(scaled, 1, max);
     }
 
     private int ScaledEnemyPatternCount(EnemyKind kind, int baseCount)
@@ -5795,10 +10777,24 @@ public partial class MainGame : Node2D
 
         float progress = RunProgress01();
         float density = kind == EnemyKind.Boss
-            ? Mathf.Lerp(0.62f, 1.0f, progress)
+            ? Mathf.Lerp(0.8f, 1.12f, progress)
             : Mathf.Lerp(0.46f, 1.0f, progress);
+        if (kind == EnemyKind.Boss)
+        {
+            float pressure = PerformancePressure();
+            float bulletLoad = ActiveEnemyBulletCount() / (float)Math.Max(1, EnemyBulletCap());
+            if (pressure > 0.92f || bulletLoad > 0.92f)
+            {
+                density *= 0.68f;
+            }
+            else if (pressure > 0.82f || bulletLoad > 0.78f)
+            {
+                density *= 0.84f;
+            }
+        }
         int scaled = Mathf.RoundToInt(baseCount * density);
-        return Mathf.Clamp(scaled, 1, baseCount);
+        int max = kind == EnemyKind.Boss ? baseCount + Mathf.CeilToInt(baseCount * 0.18f) : baseCount;
+        return Mathf.Clamp(scaled, 1, max);
     }
 
     private float ScaledEnemyBulletSpeed(EnemyKind kind, float baseSpeed)
@@ -5852,7 +10848,7 @@ public partial class MainGame : Node2D
     {
         return kind switch
         {
-            PickupKind.Dust => XpGreen,
+            PickupKind.Dust => XpGray(),
             PickupKind.Energy => PickupBlue,
             PickupKind.Repair => AlertRed.Lerp(Paper, 0.16f),
             _ => Paper,
@@ -5909,16 +10905,49 @@ public partial class MainGame : Node2D
     private GameLanguage DetectLanguage()
     {
         string locale = OS.GetLocaleLanguage();
-        return locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? GameLanguage.Chinese : GameLanguage.English;
+        if (locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.Chinese;
+        }
+        if (locale.StartsWith("ru", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.Russian;
+        }
+        if (locale.StartsWith("pt", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.PortugueseBrazil;
+        }
+        if (locale.StartsWith("de", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.German;
+        }
+        if (locale.StartsWith("tr", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.Turkish;
+        }
+        if (locale.StartsWith("fr", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.French;
+        }
+        if (locale.StartsWith("ja", StringComparison.OrdinalIgnoreCase))
+        {
+            return GameLanguage.Japanese;
+        }
+
+        return GameLanguage.English;
     }
 
     private string T(string key)
     {
         if (!Texts.TryGetValue(key, out LocalizedText text))
         {
-            return key;
+            if (LocalizedOverrides.TryGetValue(key, out MultiLocalizedText localized))
+            {
+                return localized.For(_language);
+            }
+            return LocalizeMissingKey(key);
         }
-        return _language == GameLanguage.Chinese ? text.Chinese : text.English;
+        return LocalizeKey(key, text);
     }
 
     private string Tf(string key, params object[] args)
@@ -5926,75 +10955,70 @@ public partial class MainGame : Node2D
         return string.Format(System.Globalization.CultureInfo.InvariantCulture, T(key), args);
     }
 
-    private string PolarityTipText()
+    private string TacticalSkillName(PilotKind pilot)
     {
-        if (_language == GameLanguage.Chinese)
+        return pilot switch
         {
-            return IsCruiseStance(_playerPolarity) ? "巡航态：擦过红弹蓄势，等待破绽" : "突击态：抓住过热窗口爆发";
-        }
-        return IsCruiseStance(_playerPolarity) ? "CRUISE: graze red fire, build charge" : "ASSAULT: punish overheat windows";
+            PilotKind.Vesper => T("tactical.vesper.name"),
+            PilotKind.Kairo => T("tactical.kairo.name"),
+            PilotKind.Sol => T("tactical.sol.name"),
+            PilotKind.Nyx => T("tactical.nyx.name"),
+            PilotKind.Rook => T("tactical.rook.name"),
+            PilotKind.Lyra => T("tactical.lyra.name"),
+            PilotKind.Orion => T("tactical.orion.name"),
+            _ => T("tactical.astra.name"),
+        };
+    }
+
+    private string TacticalTipText()
+    {
+        return _runPilot switch
+        {
+            PilotKind.Vesper => T("tactical.vesper.tip"),
+            PilotKind.Kairo => T("tactical.kairo.tip"),
+            PilotKind.Sol => T("tactical.sol.tip"),
+            PilotKind.Nyx => T("tactical.nyx.tip"),
+            PilotKind.Rook => T("tactical.rook.tip"),
+            PilotKind.Lyra => T("tactical.lyra.tip"),
+            PilotKind.Orion => T("tactical.orion.tip"),
+            _ => T("tactical.astra.tip"),
+        };
     }
 
     private string PolarityCooldownText()
     {
         int seconds = Mathf.CeilToInt(Mathf.Max(0.0f, _polarityCooldown));
-        return _language == GameLanguage.Chinese ? $"姿态锁定 {seconds} 秒" : $"STANCE LOCK {seconds}s";
+        return Tf("tactical.cooldown", seconds);
     }
 
     private string ChargeText()
     {
-        return _language == GameLanguage.Chinese ? "蓄势" : "CHARGE";
-    }
-
-    private string AssaultText(float power)
-    {
-        int percent = Mathf.RoundToInt((power - 1.0f) * 100.0f);
-        return _language == GameLanguage.Chinese ? $"突击 +{percent}%" : $"ASSAULT +{percent}%";
-    }
-
-    private string CruiseText()
-    {
-        return _language == GameLanguage.Chinese ? "巡航重整" : "CRUISE RESET";
+        return T("tactical.focus");
     }
 
     private string AbsorbText(float amount)
     {
         int value = Mathf.RoundToInt(amount);
-        return _language == GameLanguage.Chinese ? $"清弹 +{value}" : $"CLEAR +{value}";
+        return Tf("tactical.clear", value);
     }
 
     private string CounterText()
     {
-        return _language == GameLanguage.Chinese ? "过热破绽" : "OVERHEAT BREAK";
+        return T("tactical.overheat");
     }
 
     private string ObjectiveText(RunObjective objective)
     {
-        if (_language == GameLanguage.Chinese)
-        {
-            return objective.Kind switch
-            {
-                RunObjectiveKind.ReachWave => $"通过第 {objective.Target} 波",
-                RunObjectiveKind.PerfectWaves => $"无伤清波 {objective.Target} 次",
-                RunObjectiveKind.DefeatEnemies => $"击败敌人 {objective.Target} 个",
-                RunObjectiveKind.AbsorbBullets => $"擦弹或清弹 {objective.Target} 次",
-                RunObjectiveKind.CollectPickups => $"拾取掉落 {objective.Target} 个",
-                RunObjectiveKind.BestCombo => $"最高连击 {objective.Target}",
-                RunObjectiveKind.DefeatBosses => $"击败 Boss {objective.Target} 个",
-                _ => "完成远征目标",
-            };
-        }
-
         return objective.Kind switch
         {
-            RunObjectiveKind.ReachWave => $"Clear wave {objective.Target}",
-            RunObjectiveKind.PerfectWaves => $"Clear {objective.Target} clean waves",
-            RunObjectiveKind.DefeatEnemies => $"Defeat {objective.Target} enemies",
-            RunObjectiveKind.AbsorbBullets => $"Graze or clear {objective.Target} bullets",
-            RunObjectiveKind.CollectPickups => $"Collect {objective.Target} drops",
-            RunObjectiveKind.BestCombo => $"Reach {objective.Target} combo",
-            RunObjectiveKind.DefeatBosses => $"Defeat {objective.Target} bosses",
-            _ => "Complete expedition goal",
+            RunObjectiveKind.ReachWave => Tf("objective.reach_wave", objective.Target),
+            RunObjectiveKind.PerfectWaves => Tf("objective.perfect_waves", objective.Target),
+            RunObjectiveKind.DefeatEnemies => Tf("objective.defeat_enemies", objective.Target),
+            RunObjectiveKind.AbsorbBullets => Tf("objective.absorb_bullets", objective.Target),
+            RunObjectiveKind.CollectPickups => Tf("objective.collect_pickups", objective.Target),
+            RunObjectiveKind.BestCombo => Tf("objective.best_combo", objective.Target),
+            RunObjectiveKind.DefeatBosses => Tf("objective.defeat_bosses", objective.Target),
+            _ => T("objective.default"),
         };
     }
 
@@ -6003,81 +11027,73 @@ public partial class MainGame : Node2D
         int nextWave = Math.Min(_wave + 1, TotalWaves);
         int sector = Mathf.Clamp((nextWave - 1) / WavesPerSector, 0, SectorCount - 1);
         int waveInSector = ((nextWave - 1) % WavesPerSector) + 1;
+        string pace = WavePaceText(WavePaceFor(nextWave));
         if (waveInSector == WavesPerSector)
         {
-            string boss = Tf("boss.sector", T(Sectors[sector].NameKey));
-            return _language == GameLanguage.Chinese ? $"下一波：{boss}" : $"NEXT: {boss}";
+            string boss = Tf("boss.preview", T(Sectors[sector].NameKey));
+            return Tf("next.boss", boss);
         }
 
         EnemyKind primary = WavePrimaryEnemyKind(sector, waveInSector);
         EnemyKind support = WaveSupportEnemyKind(sector, waveInSector);
         if (support == primary)
         {
-            return _language == GameLanguage.Chinese
-                ? $"下一波主敌：{EnemyName(primary)}"
-                : $"NEXT PRIMARY: {EnemyName(primary)}";
+            return Tf("next.primary", pace, EnemyName(primary));
         }
 
-        return _language == GameLanguage.Chinese
-            ? $"下一波主敌：{EnemyName(primary)}    辅助：{EnemyName(support)}"
-            : $"NEXT PRIMARY: {EnemyName(primary)}    SUPPORT: {EnemyName(support)}";
+        return Tf("next.primary_support", pace, EnemyName(primary), EnemyName(support));
     }
 
     private string[] GuideLines()
     {
-        if (_language == GameLanguage.Chinese)
+        return _guidePage switch
         {
-            return new[]
+            1 => new[]
             {
-                "WASD 或方向键移动。鼠标控制射击方向，武器会自动开火。",
-                "敌方子弹统一是红色，红弹永远危险。巡航态可以通过擦弹和稳定命中蓄势。",
-                "敌人蓄压后会齐射红弹，齐射结束会短暂过热。过热时切入突击态打爆发。",
-                "切换姿态后会锁定一小段时间。巡航用于整理战场，突击用于抓破绽输出。",
-                "右键或 Shift 冲刺。冲刺时短暂无敌，并清除近身子弹。",
-                "F 或 E 消耗能量释放角色大招。每个角色的大招效果不同。",
-                "每波结束后选择一个升级。局外星尘可购买永久成长。",
-            };
-        }
-
-        return new[]
-        {
-            "Move with WASD or arrow keys. Aim with the mouse; weapons fire automatically.",
-            "Enemy bullets are always red, and red fire is always danger. Cruise mode builds charge by grazing and landing steady hits.",
-            "Enemies telegraph, fire a volley, then briefly overheat. Switch into Assault during overheat windows for burst damage.",
-            "Switching stance locks you in briefly. Cruise to stabilize the field; Assault to punish openings.",
-            "Right mouse or Shift dashes. Dash briefly grants invulnerability and clears nearby bullets.",
-            "F or E spends energy on your role ultimate. Every pilot has a different ultimate.",
-            "Choose one upgrade after each wave. Spend Star Dust between runs for permanent growth.",
+                T("guide.combo.0"),
+                T("guide.combo.1"),
+                T("guide.combo.2"),
+                T("guide.combo.3"),
+            },
+            2 => new[]
+            {
+                T("guide.build.0"),
+                T("guide.build.1"),
+                T("guide.build.2"),
+                T("guide.build.3"),
+            },
+            3 => new[]
+            {
+                T("guide.progress.0"),
+                T("guide.progress.1"),
+                T("guide.progress.2"),
+                T("guide.progress.3"),
+            },
+            _ => new[]
+            {
+                T("guide.basic.0"),
+                T("guide.basic.1"),
+                T("guide.basic.2"),
+                T("guide.basic.3"),
+            },
         };
     }
 
     private string TutorialText(int id)
     {
-        if (_language == GameLanguage.Chinese)
-        {
-            return id switch
-            {
-                1 => "红弹永远危险。巡航态擦过红弹可以蓄势。",
-                2 => "敌人齐射后会过热。切入突击态打破绽。",
-                3 => "姿态切换有冷却：先判断防守窗口还是攻击窗口。",
-                9 => "光束同样危险。用冲刺或大招清出通路。",
-                _ => string.Empty,
-            };
-        }
-
         return id switch
         {
-            1 => "Red fire is always danger. Graze in Cruise mode to build charge.",
-            2 => "Enemies overheat after volleys. Switch into Assault to punish openings.",
-            3 => "Stance shift has a cooldown. Read the field, then commit.",
-            9 => "Beams are dangerous too. Dash or use ultimates to open lanes.",
+            1 => T("tutorial.1"),
+            2 => T("tutorial.2"),
+            3 => T("tutorial.3"),
+            9 => T("tutorial.9"),
             _ => string.Empty,
         };
     }
 
     private void UpdateLanguageToggle()
     {
-        if (!KeyDown(Key.L) || _lastLanguage)
+        if (!LanguageHeld() || _lastLanguage)
         {
             return;
         }
@@ -6087,8 +11103,10 @@ public partial class MainGame : Node2D
 
     private void ToggleLanguage()
     {
-        _language = _language == GameLanguage.English ? GameLanguage.Chinese : GameLanguage.English;
+        int index = LanguageCycleIndex(_language);
+        _language = LanguageCycle[(index + 1) % LanguageCycle.Length];
         RefreshUpgradeChoiceText();
+        SaveMetaProgress();
         AddText(T("language.changed"), ScreenCenter + new Vector2(0.0f, -265.0f), Jade, 26.0f);
         PlaySfx(520.0f, 160.0f, 0.16f, 0.22f, 0.02f, 1);
     }
@@ -6109,14 +11127,309 @@ public partial class MainGame : Node2D
         return Input.IsKeyPressed(key);
     }
 
+    private void UpdatePointerInputMode()
+    {
+        Vector2 mouse = GetGlobalMousePosition();
+        if (mouse.DistanceSquaredTo(_lastMousePos) > 4.0f ||
+            Input.IsMouseButtonPressed(MouseButton.Left) ||
+            Input.IsMouseButtonPressed(MouseButton.Right))
+        {
+            _usingGamepad = false;
+        }
+        _lastMousePos = mouse;
+    }
+
+    private bool JoyButtonHeld(JoyButton button)
+    {
+        for (int device = 0; device < MaxJoypadSlots; device++)
+        {
+            if (Input.IsJoyButtonPressed(device, button))
+            {
+                _usingGamepad = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private float JoyAxisValue(JoyAxis axis)
+    {
+        float best = 0.0f;
+        for (int device = 0; device < MaxJoypadSlots; device++)
+        {
+            float value = Input.GetJoyAxis(device, axis);
+            if (Mathf.Abs(value) > Mathf.Abs(best))
+            {
+                best = value;
+            }
+        }
+
+        return best;
+    }
+
+    private bool JoyTriggerHeld(JoyAxis axis)
+    {
+        float value = JoyAxisValue(axis);
+        if (value <= GamepadTriggerThreshold)
+        {
+            return false;
+        }
+
+        _usingGamepad = true;
+        return true;
+    }
+
+    private Vector2 ReadGamepadStick(JoyAxis xAxis, JoyAxis yAxis, float deadZone)
+    {
+        Vector2 raw = new(JoyAxisValue(xAxis), JoyAxisValue(yAxis));
+        float length = raw.Length();
+        if (length < deadZone)
+        {
+            return Vector2.Zero;
+        }
+
+        _usingGamepad = true;
+        float scaled = Mathf.Clamp((length - deadZone) / (1.0f - deadZone), 0.0f, 1.0f);
+        return raw.Normalized() * scaled;
+    }
+
+    private Vector2 ReadMoveInput()
+    {
+        Vector2 move = Vector2.Zero;
+        bool keyboardMove = false;
+        if (KeyDown(Key.A) || KeyDown(Key.Left))
+        {
+            move.X -= 1.0f;
+            keyboardMove = true;
+        }
+        if (KeyDown(Key.D) || KeyDown(Key.Right))
+        {
+            move.X += 1.0f;
+            keyboardMove = true;
+        }
+        if (KeyDown(Key.W) || KeyDown(Key.Up))
+        {
+            move.Y -= 1.0f;
+            keyboardMove = true;
+        }
+        if (KeyDown(Key.S) || KeyDown(Key.Down))
+        {
+            move.Y += 1.0f;
+            keyboardMove = true;
+        }
+        if (keyboardMove)
+        {
+            _usingGamepad = false;
+        }
+
+        move += ReadGamepadStick(JoyAxis.LeftX, JoyAxis.LeftY, GamepadStickDeadZone);
+        if (JoyButtonHeld(JoyButton.DpadLeft))
+        {
+            move.X -= 1.0f;
+        }
+        if (JoyButtonHeld(JoyButton.DpadRight))
+        {
+            move.X += 1.0f;
+        }
+        if (JoyButtonHeld(JoyButton.DpadUp))
+        {
+            move.Y -= 1.0f;
+        }
+        if (JoyButtonHeld(JoyButton.DpadDown))
+        {
+            move.Y += 1.0f;
+        }
+
+        return move.LengthSquared() > 1.0f ? move.Normalized() : move;
+    }
+
+    private bool ConfirmHeld()
+    {
+        return KeyDown(Key.Enter) || JoyButtonHeld(JoyButton.A);
+    }
+
+    private bool StartHeld()
+    {
+        return KeyDown(Key.Enter) || JoyButtonHeld(JoyButton.Start);
+    }
+
+    private bool CancelHeld()
+    {
+        return KeyDown(Key.Escape) || JoyButtonHeld(JoyButton.B) || JoyButtonHeld(JoyButton.Back);
+    }
+
+    private bool PauseHeld()
+    {
+        return KeyDown(Key.Escape) || JoyButtonHeld(JoyButton.Start) || JoyButtonHeld(JoyButton.Back);
+    }
+
+    private bool TacticalHeld()
+    {
+        return KeyDown(Key.Space) || JoyButtonHeld(JoyButton.X) || JoyButtonHeld(JoyButton.RightShoulder);
+    }
+
+    private bool UltimateHeld()
+    {
+        return KeyDown(Key.F) || KeyDown(Key.E) || JoyButtonHeld(JoyButton.Y) || JoyTriggerHeld(JoyAxis.TriggerRight);
+    }
+
+    private bool DashHeld()
+    {
+        return KeyDown(Key.Shift) || Input.IsMouseButtonPressed(MouseButton.Right) || JoyButtonHeld(JoyButton.A) || JoyButtonHeld(JoyButton.LeftShoulder) || JoyTriggerHeld(JoyAxis.TriggerLeft);
+    }
+
+    private bool RerollHeld()
+    {
+        return KeyDown(Key.R) || JoyButtonHeld(JoyButton.X);
+    }
+
+    private bool MetaHeld()
+    {
+        return KeyDown(Key.U) || JoyButtonHeld(JoyButton.Y);
+    }
+
+    private bool LanguageHeld()
+    {
+        return KeyDown(Key.L) || JoyButtonHeld(JoyButton.RightStick);
+    }
+
+    private bool SettingsShortcutHeld()
+    {
+        return JoyButtonHeld(JoyButton.X);
+    }
+
+    private void UpdateGamepadNavigation(float dt)
+    {
+        _gamepadNavCooldown = Mathf.Max(0.0f, _gamepadNavCooldown - dt);
+        if (RawGamepadNavX() == 0)
+        {
+            _gamepadLastNavX = 0;
+        }
+        if (RawGamepadNavY() == 0)
+        {
+            _gamepadLastNavY = 0;
+        }
+
+        _gamepadFocusVisible = false;
+    }
+
+    private int ConsumeGamepadNavX()
+    {
+        int raw = RawGamepadNavX();
+        if (raw == 0)
+        {
+            return 0;
+        }
+
+        if (_gamepadNavCooldown > 0.0f && raw == _gamepadLastNavX)
+        {
+            return 0;
+        }
+
+        _gamepadLastNavX = raw;
+        _gamepadLastNavY = 0;
+        _gamepadNavCooldown = GamepadNavRepeat;
+        _usingGamepad = true;
+        return raw;
+    }
+
+    private int ConsumeGamepadNavY()
+    {
+        int raw = RawGamepadNavY();
+        if (raw == 0)
+        {
+            return 0;
+        }
+
+        if (_gamepadNavCooldown > 0.0f && raw == _gamepadLastNavY)
+        {
+            return 0;
+        }
+
+        _gamepadLastNavY = raw;
+        _gamepadLastNavX = 0;
+        _gamepadNavCooldown = GamepadNavRepeat;
+        _usingGamepad = true;
+        return raw;
+    }
+
+    private int RawGamepadNavX()
+    {
+        if (JoyButtonHeld(JoyButton.DpadLeft))
+        {
+            return -1;
+        }
+        if (JoyButtonHeld(JoyButton.DpadRight))
+        {
+            return 1;
+        }
+
+        float x = JoyAxisValue(JoyAxis.LeftX);
+        if (x < -GamepadNavThreshold)
+        {
+            _usingGamepad = true;
+            return -1;
+        }
+        if (x > GamepadNavThreshold)
+        {
+            _usingGamepad = true;
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private int RawGamepadNavY()
+    {
+        if (JoyButtonHeld(JoyButton.DpadUp))
+        {
+            return -1;
+        }
+        if (JoyButtonHeld(JoyButton.DpadDown))
+        {
+            return 1;
+        }
+
+        float y = JoyAxisValue(JoyAxis.LeftY);
+        if (y < -GamepadNavThreshold)
+        {
+            _usingGamepad = true;
+            return -1;
+        }
+        if (y > GamepadNavThreshold)
+        {
+            _usingGamepad = true;
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private void SetGamepadFocus(Rect2 rect)
+    {
+        _gamepadFocusRect = rect;
+        _gamepadFocusVisible = _usingGamepad;
+    }
+
+    private bool IsGamepadFocused(Rect2 rect)
+    {
+        return _gamepadFocusVisible &&
+            _gamepadFocusRect.Position.DistanceSquaredTo(rect.Position) < 1.0f &&
+            _gamepadFocusRect.Size.DistanceSquaredTo(rect.Size) < 1.0f;
+    }
+
     private void CaptureButtons()
     {
-        _lastStart = KeyDown(Key.Enter);
-        _lastToggle = KeyDown(Key.Space);
-        _lastNova = KeyDown(Key.F) || KeyDown(Key.E);
-        _lastDash = KeyDown(Key.Shift) || Input.IsMouseButtonPressed(MouseButton.Right);
+        _lastStart = StartHeld();
+        _lastConfirm = ConfirmHeld();
+        _lastCancel = CancelHeld();
+        _lastPause = PauseHeld();
+        _lastToggle = TacticalHeld();
+        _lastNova = UltimateHeld();
+        _lastDash = DashHeld();
         _lastClick = Input.IsMouseButtonPressed(MouseButton.Left);
-        _lastRestart = KeyDown(Key.Enter) || Input.IsMouseButtonPressed(MouseButton.Left);
+        _lastRestart = ConfirmHeld() || StartHeld() || Input.IsMouseButtonPressed(MouseButton.Left);
         _lastOne = KeyDown(Key.Key1);
         _lastTwo = KeyDown(Key.Key2);
         _lastThree = KeyDown(Key.Key3);
@@ -6126,10 +11439,13 @@ public partial class MainGame : Node2D
         _lastSeven = KeyDown(Key.Key7);
         _lastEight = KeyDown(Key.Key8);
         _lastNine = KeyDown(Key.Key9);
-        _lastReroll = KeyDown(Key.R);
-        _lastLanguage = KeyDown(Key.L);
-        _lastMeta = KeyDown(Key.U);
-        _lastBack = KeyDown(Key.Escape);
+        _lastReroll = RerollHeld();
+        _lastLanguage = LanguageHeld();
+        _lastMeta = MetaHeld();
+        _lastBack = CancelHeld();
+        _lastSettingsShortcut = SettingsShortcutHeld();
+        _lastSettingsLeft = KeyDown(Key.Left) || KeyDown(Key.A);
+        _lastSettingsRight = KeyDown(Key.Right) || KeyDown(Key.D);
     }
 
     private void SetupAudio()
@@ -6159,7 +11475,7 @@ public partial class MainGame : Node2D
         int frames = Math.Min(_musicPlayback.GetFramesAvailable(), 2048);
         for (int i = 0; i < frames; i++)
         {
-            float sample = MusicSample() + SfxSample();
+            float sample = MusicSample() * _musicVolume + SfxSample() * _sfxVolume;
             sample = Mathf.Clamp(sample, -0.85f, 0.85f);
             _musicPlayback.PushFrame(new Vector2(sample, sample));
             _musicClock += 1.0f / SampleRate;

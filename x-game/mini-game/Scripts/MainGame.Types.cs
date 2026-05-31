@@ -20,6 +20,28 @@ public partial class MainGame
     {
         English,
         Chinese,
+        Russian,
+        PortugueseBrazil,
+        German,
+        Turkish,
+        French,
+        Japanese,
+    }
+
+    private enum DisplayResolutionPreset
+    {
+        R1280x720,
+        R1600x900,
+        R1920x1080,
+        R2560x1440,
+    }
+
+    private enum VisualQuality
+    {
+        Low,
+        Medium,
+        High,
+        Ultra,
     }
 
     private enum PilotKind
@@ -28,6 +50,10 @@ public partial class MainGame
         Vesper,
         Kairo,
         Sol,
+        Nyx,
+        Rook,
+        Lyra,
+        Orion,
     }
 
     private enum MetaUpgradeId
@@ -56,6 +82,11 @@ public partial class MainGame
 
         public readonly string English;
         public readonly string Chinese;
+
+        public string ForBaseLanguage(GameLanguage language)
+        {
+            return language == GameLanguage.Chinese ? Chinese : English;
+        }
     }
 
     private readonly struct SectorInfo
@@ -122,6 +153,48 @@ public partial class MainGame
         DefeatBosses,
     }
 
+    private enum WavePaceKind
+    {
+        Standard,
+        Swarm,
+        Elite,
+        Recovery,
+        Pressure,
+        Boss,
+    }
+
+    private enum BossArchetype
+    {
+        Choir,
+        Prism,
+        Swarm,
+        Forge,
+        Rift,
+        Mirror,
+        Tempest,
+        Bastion,
+        Serpent,
+        Oracle,
+    }
+
+    private enum BossPatternKind
+    {
+        AimedFan,
+        SpiralRing,
+        HeavyLance,
+        SummonWing,
+        HazardFan,
+        ReverseSpiral,
+        WardenCall,
+        CrossBloom,
+        MineDrift,
+        MirrorFork,
+        TempestWheel,
+        BastionWall,
+        SerpentCoil,
+        OracleSnipe,
+    }
+
     private enum PickupKind
     {
         Dust,
@@ -146,6 +219,8 @@ public partial class MainGame
         CometTrail,
         AegisBloom,
         QuantumEcho,
+        ChainRelay,
+        FractalSplit,
         SolarThesis,
         EmergencyRepair,
         OneWaveOverdrive,
@@ -153,6 +228,11 @@ public partial class MainGame
         BountyContract,
         BulletTransmute,
         HarmonicMap,
+        PulseMagazine,
+        ExecutionMark,
+        StasisField,
+        MagnetizedCore,
+        RicochetMatrix,
         AstraRefraction,
         AstraPrismWake,
         VesperCapacitor,
@@ -169,6 +249,22 @@ public partial class MainGame
         KairoRelayProtocol,
         SolFlareCore,
         SolRadiantMantle,
+        NyxOrbit,
+        NyxSingularity,
+        NyxEventHorizon,
+        NyxGravityCantor,
+        RookBulwarkCore,
+        RookSiegeBattery,
+        RookAegisRelay,
+        RookCitadelProtocol,
+        LyraResonanceChord,
+        LyraTempoBloom,
+        LyraHarmonicCascade,
+        LyraEncoreField,
+        OrionCometSpear,
+        OrionDeadeyeMark,
+        OrionStarfallQuiver,
+        OrionPerihelionVector,
     }
 
     private sealed class Enemy
@@ -188,8 +284,16 @@ public partial class MainGame
         public int Polarity;
         public int Value;
         public int SplitDepth;
+        public int LastHitChainDepth;
+        public int LastHitSplitDepth;
         public bool Elite;
         public float Armor;
+        public BossArchetype BossArchetype;
+        public int BossLastPattern;
+        public BossPatternKind BossIntent;
+        public float BossIntentPulse;
+        public int BossPhase;
+        public float BossGuard;
     }
 
     private sealed class Shot
@@ -209,6 +313,8 @@ public partial class MainGame
         public int Polarity;
         public bool FromPlayer;
         public int Pierce;
+        public int ChainDepth;
+        public int SplitDepth;
         public bool Rift;
         public bool Grazed;
     }
@@ -241,6 +347,7 @@ public partial class MainGame
         public float Life;
         public float MaxLife;
         public float Size;
+        public bool ComboPop;
     }
 
     private sealed class HazardLine

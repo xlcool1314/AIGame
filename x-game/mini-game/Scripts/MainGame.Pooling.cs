@@ -33,6 +33,8 @@ public partial class MainGame
         shot.FromPlayer = fromPlayer;
         shot.Rift = false;
         shot.Pierce = 0;
+        shot.ChainDepth = 0;
+        shot.SplitDepth = 0;
         shot.TrailCount = 0;
         shot.Grazed = false;
         _shots.Add(shot);
@@ -81,7 +83,8 @@ public partial class MainGame
 
     private Particle AddParticleObject()
     {
-        if (_particles.Count >= MaxParticles)
+        int cap = Math.Min(MaxParticles, QualityParticleCap());
+        if (_particles.Count >= cap)
         {
             RemoveParticleAt(0);
         }
@@ -93,7 +96,8 @@ public partial class MainGame
 
     private DamageText AddDamageTextObject()
     {
-        if (_damageTexts.Count >= MaxDamageTexts)
+        int cap = QualityDamageTextCap();
+        if (_damageTexts.Count >= cap)
         {
             RemoveDamageTextAt(0);
         }
@@ -242,7 +246,7 @@ public partial class MainGame
         }
 
         _playerTrailTimer -= dt;
-        float minDistance = _dashTimer > 0.0f ? 5.0f : 9.0f;
+        float minDistance = _dashTimer > 0.0f ? 5.0f : (_visualPressure > 0.84f ? 16.0f : 9.0f);
         if (_playerTrailTimer > 0.0f && _playerPos.DistanceSquaredTo(_playerTrail[0]) < minDistance * minDistance)
         {
             return;
@@ -255,7 +259,7 @@ public partial class MainGame
 
         _playerTrail[0] = _playerPos;
         _playerTrailCount = Math.Min(PlayerTrailCapacity, _playerTrailCount + 1);
-        _playerTrailTimer = _dashTimer > 0.0f ? 0.008f : 0.022f;
+        _playerTrailTimer = _dashTimer > 0.0f ? 0.008f : (_visualPressure > 0.84f ? 0.044f : 0.022f);
     }
 
     private static void ResetShotTrail(Shot shot, Vector2 pos)
@@ -295,6 +299,7 @@ public partial class MainGame
     private void RecycleDamageText(DamageText text)
     {
         text.Text = string.Empty;
+        text.ComboPop = false;
         if (_damageTextPool.Count < MaxPoolSize)
         {
             _damageTextPool.Push(text);

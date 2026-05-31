@@ -26,12 +26,7 @@ public partial class MainGame
 
     private float PlayerShotDamageScale(int stance)
     {
-        if (IsCruiseStance(stance))
-        {
-            return 0.88f;
-        }
-
-        return _assaultBurstTimer > 0.0f ? _assaultPower : 1.12f;
+        return _assaultBurstTimer > 0.0f ? _assaultPower : 1.0f;
     }
 
     private void EnterOverheat(Enemy enemy)
@@ -126,7 +121,7 @@ public partial class MainGame
 
     private static float PolarityCooldownFor(int tunerRank, int stormRank)
     {
-        float cooldown = PolaritySwitchCooldownBase - tunerRank * 0.1f - stormRank * 0.12f;
+        float cooldown = PolaritySwitchCooldownBase - tunerRank * 0.34f - stormRank * 0.28f;
         return Mathf.Max(PolaritySwitchCooldownMin, cooldown);
     }
 
@@ -138,11 +133,6 @@ public partial class MainGame
     private static bool IsCruiseStance(int stance)
     {
         return stance == CruiseStance;
-    }
-
-    private static bool IsAssaultStance(int stance)
-    {
-        return stance == AssaultStance;
     }
 
     private static int OtherStance(int stance)
