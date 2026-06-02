@@ -61,7 +61,7 @@ public partial class MainGame
 
     private const string LocalizationRows = """
 key|en|zh|ru|pt|de|tr|fr|ja
-title.name|Interstellar|穿越星际|Сквозь звезды|Através das Estrelas|Durch die Sterne|Yıldızlar Arası|À travers les étoiles|星々を越えて
+title.name|Loop Fighter|循环战机|Циклический истребитель|Caça em Loop|Schleifenjäger|Döngü Savaşçısı|Chasseur de boucle|ループ戦機
 wake|WAKE|觉醒|ПРОБУЖДЕНИЕ|DESPERTAR|ERWACHEN|UYAN|ÉVEIL|覚醒
 choir.core.event|THE CHOIR CORE|合唱核心|ЯДРО ХОРА|NÚCLEO DO CORO|CHORKERN|KORO ÇEKİRDEĞİ|NOYAU DU CHŒUR|合唱核
 wave.intro|WAVE {0}|第 {0} 波|ВОЛНА {0}|ONDA {0}|WELLE {0}|DALGA {0}|VAGUE {0}|WAVE {0}
@@ -471,8 +471,8 @@ upgrade.unknown.body|Mystery signal.|未知信号。|Неизвестный си
 hud.score|SCORE {0:000000}|分数 {0:000000}|СЧЕТ {0:000000}|SCORE {0:000000}|SCORE {0:000000}|SKOR {0:000000}|SCORE {0:000000}|スコア {0:000000}
 hud.score.label|SCORE|分数|СЧЕТ|SCORE|SCORE|SKOR|SCORE|スコア
 score.cache.hint|score feeds end-run dust and instant resources|分数会转化为结算星尘和即时资源|счет дает пыль в конце и ресурсы сейчас|score vira pó final e recurso imediato|Score wird zu Staub und Sofortressourcen|skor final toz ve anlık kaynak verir|le score nourrit poussière et ressources|スコアは星屑と即時資源になる
-title.astra|ASTRA|星穹|АСТРА|ASTRA|ASTRA|ASTRA|ASTRA|アストラ
-title.fracture|FRACTURE|裂隙|РАЗЛОМ|FENDA|BRUCH|YARIK|FRACTURE|裂け目
+title.loop|LOOP|循环|ЦИКЛ|LOOP|SCHLEIFE|DÖNGÜ|BOUCLE|ループ
+title.fighter|FIGHTER|战机|ИСТРЕБИТЕЛЬ|CAÇA|JÄGER|SAVAŞÇI|CHASSEUR|戦機
 pilot.unlock.wave8|Reach wave 8|到达第 8 波|Дойти до волны 8|Alcance onda 8|Welle 8 erreichen|8. dalgaya ulaş|Atteindre vague 8|Wave 8 到達
 pilot.unlock.wave16|Reach wave 16|到达第 16 波|Дойти до волны 16|Alcance onda 16|Welle 16 erreichen|16. dalgaya ulaş|Atteindre vague 16|Wave 16 到達
 pilot.unlock.wave24|Reach wave 24|到达第 24 波|Дойти до волны 24|Alcance onda 24|Welle 24 erreichen|24. dalgaya ulaş|Atteindre vague 24|Wave 24 到達

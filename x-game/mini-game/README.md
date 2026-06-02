@@ -1,4 +1,4 @@
-# Astra Fracture / 星穹裂隙
+# Loop Fighter / 循环战机
 
 1920x1080 Godot 4.6 C# procedural arcade roguelite.
 

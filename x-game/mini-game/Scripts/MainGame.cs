@@ -441,8 +441,8 @@ public partial class MainGame : Node2D
         ["hud.cruise_charge"] = new("FOCUS", "专注"),
         ["hud.assault_window"] = new("SKILL {0:0.0}s", "战术 {0:0.0}秒"),
         ["hud.controls"] = new("WASD/LS MOVE  MOUSE/RS AIM  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT  START MENU", "WASD/左摇杆移动  鼠标/右摇杆瞄准  自动射击  A/LB冲刺  X/RB技能  Y/RT大招  Start菜单"),
-        ["title.astra"] = new("ASTRA", "星穹"),
-        ["title.fracture"] = new("FRACTURE", "裂隙"),
+        ["title.loop"] = new("LOOP", "循环"),
+        ["title.fighter"] = new("FIGHTER", "战机"),
         ["title.subtitle"] = new("a pilot-build arcade roguelite built in Godot C#", "Godot C# 制作的角色构筑弹幕 Roguelite"),
         ["title.body"] = new("Red fire is always danger. Each pilot has a distinct weapon, pilot skill, ultimate, and upgrade path.", "红色弹幕永远危险。每个角色都有不同武器、角色技能、大招和升级流派。"),
         ["pilot.astra.name"] = new("Astra", "星棱"),
@@ -923,6 +923,7 @@ public partial class MainGame : Node2D
         GenerateBackdrop();
         SetupAudio();
         LoadMetaProgress();
+        ApplyWindowTitle();
         ResetTitle();
         SetProcess(true);
     }
@@ -3059,6 +3060,7 @@ public partial class MainGame : Node2D
             case 3:
                 _language = LanguageCycle[WrapIndex(LanguageCycleIndex(_language) + direction, LanguageCycle.Length)];
                 RefreshUpgradeChoiceText();
+                ApplyWindowTitle();
                 break;
             case 4:
                 _resolutionPreset = (DisplayResolutionPreset)WrapIndex((int)_resolutionPreset + direction, ResolutionPresetCount());
@@ -9569,7 +9571,7 @@ public partial class MainGame : Node2D
     private void DrawTitle()
     {
         float pulse = 0.55f + 0.45f * Mathf.Sin(_time * 3.2f);
-        DrawText(TitleName(), new Vector2(0.0f, 192.0f), TitleFontSize(), Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawTitleLogo(pulse);
         DrawText(TitleStartPrompt(), new Vector2(0.0f, 596.0f), 28, Alpha(Gold, 0.34f + pulse * 0.24f), HorizontalAlignment.Center, ScreenWidth, false, 0);
 
         DrawText(Tf("meta.wallet", _starDust), new Vector2(56.0f, 70.0f), 18, Alpha(Gold, 0.62f), HorizontalAlignment.Left, 340.0f, false, 0);
@@ -9585,6 +9587,67 @@ public partial class MainGame : Node2D
         {
             DrawText(T("title.won_once"), new Vector2(0.0f, 1006.0f), 16, Alpha(Gold, 0.54f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         }
+    }
+
+    private void DrawTitleLogo(float pulse)
+    {
+        Vector2 center = new(ScreenWidth * 0.5f, 236.0f);
+        Color cyan = new Color(0.28f, 0.88f, 1.0f);
+        Color amber = new Color(1.0f, 0.62f, 0.18f);
+        Color logoWhite = Alpha(Paper, 0.72f + pulse * 0.08f);
+
+        DrawGlow(center + new Vector2(0.0f, 18.0f), cyan, 340.0f, 0.022f + pulse * 0.014f, 6);
+        DrawGlow(center + new Vector2(0.0f, 92.0f), amber, 180.0f, 0.014f + pulse * 0.01f, 4);
+
+        for (int i = 0; i < 4; i++)
+        {
+            float radius = 114.0f + i * 34.0f;
+            float spin = _time * (0.055f + i * 0.012f) + i * 0.72f;
+            Color arcColor = i % 2 == 0 ? cyan : amber;
+            DrawArc(center, radius, spin, spin + Mathf.Pi * (1.22f - i * 0.08f), 96, Alpha(arcColor, 0.13f - i * 0.018f), UiHairline, true);
+            DrawArc(center, radius + 8.0f, spin + Mathf.Pi * 1.18f, spin + Mathf.Pi * 1.68f, 64, Alpha(Paper, 0.05f - i * 0.006f), UiHairline, true);
+        }
+
+        DrawTitleFighterMark(center + new Vector2(0.0f, 94.0f), pulse, cyan, amber);
+
+        string title = TitleName().ToUpperInvariant();
+        int titleSize = TitleFontSize();
+        Vector2 titlePos = new(0.0f, 218.0f);
+        DrawText(title, titlePos + new Vector2(3.0f, 5.0f), titleSize, Alpha(cyan, 0.12f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(title, titlePos + new Vector2(-3.0f, -2.0f), titleSize, Alpha(amber, 0.1f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(title, titlePos, titleSize, logoWhite, HorizontalAlignment.Center, ScreenWidth, true, 5);
+
+        string loop = T("title.loop").ToUpperInvariant();
+        string fighter = T("title.fighter").ToUpperInvariant();
+        Vector2 labelCenter = center + new Vector2(0.0f, -106.0f);
+        DrawLine(labelCenter + new Vector2(-220.0f, 0.0f), labelCenter + new Vector2(-74.0f, 0.0f), Alpha(cyan, 0.38f), UiHairline, true);
+        DrawLine(labelCenter + new Vector2(74.0f, 0.0f), labelCenter + new Vector2(220.0f, 0.0f), Alpha(amber, 0.34f), UiHairline, true);
+        DrawText(loop, labelCenter + new Vector2(-230.0f, -10.0f), 15, Alpha(cyan, 0.64f), HorizontalAlignment.Right, 150.0f, true, 1);
+        DrawText(fighter, labelCenter + new Vector2(80.0f, -10.0f), 15, Alpha(amber, 0.62f), HorizontalAlignment.Left, 170.0f, true, 1);
+    }
+
+    private void DrawTitleFighterMark(Vector2 center, float pulse, Color cyan, Color amber)
+    {
+        float scale = 1.0f + pulse * 0.035f;
+        Vector2 nose = center + new Vector2(0.0f, -34.0f) * scale;
+        Vector2 leftWing = center + new Vector2(-34.0f, 18.0f) * scale;
+        Vector2 rightWing = center + new Vector2(34.0f, 18.0f) * scale;
+        Vector2 tail = center + new Vector2(0.0f, 34.0f) * scale;
+        Vector2 leftInner = center + new Vector2(-11.0f, 12.0f) * scale;
+        Vector2 rightInner = center + new Vector2(11.0f, 12.0f) * scale;
+
+        DrawCircle(center, 48.0f * scale, Alpha(cyan, 0.035f + pulse * 0.02f));
+        DrawArc(center, 50.0f * scale, -Mathf.Pi * 0.18f + _time * 0.22f, Mathf.Pi * 1.42f + _time * 0.22f, 72, Alpha(cyan, 0.32f), UiHairline, true);
+        DrawArc(center, 63.0f * scale, Mathf.Pi * 0.72f - _time * 0.16f, Mathf.Pi * 1.9f - _time * 0.16f, 72, Alpha(amber, 0.22f), UiHairline, true);
+
+        DrawLine(nose, leftWing, Alpha(Paper, 0.76f), UiStroke, true);
+        DrawLine(nose, rightWing, Alpha(Paper, 0.76f), UiStroke, true);
+        DrawLine(leftWing, tail, Alpha(cyan, 0.48f), UiHairline, true);
+        DrawLine(rightWing, tail, Alpha(cyan, 0.48f), UiHairline, true);
+        DrawLine(tail, nose, Alpha(Paper, 0.46f), UiHairline, true);
+        DrawLine(leftInner, tail, Alpha(amber, 0.42f), UiHairline, true);
+        DrawLine(rightInner, tail, Alpha(amber, 0.42f), UiHairline, true);
+        DrawCircle(center, 5.5f + pulse * 1.4f, Alpha(amber, 0.72f));
     }
 
     private void DrawTitleLeaderboard()
@@ -11160,6 +11223,11 @@ public partial class MainGame : Node2D
         return T("title.name");
     }
 
+    private void ApplyWindowTitle()
+    {
+        DisplayServer.WindowSetTitle(TitleName());
+    }
+
     private string TitleStartPrompt()
     {
         return T("title.start");
@@ -12304,6 +12372,7 @@ public partial class MainGame : Node2D
         int index = LanguageCycleIndex(_language);
         _language = LanguageCycle[(index + 1) % LanguageCycle.Length];
         RefreshUpgradeChoiceText();
+        ApplyWindowTitle();
         SaveMetaProgress();
         AddText(T("language.changed"), ScreenCenter + new Vector2(0.0f, -265.0f), Jade, 26.0f);
         PlaySfx(520.0f, 160.0f, 0.16f, 0.22f, 0.02f, 1);
