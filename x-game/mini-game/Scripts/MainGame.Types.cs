@@ -288,6 +288,10 @@ public partial class MainGame
         public int LastHitSplitDepth;
         public bool Elite;
         public float Armor;
+        public float DashCooldown;
+        public float DashWarmup;
+        public float DashTime;
+        public Vector2 DashDir;
         public BossArchetype BossArchetype;
         public int BossLastPattern;
         public BossPatternKind BossIntent;
@@ -339,6 +343,15 @@ public partial class MainGame
         public float Spin;
     }
 
+    private sealed class Shockwave
+    {
+        public Vector2 Center;
+        public float Radius;
+        public Color Color;
+        public float Life;
+        public float MaxLife;
+    }
+
     private sealed class DamageText
     {
         public Vector2 Pos;
@@ -348,6 +361,14 @@ public partial class MainGame
         public float MaxLife;
         public float Size;
         public bool ComboPop;
+    }
+
+    private sealed class TextCue
+    {
+        public string Text = string.Empty;
+        public Vector2 Pos;
+        public Color Color;
+        public float Size;
     }
 
     private sealed class HazardLine
@@ -361,6 +382,18 @@ public partial class MainGame
         public float Width;
         public float Damage;
         public int Polarity;
+    }
+
+    private sealed class HazardField
+    {
+        public Vector2 Center;
+        public Color Color;
+        public float Radius;
+        public float Life;
+        public float MaxLife;
+        public float Warmup;
+        public float Damage;
+        public float Pull;
     }
 
     private sealed class Star
@@ -416,6 +449,7 @@ public partial class MainGame
         public EnemyKind Kind;
         public int Polarity;
         public float RewardBoost;
+        public bool Elite;
     }
 
     private sealed class SfxVoice

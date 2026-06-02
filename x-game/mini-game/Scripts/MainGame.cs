@@ -342,11 +342,11 @@ public partial class MainGame : Node2D
         ["sector.1.name"] = new("Glass Reef", "玻璃星区"),
         ["sector.1.trait"] = new("Warning beams cut across the arena before firing.", "光束会先显示预警线，随后造成伤害。"),
         ["sector.2.name"] = new("Verdant Grave", "孢子星区"),
-        ["sector.2.trait"] = new("Spores drift through space. Enemies arrive heavier, but repairs are more common.", "敌人血量更高，但修复掉落更多。"),
+        ["sector.2.trait"] = new("Gravity wells begin to open. Step out before the core collapses.", "重力场开始出现。看到圆形预警后，尽快离开核心区域。"),
         ["sector.3.name"] = new("Clock Cathedral", "时钟星区"),
-        ["sector.3.trait"] = new("Time shears the arena. Bullets pulse faster and slower in alternating bars.", "环境光束角度更复杂，弹幕也更密。"),
+        ["sector.3.trait"] = new("Time shears the arena. Faster enemies use readable dash lanes.", "时间切割战场。高速敌人会用可预判的突进路线逼你走位。"),
         ["sector.4.name"] = new("Solar Wound", "太阳裂口"),
-        ["sector.4.trait"] = new("Final sector. Elite enemies and solar lances try to end the pattern.", "最终章。精英敌人更多，Boss 更强。"),
+        ["sector.4.trait"] = new("Final sector. Elite dashes, beams, and gravity fields overlap.", "最终章。精英突进、光束和重力场会组合施压。"),
         ["repair"] = new("REPAIR", "修复"),
         ["language.changed"] = new("LANGUAGE: ENGLISH", "当前语言：中文"),
         ["language.hint"] = new("LANGUAGE: ENGLISH  [L]", "中文  [L切换]"),
@@ -644,14 +644,17 @@ public partial class MainGame : Node2D
     private readonly List<Shot> _shots = new();
     private readonly List<Pickup> _pickups = new();
     private readonly List<Particle> _particles = new();
+    private readonly List<Shockwave> _shockwaves = new();
     private readonly List<DamageText> _damageTexts = new();
     private readonly List<HazardLine> _hazards = new();
+    private readonly List<HazardField> _hazardFields = new();
     private readonly List<Star> _stars = new();
     private readonly List<Nebula> _nebulas = new();
     private readonly List<UpgradeCard> _upgradeChoices = new();
     private readonly List<UpgradeId> _upgradeOrder = new();
     private readonly List<RunObjective> _runObjectives = new();
     private readonly List<SfxVoice> _voices = new();
+    private readonly Queue<TextCue> _centerTextQueue = new();
     private readonly Vector2[] _playerTrail = new Vector2[PlayerTrailCapacity];
     private readonly Queue<PendingSpawn> _pendingSpawns = new();
     private readonly Dictionary<UpgradeId, int> _upgradeRanks = new();
@@ -666,6 +669,7 @@ public partial class MainGame : Node2D
     private int _activeEnemyBullets;
     private float _visualPressure;
     private float _frameRatePressure;
+    private float _centerTextQueueTimer;
 
     private GameMode _mode = GameMode.Title;
     private GameMode _settingsReturnMode = GameMode.Title;
@@ -722,7 +726,14 @@ public partial class MainGame : Node2D
     private float _playerTrailTimer;
     private float _spawnDirector;
     private float _waveSpawnTimer;
+    private float _waveSpawnInterval;
+    private int _waveNextSpawnCount;
     private int _waveBudget;
+    private float _waveProgressBudget;
+    private float _waveProgressSpent;
+    private int _waveSpawnIndex;
+    private int _waveEventMask;
+    private float _waveRewardBoost = 1.0f;
     private float _bossPatternTimer;
     private float _sectorHazardTimer;
     private WavePaceKind _currentWavePace = WavePaceKind.Standard;
@@ -957,6 +968,7 @@ public partial class MainGame : Node2D
                 break;
         }
 
+        UpdateCenterTextQueue(dt);
         UpdateHudBarEasing(dt);
         GameMode trailMode = (_mode == GameMode.Settings || _mode == GameMode.Guide) ? _settingsReturnMode : _mode;
         if (IsRunViewMode(trailMode))
@@ -989,6 +1001,11 @@ public partial class MainGame : Node2D
             DrawBackdrop();
             DrawArenaFrame();
 
+            foreach (HazardField field in _hazardFields)
+            {
+                DrawHazardField(field);
+            }
+
             foreach (HazardLine hazard in _hazards)
             {
                 DrawHazard(hazard);
@@ -997,6 +1014,11 @@ public partial class MainGame : Node2D
             foreach (Particle particle in _particles)
             {
                 DrawParticle(particle);
+            }
+
+            foreach (Shockwave shockwave in _shockwaves)
+            {
+                DrawShockwave(shockwave);
             }
 
             foreach (Pickup pickup in _pickups)
@@ -1027,14 +1049,10 @@ public partial class MainGame : Node2D
             float age = 1.0f - t;
             float pop = damageText.ComboPop ? 1.0f + Mathf.Sin(age * Mathf.Pi) * 0.34f : 1.0f;
             Vector2 pos = damageText.Pos + ShakeOffset();
-            if (damageText.ComboPop)
-            {
-                float width = Mathf.Clamp(damageText.Text.Length * damageText.Size * 0.54f + 22.0f, 58.0f, 142.0f) * pop;
-                Rect2 badge = new(pos - new Vector2(width * 0.5f, damageText.Size * 0.78f * pop), new Vector2(width, damageText.Size * 1.18f * pop));
-                DrawRect(badge, Alpha(Ink, 0.22f * t), true);
-                DrawRect(badge, Alpha(damageText.Color, 0.42f * t), false, UiHairline, true);
-            }
-            DrawText(damageText.Text, pos, Mathf.RoundToInt(damageText.Size * pop), Alpha(damageText.Color, t), HorizontalAlignment.Center, 220.0f, true, 4);
+            int drawSize = Mathf.RoundToInt(damageText.Size * pop);
+            float textWidth = EstimateTextPixelWidth(damageText.Text, drawSize);
+            float drawWidth = Mathf.Clamp(textWidth + (damageText.ComboPop ? 34.0f : 28.0f), damageText.ComboPop ? 96.0f : 70.0f, damageText.ComboPop ? 220.0f : 180.0f);
+            DrawText(damageText.Text, pos - new Vector2(drawWidth * 0.5f, 0.0f), drawSize, Alpha(damageText.Color, t), HorizontalAlignment.Center, drawWidth, true, damageText.ComboPop ? 2 : 3);
         }
 
         if (visibleMode == GameMode.Title)
@@ -1084,8 +1102,12 @@ public partial class MainGame : Node2D
         ClearEnemies();
         ClearPickups();
         ClearParticles();
+        _shockwaves.Clear();
         ClearDamageTexts();
+        _centerTextQueue.Clear();
+        _centerTextQueueTimer = 0.0f;
         _hazards.Clear();
+        _hazardFields.Clear();
         _upgradeChoices.Clear();
         _voices.Clear();
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
@@ -1504,7 +1526,15 @@ public partial class MainGame : Node2D
         _waveIntelPulse = 0.0f;
         _bossPatternTimer = 0.0f;
         _spawnDirector = 0.0f;
+        _waveSpawnTimer = 0.0f;
+        _waveSpawnInterval = 0.0f;
+        _waveNextSpawnCount = 0;
         _waveBudget = 0;
+        _waveProgressBudget = 0.0f;
+        _waveProgressSpent = 0.0f;
+        _waveSpawnIndex = 0;
+        _waveEventMask = 0;
+        _waveRewardBoost = 1.0f;
         _sectorHazardTimer = 4.0f;
         _currentWavePace = WavePaceKind.Standard;
         _combatChain = 0;
@@ -1619,8 +1649,12 @@ public partial class MainGame : Node2D
         ClearEnemies();
         ClearPickups();
         ClearParticles();
+        _shockwaves.Clear();
         ClearDamageTexts();
+        _centerTextQueue.Clear();
+        _centerTextQueueTimer = 0.0f;
         _hazards.Clear();
+        _hazardFields.Clear();
         _upgradeChoices.Clear();
         Burst(ScreenCenter, Cyan, 64, 680.0f, 2.2f);
         AddText(T("wake"), ScreenCenter + new Vector2(0.0f, -90.0f), Cyan, 42.0f);
@@ -1696,8 +1730,17 @@ public partial class MainGame : Node2D
         _waveTookDamage = false;
         _spawnDirector = 0.0f;
         _waveSpawnTimer = 0.0f;
+        _waveSpawnInterval = 0.0f;
+        _waveNextSpawnCount = 0;
         _waveBudget = 0;
+        _waveProgressBudget = 0.0f;
+        _waveProgressSpent = 0.0f;
+        _waveSpawnIndex = 0;
+        _waveEventMask = 0;
+        _waveRewardBoost = 1.0f;
         _waveIntelPulse = 1.0f;
+        _centerTextQueue.Clear();
+        _centerTextQueueTimer = 0.0f;
         _pendingSpawns.Clear();
         _bossPatternTimer = 0.0f;
         _sectorHazardTimer = Mathf.Max(2.5f, 8.0f - CurrentSectorIndex());
@@ -1716,53 +1759,41 @@ public partial class MainGame : Node2D
 
         if (waveInSector == 1)
         {
-            AddText(Tf("sector.enter", sector + 1, T(info.NameKey)), ScreenCenter + new Vector2(0.0f, -250.0f), info.Accent, 36.0f);
-            AddText(T(info.TraitKey), ScreenCenter + new Vector2(0.0f, -202.0f), Paper, 22.0f);
+            QueueCenterText(Tf("sector.enter", sector + 1, T(info.NameKey)), ScreenCenter + new Vector2(0.0f, -250.0f), info.Accent, 36.0f);
+            QueueCenterText(T(info.TraitKey), ScreenCenter + new Vector2(0.0f, -202.0f), Paper, 22.0f);
         }
 
         if (_currentWavePace == WavePaceKind.Boss)
         {
             _waveBudget = 1;
+            _waveProgressBudget = 1.0f;
             Enemy? boss = SpawnBoss();
             string title = boss != null ? BossTitle(boss.BossArchetype, sector) : Tf("boss.sector", T(info.NameKey));
-            AddText(title, ScreenCenter + new Vector2(0.0f, -180.0f), boss != null ? BossAccent(boss.BossArchetype) : info.Accent, 44.0f);
+            QueueCenterText(title, ScreenCenter + new Vector2(0.0f, -180.0f), boss != null ? BossAccent(boss.BossArchetype) : info.Accent, 44.0f);
             PlaySfx(72.0f, 0.5f, 1.6f, 0.46f, 0.3f, 0);
             return;
         }
 
         int baseBudget = WaveBaseBudget(sector, waveInSector);
-        int budget = Mathf.Max(2, Mathf.RoundToInt((baseBudget + _nextWaveBonusEnemies) * WaveBudgetScale(_currentWavePace)));
-        _waveBudget = budget;
-        float rewardBoost = _nextWaveRewardBoost * WaveRewardScale(_currentWavePace);
+        float budget = Mathf.Max(2.0f, (baseBudget + _nextWaveBonusEnemies) * WaveBudgetScale(_currentWavePace));
+        _waveProgressBudget = WaveProgressBudget(budget, sector, waveInSector, _currentWavePace);
+        _waveBudget = Mathf.CeilToInt(_waveProgressBudget);
+        _waveRewardBoost = _nextWaveRewardBoost * WaveRewardScale(_currentWavePace);
         EnemyKind primaryKind = WavePrimaryEnemyKind(sector, waveInSector);
         EnemyKind supportKind = WaveSupportEnemyKind(sector, waveInSector);
         _nextWaveBonusEnemies = 0;
         _nextWaveRewardBoost = 1.0f;
-        int openingBatch = Math.Min(budget, Math.Max(2, Mathf.RoundToInt((3 + sector + waveInSector / 3.0f) * WaveOpeningScale(_currentWavePace))));
-        for (int i = 0; i < budget; i++)
+        int openingBatch = WaveOpeningBatchCount(sector, waveInSector, _currentWavePace, _waveProgressBudget);
+        for (int i = 0; i < openingBatch && !WaveProgressComplete(); i++)
         {
-            EnemyKind kind = SelectEnemyKind(i, sector, waveInSector, primaryKind, supportKind, _currentWavePace);
-            PendingSpawn spawn = new()
-            {
-                Kind = kind,
-                Polarity = i % 2,
-                RewardBoost = rewardBoost,
-            };
-
-            if (i < openingBatch)
-            {
-                SpawnPendingEnemy(spawn);
-            }
-            else
-            {
-                _pendingSpawns.Enqueue(spawn);
-            }
+            SpawnPendingEnemy(CreateNextWaveSpawn(primaryKind, supportKind));
         }
+        ScheduleNextSpawnBatch(false);
 
-        AddText($"{T("wave.engage")}  /  {WavePaceText(_currentWavePace)}", ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 42.0f);
+        QueueCenterText($"{T("wave.engage")}  /  {WavePaceText(_currentWavePace)}", ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 42.0f);
         if (_currentWavePace == WavePaceKind.Recovery)
         {
-            AddText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
+            QueueCenterText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
             SpawnPickup(ScreenCenter + new Vector2(-72.0f, 34.0f), PickupKind.Energy);
             SpawnPickup(ScreenCenter + new Vector2(72.0f, 34.0f), PickupKind.Repair);
         }
@@ -1784,62 +1815,415 @@ public partial class MainGame : Node2D
 
         if (tutorial.Length > 0)
         {
-            AddText(tutorial, ScreenCenter + new Vector2(0.0f, -162.0f), Paper, 23.0f);
+            QueueCenterText(tutorial, ScreenCenter + new Vector2(0.0f, -162.0f), Paper, 23.0f);
         }
     }
 
     private void UpdateWaveSpawns(float dt)
     {
-        if (_pendingSpawns.Count == 0)
+        if (_currentWavePace == WavePaceKind.Boss)
         {
             return;
         }
 
-        if (_enemies.Count == 0)
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        EnemyKind primaryKind = WavePrimaryEnemyKind(sector, waveInSector);
+        EnemyKind supportKind = WaveSupportEnemyKind(sector, waveInSector);
+
+        if (WaveProgressComplete() && _pendingSpawns.Count == 0)
         {
             _waveSpawnTimer = 0.0f;
+            _waveSpawnInterval = 0.0f;
+            _waveNextSpawnCount = 0;
+            return;
         }
-        else
+
+        RefreshSpawnSchedule();
+        if (_enemies.Count <= 1 + sector / 2 && WaveProgress01() < 0.38f && _waveSpawnTimer > 1.15f)
         {
-            _waveSpawnTimer -= dt;
+            _waveSpawnTimer = 1.15f;
         }
+        _waveSpawnTimer -= dt;
 
         if (_waveSpawnTimer > 0.0f)
         {
             return;
         }
 
-        int sector = CurrentSectorIndex();
-        float spawnRate = SpawnRateMultiplier();
         float pressure = PerformancePressure();
-        int spawnCount = (_enemies.Count < 6 + sector * 2 && _pendingSpawns.Count > 3) ? 2 : 1;
-        if (_currentWavePace == WavePaceKind.Swarm && _enemies.Count < 16 + sector * 2 && pressure < 0.75f)
+        int activeSoftCap = ActiveWaveEnemySoftCap();
+        if (_enemies.Count >= activeSoftCap && pressure > 0.62f)
         {
-            spawnCount++;
-        }
-        else if (_currentWavePace == WavePaceKind.Elite || _currentWavePace == WavePaceKind.Recovery)
-        {
-            spawnCount = 1;
-        }
-
-        if (spawnRate >= 1.7f && pressure < 0.68f && _pendingSpawns.Count > 3)
-        {
-            spawnCount += spawnRate >= 2.25f ? 2 : 1;
-        }
-
-        if (pressure > 0.82f || _enemies.Count > 34 + sector * 3)
-        {
-            spawnCount = 1;
-            _waveSpawnTimer = Mathf.Lerp(0.72f, 0.46f, ComboPace01());
+            _waveSpawnTimer = 0.38f;
+            _waveSpawnInterval = Math.Max(_waveSpawnInterval, 0.38f);
+            _waveNextSpawnCount = Math.Max(5, Math.Min(CurrentSpawnBatchCount(), 7));
             return;
         }
 
-        for (int i = 0; i < spawnCount && _pendingSpawns.Count > 0; i++)
+        int spawnCount = CurrentSpawnBatchCount();
+        if (pressure > 0.9f)
         {
-            SpawnPendingEnemy(_pendingSpawns.Dequeue());
+            spawnCount = Math.Min(spawnCount, 4);
+        }
+        else if (pressure > 0.8f || _enemies.Count > 56 + sector * 4)
+        {
+            spawnCount = Math.Min(spawnCount, 6);
         }
 
-        _waveSpawnTimer = NextSpawnInterval(spawnRate);
+        int availableSlots = Math.Max(0, MaxEnemies - _enemies.Count);
+        spawnCount = Math.Min(spawnCount, availableSlots);
+        if (spawnCount <= 0)
+        {
+            _waveSpawnTimer = 0.38f;
+            _waveSpawnInterval = Math.Max(_waveSpawnInterval, 0.38f);
+            return;
+        }
+
+        int spawned = 0;
+        while (spawned < spawnCount && _pendingSpawns.Count > 0)
+        {
+            SpawnPendingEnemy(_pendingSpawns.Dequeue());
+            spawned++;
+        }
+
+        while (spawned < spawnCount && !WaveProgressComplete())
+        {
+            SpawnPendingEnemy(CreateNextWaveSpawn(primaryKind, supportKind));
+            spawned++;
+        }
+
+        if (spawned > 0)
+        {
+            _waveIntelPulse = Math.Max(_waveIntelPulse, 0.45f);
+        }
+
+        ScheduleNextSpawnBatch(false);
+    }
+
+    private void ScheduleNextSpawnBatch(bool preserveProgress)
+    {
+        if (_currentWavePace == WavePaceKind.Boss || (WaveProgressComplete() && _pendingSpawns.Count == 0))
+        {
+            _waveSpawnTimer = 0.0f;
+            _waveSpawnInterval = 0.0f;
+            _waveNextSpawnCount = 0;
+            return;
+        }
+
+        float progress = preserveProgress ? NextReserveSpawnProgress01() : 0.0f;
+        _waveSpawnInterval = CurrentReserveSpawnInterval();
+        _waveSpawnTimer = Mathf.Clamp(_waveSpawnInterval * (1.0f - progress), 0.0f, _waveSpawnInterval);
+        _waveNextSpawnCount = CurrentSpawnBatchCount();
+    }
+
+    private void RefreshSpawnSchedule()
+    {
+        if (_waveSpawnInterval <= 0.001f)
+        {
+            ScheduleNextSpawnBatch(false);
+            return;
+        }
+
+        float progress = NextReserveSpawnProgress01();
+        float targetInterval = CurrentReserveSpawnInterval();
+        if (Math.Abs(targetInterval - _waveSpawnInterval) > 0.035f)
+        {
+            _waveSpawnInterval = targetInterval;
+            _waveSpawnTimer = Mathf.Clamp(_waveSpawnInterval * (1.0f - progress), 0.0f, _waveSpawnInterval);
+        }
+
+        _waveNextSpawnCount = CurrentSpawnBatchCount();
+    }
+
+    private float CurrentReserveSpawnInterval()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 0.0f;
+        }
+
+        float interval = BaseReserveSpawnInterval() / ComboSpawnRate();
+        return Mathf.Clamp(interval, 0.9f, 7.0f);
+    }
+
+    private float BaseReserveSpawnInterval()
+    {
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        float progress = Mathf.Pow(RunProgress01(), 0.78f);
+        float interval = Mathf.Lerp(5.0f, 1.72f, progress);
+        interval -= Math.Min(0.32f, Math.Max(0, waveInSector - 1) * 0.04f);
+        interval *= WaveIntervalArcScale(waveInSector);
+        interval *= WaveSpawnIntervalScale(_currentWavePace);
+        interval *= Mathf.Lerp(1.08f, 0.68f, WavePressure01());
+        interval *= 1.0f - Math.Min(0.16f, sector * 0.035f);
+        return Mathf.Clamp(interval, 0.95f, 7.2f);
+    }
+
+    private int CurrentSpawnBatchCount()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 0;
+        }
+
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        float wavePressure = WavePressure01();
+        int count = 5 + Mathf.FloorToInt(wavePressure * 3.25f);
+        if (sector >= 2 && wavePressure >= 0.45f)
+        {
+            count++;
+        }
+        if (sector >= 3 && wavePressure >= 0.72f)
+        {
+            count++;
+        }
+
+        count += waveInSector switch
+        {
+            3 => 1,
+            4 => -1,
+            6 => 1,
+            7 => 2,
+            _ => 0,
+        };
+
+        switch (_currentWavePace)
+        {
+            case WavePaceKind.Swarm:
+                count += sector >= 2 ? 2 : 1;
+                break;
+            case WavePaceKind.Pressure:
+                count++;
+                break;
+            case WavePaceKind.Elite:
+                count = Math.Max(5, Math.Min(count + 1, 7 + sector / 2 + (wavePressure > 0.68f ? 1 : 0)));
+                break;
+            case WavePaceKind.Recovery:
+                count = Math.Max(5, Math.Min(count - 1, 6 + sector / 2 + (wavePressure > 0.72f ? 1 : 0)));
+                break;
+        }
+
+        if (_combo >= 96)
+        {
+            count++;
+        }
+
+        float pressure = PerformancePressure();
+        if (pressure > 0.86f)
+        {
+            count = Math.Min(count, 4);
+        }
+        else if (pressure > 0.74f)
+        {
+            count = Math.Min(count, 6);
+        }
+
+        int minCount = pressure > 0.86f ? 4 : 5;
+        return Mathf.Clamp(count, minCount, MaxSpawnBatchCount(sector, waveInSector));
+    }
+
+    private int ActiveWaveEnemySoftCap()
+    {
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        float wavePressure = WavePressure01();
+        int cap = 24 + sector * 7 + Mathf.FloorToInt(RunProgress01() * 18.0f);
+        cap += Mathf.RoundToInt(Mathf.Lerp(-2.0f, 20.0f + sector * 2.0f, wavePressure));
+        cap += waveInSector switch
+        {
+            1 => -3,
+            2 => -1,
+            3 => 7,
+            4 => -4,
+            5 => -2,
+            6 => 8,
+            7 => 12,
+            _ => 0,
+        };
+
+        if (_currentWavePace == WavePaceKind.Swarm)
+        {
+            cap += 14;
+        }
+        else if (_currentWavePace == WavePaceKind.Pressure)
+        {
+            cap += 10;
+        }
+        else if (_currentWavePace == WavePaceKind.Elite || _currentWavePace == WavePaceKind.Recovery)
+        {
+            cap -= _currentWavePace == WavePaceKind.Recovery ? 3 : 1;
+        }
+
+        if (_combo >= 50)
+        {
+            cap += 5;
+        }
+
+        return Mathf.Clamp(cap + waveInSector / 2, 22, 86);
+    }
+
+    private PendingSpawn CreateNextWaveSpawn(EnemyKind primaryKind, EnemyKind supportKind)
+    {
+        EnemyKind kind = SelectEnemyKind(_waveSpawnIndex, CurrentSectorIndex(), CurrentWaveInSector(), primaryKind, supportKind, _currentWavePace);
+        PendingSpawn spawn = new()
+        {
+            Kind = kind,
+            Polarity = _waveSpawnIndex % 2,
+            RewardBoost = _waveRewardBoost,
+        };
+        _waveSpawnIndex++;
+        ConsumeWaveProgress(WaveSpawnProgressCost(kind, false));
+        return spawn;
+    }
+
+    private void ConsumeWaveProgress(float amount)
+    {
+        _waveProgressSpent = Mathf.Clamp(_waveProgressSpent + amount, 0.0f, Math.Max(0.0f, _waveProgressBudget));
+        TryTriggerWaveProgressEvent();
+    }
+
+    private bool WaveProgressComplete()
+    {
+        return _waveProgressBudget <= 0.0f || _waveProgressSpent >= _waveProgressBudget - 0.01f;
+    }
+
+    private float WaveProgress01()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 0.0f;
+        }
+
+        return _waveProgressBudget <= 0.0f ? 0.0f : Mathf.Clamp(_waveProgressSpent / _waveProgressBudget, 0.0f, 1.0f);
+    }
+
+    private float WavePressure01()
+    {
+        float progress = WaveProgress01();
+        return progress * progress * (3.0f - 2.0f * progress);
+    }
+
+    private void TryTriggerWaveProgressEvent()
+    {
+        if (_currentWavePace == WavePaceKind.Boss || _mode != GameMode.Playing)
+        {
+            return;
+        }
+
+        float progress = WaveProgress01();
+        for (int eventIndex = 0; eventIndex < 3; eventIndex++)
+        {
+            float threshold = eventIndex switch
+            {
+                0 => 0.32f,
+                1 => 0.62f,
+                _ => 0.86f,
+            };
+            int bit = 1 << eventIndex;
+            if ((_waveEventMask & bit) != 0 || progress < threshold)
+            {
+                continue;
+            }
+
+            _waveEventMask |= bit;
+            TriggerWaveProgressBeat(eventIndex);
+        }
+    }
+
+    private void TriggerWaveProgressBeat(int eventIndex)
+    {
+        int sector = CurrentSectorIndex();
+        int waveInSector = CurrentWaveInSector();
+        float pressure = PerformancePressure();
+        bool clean = !_waveTookDamage;
+        bool highMomentum = _combo >= 18 + eventIndex * 20 && pressure < 0.78f;
+
+        if (_currentWavePace == WavePaceKind.Recovery)
+        {
+            SpawnWaveEventPickup(eventIndex);
+            QueueCenterText(T("flow.event.supply"), ScreenCenter + new Vector2(0.0f, -112.0f), Jade, 19.0f);
+            _waveIntelPulse = 1.0f;
+            return;
+        }
+
+        if (highMomentum)
+        {
+            QueueWaveEventEnemy(WaveEventEnemyKind(sector, _currentWavePace, eventIndex), eventIndex, true, 1.35f + eventIndex * 0.15f);
+            if (_currentWavePace is WavePaceKind.Swarm or WavePaceKind.Pressure && pressure < 0.68f)
+            {
+                QueueWaveEventEnemy(WaveSupportEnemyKind(sector, waveInSector), eventIndex + 1, false, 1.12f);
+            }
+            if (sector > 0 || eventIndex > 0)
+            {
+                QueueWaveEventEnemy(WaveMechanicEnemyKind(sector, waveInSector, _currentWavePace, _waveSpawnIndex + eventIndex + 2), eventIndex + 2, false, 1.12f);
+            }
+            QueueCenterText(T("flow.event.elite"), ScreenCenter + new Vector2(0.0f, -112.0f), Gold, 20.0f);
+            _waveIntelPulse = 1.0f;
+            return;
+        }
+
+        if (_currentWavePace == WavePaceKind.Swarm && pressure < 0.72f)
+        {
+            int count = eventIndex == 0 ? 3 : 4;
+            for (int i = 0; i < count; i++)
+            {
+                EnemyKind kind = i == count - 1
+                    ? WaveMechanicEnemyKind(sector, waveInSector, _currentWavePace, _waveSpawnIndex + eventIndex + i)
+                    : WaveEventEnemyKind(sector, _currentWavePace, eventIndex);
+                QueueWaveEventEnemy(kind, eventIndex + i, false, 1.08f);
+            }
+            QueueCenterText(T("flow.event.surge"), ScreenCenter + new Vector2(0.0f, -112.0f), CurrentSector().Accent, 19.0f);
+            _waveIntelPulse = 1.0f;
+            return;
+        }
+
+        if (_currentWavePace == WavePaceKind.Pressure && pressure < 0.72f)
+        {
+            QueueWaveEventEnemy(WaveEventEnemyKind(sector, _currentWavePace, eventIndex), eventIndex, eventIndex > 0, eventIndex > 0 ? 1.28f : 1.12f);
+            QueueWaveEventEnemy(WaveSupportEnemyKind(sector, waveInSector), eventIndex + 1, false, 1.08f);
+            QueueWaveEventEnemy(WaveMechanicEnemyKind(sector, waveInSector, _currentWavePace, _waveSpawnIndex + eventIndex + 2), eventIndex + 2, false, 1.08f);
+            QueueCenterText(T("flow.event.surge"), ScreenCenter + new Vector2(0.0f, -112.0f), Gold, 19.0f);
+            _waveIntelPulse = 1.0f;
+            return;
+        }
+
+        if (_currentWavePace == WavePaceKind.Elite && pressure < 0.68f)
+        {
+            QueueWaveEventEnemy(WaveEventEnemyKind(sector, _currentWavePace, eventIndex), eventIndex, true, 1.24f + eventIndex * 0.12f);
+            if (eventIndex > 0)
+            {
+                QueueWaveEventEnemy(WaveMechanicEnemyKind(sector, waveInSector, _currentWavePace, _waveSpawnIndex + eventIndex + 1), eventIndex + 1, false, 1.08f);
+            }
+            QueueCenterText(T("flow.event.elite"), ScreenCenter + new Vector2(0.0f, -112.0f), Gold, 20.0f);
+            _waveIntelPulse = 1.0f;
+            return;
+        }
+
+        if (clean && _combo >= 8 + eventIndex * 8)
+        {
+            SpawnWaveEventPickup(eventIndex);
+            QueueCenterText(T("flow.event.supply"), ScreenCenter + new Vector2(0.0f, -112.0f), Jade, 19.0f);
+            _waveIntelPulse = 1.0f;
+        }
+    }
+
+    private void QueueWaveEventEnemy(EnemyKind kind, int eventIndex, bool elite, float rewardBoost)
+    {
+        _pendingSpawns.Enqueue(new PendingSpawn
+        {
+            Kind = kind,
+            Polarity = (_waveSpawnIndex + eventIndex) % 2,
+            RewardBoost = _waveRewardBoost * rewardBoost,
+            Elite = elite,
+        });
+    }
+
+    private void SpawnWaveEventPickup(int eventIndex)
+    {
+        SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), eventIndex == 0 ? PickupKind.Energy : PickupKind.Repair);
     }
 
     private void SpawnPendingEnemy(PendingSpawn spawn)
@@ -1848,6 +2232,16 @@ public partial class MainGame : Node2D
         if (enemy != null)
         {
             enemy.Value = (int)(enemy.Value * spawn.RewardBoost);
+            if (spawn.Elite && enemy.Kind != EnemyKind.Boss)
+            {
+                enemy.Elite = true;
+                enemy.Radius *= 1.1f;
+                enemy.MaxHp *= 1.72f;
+                enemy.Hp = enemy.MaxHp;
+                enemy.Armor *= 1.12f;
+                enemy.Value = Mathf.RoundToInt(enemy.Value * 1.65f);
+                enemy.SpawnPulse = 1.0f;
+            }
         }
     }
 
@@ -2456,6 +2850,10 @@ public partial class MainGame : Node2D
         enemy.LastHitSplitDepth = 0;
         enemy.Elite = elite;
         enemy.Armor = elite ? 1.18f + sector * 0.06f : 1.0f;
+        enemy.DashCooldown = InitialEnemyDashCooldown(kind, sector, CurrentWaveInSector());
+        enemy.DashWarmup = 0.0f;
+        enemy.DashTime = 0.0f;
+        enemy.DashDir = Vector2.Zero;
         enemy.BossPhase = 0;
         enemy.BossGuard = 0.0f;
         if (kind == EnemyKind.Bulwark)
@@ -2934,7 +3332,7 @@ public partial class MainGame : Node2D
             return;
         }
 
-        if (_enemies.Count == 0 && _pendingSpawns.Count == 0)
+        if (_enemies.Count == 0 && _pendingSpawns.Count == 0 && WaveProgressComplete())
         {
             _waveClearTimer += gameDt;
             float clearDelay = Mathf.Lerp(1.0f, 0.28f, ComboPace01());
@@ -3226,6 +3624,7 @@ public partial class MainGame : Node2D
         float radius = 420.0f + MetaRank(MetaUpgradeId.NovaCatalyst) * 24.0f + Math.Max(0.0f, _maxEnergy - 100.0f) * 0.7f;
         ClearBulletsNear(_playerPos, radius, false);
         _invulnTimer = Mathf.Max(_invulnTimer, 0.38f);
+        AddShockwave(_playerPos, radius, color);
         Burst(_playerPos, color, 34, 520.0f, 0.85f);
         PlaySfx(120.0f, 0.9f, 0.28f, 0.42f, 0.12f, 0);
     }
@@ -4114,6 +4513,7 @@ public partial class MainGame : Node2D
             enemy.Cooldown -= dt * EnemyCooldownRate(enemy);
             enemy.Overheat = Mathf.Max(0.0f, enemy.Overheat - dt);
             enemy.ContactTimer -= dt;
+            TickEnemyDash(enemy, dt);
 
             if (enemy.Kind == EnemyKind.Boss)
             {
@@ -4126,138 +4526,156 @@ public partial class MainGame : Node2D
             Vector2 dir = toPlayer / distance;
             Vector2 desired = Vector2.Zero;
             float speed = _enemySlow;
+            bool dashLocked = enemy.DashWarmup > 0.0f || enemy.DashTime > 0.0f;
 
-            switch (enemy.Kind)
+            if (!dashLocked)
             {
-                case EnemyKind.Chaser:
-                    desired = dir * (185.0f + threat * 9.0f) * speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 310.0f + threat * 14.0f, 1, 0.0f);
-                        enemy.Cooldown = _rng.RandfRange(1.35f, 2.2f);
-                    }
-                    break;
-                case EnemyKind.Weaver:
-                    desired = (dir.Rotated(Mathf.Sin(enemy.Phase) * 1.2f) * 150.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.0f) * 120.0f) * speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 360.0f + threat * 18.0f, 3, 0.22f);
-                        enemy.Cooldown = _rng.RandfRange(1.65f, 2.55f);
-                    }
-                    break;
-                case EnemyKind.Turret:
-                    desired = distance < 430.0f ? -dir * 95.0f : dir * 58.0f;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        int petals = ScaledEnemyPatternCount(enemy.Kind, 7 + CurrentWaveInSector() / 2 + sector);
-                        float baseAngle = enemy.Phase;
-                        for (int a = 0; a < petals; a++)
+                switch (enemy.Kind)
+                {
+                    case EnemyKind.Chaser:
+                        desired = dir * (185.0f + threat * 9.0f) * speed;
+                        if (enemy.Cooldown <= 0.0f)
                         {
-                            FireEnemy(enemy, Vector2.Right.Rotated(baseAngle + Mathf.Tau * a / petals), 260.0f + threat * 12.0f, 1, 0.0f);
+                            FireEnemy(enemy, dir, 310.0f + threat * 14.0f, 1, 0.0f);
+                            enemy.Cooldown = _rng.RandfRange(1.35f, 2.2f);
                         }
-                        enemy.Cooldown = 2.35f;
-                        enemy.Polarity = OtherStance(enemy.Polarity);
-                    }
-                    break;
-                case EnemyKind.Splitter:
-                    desired = (dir * 118.0f + new Vector2(Mathf.Sin(enemy.Phase * 1.7f), Mathf.Cos(enemy.Phase * 1.1f)) * 90.0f) * speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 330.0f + threat * 15.0f, 2, 0.16f);
-                        enemy.Cooldown = _rng.RandfRange(1.2f, 1.9f);
-                    }
-                    break;
-                case EnemyKind.Lance:
-                    desired = distance > 640.0f ? dir * 210.0f : -dir * 100.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.3f) * 145.0f;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 620.0f + threat * 20.0f, 1, 0.0f, 18.0f);
-                        enemy.Cooldown = _rng.RandfRange(1.0f, 1.55f);
-                    }
-                    break;
-                case EnemyKind.Mine:
-                    desired = (dir * 48.0f + RandomOrbit(enemy.Phase) * 34.0f) * speed;
-                    if (distance < 145.0f && enemy.Cooldown > EnemyTelegraphLead)
-                    {
-                        enemy.Cooldown = EnemyTelegraphLead;
-                    }
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        int spokes = ScaledEnemyPatternCount(enemy.Kind, enemy.Elite ? 12 : 8);
-                        for (int a = 0; a < spokes; a++)
+                        break;
+                    case EnemyKind.Weaver:
+                        desired = (dir.Rotated(Mathf.Sin(enemy.Phase) * 1.2f) * 150.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.0f) * 120.0f) * speed;
+                        if (enemy.Cooldown <= 0.0f)
                         {
-                            FireEnemy(enemy, Vector2.Right.Rotated(enemy.Phase + a * Mathf.Tau / spokes), 235.0f + threat * 7.0f, 1, 0.0f, enemy.Elite ? 12.0f : 9.0f);
+                            FireEnemy(enemy, dir, 360.0f + threat * 18.0f, 3, 0.22f);
+                            enemy.Cooldown = _rng.RandfRange(1.65f, 2.55f);
                         }
-                        enemy.Cooldown = enemy.Elite ? 1.4f : 2.1f;
-                    }
-                    break;
-                case EnemyKind.Shard:
-                    desired = (dir.Rotated(Mathf.Sin(enemy.Phase * 1.9f) * 0.85f) * (245.0f + threat * 4.0f) + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 3.1f) * 180.0f) * speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 560.0f + threat * 17.0f, enemy.Elite ? 3 : 2, 0.09f, 7.0f);
-                        enemy.Cooldown = enemy.Elite ? 0.78f : 1.12f;
-                    }
-                    break;
-                case EnemyKind.Warden:
-                    desired = distance < 520.0f ? -dir * 72.0f : dir * 78.0f;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 300.0f + threat * 10.0f, 5, 0.22f, 11.0f);
-                        if (_enemies.Count < 26 + sector * 4)
+                        break;
+                    case EnemyKind.Turret:
+                        desired = distance < 430.0f ? -dir * 95.0f : dir * 58.0f;
+                        if (enemy.Cooldown <= 0.0f)
                         {
-                            SpawnEnemy(sector >= 3 ? EnemyKind.Shard : EnemyKind.Chaser, ClampToArena(enemy.Pos + RandomDirection() * 78.0f, 34.0f), OtherStance(enemy.Polarity), 1);
+                            int petals = ScaledEnemyPatternCount(enemy.Kind, 7 + CurrentWaveInSector() / 2 + sector);
+                            float baseAngle = enemy.Phase;
+                            for (int a = 0; a < petals; a++)
+                            {
+                                FireEnemy(enemy, Vector2.Right.Rotated(baseAngle + Mathf.Tau * a / petals), 260.0f + threat * 12.0f, 1, 0.0f);
+                            }
+                            enemy.Cooldown = 2.35f;
+                            enemy.Polarity = OtherStance(enemy.Polarity);
                         }
-                        enemy.Cooldown = enemy.Elite ? 1.25f : 1.85f;
-                    }
-                    break;
-                case EnemyKind.Drifter:
-                    desired = (dir * 94.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 1.8f) * 245.0f) * speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir.Rotated(0.34f), 330.0f + threat * 12.0f, 2, 0.12f);
-                        FireEnemy(enemy, dir.Rotated(-0.34f), 330.0f + threat * 12.0f, 2, 0.12f);
-                        enemy.Cooldown = _rng.RandfRange(1.45f, 2.1f);
-                    }
-                    break;
-                case EnemyKind.Bulwark:
-                    desired = distance > 380.0f ? dir * 78.0f * speed : -dir * 28.0f;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 245.0f + threat * 8.0f, enemy.Elite ? 5 : 3, 0.3f, 12.0f);
-                        enemy.Cooldown = enemy.Elite ? 1.8f : 2.45f;
-                    }
-                    break;
-                case EnemyKind.Siren:
-                    desired = (distance < 560.0f ? -dir * 88.0f : dir * 54.0f) + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 1.35f) * 126.0f;
-                    desired *= speed;
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        enemy.Polarity = OtherStance(enemy.Polarity);
-                        int rings = ScaledEnemyPatternCount(enemy.Kind, enemy.Elite ? 10 : 7);
-                        float spin = enemy.Phase;
-                        for (int a = 0; a < rings; a++)
+                        break;
+                    case EnemyKind.Splitter:
+                        desired = (dir * 118.0f + new Vector2(Mathf.Sin(enemy.Phase * 1.7f), Mathf.Cos(enemy.Phase * 1.1f)) * 90.0f) * speed;
+                        if (enemy.Cooldown <= 0.0f)
                         {
-                            FireEnemy(enemy, Vector2.Right.Rotated(spin + a * Mathf.Tau / rings), 220.0f + threat * 7.0f, 1, 0.0f, 8.0f);
+                            FireEnemy(enemy, dir, 330.0f + threat * 15.0f, 2, 0.16f);
+                            enemy.Cooldown = _rng.RandfRange(1.2f, 1.9f);
                         }
-                        enemy.Cooldown = enemy.Elite ? 1.6f : 2.35f;
-                    }
-                    break;
-                case EnemyKind.Harrier:
-                    desired = dir.Rotated(Mathf.Sin(enemy.Phase * 2.6f) * 0.42f) * (292.0f + threat * 5.0f) * speed;
-                    if (distance < 180.0f)
-                    {
-                        desired = -dir * 175.0f * speed;
-                    }
-                    if (enemy.Cooldown <= 0.0f)
-                    {
-                        FireEnemy(enemy, dir, 455.0f + threat * 14.0f, enemy.Elite ? 3 : 2, 0.1f, 7.0f);
-                        enemy.Cooldown = enemy.Elite ? 0.82f : 1.18f;
-                    }
-                    break;
+                        break;
+                    case EnemyKind.Lance:
+                        desired = distance > 640.0f ? dir * 210.0f : -dir * 100.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.3f) * 145.0f;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir, 620.0f + threat * 20.0f, 1, 0.0f, 18.0f);
+                            enemy.Cooldown = _rng.RandfRange(1.0f, 1.55f);
+                        }
+                        break;
+                    case EnemyKind.Mine:
+                        desired = (dir * 48.0f + RandomOrbit(enemy.Phase) * 34.0f) * speed;
+                        if (distance < 145.0f && enemy.Cooldown > EnemyTelegraphLead)
+                        {
+                            enemy.Cooldown = EnemyTelegraphLead;
+                        }
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            int spokes = ScaledEnemyPatternCount(enemy.Kind, enemy.Elite ? 12 : 8);
+                            for (int a = 0; a < spokes; a++)
+                            {
+                                FireEnemy(enemy, Vector2.Right.Rotated(enemy.Phase + a * Mathf.Tau / spokes), 235.0f + threat * 7.0f, 1, 0.0f, enemy.Elite ? 12.0f : 9.0f);
+                            }
+                            enemy.Cooldown = enemy.Elite ? 1.4f : 2.1f;
+                        }
+                        break;
+                    case EnemyKind.Shard:
+                        desired = (dir.Rotated(Mathf.Sin(enemy.Phase * 1.9f) * 0.85f) * (245.0f + threat * 4.0f) + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 3.1f) * 180.0f) * speed;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir, 560.0f + threat * 17.0f, enemy.Elite ? 3 : 2, 0.09f, 7.0f);
+                            enemy.Cooldown = enemy.Elite ? 0.78f : 1.12f;
+                        }
+                        break;
+                    case EnemyKind.Warden:
+                        desired = distance < 520.0f ? -dir * 72.0f : dir * 78.0f;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir, 300.0f + threat * 10.0f, 5, 0.22f, 11.0f);
+                            if (_enemies.Count < 26 + sector * 4)
+                            {
+                                SpawnEnemy(sector >= 3 ? EnemyKind.Shard : EnemyKind.Chaser, ClampToArena(enemy.Pos + RandomDirection() * 78.0f, 34.0f), OtherStance(enemy.Polarity), 1);
+                            }
+                            enemy.Cooldown = enemy.Elite ? 1.25f : 1.85f;
+                        }
+                        break;
+                    case EnemyKind.Drifter:
+                        desired = (dir * 94.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 1.8f) * 245.0f) * speed;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir.Rotated(0.34f), 330.0f + threat * 12.0f, 2, 0.12f);
+                            FireEnemy(enemy, dir.Rotated(-0.34f), 330.0f + threat * 12.0f, 2, 0.12f);
+                            enemy.Cooldown = _rng.RandfRange(1.45f, 2.1f);
+                        }
+                        break;
+                    case EnemyKind.Bulwark:
+                        desired = distance > 380.0f ? dir * 78.0f * speed : -dir * 28.0f;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir, 245.0f + threat * 8.0f, enemy.Elite ? 5 : 3, 0.3f, 12.0f);
+                            enemy.Cooldown = enemy.Elite ? 1.8f : 2.45f;
+                        }
+                        break;
+                    case EnemyKind.Siren:
+                        desired = (distance < 560.0f ? -dir * 88.0f : dir * 54.0f) + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 1.35f) * 126.0f;
+                        desired *= speed;
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            enemy.Polarity = OtherStance(enemy.Polarity);
+                            int rings = ScaledEnemyPatternCount(enemy.Kind, enemy.Elite ? 10 : 7);
+                            float spin = enemy.Phase;
+                            for (int a = 0; a < rings; a++)
+                            {
+                                FireEnemy(enemy, Vector2.Right.Rotated(spin + a * Mathf.Tau / rings), 220.0f + threat * 7.0f, 1, 0.0f, 8.0f);
+                            }
+                            enemy.Cooldown = enemy.Elite ? 1.6f : 2.35f;
+                        }
+                        break;
+                    case EnemyKind.Harrier:
+                        desired = dir.Rotated(Mathf.Sin(enemy.Phase * 2.6f) * 0.42f) * (292.0f + threat * 5.0f) * speed;
+                        if (distance < 180.0f)
+                        {
+                            desired = -dir * 175.0f * speed;
+                        }
+                        if (enemy.Cooldown <= 0.0f)
+                        {
+                            FireEnemy(enemy, dir, 455.0f + threat * 14.0f, enemy.Elite ? 3 : 2, 0.1f, 7.0f);
+                            enemy.Cooldown = enemy.Elite ? 0.82f : 1.18f;
+                        }
+                        break;
+                }
             }
 
-            if (EnemyIsCharging(enemy))
+            if (!dashLocked && ShouldStartEnemyDash(enemy, sector, CurrentWaveInSector(), distance))
+            {
+                StartEnemyDash(enemy, dir);
+            }
+
+            if (enemy.DashWarmup > 0.0f)
+            {
+                float warm01 = EnemyDashWarmup01(enemy);
+                enemy.Vel = enemy.Vel.Lerp(enemy.DashDir * (52.0f + warm01 * 34.0f), 1.0f - Mathf.Exp(-dt * 8.0f));
+            }
+            else if (enemy.DashTime > 0.0f)
+            {
+                enemy.Vel = enemy.DashDir * EnemyDashSpeed(enemy) * _enemySlow;
+            }
+            else if (EnemyIsCharging(enemy))
             {
                 float charge = EnemyTelegraph01(enemy);
                 enemy.Vel = enemy.Vel.Lerp(Vector2.Zero, 1.0f - Mathf.Exp(-dt * (9.0f + charge * 10.0f)));
@@ -4269,6 +4687,208 @@ public partial class MainGame : Node2D
             enemy.Pos += enemy.Vel * dt;
             enemy.Pos = ClampToArena(enemy.Pos, enemy.Radius);
         }
+    }
+
+    private void TickEnemyDash(Enemy enemy, float dt)
+    {
+        enemy.DashCooldown -= dt;
+        if (enemy.DashWarmup > 0.0f)
+        {
+            enemy.DashWarmup = Mathf.Max(0.0f, enemy.DashWarmup - dt);
+            if (enemy.DashWarmup <= 0.0f)
+            {
+                enemy.DashTime = EnemyDashDuration(enemy);
+                enemy.SpawnPulse = Math.Max(enemy.SpawnPulse, 0.42f);
+            }
+        }
+        else if (enemy.DashTime > 0.0f)
+        {
+            enemy.DashTime = Mathf.Max(0.0f, enemy.DashTime - dt);
+        }
+    }
+
+    private bool ShouldStartEnemyDash(Enemy enemy, int sector, int waveInSector, float distance)
+    {
+        if (enemy.DashCooldown > 0.0f || enemy.SplitDepth > 0 || EnemyIsCharging(enemy) || PerformancePressure() > 0.82f)
+        {
+            return false;
+        }
+
+        if (sector == 0 && waveInSector < 3)
+        {
+            return false;
+        }
+
+        bool eligible = enemy.Kind switch
+        {
+            EnemyKind.Chaser => waveInSector >= 3 && distance is > 210.0f and < 820.0f,
+            EnemyKind.Weaver => sector >= 1 && distance is > 260.0f and < 760.0f,
+            EnemyKind.Lance => sector >= 1 && distance is > 320.0f and < 900.0f,
+            EnemyKind.Splitter => sector >= 2 && waveInSector >= 3 && distance is > 260.0f and < 780.0f,
+            EnemyKind.Shard => sector >= 2 && distance is > 180.0f and < 820.0f,
+            EnemyKind.Drifter => sector >= 2 && distance is > 240.0f and < 820.0f,
+            EnemyKind.Harrier => sector >= 3 && distance is > 170.0f and < 860.0f,
+            EnemyKind.Siren => sector >= 4 && enemy.Elite && distance is > 300.0f and < 820.0f,
+            _ => false,
+        };
+
+        if (!eligible)
+        {
+            return false;
+        }
+
+        float chance = 0.58f + sector * 0.08f + (enemy.Elite ? 0.16f : 0.0f);
+        if (_currentWavePace is WavePaceKind.Pressure or WavePaceKind.Swarm)
+        {
+            chance += 0.12f;
+        }
+        if (_currentWavePace == WavePaceKind.Recovery)
+        {
+            chance *= 0.45f;
+        }
+
+        return _rng.Randf() < Mathf.Clamp(chance, 0.28f, 0.92f);
+    }
+
+    private void StartEnemyDash(Enemy enemy, Vector2 toPlayerDir)
+    {
+        Vector2 predicted = _playerPos + _playerVel * EnemyDashLead(enemy);
+        Vector2 dashDir = predicted - enemy.Pos;
+        if (dashDir.LengthSquared() <= 0.01f)
+        {
+            dashDir = toPlayerDir;
+        }
+
+        dashDir = dashDir.Normalized();
+        switch (enemy.Kind)
+        {
+            case EnemyKind.Weaver:
+            case EnemyKind.Drifter:
+                dashDir = dashDir.Rotated((_rng.Randf() < 0.5f ? -1.0f : 1.0f) * _rng.RandfRange(0.8f, 1.35f));
+                break;
+            case EnemyKind.Lance:
+            case EnemyKind.Shard:
+                dashDir = dashDir.Rotated((_rng.Randf() < 0.5f ? -1.0f : 1.0f) * _rng.RandfRange(0.18f, 0.42f));
+                break;
+            case EnemyKind.Siren:
+                dashDir = -dashDir.Rotated((_rng.Randf() < 0.5f ? -1.0f : 1.0f) * 0.45f);
+                break;
+        }
+
+        enemy.DashDir = dashDir;
+        enemy.DashWarmup = EnemyDashWarmup(enemy);
+        enemy.DashTime = 0.0f;
+        enemy.DashCooldown = NextEnemyDashCooldown(enemy, CurrentSectorIndex());
+        enemy.Cooldown = Math.Max(enemy.Cooldown, enemy.DashWarmup + EnemyDashDuration(enemy) + 0.18f);
+        enemy.SpawnPulse = Math.Max(enemy.SpawnPulse, 0.32f);
+    }
+
+    private static float InitialEnemyDashCooldown(EnemyKind kind, int sector, int waveInSector)
+    {
+        if (sector == 0 && waveInSector < 3)
+        {
+            return 99.0f;
+        }
+
+        float baseCooldown = kind switch
+        {
+            EnemyKind.Chaser => 4.8f,
+            EnemyKind.Weaver => 6.2f,
+            EnemyKind.Lance => 6.5f,
+            EnemyKind.Splitter => 6.8f,
+            EnemyKind.Shard => 5.4f,
+            EnemyKind.Drifter => 6.4f,
+            EnemyKind.Harrier => 4.6f,
+            EnemyKind.Siren => 7.2f,
+            _ => 99.0f,
+        };
+        return baseCooldown + Math.Max(0, 3 - sector) * 0.7f + waveInSector * 0.08f;
+    }
+
+    private float NextEnemyDashCooldown(Enemy enemy, int sector)
+    {
+        float cooldown = enemy.Kind switch
+        {
+            EnemyKind.Chaser => 6.1f,
+            EnemyKind.Weaver => 7.4f,
+            EnemyKind.Lance => 7.8f,
+            EnemyKind.Splitter => 8.0f,
+            EnemyKind.Shard => 6.7f,
+            EnemyKind.Drifter => 7.6f,
+            EnemyKind.Harrier => 5.8f,
+            EnemyKind.Siren => 8.8f,
+            _ => 99.0f,
+        };
+        cooldown -= sector * 0.38f;
+        if (_currentWavePace is WavePaceKind.Pressure or WavePaceKind.Swarm)
+        {
+            cooldown -= 0.45f;
+        }
+        if (enemy.Elite)
+        {
+            cooldown *= 0.82f;
+        }
+        return Mathf.Clamp(cooldown + _rng.RandfRange(-0.42f, 0.72f), 3.2f, 9.5f);
+    }
+
+    private static float EnemyDashLead(Enemy enemy)
+    {
+        return enemy.Kind switch
+        {
+            EnemyKind.Chaser => 0.24f,
+            EnemyKind.Lance => 0.34f,
+            EnemyKind.Shard => 0.28f,
+            EnemyKind.Harrier => 0.22f,
+            _ => 0.18f,
+        };
+    }
+
+    private static float EnemyDashWarmup(Enemy enemy)
+    {
+        float warmup = enemy.Kind switch
+        {
+            EnemyKind.Harrier => 0.3f,
+            EnemyKind.Chaser => 0.38f,
+            EnemyKind.Shard => 0.34f,
+            EnemyKind.Lance => 0.42f,
+            _ => 0.44f,
+        };
+        return enemy.Elite ? warmup * 0.84f : warmup;
+    }
+
+    private static float EnemyDashDuration(Enemy enemy)
+    {
+        return enemy.Kind switch
+        {
+            EnemyKind.Harrier => 0.18f,
+            EnemyKind.Chaser => 0.2f,
+            EnemyKind.Lance => 0.16f,
+            EnemyKind.Siren => 0.18f,
+            _ => 0.21f,
+        };
+    }
+
+    private static float EnemyDashSpeed(Enemy enemy)
+    {
+        float speed = enemy.Kind switch
+        {
+            EnemyKind.Chaser => 660.0f,
+            EnemyKind.Weaver => 560.0f,
+            EnemyKind.Lance => 720.0f,
+            EnemyKind.Splitter => 540.0f,
+            EnemyKind.Shard => 760.0f,
+            EnemyKind.Drifter => 620.0f,
+            EnemyKind.Harrier => 820.0f,
+            EnemyKind.Siren => 580.0f,
+            _ => 520.0f,
+        };
+        return enemy.Elite ? speed * 1.12f : speed;
+    }
+
+    private static float EnemyDashWarmup01(Enemy enemy)
+    {
+        float warmup = EnemyDashWarmup(enemy);
+        return warmup <= 0.0f ? 0.0f : 1.0f - Mathf.Clamp(enemy.DashWarmup / warmup, 0.0f, 1.0f);
     }
 
     private void UpdateBoss(Enemy boss, float dt)
@@ -5364,6 +5984,10 @@ public partial class MainGame : Node2D
         AddObjectiveProgress(RunObjectiveKind.DefeatEnemies, 1);
         if (enemy.Kind == EnemyKind.Boss)
         {
+            _waveProgressSpent = Math.Max(_waveProgressSpent, _waveProgressBudget);
+            _waveSpawnTimer = 0.0f;
+            _waveSpawnInterval = 0.0f;
+            _waveNextSpawnCount = 0;
             _runBossKills++;
             AddObjectiveProgress(RunObjectiveKind.DefeatBosses, 1);
             AddText(Tf("sector.cleared", T(CurrentSector().NameKey)), ScreenCenter + new Vector2(0.0f, -225.0f), CurrentSector().Accent, 36.0f);
@@ -5639,6 +6263,16 @@ public partial class MainGame : Node2D
 
     private void UpdateParticles(float dt)
     {
+        for (int i = _shockwaves.Count - 1; i >= 0; i--)
+        {
+            Shockwave wave = _shockwaves[i];
+            wave.Life -= dt;
+            if (wave.Life <= 0.0f)
+            {
+                _shockwaves.RemoveAt(i);
+            }
+        }
+
         for (int i = _particles.Count - 1; i >= 0; i--)
         {
             Particle p = _particles[i];
@@ -5675,8 +6309,58 @@ public partial class MainGame : Node2D
             _sectorHazardTimer -= dt;
             if (_sectorHazardTimer <= 0.0f)
             {
-                SpawnHazardLine(sector, false);
-                _sectorHazardTimer = Mathf.Max(1.7f, 7.2f - sector * 1.05f - CurrentWaveInSector() * 0.08f);
+                if (ShouldSpawnHazardField(sector))
+                {
+                    SpawnHazardField(sector, false);
+                }
+                else
+                {
+                    SpawnHazardLine(sector, false);
+                }
+                _sectorHazardTimer = NextSectorHazardInterval(sector);
+            }
+        }
+
+        for (int i = _hazardFields.Count - 1; i >= 0; i--)
+        {
+            HazardField field = _hazardFields[i];
+            field.Life -= dt;
+            bool active = field.Life < field.MaxLife - field.Warmup;
+            if (active)
+            {
+                Vector2 toCenter = field.Center - _playerPos;
+                float distance = toCenter.Length();
+                float inside = 1.0f - distance / Math.Max(1.0f, field.Radius);
+                if (inside > 0.0f)
+                {
+                    if (_dashTimer > 0.0f)
+                    {
+                        float absorbGain = (2.8f + inside * 3.2f) * _absorbEfficiency;
+                        _energy = Mathf.Clamp(_energy + absorbGain, 0.0f, _maxEnergy);
+                        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 2);
+                        if (_absorbTextCooldown <= 0.0f)
+                        {
+                            AddText(AbsorbText(absorbGain), _playerPos + new Vector2(0.0f, -80.0f), field.Color, 21.0f);
+                            _absorbTextCooldown = 0.25f;
+                        }
+                        _invulnTimer = Math.Max(_invulnTimer, 0.16f);
+                    }
+                    else
+                    {
+                        Vector2 pullDir = distance > 0.01f ? toCenter / distance : RandomDirection();
+                        _playerVel += pullDir * field.Pull * Mathf.Clamp(inside, 0.0f, 1.0f) * dt;
+                        if (_invulnTimer <= 0.0f && distance < field.Radius * 0.42f + PlayerRadius)
+                        {
+                            AddCruiseCharge(4.0f, field.Center);
+                            DamagePlayer(field.Damage, field.Center);
+                        }
+                    }
+                }
+            }
+
+            if (field.Life <= 0.0f)
+            {
+                _hazardFields.RemoveAt(i);
             }
         }
 
@@ -5763,6 +6447,103 @@ public partial class MainGame : Node2D
             Width = bossCast ? 32.0f + sector * 5.0f : 24.0f + sector * 4.0f,
             Damage = 18.0f + sector * 5.0f,
             Polarity = polarity,
+        });
+    }
+
+    private bool ShouldSpawnHazardField(int sector)
+    {
+        if (sector < 2 || _hazardFields.Count >= 5)
+        {
+            return false;
+        }
+
+        float chance = sector switch
+        {
+            2 => 0.42f,
+            3 => 0.38f,
+            _ => 0.52f,
+        };
+
+        if (_currentWavePace == WavePaceKind.Recovery)
+        {
+            chance *= 0.45f;
+        }
+        else if (_currentWavePace is WavePaceKind.Pressure or WavePaceKind.Swarm)
+        {
+            chance += 0.08f;
+        }
+
+        if (CurrentWaveInSector() >= 6)
+        {
+            chance += 0.08f;
+        }
+
+        chance += WavePressure01() * 0.08f;
+
+        return _rng.Randf() < Mathf.Clamp(chance, 0.0f, 0.68f);
+    }
+
+    private float NextSectorHazardInterval(int sector)
+    {
+        int waveInSector = CurrentWaveInSector();
+        float interval = 7.4f - sector * 0.92f - waveInSector * 0.07f;
+        interval -= WavePressure01() * 0.55f;
+        interval += _currentWavePace switch
+        {
+            WavePaceKind.Recovery => 1.15f,
+            WavePaceKind.Elite => 0.42f,
+            WavePaceKind.Pressure => -0.34f,
+            WavePaceKind.Swarm => -0.22f,
+            _ => 0.0f,
+        };
+        if (waveInSector == 4)
+        {
+            interval += 0.6f;
+        }
+        else if (waveInSector >= 7)
+        {
+            interval -= 0.28f;
+        }
+        return Mathf.Clamp(interval, 2.0f, 8.4f);
+    }
+
+    private void SpawnHazardField(int sector, bool bossCast)
+    {
+        if (_hazardFields.Count > 5)
+        {
+            _hazardFields.RemoveAt(0);
+        }
+
+        Vector2 center = ScreenCenter;
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            center = new Vector2(
+                _rng.RandfRange(Arena.Position.X + 180.0f, Arena.End.X - 180.0f),
+                _rng.RandfRange(Arena.Position.Y + 150.0f, Arena.End.Y - 150.0f));
+            if (center.DistanceSquaredTo(_playerPos) > 260.0f * 260.0f || attempt >= 6)
+            {
+                break;
+            }
+        }
+
+        float radius = sector switch
+        {
+            2 => 118.0f,
+            3 => 132.0f,
+            _ => 146.0f,
+        } + CurrentWaveInSector() * 1.8f + (bossCast ? 22.0f : 0.0f);
+
+        Color color = sector >= 4 ? Rose.Lerp(Gold, 0.18f) : CurrentSector().Accent.Lerp(EnemyBulletColor(), 0.28f);
+        _hazardFields.Add(new HazardField
+        {
+            Center = center,
+            Color = color,
+            Radius = radius,
+            Life = bossCast ? 2.25f : 2.05f,
+            MaxLife = bossCast ? 2.25f : 2.05f,
+            Warmup = bossCast ? 0.78f : 0.86f,
+            Damage = 13.0f + sector * 3.4f,
+            Pull = 235.0f + sector * 36.0f,
         });
     }
 
@@ -7869,7 +8650,8 @@ public partial class MainGame : Node2D
         float pulse = 1.0f + enemy.SpawnPulse * 0.7f + Mathf.Sin(_time * 5.0f + enemy.Phase) * 0.05f;
         float charge = EnemyTelegraph01(enemy);
         float overheat = EnemyOverheat01(enemy);
-        bool importantState = charge > 0.0f || overheat > 0.0f;
+        float dashWarm = enemy.DashWarmup > 0.0f ? EnemyDashWarmup01(enemy) : 0.0f;
+        bool importantState = charge > 0.0f || overheat > 0.0f || dashWarm > 0.0f || enemy.DashTime > 0.0f;
         bool heavyVisualLoad = _visualPressure > 0.72f && enemy.Kind != EnemyKind.Boss && !enemy.Elite && !importantState;
 
         if (!heavyVisualLoad)
@@ -7877,7 +8659,20 @@ public partial class MainGame : Node2D
             DrawGlow(p, charge > 0.0f ? EnemyBulletColor() : color, enemy.Radius * (1.55f + enemy.SpawnPulse * 0.55f + charge * 0.65f + overheat * 0.28f), enemy.Kind == EnemyKind.Boss ? 0.08f : 0.025f + charge * 0.04f, 3);
         }
         DrawCircle(p, enemy.Radius * pulse, Alpha(color, heavyVisualLoad ? 0.12f : 0.2f), false, heavyVisualLoad ? 1.2f : 1.6f + enemy.SpawnPulse * 2.0f, true);
-        if (charge > 0.0f && !heavyVisualLoad)
+        if (dashWarm > 0.0f && !heavyVisualLoad)
+        {
+            Vector2 dashDir = enemy.DashDir.LengthSquared() > 0.01f ? enemy.DashDir.Normalized() : Vector2.Down;
+            float length = enemy.Radius + 84.0f + dashWarm * 74.0f;
+            DrawLine(p + dashDir * enemy.Radius * 0.8f, p + dashDir * length, Alpha(Gold, 0.2f + dashWarm * 0.38f), UiHairline + dashWarm * 0.8f, true);
+            DrawLine(p - dashDir * enemy.Radius * 0.55f, p + dashDir * enemy.Radius * 0.9f, Alpha(Paper, 0.28f + dashWarm * 0.18f), UiHairline, true);
+            DrawCircle(p, enemy.Radius * (1.12f + dashWarm * 0.28f), Alpha(Gold, 0.18f + dashWarm * 0.2f), false, UiHairline, true);
+        }
+        else if (enemy.DashTime > 0.0f && !heavyVisualLoad)
+        {
+            Vector2 dashDir = enemy.DashDir.LengthSquared() > 0.01f ? enemy.DashDir.Normalized() : Vector2.Down;
+            DrawLine(p - dashDir * enemy.Radius * 1.7f, p - dashDir * enemy.Radius * 0.2f, Alpha(Gold, 0.28f), 2.0f, true);
+        }
+        else if (charge > 0.0f && !heavyVisualLoad)
         {
             Vector2 aim = (_playerPos - enemy.Pos).LengthSquared() > 0.01f ? (_playerPos - enemy.Pos).Normalized() : Vector2.Down;
             DrawLine(p + aim * enemy.Radius * 0.8f, p + aim * (enemy.Radius + 62.0f + charge * 36.0f), Alpha(EnemyBulletColor(), 0.18f + charge * 0.32f), UiHairline + charge * 0.55f, true);
@@ -8327,6 +9122,48 @@ public partial class MainGame : Node2D
         DrawCircle(pos, particle.Size * (0.35f + t), Alpha(particle.Color, t * 0.62f));
     }
 
+    private void DrawShockwave(Shockwave wave)
+    {
+        float life01 = Mathf.Clamp(wave.Life / wave.MaxLife, 0.0f, 1.0f);
+        float age01 = 1.0f - life01;
+        float eased = 1.0f - Mathf.Pow(1.0f - age01, 2.6f);
+        float radius = Mathf.Lerp(18.0f, wave.Radius, eased);
+        Vector2 center = wave.Center + ShakeOffset();
+        float alpha = Mathf.Sin(age01 * Mathf.Pi) * 0.34f + life01 * 0.18f;
+        float lineWidth = Mathf.Lerp(5.2f, 1.0f, age01);
+
+        DrawCircle(center, radius, Alpha(wave.Color, alpha * 0.12f), false, lineWidth * 4.0f, true);
+        DrawCircle(center, radius, Alpha(wave.Color.Lerp(Paper, 0.18f), alpha), false, lineWidth, true);
+        if (_visualPressure < 0.78f)
+        {
+            DrawCircle(center, radius * 0.72f, Alpha(Paper, life01 * 0.1f), false, UiHairline, true);
+        }
+    }
+
+    private void DrawHazardField(HazardField field)
+    {
+        float age = field.MaxLife - field.Life;
+        bool active = age > field.Warmup;
+        float warm = Mathf.Clamp(age / Mathf.Max(0.01f, field.Warmup), 0.0f, 1.0f);
+        float fade = Mathf.Clamp(field.Life / field.MaxLife, 0.0f, 1.0f);
+        Vector2 center = field.Center + ShakeOffset();
+        Color color = field.Color;
+        float radius = active ? field.Radius : Mathf.Lerp(24.0f, field.Radius, warm);
+        float alpha = active ? 0.16f * fade : 0.12f + warm * 0.08f;
+
+        DrawCircle(center, radius, Alpha(color, alpha), false, active ? 2.0f : 1.2f + warm * 1.6f, true);
+        DrawCircle(center, radius * 0.42f, Alpha(active ? EnemyBulletColor() : Paper, active ? 0.2f * fade : 0.12f + warm * 0.16f), false, UiHairline, true);
+        DrawCircle(center, radius * 0.16f, Alpha(color.Lerp(Paper, 0.16f), active ? 0.22f * fade : 0.18f + warm * 0.22f));
+        if (!active && _visualPressure < 0.82f)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Vector2 dir = Vector2.Right.Rotated(_time * 0.9f + i * Mathf.Tau / 8.0f);
+                DrawLine(center + dir * radius * 0.74f, center + dir * radius, Alpha(color, 0.12f + warm * 0.18f), UiHairline, true);
+            }
+        }
+    }
+
     private void DrawHazard(HazardLine hazard)
     {
         float age = hazard.MaxLife - hazard.Life;
@@ -8404,25 +9241,37 @@ public partial class MainGame : Node2D
         int sector = CurrentSectorIndex();
         int waveInSector = CurrentWaveInSector();
         EnemyKind primary = WavePrimaryEnemyKind(sector, waveInSector);
-        EnemyKind support = WaveSupportEnemyKind(sector, waveInSector);
         Color accent = _waveIntelPulse > 0.0f ? CurrentSector().Accent.Lerp(Paper, _waveIntelPulse * 0.18f) : CurrentSector().Accent;
-        Rect2 panel = new(new Vector2(520.0f, 88.0f), new Vector2(880.0f, 58.0f));
-        int remaining = Math.Max(0, _pendingSpawns.Count + _enemies.Count);
-        float progress = _waveBudget <= 0 ? 0.0f : Mathf.Clamp(1.0f - remaining / (float)Math.Max(1, _waveBudget), 0.0f, 1.0f);
-        string supportText = support == primary ? T("wave.intel.clear") : Tf("wave.intel.support", EnemyName(support));
+        Rect2 panel = new(new Vector2(594.0f, 82.0f), new Vector2(732.0f, 44.0f));
+        int active = Math.Max(0, _enemies.Count);
+        int reserve = WaveReserveEstimate();
+        float progress = WaveProgress01();
+        float cooldown = NextReserveSpawnProgress01();
+        string batchText = reserve > 0 || _pendingSpawns.Count > 0
+            ? Tf("wave.intel.batch", Math.Max(0.0f, _waveSpawnTimer), Math.Max(1, _waveNextSpawnCount))
+            : T("wave.intel.complete");
+        bool fast = SpawnRateMultiplier() > 1.65f;
 
-        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 220.0f, 0.018f + _waveIntelPulse * 0.018f, 4);
-        DrawPanel(panel, Alpha(Ink, 0.48f), Alpha(accent, 0.32f + _waveIntelPulse * 0.18f));
-        DrawText(Tf("wave.intel.wave", _wave, TotalWaves), panel.Position + new Vector2(18.0f, 22.0f), 13, Alpha(Paper, 0.58f), HorizontalAlignment.Left, 118.0f, false, 0);
-        DrawText(WavePaceShortText(_currentWavePace).ToUpperInvariant(), panel.Position + new Vector2(18.0f, 42.0f), 15, Alpha(accent, 0.86f), HorizontalAlignment.Left, 132.0f, true, 1);
+        DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.22f + _waveIntelPulse * 0.12f));
+        DrawLine(panel.Position + new Vector2(116.0f, 9.0f), panel.Position + new Vector2(116.0f, panel.Size.Y - 9.0f), Alpha(Paper, 0.1f), UiHairline, true);
+        DrawLine(panel.Position + new Vector2(364.0f, 9.0f), panel.Position + new Vector2(364.0f, panel.Size.Y - 9.0f), Alpha(Paper, 0.1f), UiHairline, true);
+        DrawLine(panel.Position + new Vector2(586.0f, 9.0f), panel.Position + new Vector2(586.0f, panel.Size.Y - 9.0f), Alpha(Paper, 0.1f), UiHairline, true);
 
-        DrawText(Tf("wave.intel.primary", EnemyName(primary)).ToUpperInvariant(), panel.Position + new Vector2(164.0f, 22.0f), 14, Alpha(Paper, 0.82f), HorizontalAlignment.Left, 270.0f, true, 1);
-        DrawText(EnemyRole(primary), panel.Position + new Vector2(164.0f, 42.0f), 12, Alpha(Paper, 0.48f), HorizontalAlignment.Left, 344.0f, false, 0);
-        DrawText(supportText.ToUpperInvariant(), panel.Position + new Vector2(526.0f, 25.0f), 13, Alpha(support == primary ? Paper : accent, support == primary ? 0.46f : 0.74f), HorizontalAlignment.Left, 182.0f, true, 1);
-        DrawText(Tf("wave.intel.incoming", remaining), panel.Position + new Vector2(panel.Size.X - 160.0f, 25.0f), 13, Alpha(Paper, 0.58f), HorizontalAlignment.Right, 140.0f, false, 0);
-        DrawText(SpawnSpeedText(), panel.Position + new Vector2(panel.Size.X - 160.0f, 44.0f), 17, Alpha(SpawnRateMultiplier() > 1.65f ? Gold : accent, 0.82f), HorizontalAlignment.Right, 140.0f, true, 1);
+        DrawText(Tf("wave.intel.wave", _wave, TotalWaves), panel.Position + new Vector2(12.0f, 16.0f), 11, Alpha(Paper, 0.54f), HorizontalAlignment.Left, 92.0f, false, 0);
+        DrawText(WavePaceShortText(_currentWavePace), panel.Position + new Vector2(12.0f, 34.0f), 13, Alpha(accent, 0.84f), HorizontalAlignment.Left, 92.0f, true, 1);
 
-        Rect2 bar = new(panel.Position + new Vector2(18.0f, panel.Size.Y - 7.0f), new Vector2(panel.Size.X - 36.0f, 3.0f));
+        DrawText(Tf("wave.intel.primary", EnemyName(primary)), panel.Position + new Vector2(132.0f, 28.0f), 14, Alpha(Paper, 0.78f), HorizontalAlignment.Left, 218.0f, true, 1);
+        DrawText(batchText, panel.Position + new Vector2(380.0f, 18.0f), 12, Alpha(fast ? Gold : accent, 0.82f), HorizontalAlignment.Left, 188.0f, true, 1);
+        DrawText(SpawnSpeedText(), panel.Position + new Vector2(498.0f, 35.0f), 11, Alpha(fast ? Gold : Paper, 0.62f), HorizontalAlignment.Right, 70.0f, false, 0);
+
+        Rect2 cooldownBar = new(panel.Position + new Vector2(380.0f, 28.0f), new Vector2(188.0f, 4.0f));
+        DrawRect(cooldownBar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(cooldownBar.Position, new Vector2(cooldownBar.Size.X * cooldown, cooldownBar.Size.Y)), Alpha(fast ? Gold : accent, 0.72f + _comboTierPulse * 0.16f), true);
+
+        DrawText(Tf("wave.intel.progress_short", Mathf.RoundToInt(progress * 100.0f), active), panel.Position + new Vector2(panel.Size.X - 132.0f, 18.0f), 11, Alpha(Paper, 0.58f), HorizontalAlignment.Right, 116.0f, false, 0);
+        DrawText(Tf("wave.intel.reserve", reserve), panel.Position + new Vector2(panel.Size.X - 132.0f, 35.0f), 11, Alpha(Paper, 0.43f), HorizontalAlignment.Right, 116.0f, false, 0);
+
+        Rect2 bar = new(panel.Position + new Vector2(12.0f, panel.Size.Y - 4.0f), new Vector2(panel.Size.X - 24.0f, 2.0f));
         DrawRect(bar, Alpha(Paper, 0.08f), true);
         DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.68f), true);
     }
@@ -9041,9 +9890,8 @@ public partial class MainGame : Node2D
     {
         DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, 0.56f), true);
         DrawText(T("upgrade.title"), new Vector2(0.0f, 218.0f), 42, Paper, HorizontalAlignment.Center, ScreenWidth, true, 5);
-        DrawText($"{T("upgrade.hint")}    {Tf("upgrade.reroll", _rerollsRemaining)}    {T("language.hint")}", new Vector2(0.0f, 266.0f), 19, Alpha(Paper, 0.62f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-        DrawText(NextWavePreviewText(), new Vector2(0.0f, 304.0f), 18, Alpha(CurrentSector().Accent, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-        DrawText(UpgradeMomentumText(), new Vector2(0.0f, 330.0f), 14, Alpha(Paper, 0.42f), HorizontalAlignment.Center, ScreenWidth, true, 1);
+        DrawText(NextWavePreviewText(), new Vector2(0.0f, 276.0f), 18, Alpha(CurrentSector().Accent, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText(UpgradeMomentumText(), new Vector2(0.0f, 302.0f), 14, Alpha(Paper, 0.42f), HorizontalAlignment.Center, ScreenWidth, true, 1);
         DrawBuildDirectionPanel();
 
         Vector2 mouse = GetGlobalMousePosition();
@@ -9189,15 +10037,12 @@ public partial class MainGame : Node2D
         string label = comboBonus > 0 ? Tf("hud.spawn.combo", comboBonus) : T("hud.spawn.label");
         DrawPanel(rect, Alpha(Ink, 0.34f), Alpha(GridLine, 0.22f));
         DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(10.0f, 16.0f), 10, Alpha(comboBonus > 0 ? Gold : Paper, comboBonus > 0 ? 0.62f : 0.44f), HorizontalAlignment.Left, rect.Size.X - 20.0f, false, 0);
-        DrawText(SpawnSpeedText(), rect.Position + new Vector2(10.0f, 34.0f), 17, accent, HorizontalAlignment.Left, rect.Size.X - 20.0f, true, 2);
+        DrawText(SpawnMetricText(), rect.Position + new Vector2(10.0f, 34.0f), 17, accent, HorizontalAlignment.Left, rect.Size.X - 20.0f, true, 2);
 
         Rect2 bar = new(rect.Position + new Vector2(10.0f, rect.Size.Y - 6.0f), new Vector2(rect.Size.X - 20.0f, 3.0f));
-        float base01 = SpawnRate01(ProgressSpawnRate());
-        float total01 = _hudSpawnValue;
         DrawRect(bar, Alpha(Paper, 0.08f), true);
         DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * _hudSpawnTrail, bar.Size.Y)), Alpha(Paper, 0.12f), true);
-        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * Mathf.Min(base01, total01), bar.Size.Y)), Alpha(PickupBlue, 0.62f), true);
-        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * total01, bar.Size.Y)), Alpha(accent, 0.72f + _comboTierPulse * 0.2f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * _hudSpawnValue, bar.Size.Y)), Alpha(accent, 0.72f + _comboTierPulse * 0.2f), true);
     }
 
     private void DrawScoreCacheMeter(Rect2 rect)
@@ -9328,7 +10173,7 @@ public partial class MainGame : Node2D
         float hullTarget = SafeRatio(_playerHp, _playerMaxHp);
         float energyTarget = SafeRatio(_energy, _maxEnergy);
         float dashTarget = Mathf.Clamp(1.0f - Mathf.Max(_dashCooldown, 0.0f) / 0.86f, 0.0f, 1.0f);
-        float spawnTarget = SpawnRate01(SpawnRateMultiplier());
+        float spawnTarget = NextReserveSpawnProgress01();
 
         _hudHullValue = EaseHudValue(_hudHullValue, hullTarget, hullTarget > _hudHullValue ? 10.0f : 8.0f, dt);
         _hudEnergyValue = EaseHudValue(_hudEnergyValue, energyTarget, energyTarget > _hudEnergyValue ? 7.5f : 10.5f, dt);
@@ -9349,7 +10194,7 @@ public partial class MainGame : Node2D
         _hudEnergyTrail = _hudEnergyValue;
         _hudDashValue = Mathf.Clamp(1.0f - Mathf.Max(_dashCooldown, 0.0f) / 0.86f, 0.0f, 1.0f);
         _hudDashTrail = _hudDashValue;
-        _hudSpawnValue = SpawnRate01(SpawnRateMultiplier());
+        _hudSpawnValue = NextReserveSpawnProgress01();
         _hudSpawnTrail = _hudSpawnValue;
     }
 
@@ -9385,8 +10230,12 @@ public partial class MainGame : Node2D
 
     private float ProgressSpawnRate()
     {
-        float progress = Mathf.Pow(RunProgress01(), 0.85f);
-        return Mathf.Lerp(0.92f, 1.58f, progress);
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 1.0f;
+        }
+
+        return Mathf.Clamp(5.0f / BaseReserveSpawnInterval(), 1.0f, 5.6f);
     }
 
     private float ComboSpawnRate()
@@ -9396,30 +10245,48 @@ public partial class MainGame : Node2D
             return 1.0f;
         }
 
-        float combo01 = Mathf.Clamp(Mathf.Sqrt(Mathf.Min(_combo, 100)) / 10.0f, 0.0f, 1.0f);
-        return 1.0f + combo01 * 0.62f;
+        float combo01 = 1.0f - Mathf.Exp(-Mathf.Min(_combo, 160) / 76.0f);
+        return 1.0f + combo01 * 0.38f;
     }
 
     private int ComboSpawnBonusPercent()
     {
-        return Mathf.RoundToInt(Mathf.Max(0.0f, ComboSpawnRate() - 1.0f) * 100.0f);
+        return Mathf.RoundToInt((1.0f - 1.0f / ComboSpawnRate()) * 100.0f);
     }
 
     private float SpawnRateMultiplier()
     {
-        float paceRate = 1.0f / Math.Max(0.01f, WaveSpawnIntervalScale(_currentWavePace));
-        return Mathf.Clamp(ProgressSpawnRate() * ComboSpawnRate() * paceRate, 0.72f, 2.65f);
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 1.0f;
+        }
+
+        return Mathf.Clamp(5.0f / CurrentReserveSpawnInterval(), 1.0f, 5.6f);
     }
 
     private static float SpawnRate01(float rate)
     {
-        return Mathf.Clamp((rate - 0.72f) / (2.65f - 0.72f), 0.0f, 1.0f);
+        return Mathf.Clamp((rate - 1.0f) / (5.6f - 1.0f), 0.0f, 1.0f);
     }
 
-    private float NextSpawnInterval(float spawnRate)
+    private float NextReserveSpawnProgress01()
     {
-        float interval = 1.16f / Mathf.Clamp(spawnRate, 0.72f, 2.65f);
-        return Mathf.Clamp(interval + _rng.RandfRange(-0.06f, 0.09f), 0.3f, 1.45f);
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 0.0f;
+        }
+
+        if (WaveProgressComplete() && _pendingSpawns.Count == 0)
+        {
+            return 1.0f;
+        }
+
+        if (_waveSpawnInterval <= 0.001f)
+        {
+            return 0.0f;
+        }
+
+        return Mathf.Clamp(1.0f - Mathf.Max(0.0f, _waveSpawnTimer) / _waveSpawnInterval, 0.0f, 1.0f);
     }
 
     private string SpawnSpeedText()
@@ -9430,6 +10297,32 @@ public partial class MainGame : Node2D
         }
 
         return $"x{SpawnRateMultiplier():0.00}";
+    }
+
+    private string SpawnMetricText()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return T("hud.spawn.boss");
+        }
+
+        if (WaveProgressComplete() && _pendingSpawns.Count == 0)
+        {
+            return T("hud.spawn.done");
+        }
+
+        return Tf("hud.spawn.next_short", Math.Max(0.0f, _waveSpawnTimer), Math.Max(1, _waveNextSpawnCount));
+    }
+
+    private int WaveReserveEstimate()
+    {
+        if (_currentWavePace == WavePaceKind.Boss)
+        {
+            return 0;
+        }
+
+        float remaining = Math.Max(0.0f, _waveProgressBudget - _waveProgressSpent);
+        return _pendingSpawns.Count + Mathf.CeilToInt(remaining / 1.08f);
     }
 
     private Enemy? ActiveBoss()
@@ -9579,9 +10472,10 @@ public partial class MainGame : Node2D
     {
         float shotPressure = _shots.Count / 320.0f;
         float enemyPressure = _enemies.Count / 52.0f;
+        float hazardPressure = (_hazards.Count + _hazardFields.Count * 1.4f) / 14.0f;
         float particlePressure = _particles.Count / (float)QualityParticleCap();
         float textPressure = _damageTexts.Count / (float)QualityDamageTextCap();
-        return Mathf.Clamp(Mathf.Max(shotPressure, Mathf.Max(enemyPressure, particlePressure * 0.9f)) + textPressure * 0.08f, 0.0f, 1.0f);
+        return Mathf.Clamp(Mathf.Max(Mathf.Max(shotPressure, hazardPressure), Mathf.Max(enemyPressure, particlePressure * 0.9f)) + textPressure * 0.08f, 0.0f, 1.0f);
     }
 
     private float PerformancePressure()
@@ -9995,6 +10889,23 @@ public partial class MainGame : Node2D
         particle.Spin = _rng.RandfRange(-1.0f, 1.0f);
     }
 
+    private void AddShockwave(Vector2 center, float radius, Color color)
+    {
+        if (_shockwaves.Count >= 6)
+        {
+            _shockwaves.RemoveAt(0);
+        }
+
+        _shockwaves.Add(new Shockwave
+        {
+            Center = center,
+            Radius = radius,
+            Color = color,
+            Life = 0.58f,
+            MaxLife = 0.58f,
+        });
+    }
+
     private void Burst(Vector2 pos, Color color, int count, float speed, float life)
     {
         count = Mathf.Max(1, Mathf.RoundToInt(count * QualityBurstScale()));
@@ -10029,15 +10940,56 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void UpdateCenterTextQueue(float dt)
+    {
+        if (_centerTextQueue.Count == 0)
+        {
+            _centerTextQueueTimer = Math.Max(0.0f, _centerTextQueueTimer - dt);
+            return;
+        }
+
+        _centerTextQueueTimer -= dt;
+        if (_centerTextQueueTimer > 0.0f)
+        {
+            return;
+        }
+
+        TextCue cue = _centerTextQueue.Dequeue();
+        AddTextNow(cue.Text, cue.Pos, cue.Color, cue.Size, true);
+        _centerTextQueueTimer = _centerTextQueue.Count > 0 ? 0.34f : 0.0f;
+    }
+
+    private void QueueCenterText(string text, Vector2 pos, Color color, float size)
+    {
+        if (_centerTextQueue.Count > 9)
+        {
+            _centerTextQueue.Dequeue();
+        }
+
+        _centerTextQueue.Enqueue(new TextCue
+        {
+            Text = text,
+            Pos = pos,
+            Color = color,
+            Size = size,
+        });
+    }
+
     private void AddText(string text, Vector2 pos, Color color, float size)
+    {
+        AddTextNow(text, pos, color, size, false);
+    }
+
+    private void AddTextNow(string text, Vector2 pos, Color color, float size, bool elastic)
     {
         DamageText damageText = AddDamageTextObject();
         damageText.Text = text;
         damageText.Pos = pos;
         damageText.Color = color;
-        damageText.Life = 1.15f;
-        damageText.MaxLife = 1.15f;
+        damageText.Life = elastic ? 1.32f : 1.15f;
+        damageText.MaxLife = damageText.Life;
         damageText.Size = size;
+        damageText.ComboPop = elastic;
     }
 
     private Vector2 RandomArenaEdge()
@@ -10332,14 +11284,14 @@ public partial class MainGame : Node2D
     {
         bool newEnemy = _wave == FirstAppearanceWave(primary);
         string header = newEnemy ? Tf("wave.enemy.new", EnemyName(primary)) : Tf("wave.enemy.focus", EnemyName(primary), EnemyRole(primary));
-        AddText(header, ScreenCenter + new Vector2(0.0f, -160.0f), newEnemy ? accent : Alpha(Paper, 0.82f), newEnemy ? 28.0f : 21.0f);
+        QueueCenterText(header, ScreenCenter + new Vector2(0.0f, -160.0f), newEnemy ? accent : Alpha(Paper, 0.82f), newEnemy ? 28.0f : 21.0f);
         if (newEnemy)
         {
-            AddText(EnemyRole(primary), ScreenCenter + new Vector2(0.0f, -126.0f), Alpha(Paper, 0.72f), 18.0f);
+            QueueCenterText(EnemyRole(primary), ScreenCenter + new Vector2(0.0f, -126.0f), Alpha(Paper, 0.72f), 18.0f);
         }
         else if (support != primary)
         {
-            AddText(Tf("wave.enemy.support", EnemyName(support)), ScreenCenter + new Vector2(0.0f, -130.0f), Alpha(accent, 0.68f), 17.0f);
+            QueueCenterText(Tf("wave.enemy.support", EnemyName(support)), ScreenCenter + new Vector2(0.0f, -130.0f), Alpha(accent, 0.68f), 17.0f);
         }
     }
 
@@ -10362,9 +11314,10 @@ public partial class MainGame : Node2D
             return waveInSector switch
             {
                 3 => WavePaceKind.Swarm,
-                5 => WavePaceKind.Recovery,
-                6 => WavePaceKind.Elite,
-                7 => WavePaceKind.Pressure,
+                4 => WavePaceKind.Recovery,
+                5 => WavePaceKind.Elite,
+                6 => WavePaceKind.Pressure,
+                7 => WavePaceKind.Swarm,
                 _ => WavePaceKind.Standard,
             };
         }
@@ -10374,8 +11327,8 @@ public partial class MainGame : Node2D
             return waveInSector switch
             {
                 2 => WavePaceKind.Swarm,
-                4 => WavePaceKind.Elite,
-                5 => WavePaceKind.Recovery,
+                4 => WavePaceKind.Recovery,
+                5 => WavePaceKind.Elite,
                 6 => WavePaceKind.Pressure,
                 7 => WavePaceKind.Elite,
                 _ => WavePaceKind.Standard,
@@ -10385,10 +11338,11 @@ public partial class MainGame : Node2D
         return waveInSector switch
         {
             2 => WavePaceKind.Swarm,
-            4 => WavePaceKind.Elite,
-            5 => WavePaceKind.Recovery,
+            3 => WavePaceKind.Pressure,
+            4 => WavePaceKind.Recovery,
+            5 => WavePaceKind.Elite,
             6 => WavePaceKind.Pressure,
-            7 => WavePaceKind.Elite,
+            7 => sector >= 3 ? WavePaceKind.Elite : WavePaceKind.Swarm,
             _ => WavePaceKind.Standard,
         };
     }
@@ -10397,22 +11351,115 @@ public partial class MainGame : Node2D
     {
         return sector switch
         {
-            0 => 2 + waveInSector,
-            1 => 4 + waveInSector * 2,
-            2 => 6 + waveInSector * 2,
-            3 => 8 + waveInSector * 2 + waveInSector / 2,
-            _ => 10 + waveInSector * 3,
+            0 => 18 + waveInSector * 5,
+            1 => 28 + waveInSector * 6,
+            2 => 38 + waveInSector * 7,
+            3 => 48 + waveInSector * 8,
+            _ => 58 + waveInSector * 9,
         };
+    }
+
+    private static int WaveOpeningBatchCount(int sector, int waveInSector, WavePaceKind pace, float budget)
+    {
+        int count = 5 + sector / 2 + Mathf.FloorToInt(waveInSector * 0.42f);
+        count += waveInSector switch
+        {
+            3 => 1,
+            4 => -1,
+            6 => 1,
+            7 => 2,
+            _ => 0,
+        };
+
+        count = pace switch
+        {
+            WavePaceKind.Swarm => count + 2,
+            WavePaceKind.Pressure => count + 1,
+            WavePaceKind.Elite => Math.Max(5, count - 1),
+            WavePaceKind.Recovery => Math.Max(5, count - 2),
+            _ => count,
+        };
+        int budgetCap = Math.Max(5, Mathf.FloorToInt(budget * 0.2f));
+        return Mathf.Clamp(count, 5, Math.Min(budgetCap, 10));
+    }
+
+    private static int MaxSpawnBatchCount(int sector, int waveInSector)
+    {
+        int cap = 8 + sector / 2;
+        if (waveInSector is 3 or 6)
+        {
+            cap++;
+        }
+        if (waveInSector >= 7)
+        {
+            cap++;
+        }
+
+        return Mathf.Clamp(cap, 5, 10);
+    }
+
+    private static float WaveProgressBudget(float baseBudget, int sector, int waveInSector, WavePaceKind pace)
+    {
+        float sectorScale = 1.0f + sector * 0.07f;
+        float lateWaveScale = 1.0f + Math.Max(0, waveInSector - 3) * 0.05f;
+        float paceScale = pace switch
+        {
+            WavePaceKind.Swarm => 0.98f,
+            WavePaceKind.Elite => 1.02f,
+            WavePaceKind.Recovery => 0.88f,
+            WavePaceKind.Pressure => 1.05f,
+            _ => 1.0f,
+        };
+        return Math.Max(2.0f, baseBudget * sectorScale * lateWaveScale * paceScale * WaveBudgetArcScale(waveInSector) * 1.1f);
+    }
+
+    private static float WaveSpawnProgressCost(EnemyKind kind, bool elite)
+    {
+        float cost = kind switch
+        {
+            EnemyKind.Chaser => 0.92f,
+            EnemyKind.Weaver => 1.05f,
+            EnemyKind.Turret => 1.22f,
+            EnemyKind.Splitter => 1.46f,
+            EnemyKind.Lance => 1.34f,
+            EnemyKind.Mine => 0.88f,
+            EnemyKind.Shard => 0.78f,
+            EnemyKind.Warden => 1.72f,
+            EnemyKind.Drifter => 1.06f,
+            EnemyKind.Bulwark => 1.95f,
+            EnemyKind.Siren => 1.52f,
+            EnemyKind.Harrier => 1.28f,
+            _ => 1.0f,
+        };
+        return elite ? cost * 1.55f : cost;
+    }
+
+    private static EnemyKind WaveEventEnemyKind(int sector, WavePaceKind pace, int eventIndex)
+    {
+        if (pace == WavePaceKind.Swarm)
+        {
+            return sector >= 3 ? EnemyKind.Harrier : EnemyKind.Splitter;
+        }
+        if (pace == WavePaceKind.Elite)
+        {
+            return sector >= 3 ? EnemyKind.Warden : EnemyKind.Bulwark;
+        }
+        if (pace == WavePaceKind.Pressure)
+        {
+            return eventIndex == 0 ? (sector >= 2 ? EnemyKind.Siren : EnemyKind.Lance) : (sector >= 3 ? EnemyKind.Warden : EnemyKind.Drifter);
+        }
+
+        return sector >= 2 ? EnemyKind.Siren : EnemyKind.Turret;
     }
 
     private static float WaveBudgetScale(WavePaceKind pace)
     {
         return pace switch
         {
-            WavePaceKind.Swarm => 1.34f,
-            WavePaceKind.Elite => 0.78f,
-            WavePaceKind.Recovery => 0.62f,
-            WavePaceKind.Pressure => 1.18f,
+            WavePaceKind.Swarm => 1.24f,
+            WavePaceKind.Elite => 0.82f,
+            WavePaceKind.Recovery => 0.68f,
+            WavePaceKind.Pressure => 1.12f,
             _ => 1.0f,
         };
     }
@@ -10428,26 +11475,44 @@ public partial class MainGame : Node2D
         };
     }
 
-    private static float WaveOpeningScale(WavePaceKind pace)
-    {
-        return pace switch
-        {
-            WavePaceKind.Swarm => 1.45f,
-            WavePaceKind.Elite => 0.72f,
-            WavePaceKind.Recovery => 0.8f,
-            WavePaceKind.Pressure => 1.15f,
-            _ => 1.0f,
-        };
-    }
-
     private static float WaveSpawnIntervalScale(WavePaceKind pace)
     {
         return pace switch
         {
-            WavePaceKind.Swarm => 0.72f,
-            WavePaceKind.Elite => 1.22f,
-            WavePaceKind.Recovery => 1.35f,
-            WavePaceKind.Pressure => 0.86f,
+            WavePaceKind.Swarm => 0.76f,
+            WavePaceKind.Elite => 1.16f,
+            WavePaceKind.Recovery => 1.28f,
+            WavePaceKind.Pressure => 0.88f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float WaveBudgetArcScale(int waveInSector)
+    {
+        return waveInSector switch
+        {
+            1 => 0.86f,
+            2 => 0.96f,
+            3 => 1.08f,
+            4 => 0.86f,
+            5 => 0.96f,
+            6 => 1.1f,
+            7 => 1.18f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float WaveIntervalArcScale(int waveInSector)
+    {
+        return waveInSector switch
+        {
+            1 => 1.15f,
+            2 => 1.03f,
+            3 => 0.88f,
+            4 => 1.24f,
+            5 => 1.1f,
+            6 => 0.92f,
+            7 => 0.82f,
             _ => 1.0f,
         };
     }
@@ -10480,9 +11545,9 @@ public partial class MainGame : Node2D
 
     private static EnemyKind SelectEnemyKind(int index, int sector, int waveInSector, EnemyKind primary, EnemyKind support, WavePaceKind pace)
     {
-        if (support == primary)
+        if (ShouldInjectMechanicEnemy(index, sector, waveInSector, pace))
         {
-            return primary;
+            return WaveMechanicEnemyKind(sector, waveInSector, pace, index);
         }
 
         int supportEvery = pace switch
@@ -10493,7 +11558,140 @@ public partial class MainGame : Node2D
             WavePaceKind.Recovery => 5,
             _ => sector >= 3 || waveInSector >= 6 ? 4 : 5,
         };
-        return index > 0 && index % supportEvery == supportEvery - 1 ? support : primary;
+        return support != primary && index > 0 && index % supportEvery == supportEvery - 1 ? support : primary;
+    }
+
+    private static bool ShouldInjectMechanicEnemy(int index, int sector, int waveInSector, WavePaceKind pace)
+    {
+        if (index <= 0 || (sector == 0 && waveInSector < 5))
+        {
+            return false;
+        }
+
+        int every = pace switch
+        {
+            WavePaceKind.Swarm => sector >= 2 ? 3 : 4,
+            WavePaceKind.Pressure => 3,
+            WavePaceKind.Elite => 3,
+            WavePaceKind.Recovery => 6,
+            _ => sector >= 3 || waveInSector >= 6 ? 4 : 5,
+        };
+
+        if (SpawnIndexPressurePhase(index) >= 2)
+        {
+            every = Math.Max(2, every - 1);
+        }
+
+        return index % every == every - 1;
+    }
+
+    private static int SpawnIndexPressurePhase(int spawnIndex)
+    {
+        return spawnIndex < 10 ? 0 : spawnIndex < 24 ? 1 : 2;
+    }
+
+    private static EnemyKind WaveMechanicEnemyKind(int sector, int waveInSector, WavePaceKind pace, int index)
+    {
+        int roll = Math.Abs(index + waveInSector * 3 + (int)pace * 5);
+        if (sector <= 0)
+        {
+            return waveInSector >= 6 && roll % 3 == 0 ? EnemyKind.Turret : EnemyKind.Drifter;
+        }
+
+        if (sector == 1)
+        {
+            if (waveInSector <= 1)
+            {
+                return EnemyKind.Drifter;
+            }
+            if (waveInSector == 2)
+            {
+                return EnemyKind.Mine;
+            }
+
+            return (roll % 4) switch
+            {
+                0 => EnemyKind.Mine,
+                1 => EnemyKind.Lance,
+                2 => EnemyKind.Drifter,
+                _ => EnemyKind.Turret,
+            };
+        }
+
+        if (sector == 2)
+        {
+            if (waveInSector < 3)
+            {
+                return (roll % 4) switch
+                {
+                    0 => EnemyKind.Splitter,
+                    1 => EnemyKind.Mine,
+                    2 => EnemyKind.Lance,
+                    _ => EnemyKind.Turret,
+                };
+            }
+            if (waveInSector == 3)
+            {
+                return (roll % 4) switch
+                {
+                    0 => EnemyKind.Siren,
+                    1 => EnemyKind.Splitter,
+                    2 => EnemyKind.Mine,
+                    _ => EnemyKind.Lance,
+                };
+            }
+
+            return (roll % 5) switch
+            {
+                0 => EnemyKind.Splitter,
+                1 => EnemyKind.Siren,
+                2 => EnemyKind.Bulwark,
+                3 => EnemyKind.Mine,
+                _ => EnemyKind.Lance,
+            };
+        }
+
+        if (sector == 3)
+        {
+            if (waveInSector < 3)
+            {
+                return (roll % 3) switch
+                {
+                    0 => EnemyKind.Shard,
+                    1 => EnemyKind.Siren,
+                    _ => EnemyKind.Bulwark,
+                };
+            }
+            if (waveInSector == 3)
+            {
+                return (roll % 4) switch
+                {
+                    0 => EnemyKind.Warden,
+                    1 => EnemyKind.Shard,
+                    2 => EnemyKind.Siren,
+                    _ => EnemyKind.Bulwark,
+                };
+            }
+
+            return (roll % 5) switch
+            {
+                0 => EnemyKind.Warden,
+                1 => EnemyKind.Harrier,
+                2 => EnemyKind.Siren,
+                3 => EnemyKind.Shard,
+                _ => EnemyKind.Bulwark,
+            };
+        }
+
+        return (roll % 6) switch
+        {
+            0 => EnemyKind.Warden,
+            1 => EnemyKind.Siren,
+            2 => EnemyKind.Harrier,
+            3 => EnemyKind.Bulwark,
+            4 => EnemyKind.Shard,
+            _ => EnemyKind.Splitter,
+        };
     }
 
     private static EnemyKind WavePrimaryEnemyKind(int sector, int waveInSector)
