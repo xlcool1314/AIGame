@@ -89,6 +89,12 @@ public partial class MainGame
         {
             rate *= 1.08f;
         }
+        rate *= _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.07f,
+            GameDifficulty.Eclipse => 1.15f,
+            _ => 0.94f,
+        };
         return rate;
     }
 

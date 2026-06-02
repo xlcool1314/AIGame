@@ -81,10 +81,17 @@ sector.4.trait|Final sector. Elite dashes, beams, and gravity fields overlap.|�
 repair|REPAIR|修复|РЕМОНТ|REPARO|REPARATUR|ONARIM|RÉPARATION|修理
 language.changed|LANGUAGE: ENGLISH|当前语言：中文|ЯЗЫК: РУССКИЙ|IDIOMA: PORTUGUÊS BR|SPRACHE: DEUTSCH|DİL: TÜRKÇE|LANGUE : FRANÇAIS|言語：日本語
 language.hint|LANGUAGE: ENGLISH  [L]|中文  [L切换]|РУССКИЙ  [L]|PORTUGUÊS BR  [L]|DEUTSCH  [L]|TÜRKÇE  [L]|FRANÇAIS  [L]|日本語  [L]
-menu.start|START EXPEDITION|开始远征|ВЫЛЕТЕТЬ|INICIAR EXPEDIÇÃO|EXPEDITION STARTEN|SEFERE BAŞLA|LANCER L’EXPÉDITION|遠征開始
+menu.start|START GAME|开始游戏|НАЧАТЬ ИГРУ|INICIAR JOGO|SPIEL STARTEN|OYUNA BAŞLA|COMMENCER|ゲーム開始
 menu.meta|PERMANENT UPGRADES|永久升级|ПОСТОЯННЫЕ УЗЛЫ|UPGRADES PERMANENTES|DAUER-UPGRADES|KALICI GELİŞİMLER|AMÉLIORATIONS PERMANENTES|恒久強化
 menu.language|SWITCH LANGUAGE|切换语言|СМЕНИТЬ ЯЗЫК|TROCAR IDIOMA|SPRACHE WECHSELN|DİL DEĞİŞTİR|CHANGER DE LANGUE|言語切替
 menu.settings|SETTINGS|设置|НАСТРОЙКИ|CONFIGURAÇÕES|EINSTELLUNGEN|AYARLAR|PARAMÈTRES|設定
+gm.unlock.label|GM|GM|GM|GM|GM|GM|GM|GM
+gm.unlock.toast|All pilots and difficulties unlocked.|所有角色与难度已解锁。|Все пилоты и сложности открыты.|Pilotos e dificuldades liberados.|Alle Piloten und Stufen frei.|Tüm pilotlar ve zorluklar açık.|Pilotes et difficultés débloqués.|全パイロットと難易度解放。
+difficulty.title|DIFFICULTY|难度|СЛОЖНОСТЬ|DIFICULDADE|SCHWIERIGKEIT|ZORLUK|DIFFICULTÉ|難易度
+difficulty.cruise|Cruise|巡航|Крейсер|Cruzeiro|Cruise|Seyir|Croisière|巡航
+difficulty.storm|Storm|风暴|Шторм|Tempestade|Sturm|Fırtına|Tempête|嵐
+difficulty.eclipse|Eclipse|日蚀|Затмение|Eclipse|Finsternis|Tutulma|Éclipse|日蝕
+difficulty.unlock|Clear {0} to unlock.|通关{0}解锁。|Пройди {0}, чтобы открыть.|Conclua {0} para liberar.|Schließe {0} ab.|{0} bitirerek aç.|Termine {0} pour débloquer.|{0}クリアで解放
 menu.pilot|PILOT|角色|ПИЛОТ|PILOTO|PILOT|PİLOT|PILOTE|パイロット
 menu.tip|Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.|点击开始、按 Enter 或 A。每局结束后用星尘强化永久节点。|Нажми старт, Enter или A. Между вылетами трать Звездную пыль на узлы.|Clique iniciar, Enter ou A. Gaste Pó Estelar em upgrades entre runs.|Klicke Start, Enter oder A. Gib Sternenstaub zwischen Runs aus.|Başlat, Enter veya A. Sefer aralarında Yıldız Tozu harca.|Clique, Enter ou A. Dépense la poussière stellaire entre deux runs.|開始、Enter、Aで出撃。星屑で恒久強化しよう。
 ui.lock|LOCK|未解锁|ЗАКРЫТ|TRAVADO|GESPERRT|KİLİTLİ|VERROUILLÉ|ロック

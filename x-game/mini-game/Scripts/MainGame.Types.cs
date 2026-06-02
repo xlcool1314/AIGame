@@ -44,6 +44,13 @@ public partial class MainGame
         Ultra,
     }
 
+    private enum GameDifficulty
+    {
+        Cruise,
+        Storm,
+        Eclipse,
+    }
+
     private enum PilotKind
     {
         Astra,

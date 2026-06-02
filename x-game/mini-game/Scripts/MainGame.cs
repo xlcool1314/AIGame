@@ -11,6 +11,7 @@ public partial class MainGame : Node2D
     private const int WavesPerSector = 8;
     private const int SectorCount = 5;
     private const int TotalWaves = WavesPerSector * SectorCount;
+    private const int DifficultyCount = 3;
     private const int ClearRecordCount = 5;
     private const float PlayerRadius = 24.0f;
     private const float EnemyBulletRadius = 8.0f;
@@ -58,8 +59,25 @@ public partial class MainGame : Node2D
     private const float GamepadTriggerThreshold = 0.45f;
     private const float GamepadNavThreshold = 0.56f;
     private const float GamepadNavRepeat = 0.18f;
+    private const int TitleDifficultyFocusStart = 0;
+    private const int TitlePilotFocusStart = TitleDifficultyFocusStart + DifficultyCount;
+    private const int TitleFooterFocusStart = TitlePilotFocusStart + 8;
+    private const int TitleMetaFocus = TitleFooterFocusStart;
+    private const int TitleStartFocus = TitleFooterFocusStart + 1;
+    private const int TitleSettingsFocus = TitleFooterFocusStart + 2;
     private static readonly float[] BossPhaseThresholds = { 0.72f, 0.43f, 0.18f };
     private static readonly int[] BuildMilestoneThresholds = { 5, 8, 11 };
+
+    private static List<float>[] CreateClearRecordLists()
+    {
+        List<float>[] lists = new List<float>[DifficultyCount];
+        for (int i = 0; i < lists.Length; i++)
+        {
+            lists[i] = new List<float>();
+        }
+
+        return lists;
+    }
 
     private static readonly Vector2 ScreenCenter = new(ScreenWidth * 0.5f, ScreenHeight * 0.5f);
     private static readonly Rect2 Arena = new(new Vector2(84.0f, 86.0f), new Vector2(1752.0f, 884.0f));
@@ -350,10 +368,12 @@ public partial class MainGame : Node2D
         ["repair"] = new("REPAIR", "修复"),
         ["language.changed"] = new("LANGUAGE: ENGLISH", "当前语言：中文"),
         ["language.hint"] = new("LANGUAGE: ENGLISH  [L]", "中文  [L切换]"),
-        ["menu.start"] = new("START EXPEDITION", "开始远征"),
+        ["menu.start"] = new("START GAME", "开始游戏"),
         ["menu.meta"] = new("PERMANENT UPGRADES", "永久升级"),
         ["menu.language"] = new("SWITCH LANGUAGE", "切换语言"),
         ["menu.settings"] = new("SETTINGS", "设置"),
+        ["gm.unlock.label"] = new("GM", "GM"),
+        ["gm.unlock.toast"] = new("All pilots and difficulties unlocked.", "所有角色与难度已解锁。"),
         ["menu.pilot"] = new("PILOT", "角色"),
         ["menu.tip"] = new("Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.", "点击“开始远征”、按 Enter 或按 A。每局结束后可用星尘购买永久升级。"),
         ["boss.choir_core"] = new("CHOIR CORE", "合唱核心"),
@@ -756,12 +776,15 @@ public partial class MainGame : Node2D
     private GameLanguage _language = GameLanguage.English;
     private DisplayResolutionPreset _resolutionPreset = DisplayResolutionPreset.R1920x1080;
     private VisualQuality _visualQuality = VisualQuality.High;
+    private GameDifficulty _selectedDifficulty = GameDifficulty.Cruise;
+    private GameDifficulty _runDifficulty = GameDifficulty.Cruise;
     private float _musicVolume = 0.72f;
     private float _sfxVolume = 0.78f;
     private Font? _uiFont;
     private bool _usingGamepad;
     private Rect2 _gamepadFocusRect;
     private bool _gamepadFocusVisible;
+    private int _gamepadTitleIndex = TitlePilotFocusStart;
     private int _gamepadPilotIndex;
     private int _gamepadUpgradeIndex;
     private int _gamepadMetaIndex;
@@ -771,7 +794,8 @@ public partial class MainGame : Node2D
     private int _gamepadLastNavX;
     private int _gamepadLastNavY;
     private float _runTimer;
-    private readonly List<float> _clearTimeRecords = new();
+    private readonly List<float>[] _clearTimeRecordsByDifficulty = CreateClearRecordLists();
+    private readonly bool[] _difficultyTestUnlocks = new bool[DifficultyCount];
 
     private int _starDust;
     private int _lifetimeDust;
@@ -1112,6 +1136,7 @@ public partial class MainGame : Node2D
         _upgradeChoices.Clear();
         _voices.Clear();
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
         _gamepadUpgradeIndex = 0;
         _gamepadSettingsIndex = 0;
     }
@@ -1141,6 +1166,12 @@ public partial class MainGame : Node2D
         {
             _visualQuality = loadedQuality;
         }
+        GameDifficulty loadedDifficulty = _selectedDifficulty;
+        string difficultyName = ReadConfigString(config, "settings", "difficulty", _selectedDifficulty.ToString());
+        if (Enum.TryParse(difficultyName, out GameDifficulty parsedDifficulty))
+        {
+            loadedDifficulty = parsedDifficulty;
+        }
         _musicVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
         _sfxVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
 
@@ -1157,6 +1188,9 @@ public partial class MainGame : Node2D
         _careerBossKills = Mathf.Max(0, ReadConfigInt(config, "career", "boss_kills", 0));
         _careerPerfectWaves = Mathf.Max(0, ReadConfigInt(config, "career", "perfect_waves", 0));
         LoadClearTimeRecords(config);
+        LoadDifficultyTestUnlocks(config);
+        _selectedDifficulty = ClampDifficulty(loadedDifficulty);
+        _runDifficulty = _selectedDifficulty;
         _pilotRuns.Clear();
         int pilotRunTotal = 0;
         for (int i = 0; i < PilotCount(); i++)
@@ -1183,6 +1217,7 @@ public partial class MainGame : Node2D
             _selectedPilot = PilotKind.Astra;
         }
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
         ApplyRuntimeSettings(false);
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
@@ -1210,17 +1245,30 @@ public partial class MainGame : Node2D
         config.SetValue("career", "best_combo", _careerBestCombo);
         config.SetValue("career", "boss_kills", _careerBossKills);
         config.SetValue("career", "perfect_waves", _careerPerfectWaves);
-        for (int i = 0; i < ClearRecordCount; i++)
+        foreach (GameDifficulty difficulty in DifficultyOrder())
         {
-            int centiseconds = i < _clearTimeRecords.Count ? TimeToCentiseconds(_clearTimeRecords[i]) : 0;
-            config.SetValue("records", $"clear_time_{i}_cs", centiseconds);
+            List<float> records = ClearTimeRecords(difficulty);
+            string key = DifficultyKey(difficulty);
+            config.SetValue("difficulty_unlocks", key, _difficultyTestUnlocks[DifficultyIndex(difficulty)] ? 1 : 0);
+            for (int i = 0; i < ClearRecordCount; i++)
+            {
+                int centiseconds = i < records.Count ? TimeToCentiseconds(records[i]) : 0;
+                config.SetValue("records", $"clear_time_{key}_{i}_cs", centiseconds);
+                if (difficulty == GameDifficulty.Cruise)
+                {
+                    config.SetValue("records", $"clear_time_{i}_cs", centiseconds);
+                }
+            }
         }
+        List<float> cruiseRecords = ClearTimeRecords(GameDifficulty.Cruise);
+        config.SetValue("records", "best_clear_time_cs", cruiseRecords.Count > 0 ? TimeToCentiseconds(cruiseRecords[0]) : 0);
         for (int i = 0; i < PilotCount(); i++)
         {
             PilotKind pilot = PilotFromIndex(i);
             config.SetValue("pilot_runs", pilot.ToString(), PilotRunCount(pilot));
         }
         config.SetValue("settings", "pilot", _selectedPilot.ToString());
+        config.SetValue("settings", "difficulty", _selectedDifficulty.ToString());
         config.SetValue("settings", "language", _language.ToString());
         config.SetValue("settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f));
         config.SetValue("settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f));
@@ -1257,6 +1305,7 @@ public partial class MainGame : Node2D
         _wonOnce = false;
         _selectedPilot = PilotKind.Astra;
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
         _lastDustEarned = 0;
         _lastRunWave = 0;
         _lastObjectiveBonusDust = 0;
@@ -1264,7 +1313,13 @@ public partial class MainGame : Node2D
         _lastClearTime = 0.0f;
         _lastClearRecordRank = 0;
         _lastUnlockedPilot = null;
-        _clearTimeRecords.Clear();
+        foreach (List<float> records in _clearTimeRecordsByDifficulty)
+        {
+            records.Clear();
+        }
+        Array.Clear(_difficultyTestUnlocks, 0, _difficultyTestUnlocks.Length);
+        _selectedDifficulty = GameDifficulty.Cruise;
+        _runDifficulty = GameDifficulty.Cruise;
         SaveMetaProgress();
 
         ResetTitle();
@@ -1285,33 +1340,289 @@ public partial class MainGame : Node2D
         return config.GetValue(section, key, fallback).AsString();
     }
 
-    private void LoadClearTimeRecords(ConfigFile config)
+    private static GameDifficulty[] DifficultyOrder()
     {
-        _clearTimeRecords.Clear();
-        for (int i = 0; i < ClearRecordCount; i++)
+        return new[] { GameDifficulty.Cruise, GameDifficulty.Storm, GameDifficulty.Eclipse };
+    }
+
+    private static int DifficultyIndex(GameDifficulty difficulty)
+    {
+        return difficulty switch
         {
-            AddClearTimeRecord(CentisecondsToTime(ReadConfigInt(config, "records", $"clear_time_{i}_cs", 0)));
+            GameDifficulty.Storm => 1,
+            GameDifficulty.Eclipse => 2,
+            _ => 0,
+        };
+    }
+
+    private static string DifficultyKey(GameDifficulty difficulty)
+    {
+        return difficulty switch
+        {
+            GameDifficulty.Storm => "storm",
+            GameDifficulty.Eclipse => "eclipse",
+            _ => "cruise",
+        };
+    }
+
+    private List<float> ClearTimeRecords(GameDifficulty difficulty)
+    {
+        return _clearTimeRecordsByDifficulty[Mathf.Clamp(DifficultyIndex(difficulty), 0, DifficultyCount - 1)];
+    }
+
+    private bool IsDifficultyUnlocked(GameDifficulty difficulty)
+    {
+        if (_difficultyTestUnlocks[Mathf.Clamp(DifficultyIndex(difficulty), 0, DifficultyCount - 1)])
+        {
+            return true;
         }
 
-        if (_clearTimeRecords.Count == 0)
+        return difficulty switch
         {
-            AddClearTimeRecord(CentisecondsToTime(ReadConfigInt(config, "records", "best_clear_time_cs", 0)));
+            GameDifficulty.Storm => ClearTimeRecords(GameDifficulty.Cruise).Count > 0,
+            GameDifficulty.Eclipse => ClearTimeRecords(GameDifficulty.Storm).Count > 0,
+            _ => true,
+        };
+    }
+
+    private void LoadDifficultyTestUnlocks(ConfigFile config)
+    {
+        foreach (GameDifficulty difficulty in DifficultyOrder())
+        {
+            _difficultyTestUnlocks[DifficultyIndex(difficulty)] = ReadConfigInt(config, "difficulty_unlocks", DifficultyKey(difficulty), 0) > 0;
         }
     }
 
-    private int AddClearTimeRecord(float seconds)
+    private GameDifficulty HighestUnlockedDifficulty()
+    {
+        for (int i = DifficultyCount - 1; i >= 0; i--)
+        {
+            GameDifficulty difficulty = DifficultyFromIndex(i);
+            if (IsDifficultyUnlocked(difficulty))
+            {
+                return difficulty;
+            }
+        }
+
+        return GameDifficulty.Cruise;
+    }
+
+    private GameDifficulty ClampDifficulty(GameDifficulty difficulty)
+    {
+        return IsDifficultyUnlocked(difficulty) ? difficulty : HighestUnlockedDifficulty();
+    }
+
+    private static GameDifficulty DifficultyFromIndex(int index)
+    {
+        return index switch
+        {
+            1 => GameDifficulty.Storm,
+            2 => GameDifficulty.Eclipse,
+            _ => GameDifficulty.Cruise,
+        };
+    }
+
+    private Color DifficultyAccent(GameDifficulty difficulty)
+    {
+        return difficulty switch
+        {
+            GameDifficulty.Storm => Gold,
+            GameDifficulty.Eclipse => Rose,
+            _ => Cyan,
+        };
+    }
+
+    private string DifficultyName(GameDifficulty difficulty)
+    {
+        return T($"difficulty.{DifficultyKey(difficulty)}");
+    }
+
+    private string DifficultyUnlockText(GameDifficulty difficulty)
+    {
+        return difficulty switch
+        {
+            GameDifficulty.Storm => Tf("difficulty.unlock", DifficultyName(GameDifficulty.Cruise)),
+            GameDifficulty.Eclipse => Tf("difficulty.unlock", DifficultyName(GameDifficulty.Storm)),
+            _ => string.Empty,
+        };
+    }
+
+    private float DifficultyEnemyMoveScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.12f,
+            GameDifficulty.Eclipse => 1.28f,
+            _ => 0.96f,
+        };
+    }
+
+    private float DifficultyEnemyHpScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.3f,
+            GameDifficulty.Eclipse => 2.15f,
+            _ => 0.94f,
+        };
+    }
+
+    private float DifficultyBossHpScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.38f,
+            GameDifficulty.Eclipse => 2.2f,
+            _ => 0.96f,
+        };
+    }
+
+    private float DifficultyEnemyArmorScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.06f,
+            GameDifficulty.Eclipse => 1.16f,
+            _ => 1.0f,
+        };
+    }
+
+    private float DifficultyBossArmorScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.08f,
+            GameDifficulty.Eclipse => 1.24f,
+            _ => 1.0f,
+        };
+    }
+
+    private float DifficultyEnemyDamageTakenScale(Enemy enemy)
+    {
+        if (enemy.Kind == EnemyKind.Boss)
+        {
+            return 1.0f;
+        }
+
+        float scale = _runDifficulty switch
+        {
+            GameDifficulty.Storm => 0.9f,
+            GameDifficulty.Eclipse => 0.68f,
+            _ => 1.0f,
+        };
+        if (enemy.Elite)
+        {
+            scale *= _runDifficulty == GameDifficulty.Eclipse ? 0.88f : 0.94f;
+        }
+
+        return scale;
+    }
+
+    private float DifficultyEnemyBulletSpeedScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.1f,
+            GameDifficulty.Eclipse => 1.26f,
+            _ => 0.94f,
+        };
+    }
+
+    private float DifficultyEnemyDamageScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.08f,
+            GameDifficulty.Eclipse => 1.24f,
+            _ => 0.94f,
+        };
+    }
+
+    private float DifficultyHazardFrequencyScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.12f,
+            GameDifficulty.Eclipse => 1.28f,
+            _ => 0.9f,
+        };
+    }
+
+    private float DifficultyHazardTempoScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.12f,
+            GameDifficulty.Eclipse => 1.26f,
+            _ => 0.92f,
+        };
+    }
+
+    private float DifficultyHazardDamageScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 1.12f,
+            GameDifficulty.Eclipse => 1.35f,
+            _ => 0.9f,
+        };
+    }
+
+    private float DifficultyBossCooldownScale()
+    {
+        return _runDifficulty switch
+        {
+            GameDifficulty.Storm => 0.94f,
+            GameDifficulty.Eclipse => 0.82f,
+            _ => 1.06f,
+        };
+    }
+
+    private void LoadClearTimeRecords(ConfigFile config)
+    {
+        foreach (List<float> records in _clearTimeRecordsByDifficulty)
+        {
+            records.Clear();
+        }
+
+        foreach (GameDifficulty difficulty in DifficultyOrder())
+        {
+            string key = DifficultyKey(difficulty);
+            for (int i = 0; i < ClearRecordCount; i++)
+            {
+                AddClearTimeRecord(difficulty, CentisecondsToTime(ReadConfigInt(config, "records", $"clear_time_{key}_{i}_cs", 0)));
+            }
+        }
+
+        List<float> cruiseRecords = ClearTimeRecords(GameDifficulty.Cruise);
+        if (cruiseRecords.Count == 0)
+        {
+            for (int i = 0; i < ClearRecordCount; i++)
+            {
+                AddClearTimeRecord(GameDifficulty.Cruise, CentisecondsToTime(ReadConfigInt(config, "records", $"clear_time_{i}_cs", 0)));
+            }
+        }
+
+        if (cruiseRecords.Count == 0)
+        {
+            AddClearTimeRecord(GameDifficulty.Cruise, CentisecondsToTime(ReadConfigInt(config, "records", "best_clear_time_cs", 0)));
+        }
+    }
+
+    private int AddClearTimeRecord(GameDifficulty difficulty, float seconds)
     {
         if (seconds <= 0.0f)
         {
             return 0;
         }
 
-        _clearTimeRecords.Add(seconds);
-        _clearTimeRecords.Sort();
-        int rank = _clearTimeRecords.IndexOf(seconds) + 1;
-        while (_clearTimeRecords.Count > ClearRecordCount)
+        List<float> records = ClearTimeRecords(difficulty);
+        records.Add(seconds);
+        records.Sort();
+        int rank = records.IndexOf(seconds) + 1;
+        while (records.Count > ClearRecordCount)
         {
-            _clearTimeRecords.RemoveAt(_clearTimeRecords.Count - 1);
+            records.RemoveAt(records.Count - 1);
         }
 
         return rank > 0 && rank <= ClearRecordCount ? rank : 0;
@@ -1455,7 +1766,7 @@ public partial class MainGame : Node2D
         _bestWave = Math.Max(_bestWave, reachedWave);
         if (victory)
         {
-            _lastClearRecordRank = AddClearTimeRecord(_runTimer);
+            _lastClearRecordRank = AddClearTimeRecord(_runDifficulty, _runTimer);
         }
         _careerKills += _runKills;
         _careerPickups += _runPickups;
@@ -1473,6 +1784,8 @@ public partial class MainGame : Node2D
         {
             _selectedPilot = PilotKind.Astra;
         }
+        _selectedDifficulty = ClampDifficulty(_selectedDifficulty);
+        _runDifficulty = _selectedDifficulty;
 
         _mode = GameMode.Playing;
         _settingsReturnMode = GameMode.Playing;
@@ -2638,9 +2951,9 @@ public partial class MainGame : Node2D
         boss.Pos = BossSpawnPosition(archetype, sector);
         boss.Vel = Vector2.Zero;
         boss.Radius = (82.0f + sector * 8.0f) * BossRadiusScale(archetype);
-        boss.Hp = (3200.0f + sector * 1900.0f + threat * 120.0f) * BossHpScale(archetype);
+        boss.Hp = (3200.0f + sector * 1900.0f + threat * 120.0f) * BossHpScale(archetype) * DifficultyBossHpScale();
         boss.MaxHp = boss.Hp;
-        boss.Cooldown = BossOpeningCooldown(archetype);
+        boss.Cooldown = BossOpeningCooldown(archetype) * DifficultyBossCooldownScale();
         boss.Overheat = 0.0f;
         boss.OverheatMax = 1.0f;
         boss.Phase = _rng.RandfRange(0.0f, Mathf.Tau);
@@ -2650,7 +2963,7 @@ public partial class MainGame : Node2D
         boss.Value = 8000 + sector * 5000;
         boss.SplitDepth = 0;
         boss.Elite = true;
-        boss.Armor = (1.12f + sector * 0.1f) * BossArmorScale(archetype);
+        boss.Armor = (1.12f + sector * 0.1f) * BossArmorScale(archetype) * DifficultyBossArmorScale();
         boss.BossIntent = BossPatternKind.AimedFan;
         boss.BossIntentPulse = 0.0f;
         boss.BossPhase = 0;
@@ -2816,6 +3129,7 @@ public partial class MainGame : Node2D
         };
 
         float eliteChance = kind == EnemyKind.Boss || splitDepth > 0 || sector == 0 ? 0.0f : Mathf.Clamp(sector * 0.04f + CurrentWaveInSector() * 0.004f, 0.0f, 0.2f);
+        eliteChance += DifficultyIndex(_runDifficulty) * 0.04f;
         if (_currentWavePace == WavePaceKind.Elite)
         {
             eliteChance += 0.16f;
@@ -2831,6 +3145,7 @@ public partial class MainGame : Node2D
             radius *= 1.16f;
             hp *= 2.35f;
         }
+        hp *= DifficultyEnemyHpScale();
 
         enemy.Kind = kind;
         enemy.Pos = pos;
@@ -2861,6 +3176,7 @@ public partial class MainGame : Node2D
         {
             enemy.Armor += 0.22f;
         }
+        enemy.Armor *= DifficultyEnemyArmorScale();
         Burst(pos, PolarityColor(polarity), 12, 220.0f, 0.9f);
         return enemy;
     }
@@ -2869,19 +3185,25 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
-        int pilotNav = ConsumeGamepadNavX();
-        if (pilotNav != 0)
+        int navX = ConsumeGamepadNavX();
+        int navY = ConsumeGamepadNavY();
+        if (navX != 0 || navY != 0)
         {
-            _gamepadPilotIndex = (_gamepadPilotIndex + pilotNav + PilotCount()) % PilotCount();
-            PlaySfx(260.0f + _gamepadPilotIndex * 35.0f, 20.0f, 0.07f, 0.12f, 0.01f, 1);
+            MoveTitleFocus(navX, navY);
+            PlaySfx(260.0f + _gamepadTitleIndex * 16.0f, navY != 0 ? -16.0f : 20.0f, 0.07f, 0.12f, 0.01f, 1);
         }
-        SetGamepadFocus(PilotCardRect(_gamepadPilotIndex));
+        _gamepadTitleIndex = ClampTitleFocus(_gamepadTitleIndex);
+        if (IsTitlePilotFocus(_gamepadTitleIndex))
+        {
+            _gamepadPilotIndex = _gamepadTitleIndex - TitlePilotFocusStart;
+        }
+        SetGamepadFocus(TitleFocusRect(_gamepadTitleIndex));
 
         Vector2 mouse = GetGlobalMousePosition();
         bool startKey = StartHeld();
         bool metaKey = MetaHeld();
         bool settingsKey = SettingsShortcutHeld();
-        bool gamepadPilotConfirm = JoyButtonHeld(JoyButton.A);
+        bool gamepadConfirm = JoyButtonHeld(JoyButton.A);
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
         if (click)
         {
@@ -2892,6 +3214,7 @@ public partial class MainGame : Node2D
                 if (PilotCardRect(i).HasPoint(mouse))
                 {
                     _gamepadPilotIndex = i;
+                    _gamepadTitleIndex = TitlePilotFocusStart + i;
                     if (IsPilotUnlocked(pilot))
                     {
                         _selectedPilot = pilot;
@@ -2906,35 +3229,26 @@ public partial class MainGame : Node2D
                     return;
                 }
             }
+
+            if (TrySelectDifficulty(mouse))
+            {
+                return;
+            }
         }
 
-        if (gamepadPilotConfirm && !_lastConfirm)
+        if (gamepadConfirm && !_lastConfirm)
         {
-            PilotKind pilot = PilotFromIndex(_gamepadPilotIndex);
-            if (IsPilotUnlocked(pilot))
-            {
-                if (_selectedPilot == pilot)
-                {
-                    StartRun();
-                }
-                else
-                {
-                    _selectedPilot = pilot;
-                    SaveMetaProgress();
-                    PlaySfx(360.0f + _gamepadPilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
-                }
-            }
-            else
-            {
-                AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
-                PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
-            }
+            ActivateTitleFocus(_gamepadTitleIndex);
             return;
         }
 
         if ((startKey && !_lastStart) || (click && StartButtonRect().HasPoint(mouse)))
         {
             StartRun();
+        }
+        else if (click && GmUnlockButtonRect().HasPoint(mouse))
+        {
+            UnlockAllForTesting();
         }
         else if ((metaKey && !_lastMeta) || (click && MetaButtonRect().HasPoint(mouse)))
         {
@@ -2945,6 +3259,228 @@ public partial class MainGame : Node2D
         {
             OpenSettings(GameMode.Title);
         }
+    }
+
+    private bool TrySelectDifficulty(Vector2 mouse)
+    {
+        for (int i = 0; i < DifficultyCount; i++)
+        {
+            GameDifficulty difficulty = DifficultyFromIndex(i);
+            if (!DifficultyButtonRect(i).HasPoint(mouse))
+            {
+                continue;
+            }
+
+            _gamepadTitleIndex = TitleDifficultyFocusStart + i;
+            SelectDifficulty(difficulty);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void SelectDifficulty(GameDifficulty difficulty)
+    {
+        if (!IsDifficultyUnlocked(difficulty))
+        {
+            AddText(DifficultyUnlockText(difficulty), ScreenCenter + new Vector2(0.0f, 220.0f), Rose, 22.0f);
+            PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
+            return;
+        }
+
+        _selectedDifficulty = difficulty;
+        _runDifficulty = difficulty;
+        SaveMetaProgress();
+        PlaySfx(310.0f + DifficultyIndex(difficulty) * 92.0f, 60.0f, 0.12f, 0.16f, 0.02f, 1);
+    }
+
+    private void ActivateTitleFocus(int focus)
+    {
+        focus = ClampTitleFocus(focus);
+        if (IsTitleDifficultyFocus(focus))
+        {
+            SelectDifficulty(DifficultyFromIndex(focus - TitleDifficultyFocusStart));
+            return;
+        }
+
+        if (IsTitlePilotFocus(focus))
+        {
+            int pilotIndex = focus - TitlePilotFocusStart;
+            PilotKind pilot = PilotFromIndex(pilotIndex);
+            if (IsPilotUnlocked(pilot))
+            {
+                if (_selectedPilot == pilot)
+                {
+                    StartRun();
+                }
+                else
+                {
+                    _selectedPilot = pilot;
+                    _gamepadPilotIndex = pilotIndex;
+                    SaveMetaProgress();
+                    PlaySfx(360.0f + pilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
+                }
+            }
+            else
+            {
+                AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
+                PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
+            }
+            return;
+        }
+
+        if (focus == TitleMetaFocus)
+        {
+            _mode = GameMode.Meta;
+            PlaySfx(360.0f, 80.0f, 0.18f, 0.2f, 0.02f, 1);
+        }
+        else if (focus == TitleStartFocus)
+        {
+            StartRun();
+        }
+        else if (focus == TitleSettingsFocus)
+        {
+            OpenSettings(GameMode.Title);
+        }
+    }
+
+    private void MoveTitleFocus(int navX, int navY)
+    {
+        if (navY != 0)
+        {
+            _gamepadTitleIndex = MoveTitleFocusVertical(_gamepadTitleIndex, navY);
+        }
+        if (navX != 0)
+        {
+            _gamepadTitleIndex = MoveTitleFocusHorizontal(_gamepadTitleIndex, navX);
+        }
+    }
+
+    private static int MoveTitleFocusHorizontal(int focus, int direction)
+    {
+        if (IsTitleDifficultyFocus(focus))
+        {
+            int index = focus - TitleDifficultyFocusStart;
+            return TitleDifficultyFocusStart + WrapIndex(index + direction, DifficultyCount);
+        }
+
+        if (IsTitlePilotFocus(focus))
+        {
+            int pilot = focus - TitlePilotFocusStart;
+            int row = pilot / 4;
+            int column = WrapIndex(pilot % 4 + direction, 4);
+            return TitlePilotFocusStart + row * 4 + column;
+        }
+
+        if (IsTitleFooterFocus(focus))
+        {
+            int footer = focus - TitleFooterFocusStart;
+            return TitleFooterFocusStart + WrapIndex(footer + direction, 3);
+        }
+
+        return TitlePilotFocusStart;
+    }
+
+    private static int MoveTitleFocusVertical(int focus, int direction)
+    {
+        if (direction < 0)
+        {
+            if (IsTitleDifficultyFocus(focus))
+            {
+                return TitleStartFocus;
+            }
+            if (IsTitlePilotFocus(focus))
+            {
+                int pilot = focus - TitlePilotFocusStart;
+                int row = pilot / 4;
+                int column = pilot % 4;
+                return row == 0
+                    ? TitleDifficultyFocusStart + Math.Min(column, DifficultyCount - 1)
+                    : TitlePilotFocusStart + column;
+            }
+            if (IsTitleFooterFocus(focus))
+            {
+                int footer = focus - TitleFooterFocusStart;
+                int column = footer switch
+                {
+                    0 => 0,
+                    2 => 3,
+                    _ => 1,
+                };
+                return TitlePilotFocusStart + 4 + column;
+            }
+        }
+        else if (direction > 0)
+        {
+            if (IsTitleDifficultyFocus(focus))
+            {
+                int column = Math.Min(focus - TitleDifficultyFocusStart, 3);
+                return TitlePilotFocusStart + column;
+            }
+            if (IsTitlePilotFocus(focus))
+            {
+                int pilot = focus - TitlePilotFocusStart;
+                int row = pilot / 4;
+                int column = pilot % 4;
+                if (row == 0)
+                {
+                    return TitlePilotFocusStart + 4 + column;
+                }
+
+                return column switch
+                {
+                    0 => TitleMetaFocus,
+                    3 => TitleSettingsFocus,
+                    _ => TitleStartFocus,
+                };
+            }
+            if (IsTitleFooterFocus(focus))
+            {
+                int footer = focus - TitleFooterFocusStart;
+                return TitleDifficultyFocusStart + Math.Min(footer, DifficultyCount - 1);
+            }
+        }
+
+        return ClampTitleFocus(focus);
+    }
+
+    private static int ClampTitleFocus(int focus)
+    {
+        return Mathf.Clamp(focus, TitleDifficultyFocusStart, TitleSettingsFocus);
+    }
+
+    private static bool IsTitleDifficultyFocus(int focus)
+    {
+        return focus >= TitleDifficultyFocusStart && focus < TitlePilotFocusStart;
+    }
+
+    private static bool IsTitlePilotFocus(int focus)
+    {
+        return focus >= TitlePilotFocusStart && focus < TitleFooterFocusStart;
+    }
+
+    private static bool IsTitleFooterFocus(int focus)
+    {
+        return focus >= TitleFooterFocusStart && focus <= TitleSettingsFocus;
+    }
+
+    private static Rect2 TitleFocusRect(int focus)
+    {
+        focus = ClampTitleFocus(focus);
+        if (IsTitleDifficultyFocus(focus))
+        {
+            return DifficultyButtonRect(focus - TitleDifficultyFocusStart);
+        }
+        if (IsTitlePilotFocus(focus))
+        {
+            return PilotCardRect(focus - TitlePilotFocusStart);
+        }
+        return focus switch
+        {
+            TitleMetaFocus => MetaButtonRect(),
+            TitleSettingsFocus => TitleSettingsButtonRect(),
+            _ => StartButtonRect(),
+        };
     }
 
     private void UpdateSettings(float dt)
@@ -2976,7 +3512,7 @@ public partial class MainGame : Node2D
             _usingGamepad = false;
         }
 
-        if ((CancelHeld() && !_lastCancel) || (click && SettingsBackButtonRect().HasPoint(mouse)))
+        if ((CancelHeld() && !_lastCancel) || (PauseHeld() && !_lastPause) || (click && SettingsBackButtonRect().HasPoint(mouse)))
         {
             _deleteSaveConfirmTimer = 0.0f;
             CloseSettings();
@@ -3165,7 +3701,7 @@ public partial class MainGame : Node2D
             }
         }
 
-        if ((CancelHeld() && !_lastCancel) || (ConfirmHeld() && !_lastConfirm) || (click && GuideBackButtonRect().HasPoint(mouse)))
+        if ((CancelHeld() && !_lastCancel) || (PauseHeld() && !_lastPause) || (ConfirmHeld() && !_lastConfirm) || (click && GuideBackButtonRect().HasPoint(mouse)))
         {
             _mode = GameMode.Settings;
             PlaySfx(300.0f, -80.0f, 0.12f, 0.18f, 0.02f, 1);
@@ -4527,7 +5063,7 @@ public partial class MainGame : Node2D
             float distance = Mathf.Max(toPlayer.Length(), 1.0f);
             Vector2 dir = toPlayer / distance;
             Vector2 desired = Vector2.Zero;
-            float speed = _enemySlow;
+            float speed = _enemySlow * DifficultyEnemyMoveScale();
             bool dashLocked = enemy.DashWarmup > 0.0f || enemy.DashTime > 0.0f;
 
             if (!dashLocked)
@@ -4551,7 +5087,7 @@ public partial class MainGame : Node2D
                         }
                         break;
                     case EnemyKind.Turret:
-                        desired = distance < 430.0f ? -dir * 95.0f : dir * 58.0f;
+                        desired = (distance < 430.0f ? -dir * 95.0f : dir * 58.0f) * speed;
                         if (enemy.Cooldown <= 0.0f)
                         {
                             int petals = ScaledEnemyPatternCount(enemy.Kind, 7 + CurrentWaveInSector() / 2 + sector);
@@ -4573,7 +5109,7 @@ public partial class MainGame : Node2D
                         }
                         break;
                     case EnemyKind.Lance:
-                        desired = distance > 640.0f ? dir * 210.0f : -dir * 100.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.3f) * 145.0f;
+                        desired = (distance > 640.0f ? dir * 210.0f : -dir * 100.0f + dir.Orthogonal() * Mathf.Sin(enemy.Phase * 2.3f) * 145.0f) * speed;
                         if (enemy.Cooldown <= 0.0f)
                         {
                             FireEnemy(enemy, dir, 620.0f + threat * 20.0f, 1, 0.0f, 18.0f);
@@ -4605,7 +5141,7 @@ public partial class MainGame : Node2D
                         }
                         break;
                     case EnemyKind.Warden:
-                        desired = distance < 520.0f ? -dir * 72.0f : dir * 78.0f;
+                        desired = (distance < 520.0f ? -dir * 72.0f : dir * 78.0f) * speed;
                         if (enemy.Cooldown <= 0.0f)
                         {
                             FireEnemy(enemy, dir, 300.0f + threat * 10.0f, 5, 0.22f, 11.0f);
@@ -4626,7 +5162,7 @@ public partial class MainGame : Node2D
                         }
                         break;
                     case EnemyKind.Bulwark:
-                        desired = distance > 380.0f ? dir * 78.0f * speed : -dir * 28.0f;
+                        desired = (distance > 380.0f ? dir * 78.0f : -dir * 28.0f) * speed;
                         if (enemy.Cooldown <= 0.0f)
                         {
                             FireEnemy(enemy, dir, 245.0f + threat * 8.0f, enemy.Elite ? 5 : 3, 0.3f, 12.0f);
@@ -4675,7 +5211,7 @@ public partial class MainGame : Node2D
             }
             else if (enemy.DashTime > 0.0f)
             {
-                enemy.Vel = enemy.DashDir * EnemyDashSpeed(enemy) * _enemySlow;
+                enemy.Vel = enemy.DashDir * EnemyDashSpeed(enemy) * speed;
             }
             else if (EnemyIsCharging(enemy))
             {
@@ -4908,7 +5444,7 @@ public partial class MainGame : Node2D
         }
         else
         {
-            boss.Vel = boss.Vel.Lerp(desired * BossMoveResponsiveness(boss.BossArchetype), 1.0f - Mathf.Exp(-dt * BossMoveLerp(boss.BossArchetype)));
+            boss.Vel = boss.Vel.Lerp(desired * BossMoveResponsiveness(boss.BossArchetype) * DifficultyEnemyMoveScale(), 1.0f - Mathf.Exp(-dt * BossMoveLerp(boss.BossArchetype)));
         }
         boss.Pos += boss.Vel * dt;
         boss.Pos = ClampToArena(boss.Pos, boss.Radius);
@@ -5293,7 +5829,7 @@ public partial class MainGame : Node2D
             BossArchetype.Oracle => 1.04f,
             _ => 1.0f,
         };
-        return Mathf.Max(0.48f, baseCooldown * styleScale * (0.92f - (1.0f - hpRatio) * 0.22f));
+        return Mathf.Max(0.48f, baseCooldown * styleScale * (0.92f - (1.0f - hpRatio) * 0.22f) * DifficultyBossCooldownScale());
     }
 
     private void SpawnBossAdds(Enemy boss, int sector, int count, bool preferMines = false)
@@ -5390,7 +5926,7 @@ public partial class MainGame : Node2D
             shot.Prev = enemy.Pos;
             shot.Vel = dir * shotSpeed;
             shot.Radius = radius;
-            shot.Damage = enemy.Kind == EnemyKind.Boss ? 20.0f + CurrentSectorIndex() * 3.0f : 9.0f + ThreatLevel() * 0.65f;
+            shot.Damage = (enemy.Kind == EnemyKind.Boss ? 20.0f + CurrentSectorIndex() * 3.0f : 9.0f + ThreatLevel() * 0.65f) * DifficultyEnemyDamageScale();
             shot.Life = shotLife;
             shot.MaxLife = shotLife;
             shot.Polarity = -1;
@@ -5600,6 +6136,10 @@ public partial class MainGame : Node2D
         if (enemy.Kind == EnemyKind.Boss)
         {
             finalDamage *= BossDamageTakenScale(enemy, heavy, chainDepth, splitDepth);
+        }
+        else
+        {
+            finalDamage *= DifficultyEnemyDamageTakenScale(enemy);
         }
         enemy.Hp -= finalDamage;
         Vector2 knock = enemy.Pos - source;
@@ -6438,16 +6978,19 @@ public partial class MainGame : Node2D
 
         int polarity = (sector + _rng.RandiRange(0, 1)) % 2;
         Color color = sector >= 4 ? Rose : EnemyBulletColor().Lerp(CurrentSector().Accent, 0.2f);
+        float tempo = DifficultyHazardTempoScale();
+        float life = bossCast ? 1.6f : 1.35f;
+        float warmup = (bossCast ? 0.72f : 0.82f) / tempo;
         _hazards.Add(new HazardLine
         {
             A = a,
             B = b,
             Color = color,
-            Life = bossCast ? 1.6f : 1.35f,
-            MaxLife = bossCast ? 1.6f : 1.35f,
-            Warmup = bossCast ? 0.72f : 0.82f,
+            Life = life,
+            MaxLife = life,
+            Warmup = warmup,
             Width = bossCast ? 32.0f + sector * 5.0f : 24.0f + sector * 4.0f,
-            Damage = 18.0f + sector * 5.0f,
+            Damage = (18.0f + sector * 5.0f) * DifficultyHazardDamageScale(),
             Polarity = polarity,
         });
     }
@@ -6481,6 +7024,7 @@ public partial class MainGame : Node2D
         }
 
         chance += WavePressure01() * 0.08f;
+        chance += DifficultyIndex(_runDifficulty) * 0.04f;
 
         return _rng.Randf() < Mathf.Clamp(chance, 0.0f, 0.68f);
     }
@@ -6506,7 +7050,8 @@ public partial class MainGame : Node2D
         {
             interval -= 0.28f;
         }
-        return Mathf.Clamp(interval, 2.0f, 8.4f);
+        interval /= DifficultyHazardFrequencyScale();
+        return Mathf.Clamp(interval, 1.65f, 8.8f);
     }
 
     private void SpawnHazardField(int sector, bool bossCast)
@@ -6536,16 +7081,18 @@ public partial class MainGame : Node2D
         } + CurrentWaveInSector() * 1.8f + (bossCast ? 22.0f : 0.0f);
 
         Color color = sector >= 4 ? Rose.Lerp(Gold, 0.18f) : CurrentSector().Accent.Lerp(EnemyBulletColor(), 0.28f);
+        float tempo = DifficultyHazardTempoScale();
+        float life = bossCast ? 2.25f : 2.05f;
         _hazardFields.Add(new HazardField
         {
             Center = center,
             Color = color,
             Radius = radius,
-            Life = bossCast ? 2.25f : 2.05f,
-            MaxLife = bossCast ? 2.25f : 2.05f,
-            Warmup = bossCast ? 0.78f : 0.86f,
-            Damage = 13.0f + sector * 3.4f,
-            Pull = 235.0f + sector * 36.0f,
+            Life = life,
+            MaxLife = life,
+            Warmup = (bossCast ? 0.78f : 0.86f) / tempo,
+            Damage = (13.0f + sector * 3.4f) * DifficultyHazardDamageScale(),
+            Pull = (235.0f + sector * 36.0f) * DifficultyHazardTempoScale(),
         });
     }
 
@@ -6559,6 +7106,7 @@ public partial class MainGame : Node2D
         Vector2 dir = direction.LengthSquared() > 0.01f ? direction.Normalized() : Vector2.Right;
         Vector2 a = center - dir * 1180.0f;
         Vector2 b = center + dir * 1180.0f;
+        float tempo = DifficultyHazardTempoScale();
         _hazards.Add(new HazardLine
         {
             A = a,
@@ -6566,9 +7114,9 @@ public partial class MainGame : Node2D
             Color = color.Lerp(EnemyBulletColor(), 0.24f),
             Life = 1.55f,
             MaxLife = 1.55f,
-            Warmup = 0.76f,
+            Warmup = 0.76f / tempo,
             Width = width + sector * 4.0f,
-            Damage = 20.0f + sector * 5.0f,
+            Damage = (20.0f + sector * 5.0f) * DifficultyHazardDamageScale(),
             Polarity = -1,
         });
     }
@@ -9572,16 +10120,18 @@ public partial class MainGame : Node2D
     {
         float pulse = 0.55f + 0.45f * Mathf.Sin(_time * 3.2f);
         DrawTitleLogo(pulse);
-        DrawText(TitleStartPrompt(), new Vector2(0.0f, 596.0f), 28, Alpha(Gold, 0.34f + pulse * 0.24f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawTitleStartButton(StartButtonRect(), pulse);
 
         DrawText(Tf("meta.wallet", _starDust), new Vector2(56.0f, 70.0f), 18, Alpha(Gold, 0.62f), HorizontalAlignment.Left, 340.0f, false, 0);
         DrawText(Tf("meta.best", _bestWave, _bestScore, _runsCompleted), new Vector2(56.0f, 100.0f), 15, Alpha(Paper, 0.36f), HorizontalAlignment.Left, 760.0f, false, 0);
+        DrawDifficultySelector();
         DrawNextGoalPanel(TitleNextGoalRect(), true);
         DrawTitleLeaderboard();
         DrawPilotSelect();
 
         DrawTitleTextButton(MetaButtonRect(), T("menu.meta"), Gold);
         DrawTitleTextButton(TitleSettingsButtonRect(), T("menu.settings"), Alpha(Paper, 0.68f));
+        DrawGmUnlockButton();
 
         if (_wonOnce)
         {
@@ -9591,7 +10141,7 @@ public partial class MainGame : Node2D
 
     private void DrawTitleLogo(float pulse)
     {
-        Vector2 center = new(ScreenWidth * 0.5f, 236.0f);
+        Vector2 center = new(ScreenWidth * 0.5f, 188.0f);
         Color cyan = new Color(0.28f, 0.88f, 1.0f);
         Color amber = new Color(1.0f, 0.62f, 0.18f);
         Color logoWhite = Alpha(Paper, 0.72f + pulse * 0.08f);
@@ -9608,22 +10158,59 @@ public partial class MainGame : Node2D
             DrawArc(center, radius + 8.0f, spin + Mathf.Pi * 1.18f, spin + Mathf.Pi * 1.68f, 64, Alpha(Paper, 0.05f - i * 0.006f), UiHairline, true);
         }
 
-        DrawTitleFighterMark(center + new Vector2(0.0f, 94.0f), pulse, cyan, amber);
+        DrawTitleFighterMark(center + new Vector2(0.0f, 86.0f), pulse, cyan, amber);
 
         string title = TitleName().ToUpperInvariant();
         int titleSize = TitleFontSize();
-        Vector2 titlePos = new(0.0f, 218.0f);
+        Vector2 titlePos = new(0.0f, 200.0f);
         DrawText(title, titlePos + new Vector2(3.0f, 5.0f), titleSize, Alpha(cyan, 0.12f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         DrawText(title, titlePos + new Vector2(-3.0f, -2.0f), titleSize, Alpha(amber, 0.1f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         DrawText(title, titlePos, titleSize, logoWhite, HorizontalAlignment.Center, ScreenWidth, true, 5);
+    }
 
-        string loop = T("title.loop").ToUpperInvariant();
-        string fighter = T("title.fighter").ToUpperInvariant();
-        Vector2 labelCenter = center + new Vector2(0.0f, -106.0f);
-        DrawLine(labelCenter + new Vector2(-220.0f, 0.0f), labelCenter + new Vector2(-74.0f, 0.0f), Alpha(cyan, 0.38f), UiHairline, true);
-        DrawLine(labelCenter + new Vector2(74.0f, 0.0f), labelCenter + new Vector2(220.0f, 0.0f), Alpha(amber, 0.34f), UiHairline, true);
-        DrawText(loop, labelCenter + new Vector2(-230.0f, -10.0f), 15, Alpha(cyan, 0.64f), HorizontalAlignment.Right, 150.0f, true, 1);
-        DrawText(fighter, labelCenter + new Vector2(80.0f, -10.0f), 15, Alpha(amber, 0.62f), HorizontalAlignment.Left, 170.0f, true, 1);
+    private void DrawTitleStartButton(Rect2 rect, float pulse)
+    {
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
+        Color accent = hover ? Gold.Lerp(Paper, 0.22f) : Gold;
+        float glow = hover ? 0.048f : 0.026f + pulse * 0.008f;
+        Rect2 drawRect = hover ? rect.Grow(3.0f) : rect;
+
+        DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 86.0f, glow, 4);
+        DrawPanel(drawRect, Alpha(Ink, hover ? 0.7f : 0.48f), Alpha(accent, hover ? 0.82f : 0.42f));
+        DrawRect(drawRect.Grow(-5.0f), Alpha(accent, 0.05f + pulse * 0.025f), false, UiHairline, true);
+        DrawLine(drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 7.0f), drawRect.End - new Vector2(18.0f, 7.0f), Alpha(accent, 0.4f + pulse * 0.18f), UiHairline, true);
+        DrawText(T("menu.start"), drawRect.Position + new Vector2(0.0f, drawRect.Size.Y * 0.68f), 20, Alpha(Paper, hover ? 0.94f : 0.76f), HorizontalAlignment.Center, drawRect.Size.X, true, 2);
+    }
+
+    private void DrawDifficultySelector()
+    {
+        Vector2 mouse = GetGlobalMousePosition();
+        DrawText(T("difficulty.title"), new Vector2(0.0f, 384.0f), 13, Alpha(Paper, 0.38f), HorizontalAlignment.Center, ScreenWidth, true, 0);
+        for (int i = 0; i < DifficultyCount; i++)
+        {
+            GameDifficulty difficulty = DifficultyFromIndex(i);
+            Rect2 rect = DifficultyButtonRect(i);
+            bool unlocked = IsDifficultyUnlocked(difficulty);
+            bool selected = _selectedDifficulty == difficulty;
+            bool hover = rect.HasPoint(mouse) || IsGamepadFocused(rect);
+            Color accent = DifficultyAccent(difficulty);
+            Color line = Alpha(accent, unlocked ? selected ? 0.78f : hover ? 0.48f : 0.24f : 0.1f);
+            Color fill = Alpha(Ink, selected ? 0.58f : hover && unlocked ? 0.36f : 0.22f);
+
+            DrawPanel(rect, fill, line);
+            if (selected)
+            {
+                DrawLine(rect.Position + new Vector2(14.0f, rect.Size.Y - 5.0f), rect.End - new Vector2(14.0f, 5.0f), Alpha(accent, 0.58f), UiHairline, true);
+            }
+
+            string label = DifficultyName(difficulty);
+            Color textColor = unlocked ? Alpha(selected ? Paper : accent.Lerp(Paper, 0.34f), selected ? 0.86f : 0.66f) : Alpha(Steel, 0.48f);
+            DrawText(label, rect.Position + new Vector2(0.0f, 23.0f), 14, textColor, HorizontalAlignment.Center, rect.Size.X, true, 0);
+            if (!unlocked)
+            {
+                DrawText(T("ui.lock"), rect.Position + new Vector2(rect.Size.X - 52.0f, 21.0f), 10, Alpha(Rose, 0.54f), HorizontalAlignment.Center, 44.0f, false, 0);
+            }
+        }
     }
 
     private void DrawTitleFighterMark(Vector2 center, float pulse, Color cyan, Color amber)
@@ -9653,31 +10240,32 @@ public partial class MainGame : Node2D
     private void DrawTitleLeaderboard()
     {
         Rect2 panel = LeaderboardPanelRect();
-        Color accent = Gold;
-        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 260.0f, 0.028f, 5);
-        DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.34f));
-        DrawText(T("leader.title"), panel.Position + new Vector2(0.0f, 34.0f), 20, Alpha(Paper, 0.74f), HorizontalAlignment.Center, panel.Size.X, true, 2);
+        Color accent = DifficultyAccent(_selectedDifficulty);
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 210.0f, 0.018f, 4);
+        DrawPanel(panel, Alpha(Ink, 0.28f), Alpha(accent, 0.24f));
+        DrawText($"{T("leader.title")} · {DifficultyName(_selectedDifficulty)}", panel.Position + new Vector2(0.0f, 30.0f), 17, Alpha(Paper, 0.68f), HorizontalAlignment.Center, panel.Size.X, true, 1);
 
         var rows = LeaderboardRows();
         for (int i = 0; i < rows.Length; i++)
         {
             var rowData = rows[i];
-            Rect2 row = new(panel.Position + new Vector2(52.0f, 76.0f + i * 34.0f), new Vector2(panel.Size.X - 104.0f, 30.0f));
+            Rect2 row = new(panel.Position + new Vector2(52.0f, 56.0f + i * 23.0f), new Vector2(panel.Size.X - 104.0f, 22.0f));
             DrawLine(row.Position + new Vector2(0.0f, row.Size.Y - 1.0f), row.Position + new Vector2(row.Size.X, row.Size.Y - 1.0f), Alpha(Paper, 0.06f), UiHairline, true);
-            DrawText(rowData.Label, row.Position + new Vector2(0.0f, 21.0f), 15, Alpha(rowData.Accent, 0.74f), HorizontalAlignment.Left, 180.0f, true, 1);
-            DrawText(rowData.Value, row.Position + new Vector2(row.Size.X - 260.0f, 21.0f), 17, Alpha(rowData.Accent, 0.84f), HorizontalAlignment.Right, 260.0f, true, 1);
+            DrawText(rowData.Label, row.Position + new Vector2(0.0f, 17.0f), 13, Alpha(rowData.Accent, 0.68f), HorizontalAlignment.Left, 180.0f, true, 1);
+            DrawText(rowData.Value, row.Position + new Vector2(row.Size.X - 260.0f, 17.0f), 14, Alpha(rowData.Accent, 0.78f), HorizontalAlignment.Right, 260.0f, true, 1);
         }
     }
 
     private (string Label, string Value, Color Accent)[] LeaderboardRows()
     {
         (string Label, string Value, Color Accent)[] rows = new (string Label, string Value, Color Accent)[ClearRecordCount];
+        List<float> records = ClearTimeRecords(_selectedDifficulty);
         for (int i = 0; i < rows.Length; i++)
         {
-            bool hasRecord = i < _clearTimeRecords.Count;
+            bool hasRecord = i < records.Count;
             rows[i] = (
                 Tf("leader.rank", i + 1),
-                hasRecord ? FormatRecordTime(_clearTimeRecords[i]) : T("leader.no_record"),
+                hasRecord ? FormatRecordTime(records[i]) : T("leader.no_record"),
                 LeaderboardRankAccent(i, hasRecord)
             );
         }
@@ -9709,9 +10297,16 @@ public partial class MainGame : Node2D
             return T("goal.clear_40");
         }
 
-        if (_clearTimeRecords.Count > 0)
+        GameDifficulty? lockedDifficulty = NextLockedDifficulty();
+        if (lockedDifficulty.HasValue)
         {
-            return Tf("goal.beat_record", FormatRecordTime(_clearTimeRecords[0]));
+            return DifficultyUnlockText(lockedDifficulty.Value);
+        }
+
+        List<float> records = ClearTimeRecords(_selectedDifficulty);
+        if (records.Count > 0)
+        {
+            return Tf("goal.beat_record", FormatRecordTime(records[0]));
         }
 
         return T("goal.set_record");
@@ -9725,6 +10320,12 @@ public partial class MainGame : Node2D
             return PilotAccent(lockedPilot.Value);
         }
 
+        GameDifficulty? lockedDifficulty = NextLockedDifficulty();
+        if (lockedDifficulty.HasValue)
+        {
+            return DifficultyAccent(lockedDifficulty.Value);
+        }
+
         return _wonOnce ? Gold : Jade;
     }
 
@@ -9736,6 +10337,20 @@ public partial class MainGame : Node2D
             if (!IsPilotUnlocked(pilot))
             {
                 return pilot;
+            }
+        }
+
+        return null;
+    }
+
+    private GameDifficulty? NextLockedDifficulty()
+    {
+        for (int i = 0; i < DifficultyCount; i++)
+        {
+            GameDifficulty difficulty = DifficultyFromIndex(i);
+            if (!IsDifficultyUnlocked(difficulty))
+            {
+                return difficulty;
             }
         }
 
@@ -9785,7 +10400,7 @@ public partial class MainGame : Node2D
 
     private void DrawPilotSelect()
     {
-        DrawText(T("menu.pilot"), new Vector2(0.0f, 636.0f), 16, Alpha(Paper, 0.38f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(T("menu.pilot"), new Vector2(0.0f, 690.0f), 15, Alpha(Paper, 0.34f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         for (int i = 0; i < PilotCount(); i++)
         {
             DrawPilotCard(i, PilotFromIndex(i), PilotCardRect(i));
@@ -9803,7 +10418,7 @@ public partial class MainGame : Node2D
         DrawPilotGlyph(pilot, drawRect.Position + new Vector2(34.0f, 38.0f), accent, unlocked);
         DrawText(PilotName(pilot).ToUpperInvariant(), drawRect.Position + new Vector2(72.0f, 27.0f), 18, unlocked ? Paper : Alpha(Paper, 0.38f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, true, 2);
         DrawText(PilotWeapon(pilot), drawRect.Position + new Vector2(72.0f, 49.0f), 14, Alpha(accent, unlocked ? 0.88f : 0.42f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, false, 0);
-        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), drawRect.Position + new Vector2(18.0f, 68.0f), unlocked ? 12 : 11, Alpha(Paper, unlocked ? 0.62f : 0.48f), drawRect.Size.X - 36.0f, unlocked ? 15.0f : 13.0f);
+        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), drawRect.Position + new Vector2(18.0f, 65.0f), unlocked ? 11 : 10, Alpha(Paper, unlocked ? 0.58f : 0.46f), drawRect.Size.X - 36.0f, unlocked ? 13.0f : 12.0f);
         if (selected)
         {
             DrawLine(drawRect.Position + new Vector2(12.0f, drawRect.Size.Y - 10.0f), drawRect.End - new Vector2(12.0f, 10.0f), Alpha(accent, 0.9f), UiAccentStroke, true);
@@ -10229,6 +10844,15 @@ public partial class MainGame : Node2D
         Color textColor = hover ? accent.Lerp(Paper, 0.28f) : Alpha(accent, 0.68f);
         DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(0.0f, 28.0f), 18, textColor, HorizontalAlignment.Center, rect.Size.X, false, 0);
         DrawLine(rect.Position + new Vector2(rect.Size.X * 0.22f, rect.Size.Y - 5.0f), rect.Position + new Vector2(rect.Size.X * 0.78f, rect.Size.Y - 5.0f), Alpha(accent, hover ? 0.58f : 0.24f), UiHairline, true);
+    }
+
+    private void DrawGmUnlockButton()
+    {
+        Rect2 rect = GmUnlockButtonRect();
+        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        Color accent = hover ? Rose.Lerp(Paper, 0.18f) : Alpha(Rose, 0.58f);
+        DrawPanel(rect, Alpha(Ink, hover ? 0.62f : 0.34f), Alpha(accent, hover ? 0.72f : 0.34f));
+        DrawText(T("gm.unlock.label"), rect.Position + new Vector2(0.0f, 23.0f), 14, Alpha(Paper, hover ? 0.86f : 0.58f), HorizontalAlignment.Center, rect.Size.X, true, 1);
     }
 
     private void UpdateHudBarEasing(float dt)
@@ -11018,7 +11642,7 @@ public partial class MainGame : Node2D
         }
 
         TextCue cue = _centerTextQueue.Dequeue();
-        AddTextNow(cue.Text, cue.Pos, cue.Color, cue.Size, true);
+        AddTextNow(cue.Text, cue.Pos, cue.Color, cue.Size, false);
         _centerTextQueueTimer = _centerTextQueue.Count > 0 ? 0.34f : 0.0f;
     }
 
@@ -11097,34 +11721,44 @@ public partial class MainGame : Node2D
 
     private static Rect2 StartButtonRect()
     {
-        return new Rect2(new Vector2(760.0f, 560.0f), new Vector2(400.0f, 78.0f));
+        return new Rect2(new Vector2(820.0f, 946.0f), new Vector2(280.0f, 42.0f));
     }
 
     private static Rect2 MetaButtonRect()
     {
-        return new Rect2(new Vector2(690.0f, 948.0f), new Vector2(260.0f, 42.0f));
+        return new Rect2(new Vector2(520.0f, 956.0f), new Vector2(260.0f, 38.0f));
     }
 
     private static Rect2 TitleSettingsButtonRect()
     {
-        return new Rect2(new Vector2(970.0f, 948.0f), new Vector2(260.0f, 42.0f));
+        return new Rect2(new Vector2(1140.0f, 956.0f), new Vector2(260.0f, 38.0f));
+    }
+
+    private static Rect2 GmUnlockButtonRect()
+    {
+        return new Rect2(new Vector2(1810.0f, 46.0f), new Vector2(58.0f, 28.0f));
     }
 
     private static Rect2 LeaderboardPanelRect()
     {
-        return new Rect2(new Vector2(650.0f, 304.0f), new Vector2(620.0f, 258.0f));
+        return new Rect2(new Vector2(650.0f, 500.0f), new Vector2(620.0f, 176.0f));
+    }
+
+    private static Rect2 DifficultyButtonRect(int index)
+    {
+        return new Rect2(new Vector2(650.0f + index * 210.0f, 398.0f), new Vector2(200.0f, 32.0f));
     }
 
     private static Rect2 TitleNextGoalRect()
     {
-        return new Rect2(new Vector2(600.0f, 246.0f), new Vector2(720.0f, 44.0f));
+        return new Rect2(new Vector2(650.0f, 442.0f), new Vector2(620.0f, 44.0f));
     }
 
     private static Rect2 PilotCardRect(int index)
     {
         int col = index % 4;
         int row = index / 4;
-        return new Rect2(new Vector2(230.0f + col * 365.0f, 654.0f + row * 124.0f), new Vector2(330.0f, 112.0f));
+        return new Rect2(new Vector2(230.0f + col * 365.0f, 710.0f + row * 108.0f), new Vector2(330.0f, 96.0f));
     }
 
     private static int PilotCount()
@@ -11179,6 +11813,23 @@ public partial class MainGame : Node2D
     private bool IsPilotUnlocked(PilotKind pilot)
     {
         return pilot == PilotKind.Astra || PilotUnlockProgress(pilot) >= 1.0f;
+    }
+
+    private void UnlockAllForTesting()
+    {
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            _pilotRuns[pilot] = Math.Max(PilotRunCount(pilot), 1);
+        }
+        for (int i = 0; i < DifficultyCount; i++)
+        {
+            _difficultyTestUnlocks[i] = true;
+        }
+
+        SaveMetaProgress();
+        AddText(T("gm.unlock.toast"), ScreenCenter + new Vector2(0.0f, 230.0f), Jade, 22.0f);
+        PlaySfx(560.0f, 90.0f, 0.18f, 0.18f, 0.02f, 1);
     }
 
     private float PilotUnlockProgress(PilotKind pilot)
@@ -12082,7 +12733,8 @@ public partial class MainGame : Node2D
             cap += 120.0f;
         }
 
-        return Mathf.Min(baseSpeed * scale, cap);
+        float difficultyScale = DifficultyEnemyBulletSpeedScale();
+        return Mathf.Min(baseSpeed * scale * difficultyScale, cap * difficultyScale);
     }
 
     private float EnemyBulletLife()
