@@ -19,8 +19,8 @@ public partial class MainGame : Node2D
     private const float PlayerBulletRadius = 7.0f;
     private const float SampleRate = 44100.0f;
     private const int MaxSfxVoices = 16;
-    private const float SfxGlobalGain = 0.56f;
-    private const float SfxNoiseScale = 0.35f;
+    private const float SfxGlobalGain = 0.48f;
+    private const float SfxNoiseScale = 0.18f;
     private const int MaxEnemies = 96;
     private const int MaxShots = 480;
     private const int MaxPickups = 260;
@@ -13620,7 +13620,7 @@ public partial class MainGame : Node2D
         _musicPlayer = new AudioStreamPlayer
         {
             Stream = generator,
-            VolumeDb = -14.0f,
+            VolumeDb = -15.0f,
         };
         AddChild(_musicPlayer);
         _musicPlayer.Play();
@@ -13638,7 +13638,7 @@ public partial class MainGame : Node2D
         for (int i = 0; i < frames; i++)
         {
             float sample = MusicSample() * _musicVolume + SfxSample() * _sfxVolume;
-            sample = Mathf.Clamp(sample, -0.62f, 0.62f);
+            sample = SoftClip(sample, 0.52f);
             _musicPlayback.PushFrame(new Vector2(sample, sample));
             _musicClock += 1.0f / SampleRate;
         }
@@ -13658,10 +13658,10 @@ public partial class MainGame : Node2D
         float beatFraction = beat - MathF.Floor(beat);
         float phrase = 0.55f + 0.45f * MathF.Sin(beat * Mathf.Tau * 0.125f);
         float gate = beatFraction < 0.68f ? 1.0f : Mathf.Clamp(1.0f - (beatFraction - 0.68f) / 0.32f, 0.0f, 1.0f);
-        float bass = ChipTriangle(bassNote * _musicClock) * 0.04f;
-        float melody = ChipSquare(melodyNote * _musicClock, 0.36f) * 0.026f * gate * phrase;
-        float harmony = ChipSquare(harmonyNote * _musicClock, 0.24f) * 0.012f * gate * (1.0f - phrase * 0.25f);
-        float modeGain = _mode == GameMode.Title ? 0.48f : _mode == GameMode.GameOver ? 0.42f : 0.72f;
+        float bass = ChipTriangle(bassNote * _musicClock) * 0.038f;
+        float melody = SoftChipPulse(melodyNote * _musicClock, 0.36f) * 0.021f * gate * phrase;
+        float harmony = ChipTriangle(harmonyNote * _musicClock) * 0.009f * gate * (1.0f - phrase * 0.25f);
+        float modeGain = _mode == GameMode.Title ? 0.46f : _mode == GameMode.GameOver ? 0.4f : 0.66f;
         return (bass + melody + harmony) * modeGain;
     }
 
@@ -13679,20 +13679,21 @@ public partial class MainGame : Node2D
             }
 
             float t = voice.Age / voice.Life;
-            float attack = Mathf.Clamp(t / 0.08f, 0.0f, 1.0f);
-            float decay = (1.0f - t) * (1.0f - t * 0.25f);
+            float attack = Mathf.Clamp(t / 0.12f, 0.0f, 1.0f);
+            float decay = 1.0f - t;
+            decay *= decay;
             float env = attack * decay;
             float freq = MathF.Max(20.0f, voice.Frequency + voice.Sweep * t);
             float wave = voice.Wave switch
             {
-                0 => MathF.Sin(Mathf.Tau * freq * voice.Age) * 0.72f,
-                1 => ChipSquare(freq * voice.Age, 0.5f) * 0.58f,
-                _ => ChipSaw(freq * voice.Age) * 0.52f,
+                0 => MathF.Sin(Mathf.Tau * freq * voice.Age) * 0.58f,
+                1 => SoftChipPulse(freq * voice.Age, 0.46f) * 0.46f + ChipTriangle(freq * 0.5f * voice.Age) * 0.12f,
+                _ => ChipTriangle(freq * voice.Age) * 0.42f,
             };
             float noise = (_rng.Randf() * 2.0f - 1.0f) * voice.Noise;
-            output += (wave * (1.0f - voice.Noise) + noise) * env * voice.Volume * 0.82f;
+            output += (wave * (1.0f - voice.Noise) + noise) * env * voice.Volume * 0.72f;
         }
-        return Mathf.Clamp(output, -0.45f, 0.45f);
+        return SoftClip(output, 0.34f);
     }
 
     private void PlaySfx(float frequency, float sweep, float life, float volume, float noise, int wave)
@@ -13704,19 +13705,20 @@ public partial class MainGame : Node2D
 
         _voices.Add(new SfxVoice
         {
-            Frequency = Mathf.Clamp(frequency, 44.0f, 1200.0f),
-            Sweep = Mathf.Clamp(sweep * 0.55f, -260.0f, 260.0f),
-            Life = Mathf.Clamp(life * 0.72f, 0.045f, 0.85f),
-            Volume = Mathf.Clamp(volume * SfxGlobalGain, 0.0f, 0.25f),
-            Noise = Mathf.Clamp(noise * SfxNoiseScale, 0.0f, 0.1f),
+            Frequency = Mathf.Clamp(frequency * 0.9f, 42.0f, 860.0f),
+            Sweep = Mathf.Clamp(sweep * 0.36f, -170.0f, 170.0f),
+            Life = Mathf.Clamp(life * 0.68f, 0.05f, 0.68f),
+            Volume = Mathf.Clamp(volume * SfxGlobalGain, 0.0f, 0.2f),
+            Noise = Mathf.Clamp(noise * SfxNoiseScale, 0.0f, 0.05f),
             Wave = wave,
         });
     }
 
-    private static float ChipSquare(float phase, float duty)
+    private static float SoftChipPulse(float phase, float duty)
     {
         phase -= MathF.Floor(phase);
-        return phase < duty ? 1.0f : -1.0f;
+        float edge = phase < duty ? 1.0f : -1.0f;
+        return MathF.Tanh(edge * 1.35f + MathF.Sin(phase * Mathf.Tau) * 0.35f) * 0.72f;
     }
 
     private static float ChipTriangle(float phase)
@@ -13725,9 +13727,8 @@ public partial class MainGame : Node2D
         return 1.0f - 4.0f * MathF.Abs(phase - 0.5f);
     }
 
-    private static float ChipSaw(float phase)
+    private static float SoftClip(float value, float limit)
     {
-        phase -= MathF.Floor(phase);
-        return phase * 2.0f - 1.0f;
+        return MathF.Tanh(value / limit) * limit;
     }
 }
