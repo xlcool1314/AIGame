@@ -18,6 +18,9 @@ public partial class MainGame : Node2D
     private const float EnemyBulletRadius = 8.0f;
     private const float PlayerBulletRadius = 7.0f;
     private const float SampleRate = 44100.0f;
+    private const int MaxSfxVoices = 16;
+    private const float SfxGlobalGain = 0.56f;
+    private const float SfxNoiseScale = 0.35f;
     private const int MaxEnemies = 96;
     private const int MaxShots = 480;
     private const int MaxPickups = 260;
@@ -803,8 +806,8 @@ public partial class MainGame : Node2D
     private VisualQuality _visualQuality = VisualQuality.High;
     private GameDifficulty _selectedDifficulty = GameDifficulty.Cruise;
     private GameDifficulty _runDifficulty = GameDifficulty.Cruise;
-    private float _musicVolume = 0.72f;
-    private float _sfxVolume = 0.78f;
+    private float _musicVolume = 0.52f;
+    private float _sfxVolume = 0.56f;
     private Font? _uiFont;
     private bool _usingGamepad;
     private Rect2 _gamepadFocusRect;
@@ -13617,7 +13620,7 @@ public partial class MainGame : Node2D
         _musicPlayer = new AudioStreamPlayer
         {
             Stream = generator,
-            VolumeDb = -11.0f,
+            VolumeDb = -14.0f,
         };
         AddChild(_musicPlayer);
         _musicPlayer.Play();
@@ -13635,7 +13638,7 @@ public partial class MainGame : Node2D
         for (int i = 0; i < frames; i++)
         {
             float sample = MusicSample() * _musicVolume + SfxSample() * _sfxVolume;
-            sample = Mathf.Clamp(sample, -0.85f, 0.85f);
+            sample = Mathf.Clamp(sample, -0.62f, 0.62f);
             _musicPlayback.PushFrame(new Vector2(sample, sample));
             _musicClock += 1.0f / SampleRate;
         }
@@ -13644,14 +13647,22 @@ public partial class MainGame : Node2D
     private float MusicSample()
     {
         int[] scale = { 0, 3, 5, 7, 10, 12, 15, 17 };
-        float beat = _musicClock * (110.0f / 60.0f);
-        int step = (int)MathF.Floor(beat * 2.0f) % scale.Length;
+        float tempo = _mode == GameMode.Title ? 82.0f : 96.0f;
+        float beat = _musicClock * (tempo / 60.0f);
+        int step = (int)MathF.Floor(beat * 2.0f) & 7;
+        int arpeggio = (int)MathF.Floor(beat * 4.0f) & 3;
         float root = _mode == GameMode.GameOver ? 48.999f : _mode == GameMode.Victory ? 73.416f : 55.0f;
-        float note = root * MathF.Pow(2.0f, scale[step] / 12.0f);
-        float bass = MathF.Sin(Mathf.Tau * note * _musicClock) * 0.08f;
-        float pad = MathF.Sin(Mathf.Tau * note * 0.5f * _musicClock + MathF.Sin(_musicClock * 0.7f) * 0.8f) * 0.05f;
-        float shimmer = MathF.Sin(Mathf.Tau * note * 2.0f * _musicClock) * 0.018f * (0.5f + 0.5f * MathF.Sin(beat * Mathf.Tau));
-        return (bass + pad + shimmer) * (_mode == GameMode.Title ? 0.6f : 1.0f);
+        float melodyNote = root * MathF.Pow(2.0f, (scale[(step + arpeggio) & 7] + 12) / 12.0f);
+        float harmonyNote = root * MathF.Pow(2.0f, (scale[(step + 2) & 7] + 7) / 12.0f);
+        float bassNote = root * MathF.Pow(2.0f, (scale[step] - 12) / 12.0f);
+        float beatFraction = beat - MathF.Floor(beat);
+        float phrase = 0.55f + 0.45f * MathF.Sin(beat * Mathf.Tau * 0.125f);
+        float gate = beatFraction < 0.68f ? 1.0f : Mathf.Clamp(1.0f - (beatFraction - 0.68f) / 0.32f, 0.0f, 1.0f);
+        float bass = ChipTriangle(bassNote * _musicClock) * 0.04f;
+        float melody = ChipSquare(melodyNote * _musicClock, 0.36f) * 0.026f * gate * phrase;
+        float harmony = ChipSquare(harmonyNote * _musicClock, 0.24f) * 0.012f * gate * (1.0f - phrase * 0.25f);
+        float modeGain = _mode == GameMode.Title ? 0.48f : _mode == GameMode.GameOver ? 0.42f : 0.72f;
+        return (bass + melody + harmony) * modeGain;
     }
 
     private float SfxSample()
@@ -13668,35 +13679,55 @@ public partial class MainGame : Node2D
             }
 
             float t = voice.Age / voice.Life;
-            float env = MathF.Sin(MathF.PI * t) * (1.0f - t * 0.45f);
+            float attack = Mathf.Clamp(t / 0.08f, 0.0f, 1.0f);
+            float decay = (1.0f - t) * (1.0f - t * 0.25f);
+            float env = attack * decay;
             float freq = MathF.Max(20.0f, voice.Frequency + voice.Sweep * t);
             float wave = voice.Wave switch
             {
-                0 => MathF.Sin(Mathf.Tau * freq * voice.Age),
-                1 => MathF.Sin(Mathf.Tau * freq * voice.Age) > 0.0f ? 1.0f : -1.0f,
-                _ => 2.0f * (voice.Age * freq - MathF.Floor(0.5f + voice.Age * freq)),
+                0 => MathF.Sin(Mathf.Tau * freq * voice.Age) * 0.72f,
+                1 => ChipSquare(freq * voice.Age, 0.5f) * 0.58f,
+                _ => ChipSaw(freq * voice.Age) * 0.52f,
             };
             float noise = (_rng.Randf() * 2.0f - 1.0f) * voice.Noise;
-            output += (wave * (1.0f - voice.Noise) + noise) * env * voice.Volume;
+            output += (wave * (1.0f - voice.Noise) + noise) * env * voice.Volume * 0.82f;
         }
-        return output;
+        return Mathf.Clamp(output, -0.45f, 0.45f);
     }
 
     private void PlaySfx(float frequency, float sweep, float life, float volume, float noise, int wave)
     {
-        if (_voices.Count > 24)
+        if (_voices.Count >= MaxSfxVoices)
         {
             _voices.RemoveAt(0);
         }
 
         _voices.Add(new SfxVoice
         {
-            Frequency = frequency,
-            Sweep = sweep,
-            Life = life,
-            Volume = volume,
-            Noise = noise,
+            Frequency = Mathf.Clamp(frequency, 44.0f, 1200.0f),
+            Sweep = Mathf.Clamp(sweep * 0.55f, -260.0f, 260.0f),
+            Life = Mathf.Clamp(life * 0.72f, 0.045f, 0.85f),
+            Volume = Mathf.Clamp(volume * SfxGlobalGain, 0.0f, 0.25f),
+            Noise = Mathf.Clamp(noise * SfxNoiseScale, 0.0f, 0.1f),
             Wave = wave,
         });
+    }
+
+    private static float ChipSquare(float phase, float duty)
+    {
+        phase -= MathF.Floor(phase);
+        return phase < duty ? 1.0f : -1.0f;
+    }
+
+    private static float ChipTriangle(float phase)
+    {
+        phase -= MathF.Floor(phase);
+        return 1.0f - 4.0f * MathF.Abs(phase - 0.5f);
+    }
+
+    private static float ChipSaw(float phase)
+    {
+        phase -= MathF.Floor(phase);
+        return phase * 2.0f - 1.0f;
     }
 }
