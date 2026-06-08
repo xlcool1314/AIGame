@@ -121,8 +121,8 @@ public partial class MainGame : Node2D
     private static readonly Color EnemyFireRed = new(1.0f, 0.08f, 0.05f);
     private static readonly string[] UpgradeHighlightTerms =
     {
-        "CAPSTONE",
-        "Capstone",
+        "MAX RANK",
+        "Max Rank",
         "Star Dust",
         "EXP",
         "Boss guard",
@@ -316,7 +316,7 @@ public partial class MainGame : Node2D
         "ricochet",
         "stase",
         "singularité",
-        "奥義化",
+        "最大",
         "Boss",
         "赤弾",
         "敵弾",
@@ -508,27 +508,27 @@ public partial class MainGame : Node2D
         ["choice.instant"] = new("Instant", "立即生效"),
         ["choice.tactic"] = new("Tactic", "战术"),
         ["choice.risk"] = new("Risk", "风险"),
-        ["choice.contract"] = new("Contract", "契约"),
+        ["choice.contract"] = new("Challenge", "挑战"),
         ["choice.meta"] = new("Map", "路线"),
-        ["choice.capstone"] = new("Capstone", "质变"),
-        ["capstone.chain"] = new("CAPSTONE: relays become steadier, jump farther, and finish with a shard burst.", "质变：连锁更稳定、跳得更远，最后一跳会爆出碎片。"),
-        ["capstone.fractal"] = new("CAPSTONE: split shards can reliably create a second controlled split.", "质变：分裂碎片更容易触发受控二次分裂。"),
-        ["capstone.astra.refraction"] = new("CAPSTONE: prism volleys open permanent side lanes.", "质变：棱镜连射会展开额外侧向弹道。"),
-        ["capstone.astra.wake"] = new("CAPSTONE: Focus Prism becomes a true burst window with stronger echo fire.", "质变：棱镜聚焦变成真正的爆发窗口，并强化回响火力。"),
-        ["capstone.astra.nova"] = new("CAPSTONE: Prism Nova detonates a second star ring.", "质变：棱镜星爆会追加第二圈星环。"),
-        ["capstone.astra.twin"] = new("CAPSTONE: Focus Prism fires a cross refraction through the arena.", "质变：棱镜聚焦会打出贯穿战场的十字折射。"),
-        ["capstone.vesper.charge"] = new("CAPSTONE: the main rail leaves a delayed afterimage lance.", "质变：主轨道炮会留下延迟余像枪线。"),
-        ["capstone.vesper.fork"] = new("CAPSTONE: rail side lanes become a stable triangular firing pattern.", "质变：副轨道变成稳定的三角枪线。"),
-        ["capstone.vesper.judgment"] = new("CAPSTONE: Judgment pierces Boss guard and widens the kill lane.", "质变：轨道裁决会穿透 Boss 护盾并拓宽终结线。"),
-        ["capstone.vesper.sever"] = new("CAPSTONE: ultimate beams create crossing sever lines.", "质变：大招光束会追加交叉裂轨。"),
-        ["capstone.kairo.bay"] = new("CAPSTONE: drones become guardian nodes that clear bullets around themselves.", "质变：无人机会变成护卫节点，自动清理周围红弹。"),
-        ["capstone.kairo.sync"] = new("CAPSTONE: swarm shots synchronize into an extra lock-on stream.", "质变：蜂群射击会同步出额外锁定弹流。"),
-        ["capstone.kairo.override"] = new("CAPSTONE: Swarm Override tags every visible enemy once.", "质变：蜂群覆写会对所有可见敌人执行一次标记打击。"),
-        ["capstone.kairo.relay"] = new("CAPSTONE: relay commands refund more energy and push chain builds online.", "质变：中继指令回复更多能量，并让连锁流完全成型。"),
-        ["capstone.sol.bloom"] = new("CAPSTONE: corona scatter becomes a near-full halo.", "质变：日冕散射会接近完整光环。"),
-        ["capstone.sol.forge"] = new("CAPSTONE: ultimate ignites enemies and refills a chunk of energy.", "质变：大招会点燃敌人，并返还一段能量。"),
-        ["capstone.sol.flare"] = new("CAPSTONE: corona skills chain flare pulses through nearby enemies.", "质变：日冕技能会在附近敌人间连锁耀斑。"),
-        ["capstone.sol.mantle"] = new("CAPSTONE: corona field grants a brief radiant shield.", "质变：日冕场会提供短暂光冕护盾。"),
+        ["choice.capstone"] = new("Max Rank", "满级"),
+        ["capstone.chain"] = new("MAX RANK: chain jumps farther and ends with a shard burst.", "满级：连锁跳得更远，最后爆出碎片。"),
+        ["capstone.fractal"] = new("MAX RANK: split shots create a second split.", "满级：分裂弹会再分裂一次。"),
+        ["capstone.astra.refraction"] = new("MAX RANK: Astra gains permanent side shots.", "满级：星棱获得常驻侧向子弹。"),
+        ["capstone.astra.wake"] = new("MAX RANK: Astra skill fires stronger echo shots.", "满级：星棱技能追加更强的回声弹。"),
+        ["capstone.astra.nova"] = new("MAX RANK: Astra skill reaches farther and ultimate costs less.", "满级：星棱技能范围更远，大招耗能更低。"),
+        ["capstone.astra.twin"] = new("MAX RANK: Astra skill fires a cross beam.", "满级：星棱技能会打出十字光束。"),
+        ["capstone.vesper.charge"] = new("MAX RANK: Vesper shots leave a delayed spear.", "满级：暮轨射击留下延迟星矛。"),
+        ["capstone.vesper.fork"] = new("MAX RANK: side beams form a steady triangle.", "满级：侧向光束形成稳定三角火力。"),
+        ["capstone.vesper.judgment"] = new("MAX RANK: Vesper skill pierces Boss guard and becomes wider.", "满级：暮轨技能穿透 Boss 护盾，并且范围更宽。"),
+        ["capstone.vesper.sever"] = new("MAX RANK: side beams cross into a wider pattern.", "满级：侧向光束交叉，覆盖更宽。"),
+        ["capstone.kairo.bay"] = new("MAX RANK: drones clear bullets around themselves.", "满级：无人机会清除自身周围红弹。"),
+        ["capstone.kairo.sync"] = new("MAX RANK: drone shots gain an extra lock-on stream.", "满级：无人机追加一组锁定弹流。"),
+        ["capstone.kairo.override"] = new("MAX RANK: skill refunds energy and drone damage increases.", "满级：技能返还能量，无人机伤害提高。"),
+        ["capstone.kairo.relay"] = new("MAX RANK: skill refunds more energy and chain shots improve.", "满级：技能返还更多能量，连锁射击更强。"),
+        ["capstone.sol.bloom"] = new("MAX RANK: spread shots cover almost all directions.", "满级：散射弹几乎覆盖全方向。"),
+        ["capstone.sol.forge"] = new("MAX RANK: max energy increases and energy refills.", "满级：能量上限提高，并回复大量能量。"),
+        ["capstone.sol.flare"] = new("MAX RANK: skill pulses jump through nearby enemies.", "满级：技能脉冲会在附近敌人之间连锁。"),
+        ["capstone.sol.mantle"] = new("MAX RANK: skill gives a short shield.", "满级：使用技能会获得短暂护盾。"),
         ["end.victory.title"] = new("CORE FRACTURED", "核心已碎裂"),
         ["end.defeat.title"] = new("SIGNAL LOST", "信号丢失"),
         ["end.wave"] = new("REACHED WAVE {0}/{1}", "抵达波次 {0}/{1}"),
@@ -539,8 +539,8 @@ public partial class MainGame : Node2D
         ["end.objective_bonus"] = new("GOAL BONUS +{0}", "目标奖励 +{0}"),
         ["end.score_bonus"] = new("CACHE DUST +{0}", "缓存星尘 +{0}"),
         ["end.meta_hint"] = new("B/Esc returns to title. Y opens Permanent Upgrades.", "B/Esc 返回主界面。Y 打开永久升级。"),
-        ["objective.complete"] = new("GOAL COMPLETE +{0} DUST", "目标完成 +{0} 星尘"),
-        ["objective.clean_wave"] = new("CLEAN WAVE +ENERGY", "无伤清波 +能量"),
+        ["objective.complete"] = new("GOAL DONE +{0} DUST", "目标完成 +{0} 星尘"),
+        ["objective.clean_wave"] = new("NO DAMAGE WAVE +ENERGY", "无伤通过本波 +能量"),
         ["meta.title"] = new("STAR VAULT", "星尘工坊"),
         ["meta.subtitle"] = new("Permanent upgrades are a long route across many expeditions.", "永久升级需要多次远征逐步推进。"),
         ["meta.dust"] = new("Star Dust", "星尘"),
@@ -569,7 +569,7 @@ public partial class MainGame : Node2D
         ["ultimate.kairo"] = new("SWARM OVERRIDE", "蜂群覆写"),
         ["ultimate.sol"] = new("CORONA FLARE", "日冕耀斑"),
         ["guide.title"] = new("GAME GUIDE", "游戏说明"),
-        ["guide.subtitle"] = new("Core rules are collected here so the battle HUD can stay clean.", "核心规则集中放在这里，战斗界面保持清爽。"),
+        ["guide.subtitle"] = new("Controls, EXP, combo, upgrades, and progress rules are listed here.", "这里列出操作、经验、连击、升级和进程规则。"),
         ["meta.hull.title"] = new("Hull Plating", "船体加固"),
         ["meta.hull.body"] = new("Start every run with more maximum hull.", "每级提高开局最大生命。"),
         ["meta.energy.title"] = new("Reactor Seed", "能量核心"),
@@ -596,51 +596,51 @@ public partial class MainGame : Node2D
         ["meta.survey.body"] = new("Earn a modest Star Dust bonus and read the opening waves more safely.", "略微提高星尘收益，并让开局节奏更稳。"),
         ["rank"] = new("Rank {0}", "等级 {0}"),
         ["upgrade.prism.title"] = new("Prism Array", "多重射击"),
-        ["upgrade.prism.body"] = new("Adds another parallel beam. Weapon builds gain a wider base.", "多发一颗子弹。弹幕流派更容易成型。"),
+        ["upgrade.prism.body"] = new("Each shot fires one extra bullet.", "每次射击多一发子弹。"),
         ["upgrade.rail.title"] = new("Rail Heart", "强力核心"),
-        ["upgrade.rail.body"] = new("Raises weapon damage and trims charge delay. Simple, brutal, beautiful.", "提高子弹伤害，并略微提高射速。"),
+        ["upgrade.rail.body"] = new("Weapon damage increases and fire rate improves slightly.", "提高武器伤害，并略微提高射速。"),
         ["upgrade.coolant.title"] = new("Coolant Lattice", "冷却装置"),
-        ["upgrade.coolant.body"] = new("Faster fire cycle and a larger energy vessel for nova turns.", "射击更快，能量上限更高。"),
+        ["upgrade.coolant.body"] = new("Fire faster and gain more max energy.", "射击更快，能量上限更高。"),
         ["upgrade.kinetic.title"] = new("Kinetic Bloom", "机动强化"),
-        ["upgrade.kinetic.body"] = new("Dash harder, drift faster, and carve bullets out of the air.", "移动和冲刺更快。"),
+        ["upgrade.kinetic.body"] = new("Move faster and dash farther.", "移动更快，冲刺更远。"),
         ["upgrade.gravity.title"] = new("Gravity Well", "拾取范围"),
-        ["upgrade.gravity.body"] = new("Pull pickups from farther away and thicken enemy time.", "拾取物吸得更远，敌人略微变慢。"),
+        ["upgrade.gravity.body"] = new("Pickups fly to you from farther away. Enemies slow slightly.", "拾取范围更远，敌人略微变慢。"),
         ["upgrade.vital.title"] = new("Vital Shell", "生命护盾"),
-        ["upgrade.vital.body"] = new("Increases hull integrity and repairs a large chunk immediately.", "提高最大生命，并立即回复生命。"),
+        ["upgrade.vital.body"] = new("Increase max hull and heal now.", "提高生命上限，并立即回血。"),
         ["upgrade.leech.title"] = new("Repair Seed", "修复掉落"),
-        ["upgrade.leech.body"] = new("Kills can seed repairs. Survival builds become easier to sustain.", "击败敌人有更高概率掉落修复，生存流更稳定。"),
+        ["upgrade.leech.body"] = new("Kills can drop repair pickups.", "击杀有概率掉落修复。"),
         ["upgrade.wisp.title"] = new("Moon Wisp", "自动浮游炮"),
-        ["upgrade.wisp.body"] = new("Adds an orbiting shard that searches nearby targets and fires.", "增加一个自动攻击附近敌人的环绕碎片。"),
+        ["upgrade.wisp.body"] = new("Add an orbiting drone that auto-fires at nearby enemies.", "增加一个环绕无人机，自动攻击附近敌人。"),
         ["upgrade.rift.title"] = new("Rift Needle", "穿透弹"),
-        ["upgrade.rift.body"] = new("Shots become thin piercing lances with more velocity and bite.", "子弹变成速度更快的穿透弹。"),
+        ["upgrade.rift.body"] = new("Shots become faster piercing bullets.", "子弹变成更快的穿透弹。"),
         ["upgrade.mirror.title"] = new("Mirror Skin", "减伤装甲"),
-        ["upgrade.mirror.body"] = new("Reduces incoming damage and flashes absorbed force outward.", "减少受到的伤害。"),
+        ["upgrade.mirror.body"] = new("Take less damage from hits.", "降低受到的伤害。"),
         ["upgrade.nova.title"] = new("Ultimate Capacitor", "大招强化"),
-        ["upgrade.nova.body"] = new("Ultimate skills cost less energy and your vessel holds more charge.", "大招消耗更少，能量上限更高。"),
+        ["upgrade.nova.body"] = new("Ultimate costs less energy and max energy increases.", "大招耗能降低，能量上限提高。"),
         ["upgrade.storm.title"] = new("Tactical Overdrive", "战术超载"),
-        ["upgrade.storm.body"] = new("Pilot skills release counterfire and recover faster.", "角色技能会释放反击弹幕，并缩短冷却。"),
+        ["upgrade.storm.body"] = new("Pilot skill cooldown is shorter and fires extra shots.", "角色技能冷却缩短，并追加反击弹。"),
         ["upgrade.comet.title"] = new("Comet Trail", "冲刺强化"),
-        ["upgrade.comet.body"] = new("Dash impact damage rises and the dash clears a wider lane.", "冲刺伤害更高，清除更大范围的弹幕。"),
+        ["upgrade.comet.body"] = new("Dash deals more damage and clears more bullets.", "冲刺伤害更高，并清除更多红弹。"),
         ["upgrade.aegis.title"] = new("Aegis Bloom", "自动回血"),
         ["upgrade.aegis.body"] = new("Slowly regenerates hull while you avoid damage.", "一段时间不受伤会缓慢回血。"),
         ["upgrade.echo.title"] = new("Quantum Echo", "额外射击"),
-        ["upgrade.echo.body"] = new("Shots can echo into a second ghost lance.", "射击时有概率额外发射一发穿透弹。"),
+        ["upgrade.echo.body"] = new("Weapon shots can fire an extra piercing shot.", "武器射击有概率追加穿透弹。"),
         ["upgrade.chain.title"] = new("Chain Relay", "连锁中继"),
-        ["upgrade.chain.body"] = new("Weapon hits can jump to nearby enemies. Swarm and pressure waves become relay windows.", "武器命中会向附近敌人连锁跳跃。蜂群波和压迫波收益更高。"),
+        ["upgrade.chain.body"] = new("Weapon hits can jump damage to nearby enemies.", "武器命中可把伤害跳到附近敌人。"),
         ["upgrade.fractal.title"] = new("Fractal Split", "分裂棱片"),
-        ["upgrade.fractal.body"] = new("Kills split into small shards. Higher ranks create controlled second splits for cleanup.", "击败敌人会分裂出小型子弹。等级高后可产生受控二次分裂。"),
+        ["upgrade.fractal.body"] = new("Kills create small split shots.", "击杀会生成小型分裂弹。"),
         ["upgrade.solar.title"] = new("Flow Core", "流派核心"),
-        ["upgrade.solar.body"] = new("Tactical windows and overheat punishes hit harder.", "战术技窗口和过热破绽伤害更高。"),
+        ["upgrade.solar.body"] = new("Pilot skills deal more damage.", "角色技能伤害更高。"),
         ["upgrade.repair.title"] = new("Emergency Repair", "紧急维修"),
         ["upgrade.repair.body"] = new("Repair hull immediately and gain a little max hull.", "立即回复生命，并少量提高最大生命。"),
         ["upgrade.overdrive.title"] = new("One-Wave Overdrive", "单波过载"),
         ["upgrade.overdrive.body"] = new("Next wave: much higher damage. Also gain energy now.", "下一波伤害大幅提高，并立即获得能量。"),
         ["upgrade.glass.title"] = new("Glass Cannon", "玻璃大炮"),
         ["upgrade.glass.body"] = new("Permanent damage up, but max hull goes down.", "永久提高伤害，但降低最大生命。"),
-        ["upgrade.bounty.title"] = new("Bounty Contract", "赏金契约"),
-        ["upgrade.bounty.body"] = new("Next wave has more enemies, higher score-cache progress, and better drops.", "下一波敌人更多，战绩缓存推进更快，掉落更好。"),
+        ["upgrade.bounty.title"] = new("Risk Reward", "高风险奖励"),
+        ["upgrade.bounty.body"] = new("Next wave has more enemies and better drops.", "下一波敌人更多，掉落更好。"),
         ["upgrade.transmute.title"] = new("Bullet Transmute", "弹幕转化"),
-        ["upgrade.transmute.body"] = new("Clear enemy bullets now and convert them into energy.", "立刻清除敌方子弹，并转化为能量。"),
+        ["upgrade.transmute.body"] = new("Clear enemy bullets now and gain energy.", "立刻清除敌方子弹，并获得能量。"),
         ["upgrade.map.title"] = new("Harmonic Map", "升级地图"),
         ["upgrade.map.body"] = new("Gain one extra reroll on future upgrade screens.", "之后的升级界面多一次重抽机会。"),
         ["upgrade.astra.refraction.title"] = new("Refraction Lattice", "折射阵列"),
@@ -676,7 +676,7 @@ public partial class MainGame : Node2D
         ["upgrade.sol.mantle.title"] = new("Radiant Mantle", "光冕护层"),
         ["upgrade.sol.mantle.body"] = new("Radiant mantle adds hull, invulnerability, and skill recovery.", "提高生命、无敌时间，并强化角色技能回复。"),
         ["upgrade.unknown.title"] = new("Unknown", "未知升级"),
-        ["upgrade.unknown.body"] = new("Mystery signal.", "未知效果。"),
+        ["upgrade.unknown.body"] = new("Effect not shown.", "效果未显示。"),
     };
 
     private readonly RandomNumberGenerator _rng = new();
@@ -4039,11 +4039,11 @@ public partial class MainGame : Node2D
         {
             _aimDir = gamepadAim.Normalized();
         }
-        else if (_usingGamepad)
+        else if (_usingGamepad && move.LengthSquared() > 0.01f)
         {
-            _aimDir = AimAssistDirection(move.LengthSquared() > 0.01f ? move.Normalized() : _aimDir);
+            _aimDir = move.Normalized();
         }
-        else
+        else if (!_usingGamepad)
         {
             Vector2 mouse = GetGlobalMousePosition();
             Vector2 aim = mouse - _playerPos;
@@ -4981,8 +4981,7 @@ public partial class MainGame : Node2D
 
     private void FireKairoShot()
     {
-        Enemy? target = FindNearestEnemy(_playerPos, 760.0f);
-        Vector2 dir = target == null ? _aimDir : (target.Pos - _playerPos).Normalized();
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
         int count = Math.Min(IsUpgradeMaxed(UpgradeId.KairoSwarmSync) ? 4 : 3, 1 + Math.Max(0, _multiShot - 1) / 2 + (_kairoSync >= 3 ? 1 : 0) + (IsUpgradeMaxed(UpgradeId.KairoSwarmSync) ? 1 : 0));
         for (int i = 0; i < count; i++)
         {
@@ -5013,8 +5012,7 @@ public partial class MainGame : Node2D
 
     private void FireNyxShot()
     {
-        Enemy? target = FindNearestEnemy(_playerPos, 900.0f + _nyxSingularity * 60.0f);
-        Vector2 baseDir = target != null && (target.Pos - _playerPos).LengthSquared() > 0.01f ? (target.Pos - _playerPos).Normalized() : _aimDir;
+        Vector2 baseDir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
         int blades = Math.Min(7, 2 + _nyxOrbit + Math.Max(0, _multiShot - 1) / 2);
         float arc = 0.16f + _nyxGravityCantor * 0.018f;
         for (int i = 0; i < blades; i++)
@@ -5084,7 +5082,7 @@ public partial class MainGame : Node2D
     private void FireOrionShot()
     {
         Enemy? target = FindNearestEnemy(_playerPos, 1220.0f + _orionDeadeyeMark * 70.0f);
-        Vector2 dir = target != null && (target.Pos - _playerPos).LengthSquared() > 0.01f ? (target.Pos - _playerPos).Normalized() : _aimDir;
+        Vector2 dir = _aimDir.LengthSquared() < 0.01f ? Vector2.Right : _aimDir.Normalized();
         SpawnPlayerShot(_playerPos + dir * 52.0f, dir, 2060.0f + _orionCometSpear * 80.0f, 4.8f, (72.0f + _orionCometSpear * 10.0f + _orionDeadeyeMark * 6.0f + (_riftNeedle ? 8.0f : 0.0f)) * _damageMultiplier, 0.78f, 5 + _orionDeadeyeMark / 2 + (_riftNeedle ? 1 : 0), true);
         if (_orionStarfallQuiver > 0)
         {
@@ -11912,29 +11910,6 @@ public partial class MainGame : Node2D
     private Vector2 RandomDirection()
     {
         return Vector2.Right.Rotated(_rng.RandfRange(0.0f, Mathf.Tau));
-    }
-
-    private Vector2 AimAssistDirection(Vector2 fallback)
-    {
-        float bestDistance = float.MaxValue;
-        Vector2 bestDirection = fallback.LengthSquared() > 0.01f ? fallback : Vector2.Right;
-        foreach (Enemy enemy in _enemies)
-        {
-            if (enemy.Hp <= 0.0f)
-            {
-                continue;
-            }
-
-            Vector2 delta = enemy.Pos - _playerPos;
-            float distance = delta.LengthSquared();
-            if (distance > 0.01f && distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestDirection = delta.Normalized();
-            }
-        }
-
-        return bestDirection;
     }
 
     private static Rect2 StartButtonRect()
