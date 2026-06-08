@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://f7nwg4mfqvs1"
-path="res://.godot/imported/7.png-d86de14d92c1448e3ef7c7cb00a87e9f.ctex"
+uid="uid://hobo7elykpn3"
+path="res://.godot/imported/4.png-c2768a3b0c8a4b5e001f2dc148d1a92a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/7.png"
-dest_files=["res://.godot/imported/7.png-d86de14d92c1448e3ef7c7cb00a87e9f.ctex"]
+source_file="res://Assets/FighterArt/Nyx/4.png"
+dest_files=["res://.godot/imported/4.png-c2768a3b0c8a4b5e001f2dc148d1a92a.ctex"]
 
 [params]
 

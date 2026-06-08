@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://crw05mqo6takm"
-path="res://.godot/imported/6.png-d34c97fca673eb26fcdd01a031f5e4b6.ctex"
+uid="uid://f7nwg4mfqvs1"
+path="res://.godot/imported/7.png-74ccc2d85e4cbed6090d3a630f7da004.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/6.png"
-dest_files=["res://.godot/imported/6.png-d34c97fca673eb26fcdd01a031f5e4b6.ctex"]
+source_file="res://Assets/FighterArt/Sol/7.png"
+dest_files=["res://.godot/imported/7.png-74ccc2d85e4cbed6090d3a630f7da004.ctex"]
 
 [params]
 

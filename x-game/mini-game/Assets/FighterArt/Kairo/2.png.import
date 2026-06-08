@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1q5wnapjcapg"
-path="res://.godot/imported/3.png-74e0dc2a144c09c09ef2e3d006d05418.ctex"
+uid="uid://bgc0ris6h5yoa"
+path="res://.godot/imported/2.png-804c459629b608671d6e6c33c18cc82d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/3.png"
-dest_files=["res://.godot/imported/3.png-74e0dc2a144c09c09ef2e3d006d05418.ctex"]
+source_file="res://Assets/FighterArt/Kairo/2.png"
+dest_files=["res://.godot/imported/2.png-804c459629b608671d6e6c33c18cc82d.ctex"]
 
 [params]
 

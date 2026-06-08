@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x1jbh18jbssp"
-path="res://.godot/imported/1.png-ad3a191b001e7705f8fd01c72cc5d665.ctex"
+uid="uid://bwq41ufoa0obd"
+path="res://.godot/imported/8.png-3fc68db76982073d0a56c33e9a78107e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/1.png"
-dest_files=["res://.godot/imported/1.png-ad3a191b001e7705f8fd01c72cc5d665.ctex"]
+source_file="res://Assets/FighterArt/Vesper/8.png"
+dest_files=["res://.godot/imported/8.png-3fc68db76982073d0a56c33e9a78107e.ctex"]
 
 [params]
 

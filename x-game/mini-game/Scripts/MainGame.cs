@@ -953,6 +953,7 @@ public partial class MainGame : Node2D
     private AudioStreamGeneratorPlayback? _musicPlayback;
     private Texture2D? _titleLogoCn;
     private Texture2D? _titleLogoEn;
+    private readonly Dictionary<PilotKind, Texture2D> _pilotTextures = new();
 
     private static List<Enemy>[] CreateEnemyGrid()
     {
@@ -975,6 +976,7 @@ public partial class MainGame : Node2D
             MultichannelSignedDistanceField = true,
         };
         LoadTitleLogos();
+        LoadPilotTextures();
         GenerateBackdrop();
         SetupAudio();
         LoadMetaProgress();
@@ -986,6 +988,7 @@ public partial class MainGame : Node2D
     public override void _ExitTree()
     {
         _voices.Clear();
+        _pilotTextures.Clear();
         _musicPlayback = null;
     }
 
@@ -993,6 +996,57 @@ public partial class MainGame : Node2D
     {
         _titleLogoCn = GD.Load<Texture2D>("res://Assets/Logo/Logo_Cn.png");
         _titleLogoEn = GD.Load<Texture2D>("res://Assets/Logo/Logo_En.png");
+    }
+
+    private void LoadPilotTextures()
+    {
+        _pilotTextures.Clear();
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            Texture2D? texture = LoadPilotTexture(pilot);
+            if (texture != null)
+            {
+                _pilotTextures[pilot] = texture;
+            }
+        }
+    }
+
+    private static Texture2D? LoadPilotTexture(PilotKind pilot)
+    {
+        string directory = $"res://Assets/FighterArt/{pilot}";
+        DirAccess? dir = DirAccess.Open(directory);
+        if (dir == null)
+        {
+            return null;
+        }
+
+        string[] files = dir.GetFiles();
+        Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+        foreach (string file in files)
+        {
+            if (!IsTextureAsset(file))
+            {
+                continue;
+            }
+
+            Texture2D? texture = GD.Load<Texture2D>($"{directory}/{file}");
+            if (texture != null)
+            {
+                return texture;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsTextureAsset(string file)
+    {
+        return file.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase);
     }
 
     private Texture2D? CurrentTitleLogo()
@@ -9210,6 +9264,11 @@ public partial class MainGame : Node2D
 
     private void DrawPilotHull(PilotKind pilot, Vector2 center, Vector2 forward, Color polarity, float invuln, float scale)
     {
+        if (TryDrawPilotTexture(pilot, center, forward, invuln, scale))
+        {
+            return;
+        }
+
         Vector2 right = new(-forward.Y, forward.X);
         Color body = Alpha(Graphite, 0.78f * invuln);
         Color line = Alpha(Paper, 0.86f * invuln);
@@ -9358,6 +9417,30 @@ public partial class MainGame : Node2D
                 break;
             }
         }
+    }
+
+    private bool TryDrawPilotTexture(PilotKind pilot, Vector2 center, Vector2 forward, float alpha, float scale)
+    {
+        if (!_pilotTextures.TryGetValue(pilot, out Texture2D? texture) || texture == null)
+        {
+            return false;
+        }
+
+        Vector2 sourceSize = texture.GetSize();
+        float sourceMax = Mathf.Max(sourceSize.X, sourceSize.Y);
+        if (sourceMax <= 0.0f)
+        {
+            return false;
+        }
+
+        Vector2 direction = forward.LengthSquared() > 0.01f ? forward.Normalized() : Vector2.Right;
+        float maxSide = 88.0f * scale;
+        Vector2 drawSize = sourceSize * (maxSide / sourceMax);
+        Color tint = Alpha(Colors.White, Mathf.Clamp(alpha, 0.0f, 1.0f));
+        DrawSetTransform(center, direction.Angle() + Mathf.Pi * 0.5f, Vector2.One);
+        DrawTextureRect(texture, new Rect2(drawSize * -0.5f, drawSize), false, tint);
+        DrawSetTransform(Vector2.Zero, 0.0f, Vector2.One);
+        return true;
     }
 
     private void DrawEnemy(Enemy enemy)

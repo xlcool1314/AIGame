@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwq41ufoa0obd"
-path="res://.godot/imported/8.png-f79130db92b28bb453992c124c618d52.ctex"
+uid="uid://crw05mqo6takm"
+path="res://.godot/imported/6.png-0438a9a07f08b42d65d90901ed47c809.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/8.png"
-dest_files=["res://.godot/imported/8.png-f79130db92b28bb453992c124c618d52.ctex"]
+source_file="res://Assets/FighterArt/Rook/6.png"
+dest_files=["res://.godot/imported/6.png-0438a9a07f08b42d65d90901ed47c809.ctex"]
 
 [params]
 

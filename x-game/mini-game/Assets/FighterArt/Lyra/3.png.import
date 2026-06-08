@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cui00m2372666"
-path="res://.godot/imported/5.png-8d417ee01726291735e001f388ddf632.ctex"
+uid="uid://c1q5wnapjcapg"
+path="res://.godot/imported/3.png-757edcd85c2364d579aef9b24589eb5a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/5.png"
-dest_files=["res://.godot/imported/5.png-8d417ee01726291735e001f388ddf632.ctex"]
+source_file="res://Assets/FighterArt/Lyra/3.png"
+dest_files=["res://.godot/imported/3.png-757edcd85c2364d579aef9b24589eb5a.ctex"]
 
 [params]
 
