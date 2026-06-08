@@ -83,7 +83,12 @@ public partial class MainGame
 
     private Particle AddParticleObject()
     {
-        int cap = Math.Min(MaxParticles, QualityParticleCap());
+        return AddParticleObject(QualityParticleCap());
+    }
+
+    private Particle AddParticleObject(int cap)
+    {
+        cap = Math.Min(MaxParticles, cap);
         if (_particles.Count >= cap)
         {
             RemoveParticleAt(0);

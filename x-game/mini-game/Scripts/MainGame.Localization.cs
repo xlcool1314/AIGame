@@ -283,6 +283,30 @@ objective.defeat_bosses|Defeat {0} bosses|击败 Boss {0} 个|Победить �
 objective.default|Complete expedition goal|完成远征目标|Выполнить цель|Completar meta|Ziel erfüllen|Hedefi tamamla|Terminer l’objectif|遠征目標達成
 objective.complete|GOAL COMPLETE +{0} DUST|目标完成 +{0} 星尘|ЦЕЛЬ +{0} ПЫЛИ|META +{0} PÓ|ZIEL +{0} STAUB|HEDEF +{0} TOZ|OBJECTIF +{0} POUSSIÈRE|目標達成 +{0} 星屑
 objective.clean_wave|CLEAN WAVE +ENERGY|无伤清波 +能量|ЧИСТАЯ ВОЛНА +ЭНЕРГИЯ|ONDA LIMPA +ENERGIA|SAUBERE WELLE +ENERGIE|TEMİZ DALGA +ENERJİ|VAGUE PARFAITE +ÉNERGIE|無傷WAVE +エネルギー
+objective.cast_tactical|Use skill {0} times|使用小招 {0} 次|Навык: {0} раз|Usar habilidade {0}x|Skill {0}x nutzen|Yeteneği {0} kez kullan|Utiliser compétence {0}x|スキル {0} 回
+objective.cast_ultimate|Use ultimate {0} times|释放大招 {0} 次|Ульта: {0} раз|Usar ultimate {0}x|Ultimativ {0}x nutzen|Ultiyi {0} kez kullan|Utiliser ultime {0}x|必殺 {0} 回
+objective.route.title|ROUTE CONTRACT|远征航线|МАРШРУТ|ROTA DE VOO|ROUTENAUFTRAG|ROTA KONTRATI|CONTRAT DE ROUTE|航路契約
+objective.route.body|Reach wave {0}. Finish the route.|推进到第 {0} 波，完成本局主线。|Дойти до волны {0}.|Chegue à onda {0}.|Erreiche Welle {0}.|{0}. dalgaya ulaş.|Atteins la vague {0}.|Wave {0} まで進む。
+objective.clean.title|CLEAN ROUTE|无伤航线|ЧИСТЫЙ МАРШРУТ|ROTA LIMPA|SAUBERE ROUTE|TEMİZ ROTA|ROUTE PARFAITE|無傷航路
+objective.clean.body|Clear {0} waves without damage.|完成 {0} 次无伤清波。|Пройти {0} волн без урона.|Limpe {0} ondas sem dano.|{0} Wellen ohne Schaden.|Hasarsız {0} dalga geç.|Nettoie {0} vagues sans dégât.|無傷で {0} Wave クリア。
+objective.tempo.title|COMBO TEMPO|连击推进|ТЕМП КОМБО|RITMO DE COMBO|KOMBO-TEMPO|KOMBO TEMPOSU|TEMPO COMBO|コンボテンポ
+objective.tempo.body|Hold {0} combo before being hit.|受伤前打出 {0} 连击。|Держать комбо {0} до урона.|Faça combo {0} sem sofrer dano.|Halte Kombo {0} ohne Treffer.|Hasar almadan {0} kombo yap.|Garde un combo {0} sans coup.|被弾前に {0} コンボ。
+objective.pilot.astra.title|PRISM CONTRACT|棱镜校准|ПРИЗМА|CONTRATO PRISMA|PRISMENAUFTRAG|PRİZMA KONTRATI|CONTRAT PRISME|プリズム契約
+objective.pilot.astra.body|Graze or clear {0} red bullets.|擦弹或清除 {0} 次红弹。|Задеть или убрать {0} пуль.|Raspe ou limpe {0} tiros.|{0} Kugeln streifen oder räumen.|{0} kırmızı mermi temizle/sıyır.|Frôle ou nettoie {0} tirs rouges.|赤弾を {0} 回グレイズ/消去。
+objective.pilot.vesper.title|RAIL DISCIPLINE|轨道校准|РЕЛЬСОВЫЙ РИТМ|DISCIPLINA RAIL|SCHIENENDISZIPLIN|RAY DİSİPLİNİ|DISCIPLINE RAIL|レール規律
+objective.pilot.vesper.body|Use skill {0} times to cut lanes.|使用小招 {0} 次，切开火线。|Навык {0} раз, режь линии.|Use habilidade {0}x para cortar linhas.|Skill {0}x, Schneisen schneiden.|Yeteneği {0} kez kullan.|Compétence {0}x pour ouvrir la ligne.|スキル {0} 回で射線を切る。
+objective.pilot.kairo.title|SWARM COMMAND|蜂群指令|КОМАНДА РОЯ|COMANDO ENXAME|SCHWARMKOMMANDO|SÜRÜ KOMUTU|COMMANDE ESSAIM|群体指令
+objective.pilot.kairo.body|Use skill {0} times to command drones.|使用小招 {0} 次，指挥无人机。|Навык {0} раз, веди дронов.|Use habilidade {0}x e comande drones.|Skill {0}x, Drohnen führen.|Yeteneği {0} kez kullan.|Compétence {0}x, commande drones.|スキル {0} 回でドローン指揮。
+objective.pilot.sol.title|CORONA HUNT|日冕压制|ОХОТА КОРОНЫ|CAÇA CORONA|KORONAJAGD|KORONA AVI|CHASSE CORONA|コロナ狩り
+objective.pilot.sol.body|Defeat {0} enemies with steady fire.|击败 {0} 个敌人，保持火力。|Победить {0} врагов огнем.|Derrote {0} inimigos com fogo constante.|{0} Feinde mit Dauerfeuer.|Sürekli ateşle {0} düşman yok et.|Tue {0} ennemis au feu continu.|継続火力で敵 {0} 撃破。
+objective.pilot.nyx.title|GRAVITY CLEANSE|重力清域|ГРАВИТАЦИЯ|LIMPEZA GRÁVITA|GRAVITÄTSKLÄRUNG|YERÇEKİMİ TEMİZLİĞİ|NETTOYAGE GRAVITÉ|重力浄化
+objective.pilot.nyx.body|Graze or clear {0} bullets in gravity windows.|用重力窗口擦弹或清弹 {0} 次。|Задеть или убрать {0} пуль.|Raspe ou limpe {0} tiros na gravidade.|{0} Kugeln im Gravfenster räumen.|Yerçekimiyle {0} mermi temizle.|Nettoie {0} tirs par gravité.|重力窓で弾を {0} 回処理。
+objective.pilot.rook.title|CITADEL DRILL|壁垒演练|УЧЕНИЕ ЦИТАДЕЛИ|TREINO CIDADELA|ZITADELLENÜBUNG|HİSAR TALİMİ|EXERCICE CITADELLE|城塞訓練
+objective.pilot.rook.body|Use skill {0} times to turn danger into space.|使用小招 {0} 次，把危险变成空间。|Навык {0} раз, создай место.|Use habilidade {0}x e abra espaço.|Skill {0}x, Raum schaffen.|Yeteneği {0} kez kullan.|Compétence {0}x, ouvre l’espace.|スキル {0} 回で空間を作る。
+objective.pilot.lyra.title|RESONANCE HARVEST|共鸣回收|РЕЗОНАНСНЫЙ СБОР|COLETA RESSONANTE|RESONANZERNTE|REZONANS HASADI|RÉCOLTE RÉSONANTE|共鳴回収
+objective.pilot.lyra.body|Collect {0} EXP drops before they fade.|拾取 {0} 个经验掉落，别让它消失。|Собрать {0} опыта до исчезновения.|Colete {0} EXP antes de sumir.|Sammle {0} EP-Drops vor Ablauf.|Kaybolmadan {0} EXP topla.|Ramasse {0} EXP avant disparition.|消える前にEXP {0} 回収。
+objective.pilot.orion.title|BOSS MARK|首领标记|МЕТКА БОССА|MARCA DO CHEFE|BOSSMARKIERUNG|BOSS İŞARETİ|MARQUE DE BOSS|ボスマーク
+objective.pilot.orion.body|Defeat {0} bosses with priority marks.|击败 {0} 个 Boss，优先处理标记目标。|Победить {0} боссов по меткам.|Derrote {0} chefes marcados.|Besiege {0} Bosse mit Marken.|İşaretlerle {0} boss yen.|Vaincs {0} boss marqués.|マーク付きBossを {0} 撃破。
 next.boss|NEXT: {0}|下一波：{0}|ДАЛЬШЕ: {0}|PRÓXIMA: {0}|NÄCHSTE: {0}|SIRADA: {0}|SUIVANT : {0}|次：{0}
 next.primary|NEXT: {0}  PRIMARY: {1}|下一波：{0}  主敌：{1}|ДАЛЬШЕ: {0}  ЦЕЛЬ: {1}|PRÓXIMA: {0}  ALVO: {1}|NÄCHSTE: {0}  PRIMÄR: {1}|SIRADA: {0}  ANA: {1}|SUIVANT : {0}  CIBLE : {1}|次：{0}  主目標：{1}
 next.primary_support|NEXT: {0}  PRIMARY: {1}    SUPPORT: {2}|下一波：{0}  主敌：{1}    辅助：{2}|ДАЛЬШЕ: {0}  ЦЕЛЬ: {1}  ПОДДЕРЖКА: {2}|PRÓXIMA: {0}  ALVO: {1}  APOIO: {2}|NÄCHSTE: {0}  PRIMÄR: {1}  SUPPORT: {2}|SIRADA: {0}  ANA: {1}  DESTEK: {2}|SUIVANT : {0}  CIBLE : {1}  SOUTIEN : {2}|次：{0}  主目標：{1}  支援：{2}

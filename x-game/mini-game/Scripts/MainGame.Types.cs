@@ -158,6 +158,8 @@ public partial class MainGame
         CollectPickups,
         BestCombo,
         DefeatBosses,
+        CastTactical,
+        CastUltimate,
     }
 
     private enum WavePaceKind
@@ -449,6 +451,10 @@ public partial class MainGame
         public int Progress;
         public int RewardDust;
         public bool Completed;
+        public string TitleKey = string.Empty;
+        public string BodyKey = string.Empty;
+        public Color Accent = Colors.White;
+        public int Tier;
     }
 
     private sealed class PendingSpawn
