@@ -26,6 +26,8 @@ public partial class MainGame : Node2D
     private const int MaxPickups = 260;
     private const int MaxParticles = 720;
     private const int MaxDamageTexts = 72;
+    private const int MaxOrbiters = 10;
+    private const int MaxDroneCommandCues = 28;
     private const int MaxPoolSize = 900;
     private const float EnemyGridCellSize = 160.0f;
     private const int EnemyGridColumns = 12;
@@ -59,6 +61,23 @@ public partial class MainGame : Node2D
     private const float UiHairline = 0.8f;
     private const float UiStroke = 1.05f;
     private const float UiAccentStroke = 1.3f;
+    private const float PilotTextureTargetArea = 7100.0f;
+    private const float PilotTextureMinMaxSide = 84.0f;
+    private const float PilotTextureMaxMaxSide = 100.0f;
+    private const float EnemyTextureRootScale = 2.36f;
+    private const float EliteEnemyTextureRootScale = 2.56f;
+    private const float EnemyTextureMinMaxSideScale = 2.1f;
+    private const float EnemyTextureMaxMaxSideScale = 3.06f;
+    private const float BossTextureRootScale = 2.72f;
+    private const float BossTextureMinMaxSideScale = 2.35f;
+    private const float BossTextureMaxMaxSideScale = 3.68f;
+    private const float DroneTextureSupportTargetArea = 1250.0f;
+    private const float DroneTextureKairoTargetArea = 1420.0f;
+    private const float DroneTextureMinMaxSide = 30.0f;
+    private const float DroneTextureMaxMaxSide = 46.0f;
+    private const float DroneCommandTextureTargetArea = 3400.0f;
+    private const float DroneCommandTextureMinMaxSide = 52.0f;
+    private const float DroneCommandTextureMaxMaxSide = 76.0f;
     private const int MaxJoypadSlots = 8;
     private const float GamepadStickDeadZone = 0.24f;
     private const float GamepadAimDeadZone = 0.2f;
@@ -67,7 +86,7 @@ public partial class MainGame : Node2D
     private const float GamepadNavRepeat = 0.18f;
     private const int TitleDifficultyFocusStart = 0;
     private const int TitlePilotFocusStart = TitleDifficultyFocusStart + DifficultyCount;
-    private const int TitleFooterFocusStart = TitlePilotFocusStart + 8;
+    private const int TitleFooterFocusStart = TitlePilotFocusStart + 1;
     private const int TitleMetaFocus = TitleFooterFocusStart;
     private const int TitleStartFocus = TitleFooterFocusStart + 1;
     private const int TitleSettingsFocus = TitleFooterFocusStart + 2;
@@ -83,6 +102,17 @@ public partial class MainGame : Node2D
         }
 
         return lists;
+    }
+
+    private static OrbiterVisual[] CreateOrbiterVisuals()
+    {
+        OrbiterVisual[] visuals = new OrbiterVisual[MaxOrbiters];
+        for (int i = 0; i < visuals.Length; i++)
+        {
+            visuals[i] = new OrbiterVisual();
+        }
+
+        return visuals;
     }
 
     private static Vector2[][][] CreatePolygonScratch(int extraPoint)
@@ -398,6 +428,10 @@ public partial class MainGame : Node2D
         ["gm.unlock.label"] = new("GM", "GM"),
         ["gm.unlock.toast"] = new("All pilots and difficulties unlocked.", "所有角色与难度已解锁。"),
         ["menu.pilot"] = new("PILOT", "角色"),
+        ["pilot.selector.skill"] = new("Skill", "技能"),
+        ["pilot.selector.ultimate"] = new("Ultimate", "大招"),
+        ["pilot.selector.selected"] = new("Selected", "已选择"),
+        ["pilot.selector.locked"] = new("Locked", "未解锁"),
         ["menu.tip"] = new("Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.", "点击“开始远征”、按 Enter 或按 A。每局结束后可用星尘购买永久升级。"),
         ["boss.choir_core"] = new("CHOIR CORE", "合唱核心"),
         ["boss.sector"] = new("{0} CORE", "{0} Boss"),
@@ -687,6 +721,7 @@ public partial class MainGame : Node2D
     private readonly List<Shot> _shots = new();
     private readonly List<Pickup> _pickups = new();
     private readonly List<Particle> _particles = new();
+    private readonly List<DroneCommandCue> _droneCommandCues = new();
     private readonly List<Shockwave> _shockwaves = new();
     private readonly List<DamageText> _damageTexts = new();
     private readonly List<HazardLine> _hazards = new();
@@ -699,6 +734,7 @@ public partial class MainGame : Node2D
     private readonly List<SfxVoice> _voices = new();
     private readonly Queue<TextCue> _centerTextQueue = new();
     private readonly Vector2[] _playerTrail = new Vector2[PlayerTrailCapacity];
+    private readonly OrbiterVisual[] _orbiterVisuals = CreateOrbiterVisuals();
     private readonly Vector2[][][] _polygonScratch = CreatePolygonScratch(0);
     private readonly Vector2[][][] _closedPolygonScratch = CreatePolygonScratch(1);
     private readonly Queue<PendingSpawn> _pendingSpawns = new();
@@ -946,6 +982,8 @@ public partial class MainGame : Node2D
     private bool _lastCancel;
     private bool _lastPause;
     private bool _lastSettingsShortcut;
+    private bool _lastTitleLeft;
+    private bool _lastTitleRight;
     private bool _lastSettingsLeft;
     private bool _lastSettingsRight;
 
@@ -953,7 +991,20 @@ public partial class MainGame : Node2D
     private AudioStreamGeneratorPlayback? _musicPlayback;
     private Texture2D? _titleLogoCn;
     private Texture2D? _titleLogoEn;
+    private Texture2D? _supportDroneTexture;
+    private Texture2D? _kairoDroneTexture;
+    private Texture2D? _kairoCommandTexture;
+    private Rect2 _supportDroneRegion;
+    private Rect2 _kairoDroneRegion;
+    private Rect2 _kairoCommandRegion;
     private readonly Dictionary<PilotKind, Texture2D> _pilotTextures = new();
+    private readonly Dictionary<PilotKind, Rect2> _pilotTextureRegions = new();
+    private readonly Dictionary<EnemyKind, Texture2D> _enemyTextures = new();
+    private readonly Dictionary<EnemyKind, Texture2D> _eliteEnemyTextures = new();
+    private readonly Dictionary<BossArchetype, Texture2D> _bossTextures = new();
+    private readonly Dictionary<EnemyKind, Rect2> _enemyTextureRegions = new();
+    private readonly Dictionary<EnemyKind, Rect2> _eliteEnemyTextureRegions = new();
+    private readonly Dictionary<BossArchetype, Rect2> _bossTextureRegions = new();
 
     private static List<Enemy>[] CreateEnemyGrid()
     {
@@ -976,7 +1027,9 @@ public partial class MainGame : Node2D
             MultichannelSignedDistanceField = true,
         };
         LoadTitleLogos();
+        LoadDroneTextures();
         LoadPilotTextures();
+        LoadEnemyTextures();
         GenerateBackdrop();
         SetupAudio();
         LoadMetaProgress();
@@ -988,7 +1041,17 @@ public partial class MainGame : Node2D
     public override void _ExitTree()
     {
         _voices.Clear();
+        _supportDroneTexture = null;
+        _kairoDroneTexture = null;
+        _kairoCommandTexture = null;
         _pilotTextures.Clear();
+        _pilotTextureRegions.Clear();
+        _enemyTextures.Clear();
+        _eliteEnemyTextures.Clear();
+        _bossTextures.Clear();
+        _enemyTextureRegions.Clear();
+        _eliteEnemyTextureRegions.Clear();
+        _bossTextureRegions.Clear();
         _musicPlayback = null;
     }
 
@@ -998,9 +1061,26 @@ public partial class MainGame : Node2D
         _titleLogoEn = GD.Load<Texture2D>("res://Assets/Logo/Logo_En.png");
     }
 
+    private void LoadDroneTextures()
+    {
+        _supportDroneTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/01_PlayerSupportDrone");
+        _kairoDroneTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/02_KairoSwarmDrone") ?? _supportDroneTexture;
+        _kairoCommandTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/03_KairoCommandBurst");
+
+        _supportDroneRegion = TextureRegionOrEmpty(_supportDroneTexture);
+        _kairoDroneRegion = TextureRegionOrEmpty(_kairoDroneTexture);
+        _kairoCommandRegion = TextureRegionOrEmpty(_kairoCommandTexture);
+    }
+
+    private static Rect2 TextureRegionOrEmpty(Texture2D? texture)
+    {
+        return texture == null ? new Rect2(Vector2.Zero, Vector2.Zero) : VisibleTextureRegion(texture);
+    }
+
     private void LoadPilotTextures()
     {
         _pilotTextures.Clear();
+        _pilotTextureRegions.Clear();
         for (int i = 0; i < PilotCount(); i++)
         {
             PilotKind pilot = PilotFromIndex(i);
@@ -1008,13 +1088,60 @@ public partial class MainGame : Node2D
             if (texture != null)
             {
                 _pilotTextures[pilot] = texture;
+                _pilotTextureRegions[pilot] = VisibleTextureRegion(texture);
             }
         }
     }
 
     private static Texture2D? LoadPilotTexture(PilotKind pilot)
     {
-        string directory = $"res://Assets/FighterArt/{pilot}";
+        return LoadFirstTextureInDirectory($"res://Assets/FighterArt/{pilot}");
+    }
+
+    private void LoadEnemyTextures()
+    {
+        _enemyTextures.Clear();
+        _eliteEnemyTextures.Clear();
+        _bossTextures.Clear();
+        _enemyTextureRegions.Clear();
+        _eliteEnemyTextureRegions.Clear();
+        _bossTextureRegions.Clear();
+
+        foreach (EnemyKind kind in Enum.GetValues(typeof(EnemyKind)))
+        {
+            if (kind == EnemyKind.Boss)
+            {
+                continue;
+            }
+
+            Texture2D? normal = LoadFirstTextureInDirectory(EnemyArtDirectory(kind, false));
+            if (normal != null)
+            {
+                _enemyTextures[kind] = normal;
+                _enemyTextureRegions[kind] = VisibleTextureRegion(normal);
+            }
+
+            Texture2D? elite = LoadFirstTextureInDirectory(EnemyArtDirectory(kind, true));
+            if (elite != null)
+            {
+                _eliteEnemyTextures[kind] = elite;
+                _eliteEnemyTextureRegions[kind] = VisibleTextureRegion(elite);
+            }
+        }
+
+        foreach (BossArchetype archetype in Enum.GetValues(typeof(BossArchetype)))
+        {
+            Texture2D? texture = LoadFirstTextureInDirectory(BossArtDirectory(archetype));
+            if (texture != null)
+            {
+                _bossTextures[archetype] = texture;
+                _bossTextureRegions[archetype] = VisibleTextureRegion(texture);
+            }
+        }
+    }
+
+    private static Texture2D? LoadFirstTextureInDirectory(string directory)
+    {
         DirAccess? dir = DirAccess.Open(directory);
         if (dir == null)
         {
@@ -1040,6 +1167,45 @@ public partial class MainGame : Node2D
         return null;
     }
 
+    private static string EnemyArtDirectory(EnemyKind kind, bool elite)
+    {
+        string root = elite ? "res://Assets/EnemyArt/Elite" : "res://Assets/EnemyArt/Normal";
+        return kind switch
+        {
+            EnemyKind.Chaser => $"{root}/LV01_Basic/LV01_Chaser{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Weaver => $"{root}/LV01_Basic/LV01_Weaver{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Turret => $"{root}/LV02_EarlyMechanic/LV02_Turret{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Drifter => $"{root}/LV02_EarlyMechanic/LV02_Drifter{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Mine => $"{root}/LV02_EarlyMechanic/LV02_Mine{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Lance => $"{root}/LV03_MidThreat/LV03_Lance{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Splitter => $"{root}/LV03_MidThreat/LV03_Splitter{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Siren => $"{root}/LV03_MidThreat/LV03_Siren{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Shard => $"{root}/LV04_LateThreat/LV04_Shard{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Harrier => $"{root}/LV04_LateThreat/LV04_Harrier{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Bulwark => $"{root}/LV05_HeavyAnchor/LV05_Bulwark{(elite ? "_Elite" : string.Empty)}",
+            EnemyKind.Warden => $"{root}/LV05_HeavyAnchor/LV05_Warden{(elite ? "_Elite" : string.Empty)}",
+            _ => root,
+        };
+    }
+
+    private static string BossArtDirectory(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Choir => "res://Assets/EnemyArt/Boss/BOSS_LV01_Choir",
+            BossArchetype.Prism => "res://Assets/EnemyArt/Boss/BOSS_LV01_Prism",
+            BossArchetype.Swarm => "res://Assets/EnemyArt/Boss/BOSS_LV02_Swarm",
+            BossArchetype.Forge => "res://Assets/EnemyArt/Boss/BOSS_LV02_Forge",
+            BossArchetype.Rift => "res://Assets/EnemyArt/Boss/BOSS_LV03_Rift",
+            BossArchetype.Mirror => "res://Assets/EnemyArt/Boss/BOSS_LV03_Mirror",
+            BossArchetype.Tempest => "res://Assets/EnemyArt/Boss/BOSS_LV04_Tempest",
+            BossArchetype.Bastion => "res://Assets/EnemyArt/Boss/BOSS_LV04_Bastion",
+            BossArchetype.Serpent => "res://Assets/EnemyArt/Boss/BOSS_LV05_Serpent",
+            BossArchetype.Oracle => "res://Assets/EnemyArt/Boss/BOSS_LV05_Oracle",
+            _ => "res://Assets/EnemyArt/Boss",
+        };
+    }
+
     private static bool IsTextureAsset(string file)
     {
         return file.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
@@ -1047,6 +1213,51 @@ public partial class MainGame : Node2D
             || file.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
             || file.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
             || file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static Rect2 VisibleTextureRegion(Texture2D texture)
+    {
+        Vector2 sourceSize = texture.GetSize();
+        Rect2 fullRegion = new(Vector2.Zero, sourceSize);
+        Image? image = texture.GetImage();
+        if (image == null)
+        {
+            return fullRegion;
+        }
+
+        int width = image.GetWidth();
+        int height = image.GetHeight();
+        if (width <= 0 || height <= 0)
+        {
+            return fullRegion;
+        }
+
+        int minX = width;
+        int minY = height;
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (image.GetPixel(x, y).A <= 0.03f)
+                {
+                    continue;
+                }
+
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x);
+                maxY = Math.Max(maxY, y);
+            }
+        }
+
+        if (maxX < minX || maxY < minY)
+        {
+            return fullRegion;
+        }
+
+        return new Rect2(new Vector2(minX, minY), new Vector2(maxX - minX + 1, maxY - minY + 1));
     }
 
     private Texture2D? CurrentTitleLogo()
@@ -1145,6 +1356,11 @@ public partial class MainGame : Node2D
                 DrawParticle(particle);
             }
 
+            foreach (DroneCommandCue cue in _droneCommandCues)
+            {
+                DrawDroneCommandCue(cue);
+            }
+
             foreach (Shockwave shockwave in _shockwaves)
             {
                 DrawShockwave(shockwave);
@@ -1231,6 +1447,8 @@ public partial class MainGame : Node2D
         ClearEnemies();
         ClearPickups();
         ClearParticles();
+        ClearOrbiterVisuals();
+        ClearDroneCommandCues();
         _shockwaves.Clear();
         ClearDamageTexts();
         _centerTextQueue.Clear();
@@ -1240,7 +1458,7 @@ public partial class MainGame : Node2D
         _upgradeChoices.Clear();
         _voices.Clear();
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
-        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
+        _gamepadTitleIndex = TitlePilotFocusStart;
         _gamepadUpgradeIndex = 0;
         _gamepadSettingsIndex = 0;
     }
@@ -1321,7 +1539,7 @@ public partial class MainGame : Node2D
             _selectedPilot = PilotKind.Astra;
         }
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
-        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
+        _gamepadTitleIndex = TitlePilotFocusStart;
         ApplyRuntimeSettings(false);
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
@@ -1409,7 +1627,7 @@ public partial class MainGame : Node2D
         _wonOnce = false;
         _selectedPilot = PilotKind.Astra;
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
-        _gamepadTitleIndex = TitlePilotFocusStart + _gamepadPilotIndex;
+        _gamepadTitleIndex = TitlePilotFocusStart;
         _lastDustEarned = 0;
         _lastRunWave = 0;
         _lastObjectiveBonusDust = 0;
@@ -2067,6 +2285,8 @@ public partial class MainGame : Node2D
         ClearEnemies();
         ClearPickups();
         ClearParticles();
+        ClearOrbiterVisuals();
+        ClearDroneCommandCues();
         _shockwaves.Clear();
         ClearDamageTexts();
         _centerTextQueue.Clear();
@@ -3377,15 +3597,33 @@ public partial class MainGame : Node2D
         UpdateDamageTexts(dt);
         int navX = ConsumeGamepadNavX();
         int navY = ConsumeGamepadNavY();
-        if (navX != 0 || navY != 0)
+        int keyboardPilotNav = ConsumeTitleKeyboardPilotNavX();
+        if (keyboardPilotNav != 0)
         {
-            MoveTitleFocus(navX, navY);
-            PlaySfx(260.0f + _gamepadTitleIndex * 16.0f, navY != 0 ? -16.0f : 20.0f, 0.07f, 0.12f, 0.01f, 1);
+            CycleTitlePilot(keyboardPilotNav);
+        }
+
+        if (navY != 0)
+        {
+            _gamepadTitleIndex = MoveTitleFocusVertical(_gamepadTitleIndex, navY);
+            PlaySfx(260.0f + _gamepadTitleIndex * 16.0f, -16.0f, 0.07f, 0.12f, 0.01f, 1);
+        }
+        if (navX != 0)
+        {
+            if (IsTitlePilotFocus(_gamepadTitleIndex))
+            {
+                CycleTitlePilot(navX);
+            }
+            else
+            {
+                _gamepadTitleIndex = MoveTitleFocusHorizontal(_gamepadTitleIndex, navX);
+                PlaySfx(260.0f + _gamepadTitleIndex * 16.0f, 20.0f, 0.07f, 0.12f, 0.01f, 1);
+            }
         }
         _gamepadTitleIndex = ClampTitleFocus(_gamepadTitleIndex);
         if (IsTitlePilotFocus(_gamepadTitleIndex))
         {
-            _gamepadPilotIndex = _gamepadTitleIndex - TitlePilotFocusStart;
+            _gamepadPilotIndex = Mathf.Clamp(_gamepadPilotIndex, 0, PilotCount() - 1);
         }
         SetGamepadFocus(TitleFocusRect(_gamepadTitleIndex));
 
@@ -3398,26 +3636,21 @@ public partial class MainGame : Node2D
         if (click)
         {
             _usingGamepad = false;
-            for (int i = 0; i < PilotCount(); i++)
+            if (PilotPreviousButtonRect().HasPoint(mouse))
             {
-                PilotKind pilot = PilotFromIndex(i);
-                if (PilotCardRect(i).HasPoint(mouse))
-                {
-                    _gamepadPilotIndex = i;
-                    _gamepadTitleIndex = TitlePilotFocusStart + i;
-                    if (IsPilotUnlocked(pilot))
-                    {
-                        _selectedPilot = pilot;
-                        SaveMetaProgress();
-                        PlaySfx(360.0f + i * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
-                    }
-                    else
-                    {
-                        AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
-                        PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
-                    }
-                    return;
-                }
+                CycleTitlePilot(-1);
+                return;
+            }
+            if (PilotNextButtonRect().HasPoint(mouse))
+            {
+                CycleTitlePilot(1);
+                return;
+            }
+            if (PilotCardRect(0).HasPoint(mouse))
+            {
+                _gamepadTitleIndex = TitlePilotFocusStart;
+                SelectDisplayedPilotOrShowLock(false);
+                return;
             }
 
             if (TrySelectDifficulty(mouse))
@@ -3434,7 +3667,7 @@ public partial class MainGame : Node2D
 
         if ((startKey && !_lastStart) || (click && StartButtonRect().HasPoint(mouse)))
         {
-            StartRun();
+            TryStartTitleRun();
         }
         else if (click && GmUnlockButtonRect().HasPoint(mouse))
         {
@@ -3448,6 +3681,86 @@ public partial class MainGame : Node2D
         else if ((settingsKey && !_lastSettingsShortcut) || (click && TitleSettingsButtonRect().HasPoint(mouse)))
         {
             OpenSettings(GameMode.Title);
+        }
+    }
+
+    private int ConsumeTitleKeyboardPilotNavX()
+    {
+        bool left = KeyDown(Key.Left) || KeyDown(Key.A);
+        bool right = KeyDown(Key.Right) || KeyDown(Key.D);
+        int nav = 0;
+        if (left && !_lastTitleLeft)
+        {
+            nav = -1;
+        }
+        else if (right && !_lastTitleRight)
+        {
+            nav = 1;
+        }
+
+        if (nav != 0)
+        {
+            _usingGamepad = false;
+        }
+
+        return nav;
+    }
+
+    private PilotKind TitleDisplayedPilot()
+    {
+        _gamepadPilotIndex = Mathf.Clamp(_gamepadPilotIndex, 0, PilotCount() - 1);
+        return PilotFromIndex(_gamepadPilotIndex);
+    }
+
+    private void CycleTitlePilot(int direction)
+    {
+        if (direction == 0)
+        {
+            return;
+        }
+
+        _gamepadPilotIndex = WrapIndex(_gamepadPilotIndex + direction, PilotCount());
+        _gamepadTitleIndex = TitlePilotFocusStart;
+        PilotKind pilot = TitleDisplayedPilot();
+        if (IsPilotUnlocked(pilot))
+        {
+            _selectedPilot = pilot;
+            SaveMetaProgress();
+            PlaySfx(360.0f + _gamepadPilotIndex * 34.0f, 52.0f, 0.1f, 0.16f, 0.01f, 1);
+        }
+        else
+        {
+            PlaySfx(150.0f, -18.0f, 0.1f, 0.1f, 0.02f, 0);
+        }
+    }
+
+    private bool SelectDisplayedPilotOrShowLock(bool startIfAlreadySelected)
+    {
+        PilotKind pilot = TitleDisplayedPilot();
+        if (!IsPilotUnlocked(pilot))
+        {
+            AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
+            PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
+            return false;
+        }
+
+        bool samePilot = _selectedPilot == pilot;
+        _selectedPilot = pilot;
+        SaveMetaProgress();
+        PlaySfx(360.0f + _gamepadPilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
+        if (samePilot && startIfAlreadySelected)
+        {
+            StartRun();
+        }
+
+        return true;
+    }
+
+    private void TryStartTitleRun()
+    {
+        if (SelectDisplayedPilotOrShowLock(false))
+        {
+            StartRun();
         }
     }
 
@@ -3495,27 +3808,7 @@ public partial class MainGame : Node2D
 
         if (IsTitlePilotFocus(focus))
         {
-            int pilotIndex = focus - TitlePilotFocusStart;
-            PilotKind pilot = PilotFromIndex(pilotIndex);
-            if (IsPilotUnlocked(pilot))
-            {
-                if (_selectedPilot == pilot)
-                {
-                    StartRun();
-                }
-                else
-                {
-                    _selectedPilot = pilot;
-                    _gamepadPilotIndex = pilotIndex;
-                    SaveMetaProgress();
-                    PlaySfx(360.0f + pilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
-                }
-            }
-            else
-            {
-                AddText(PilotUnlockText(pilot), ScreenCenter + new Vector2(0.0f, 210.0f), Rose, 22.0f);
-                PlaySfx(120.0f, -20.0f, 0.12f, 0.16f, 0.05f, 0);
-            }
+            SelectDisplayedPilotOrShowLock(true);
             return;
         }
 
@@ -3526,23 +3819,11 @@ public partial class MainGame : Node2D
         }
         else if (focus == TitleStartFocus)
         {
-            StartRun();
+            TryStartTitleRun();
         }
         else if (focus == TitleSettingsFocus)
         {
             OpenSettings(GameMode.Title);
-        }
-    }
-
-    private void MoveTitleFocus(int navX, int navY)
-    {
-        if (navY != 0)
-        {
-            _gamepadTitleIndex = MoveTitleFocusVertical(_gamepadTitleIndex, navY);
-        }
-        if (navX != 0)
-        {
-            _gamepadTitleIndex = MoveTitleFocusHorizontal(_gamepadTitleIndex, navX);
         }
     }
 
@@ -3556,10 +3837,7 @@ public partial class MainGame : Node2D
 
         if (IsTitlePilotFocus(focus))
         {
-            int pilot = focus - TitlePilotFocusStart;
-            int row = pilot / 4;
-            int column = WrapIndex(pilot % 4 + direction, 4);
-            return TitlePilotFocusStart + row * 4 + column;
+            return TitlePilotFocusStart;
         }
 
         if (IsTitleFooterFocus(focus))
@@ -3571,7 +3849,7 @@ public partial class MainGame : Node2D
         return TitlePilotFocusStart;
     }
 
-    private static int MoveTitleFocusVertical(int focus, int direction)
+    private int MoveTitleFocusVertical(int focus, int direction)
     {
         if (direction < 0)
         {
@@ -3581,48 +3859,22 @@ public partial class MainGame : Node2D
             }
             if (IsTitlePilotFocus(focus))
             {
-                int pilot = focus - TitlePilotFocusStart;
-                int row = pilot / 4;
-                int column = pilot % 4;
-                return row == 0
-                    ? TitleDifficultyFocusStart + Math.Min(column, DifficultyCount - 1)
-                    : TitlePilotFocusStart + column;
+                return TitleDifficultyFocusStart + DifficultyIndex(_selectedDifficulty);
             }
             if (IsTitleFooterFocus(focus))
             {
-                int footer = focus - TitleFooterFocusStart;
-                int column = footer switch
-                {
-                    0 => 0,
-                    2 => 3,
-                    _ => 1,
-                };
-                return TitlePilotFocusStart + 4 + column;
+                return TitlePilotFocusStart;
             }
         }
         else if (direction > 0)
         {
             if (IsTitleDifficultyFocus(focus))
             {
-                int column = Math.Min(focus - TitleDifficultyFocusStart, 3);
-                return TitlePilotFocusStart + column;
+                return TitlePilotFocusStart;
             }
             if (IsTitlePilotFocus(focus))
             {
-                int pilot = focus - TitlePilotFocusStart;
-                int row = pilot / 4;
-                int column = pilot % 4;
-                if (row == 0)
-                {
-                    return TitlePilotFocusStart + 4 + column;
-                }
-
-                return column switch
-                {
-                    0 => TitleMetaFocus,
-                    3 => TitleSettingsFocus,
-                    _ => TitleStartFocus,
-                };
+                return TitleStartFocus;
             }
             if (IsTitleFooterFocus(focus))
             {
@@ -4299,6 +4551,7 @@ public partial class MainGame : Node2D
                 SpawnPlayerShot(origin, Vector2.Right.Rotated(angle), 980.0f, 4.2f, (9.0f + _kairoSync * 1.8f + focus01 * 5.0f) * _damageMultiplier, 0.72f, _kairoRelayProtocol >= 2 ? 1 : 0, false);
             }
             AddParticle(origin, (origin - _playerPos).Normalized() * 150.0f, color, 7.0f, 0.22f);
+            AddDroneCommandCue(origin, origin - _playerPos, color, 0.78f + focus01 * 0.18f);
         }
 
         _orbiterFireTimer = 0.0f;
@@ -4546,6 +4799,7 @@ public partial class MainGame : Node2D
                     SpawnPlayerShot(origin, Vector2.Right.Rotated(angle), 1120.0f, 4.8f, (13.0f + _kairoSync * 2.2f + _kairoOverrideMatrix * 1.8f) * _damageMultiplier, 0.8f, _kairoRelayProtocol >= 2 ? 1 : 0, false);
                 }
                 AddParticle(origin, (origin - _playerPos).Normalized() * 170.0f, color, 7.0f, 0.22f);
+                AddDroneCommandCue(origin, origin - _playerPos, color, 0.92f);
             }
         }
 
@@ -7037,6 +7291,18 @@ public partial class MainGame : Node2D
                 RemoveParticleAt(i);
             }
         }
+
+        for (int i = _droneCommandCues.Count - 1; i >= 0; i--)
+        {
+            DroneCommandCue cue = _droneCommandCues[i];
+            cue.Life -= dt;
+            cue.Pos += cue.Vel * dt;
+            cue.Vel *= 1.0f - dt * 2.4f;
+            if (cue.Life <= 0.0f)
+            {
+                _droneCommandCues.RemoveAt(i);
+            }
+        }
     }
 
     private void UpdateDamageTexts(float dt)
@@ -7335,8 +7601,12 @@ public partial class MainGame : Node2D
     {
         if (_orbiters <= 0)
         {
+            ClearOrbiterVisuals();
             return;
         }
+
+        EnsureOrbiterVisuals();
+        UpdateOrbiterAi(dt);
 
         _orbiterFireTimer -= dt;
         if (_orbiterFireTimer > 0.0f)
@@ -7349,9 +7619,11 @@ public partial class MainGame : Node2D
 
         int shotsToFire = _runPilot == PilotKind.Kairo ? _orbiters : Math.Min(_orbiters, 1 + _orbiters / 3);
         int fired = 0;
-        for (int i = 0; i < _orbiters && fired < shotsToFire; i++)
+        int count = Math.Min(_orbiters, MaxOrbiters);
+        for (int i = 0; i < count && fired < shotsToFire; i++)
         {
-            Vector2 origin = OrbiterPosition(_playerPos, i, _orbiters);
+            OrbiterVisual visual = _orbiterVisuals[i];
+            Vector2 origin = visual.Active ? visual.Pos : _playerPos;
             if (_runPilot == PilotKind.Kairo && IsUpgradeMaxed(UpgradeId.KairoDroneBay))
             {
                 ClearBulletsNear(origin, 34.0f, false);
@@ -7363,8 +7635,164 @@ public partial class MainGame : Node2D
             }
 
             FireOrbiterShot(origin, target);
+            visual.Facing = SafeDirection(target.Pos - origin, visual.Facing);
+            visual.CommandPulse = 1.0f;
             fired++;
         }
+    }
+
+    private void EnsureOrbiterVisuals()
+    {
+        int count = Math.Min(_orbiters, MaxOrbiters);
+        Vector2 aim = SafeDirection(_aimDir, Vector2.Up);
+        Vector2 right = new(-aim.Y, aim.X);
+        for (int i = 0; i < MaxOrbiters; i++)
+        {
+            OrbiterVisual visual = _orbiterVisuals[i];
+            if (i >= count)
+            {
+                visual.Active = false;
+                visual.CommandPulse = 0.0f;
+                continue;
+            }
+
+            if (visual.Active)
+            {
+                continue;
+            }
+
+            visual.Active = true;
+            visual.Phase = _rng.RandfRange(0.0f, Mathf.Tau);
+            visual.Pos = ClampToArena(_playerPos - aim * _rng.RandfRange(48.0f, 92.0f) + right * _rng.RandfRange(-42.0f, 42.0f), 28.0f);
+            visual.Vel = _playerVel * 0.24f;
+            visual.Facing = aim;
+            visual.CommandPulse = 0.0f;
+        }
+    }
+
+    private void UpdateOrbiterAi(float dt)
+    {
+        int count = Math.Min(_orbiters, MaxOrbiters);
+        Vector2 aim = SafeDirection(_aimDir, Vector2.Up);
+        Vector2 right = new(-aim.Y, aim.X);
+        bool kairo = _runPilot == PilotKind.Kairo;
+        float stiffness = kairo ? 5.8f : 5.0f;
+        float maxSpeed = kairo ? 620.0f : 540.0f;
+
+        for (int i = 0; i < count; i++)
+        {
+            OrbiterVisual visual = _orbiterVisuals[i];
+            if (!visual.Active)
+            {
+                continue;
+            }
+
+            Vector2 desired = OrbiterFormationTarget(i, count, aim, right, visual.Phase);
+            Enemy? target = FindNearestEnemy(visual.Pos, kairo ? 760.0f : 620.0f);
+            if (target != null)
+            {
+                Vector2 toTarget = target.Pos - visual.Pos;
+                Vector2 targetDir = SafeDirection(toTarget, aim);
+                Vector2 targetSide = new(-targetDir.Y, targetDir.X);
+                float flank = Mathf.Sin(_time * 1.35f + visual.Phase) * (kairo ? 46.0f : 32.0f);
+                Vector2 attackPoint = target.Pos - targetDir * (kairo ? 126.0f : 156.0f) + targetSide * flank;
+                float attackPull = kairo ? 0.34f : 0.22f;
+                desired = desired.Lerp(ClampToArena(attackPoint, 34.0f), attackPull);
+                visual.Facing = SafeDirection(visual.Facing.Lerp(targetDir, 1.0f - Mathf.Exp(-dt * 7.5f)), targetDir);
+            }
+            else
+            {
+                visual.Facing = SafeDirection(visual.Facing.Lerp(aim, 1.0f - Mathf.Exp(-dt * 5.0f)), aim);
+            }
+
+            desired += OrbiterSeparation(i, count) + OrbiterBulletAvoidance(visual.Pos);
+            Vector2 desiredVelocity = (desired - visual.Pos) * stiffness + _playerVel * (kairo ? 0.28f : 0.34f);
+            desiredVelocity = LimitVector(desiredVelocity, maxSpeed);
+            visual.Vel = visual.Vel.Lerp(desiredVelocity, 1.0f - Mathf.Exp(-dt * 8.0f));
+            visual.Pos = ClampToArena(visual.Pos + visual.Vel * dt, 30.0f);
+            visual.CommandPulse = Mathf.Max(0.0f, visual.CommandPulse - dt * 2.8f);
+        }
+    }
+
+    private Vector2 OrbiterFormationTarget(int index, int count, Vector2 aim, Vector2 right, float phase)
+    {
+        int columns = Math.Min(3, Math.Max(1, count));
+        int row = index / columns;
+        int column = index % columns;
+        float lateral = (column - (columns - 1) * 0.5f) * (_runPilot == PilotKind.Kairo ? 54.0f : 48.0f);
+        if (row % 2 == 1)
+        {
+            lateral += (_runPilot == PilotKind.Kairo ? 18.0f : 14.0f);
+        }
+
+        float rear = (_runPilot == PilotKind.Kairo ? 54.0f : 66.0f) + row * 42.0f + Math.Abs(column - (columns - 1) * 0.5f) * 8.0f;
+        Vector2 idle = right * Mathf.Sin(_time * 1.22f + phase) * 10.0f + aim * Mathf.Cos(_time * 1.05f + phase * 0.7f) * 8.0f;
+        return ClampToArena(_playerPos - aim * rear + right * lateral + _playerVel * 0.08f + idle, 30.0f);
+    }
+
+    private Vector2 OrbiterSeparation(int index, int count)
+    {
+        Vector2 repel = Vector2.Zero;
+        Vector2 pos = _orbiterVisuals[index].Pos;
+        for (int i = 0; i < count; i++)
+        {
+            if (i == index || !_orbiterVisuals[i].Active)
+            {
+                continue;
+            }
+
+            Vector2 away = pos - _orbiterVisuals[i].Pos;
+            float distanceSquared = away.LengthSquared();
+            if (distanceSquared <= 0.01f || distanceSquared > 46.0f * 46.0f)
+            {
+                continue;
+            }
+
+            float distance = Mathf.Sqrt(distanceSquared);
+            repel += away / distance * (46.0f - distance) * 0.95f;
+        }
+
+        Vector2 fromPlayer = pos - _playerPos;
+        float playerDistanceSquared = fromPlayer.LengthSquared();
+        if (playerDistanceSquared > 0.01f && playerDistanceSquared < 52.0f * 52.0f)
+        {
+            float distance = Mathf.Sqrt(playerDistanceSquared);
+            repel += fromPlayer / distance * (52.0f - distance) * 0.7f;
+        }
+
+        return repel;
+    }
+
+    private Vector2 OrbiterBulletAvoidance(Vector2 pos)
+    {
+        if (_visualPressure > 0.88f)
+        {
+            return Vector2.Zero;
+        }
+
+        Vector2 repel = Vector2.Zero;
+        int influences = 0;
+        for (int i = 0; i < _shots.Count && influences < 4; i++)
+        {
+            Shot shot = _shots[i];
+            if (shot.FromPlayer)
+            {
+                continue;
+            }
+
+            Vector2 away = pos - shot.Pos;
+            float distanceSquared = away.LengthSquared();
+            if (distanceSquared <= 0.01f || distanceSquared > 74.0f * 74.0f)
+            {
+                continue;
+            }
+
+            float distance = Mathf.Sqrt(distanceSquared);
+            repel += away / distance * (74.0f - distance) * 0.48f;
+            influences++;
+        }
+
+        return repel;
     }
 
     private float OrbiterFireInterval()
@@ -9183,13 +9611,6 @@ public partial class MainGame : Node2D
         Vector2 forward = _aimDir;
 
         DrawPlayerTrail(p, polarity, invuln);
-        DrawGlow(p, polarity, 52.0f, 0.035f * invuln, 3);
-        DrawCircle(p, 42.0f, Alpha(polarity, 0.24f * invuln), false, 2.0f, true);
-        if (_invulnTimer > 0.0f)
-        {
-            DrawCircle(p, 62.0f, Alpha(Paper, 0.2f + invuln * 0.16f), false, 2.0f, true);
-        }
-
         DrawPilotHull(_runPilot, p, forward, polarity, invuln, 1.0f);
         DrawPolarityCooldownBadge(p, polarity);
 
@@ -9199,14 +9620,49 @@ public partial class MainGame : Node2D
             DrawLine(p - forward * 152.0f, p + forward * 24.0f, Alpha(Paper, 0.24f), 2.0f, true);
         }
 
-        for (int i = 0; i < _orbiters; i++)
+        int orbiterCount = Math.Min(_orbiters, MaxOrbiters);
+        for (int i = 0; i < orbiterCount; i++)
         {
-            Vector2 orb = OrbiterPosition(p, i, _orbiters);
-            float charge = 1.0f - Mathf.Clamp(_orbiterFireTimer / OrbiterFireInterval(), 0.0f, 1.0f);
-            DrawCircle(orb, 8.0f, Alpha(Graphite, 0.94f));
-            DrawCircle(orb, 8.0f, Alpha(polarity, 0.76f), false, 2.0f, true);
-            DrawCircle(orb, 12.0f + charge * 4.0f, Alpha(polarity, 0.12f + charge * 0.18f), false, 1.0f, true);
+            DrawOrbiter(_orbiterVisuals[i], polarity);
         }
+    }
+
+    private void DrawOrbiter(OrbiterVisual visual, Color polarity)
+    {
+        if (!visual.Active)
+        {
+            return;
+        }
+
+        Vector2 pos = visual.Pos + ShakeOffset();
+        float charge = 1.0f - Mathf.Clamp(_orbiterFireTimer / OrbiterFireInterval(), 0.0f, 1.0f);
+        bool kairo = _runPilot == PilotKind.Kairo;
+        Texture2D? texture = kairo ? _kairoDroneTexture : _supportDroneTexture;
+        Rect2 region = kairo ? _kairoDroneRegion : _supportDroneRegion;
+        Color accent = kairo ? PickupBlue.Lerp(Rose, 0.28f) : polarity.Lerp(Paper, 0.14f);
+        float pulse = Mathf.Max(charge * 0.16f, visual.CommandPulse * 0.28f);
+
+        if (texture != null && region.Size.X > 0.0f && region.Size.Y > 0.0f)
+        {
+            Vector2 drawSize = DroneTextureDrawSize(region.Size, kairo);
+            float shadowRadius = Mathf.Max(drawSize.X, drawSize.Y) * 0.34f;
+            if (_visualPressure < 0.86f)
+            {
+                DrawCircle(pos + new Vector2(0.0f, 4.0f), shadowRadius, Alpha(Void, 0.34f));
+                DrawCircle(pos, shadowRadius * (1.0f + charge * 0.22f), Alpha(accent, 0.08f + charge * 0.04f));
+            }
+
+            DrawFacingTexture(texture, region, pos, visual.Facing, drawSize, Alpha(Colors.White, 0.92f));
+            if (visual.CommandPulse > 0.0f && _visualPressure < 0.84f)
+            {
+                float ringRadius = Mathf.Max(drawSize.X, drawSize.Y) * (0.52f + visual.CommandPulse * 0.22f);
+                DrawArc(pos, ringRadius, -Mathf.Pi * 0.5f, Mathf.Pi * 1.5f, 24, Alpha(accent, visual.CommandPulse * 0.26f), UiHairline, true);
+            }
+            return;
+        }
+
+        DrawCircle(pos, 9.0f, Alpha(Graphite, 0.94f));
+        DrawCircle(pos, 9.0f, Alpha(accent, 0.76f), false, 1.6f, true);
     }
 
     private void DrawPlayerTrail(Vector2 current, Color polarity, float invuln)
@@ -9254,12 +9710,6 @@ public partial class MainGame : Node2D
         DrawCircle(center, radius, Alpha(Paper, 0.16f), false, UiHairline, true);
         DrawArc(center, radius, -Mathf.Pi * 0.5f, -Mathf.Pi * 0.5f + Mathf.Tau * ready, 24, Alpha(polarity, 0.72f), UiHairline, true);
         DrawCircle(center, 3.0f, Alpha(next, 0.42f));
-    }
-
-    private Vector2 OrbiterPosition(Vector2 center, int index, int total)
-    {
-        float a = _time * (1.8f + index * 0.13f) + index * Mathf.Tau / Math.Max(1, total);
-        return center + new Vector2(82.0f, 0.0f).Rotated(a);
     }
 
     private void DrawPilotHull(PilotKind pilot, Vector2 center, Vector2 forward, Color polarity, float invuln, float scale)
@@ -9426,21 +9876,66 @@ public partial class MainGame : Node2D
             return false;
         }
 
-        Vector2 sourceSize = texture.GetSize();
-        float sourceMax = Mathf.Max(sourceSize.X, sourceSize.Y);
-        if (sourceMax <= 0.0f)
+        Rect2 sourceRegion = PilotTextureRegion(pilot, texture);
+        Vector2 sourceSize = sourceRegion.Size;
+        if (sourceSize.X <= 0.0f || sourceSize.Y <= 0.0f)
         {
             return false;
         }
 
         Vector2 direction = forward.LengthSquared() > 0.01f ? forward.Normalized() : Vector2.Right;
-        float maxSide = 88.0f * scale;
-        Vector2 drawSize = sourceSize * (maxSide / sourceMax);
+        Vector2 drawSize = PilotTextureDrawSize(pilot, sourceSize, scale);
         Color tint = Alpha(Colors.White, Mathf.Clamp(alpha, 0.0f, 1.0f));
         DrawSetTransform(center, direction.Angle() + Mathf.Pi * 0.5f, Vector2.One);
-        DrawTextureRect(texture, new Rect2(drawSize * -0.5f, drawSize), false, tint);
+        DrawTextureRectRegion(texture, new Rect2(drawSize * -0.5f, drawSize), sourceRegion, tint);
         DrawSetTransform(Vector2.Zero, 0.0f, Vector2.One);
         return true;
+    }
+
+    private Rect2 PilotTextureRegion(PilotKind pilot, Texture2D texture)
+    {
+        if (_pilotTextureRegions.TryGetValue(pilot, out Rect2 region) && region.Size.X > 0.0f && region.Size.Y > 0.0f)
+        {
+            return region;
+        }
+
+        return new Rect2(Vector2.Zero, texture.GetSize());
+    }
+
+    private static Vector2 PilotTextureDrawSize(PilotKind pilot, Vector2 sourceSize, float scale)
+    {
+        float area = Mathf.Max(1.0f, sourceSize.X * sourceSize.Y);
+        float baseScale = Mathf.Sqrt(PilotTextureTargetArea / area) * PilotTextureScaleBias(pilot) * scale;
+        Vector2 drawSize = sourceSize * baseScale;
+        float maxSide = Mathf.Max(drawSize.X, drawSize.Y);
+        if (maxSide <= 0.0f)
+        {
+            return drawSize;
+        }
+
+        float minSide = PilotTextureMinMaxSide * scale;
+        float maxAllowedSide = PilotTextureMaxMaxSide * scale;
+        if (maxSide < minSide)
+        {
+            drawSize *= minSide / maxSide;
+        }
+        else if (maxSide > maxAllowedSide)
+        {
+            drawSize *= maxAllowedSide / maxSide;
+        }
+
+        return drawSize;
+    }
+
+    private static float PilotTextureScaleBias(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Rook => 1.04f,
+            PilotKind.Kairo or PilotKind.Nyx => 1.02f,
+            PilotKind.Orion => 0.98f,
+            _ => 1.0f,
+        };
     }
 
     private void DrawEnemy(Enemy enemy)
@@ -9454,19 +9949,27 @@ public partial class MainGame : Node2D
         float dashWarm = enemy.DashWarmup > 0.0f ? EnemyDashWarmup01(enemy) : 0.0f;
         bool importantState = charge > 0.0f || overheat > 0.0f || dashWarm > 0.0f || enemy.DashTime > 0.0f;
         bool heavyVisualLoad = _visualPressure > 0.72f && enemy.Kind != EnemyKind.Boss && !enemy.Elite && !importantState;
+        bool artBacked = HasEnemyTexture(enemy);
 
-        if (!heavyVisualLoad)
+        if (!artBacked && !heavyVisualLoad)
         {
             DrawGlow(p, charge > 0.0f ? EnemyBulletColor() : color, enemy.Radius * (1.55f + enemy.SpawnPulse * 0.55f + charge * 0.65f + overheat * 0.28f), enemy.Kind == EnemyKind.Boss ? 0.08f : 0.025f + charge * 0.04f, 3);
         }
-        DrawCircle(p, enemy.Radius * pulse, Alpha(color, heavyVisualLoad ? 0.12f : 0.2f), false, heavyVisualLoad ? 1.2f : 1.6f + enemy.SpawnPulse * 2.0f, true);
+        if (!artBacked)
+        {
+            DrawCircle(p, enemy.Radius * pulse, Alpha(color, heavyVisualLoad ? 0.12f : 0.2f), false, heavyVisualLoad ? 1.2f : 1.6f + enemy.SpawnPulse * 2.0f, true);
+        }
+
         if (dashWarm > 0.0f && !heavyVisualLoad)
         {
             Vector2 dashDir = enemy.DashDir.LengthSquared() > 0.01f ? enemy.DashDir.Normalized() : Vector2.Down;
             float length = enemy.Radius + 84.0f + dashWarm * 74.0f;
             DrawLine(p + dashDir * enemy.Radius * 0.8f, p + dashDir * length, Alpha(Gold, 0.2f + dashWarm * 0.38f), UiHairline + dashWarm * 0.8f, true);
             DrawLine(p - dashDir * enemy.Radius * 0.55f, p + dashDir * enemy.Radius * 0.9f, Alpha(Paper, 0.28f + dashWarm * 0.18f), UiHairline, true);
-            DrawCircle(p, enemy.Radius * (1.12f + dashWarm * 0.28f), Alpha(Gold, 0.18f + dashWarm * 0.2f), false, UiHairline, true);
+            if (!artBacked)
+            {
+                DrawCircle(p, enemy.Radius * (1.12f + dashWarm * 0.28f), Alpha(Gold, 0.18f + dashWarm * 0.2f), false, UiHairline, true);
+            }
         }
         else if (enemy.DashTime > 0.0f && !heavyVisualLoad)
         {
@@ -9477,9 +9980,12 @@ public partial class MainGame : Node2D
         {
             Vector2 aim = (_playerPos - enemy.Pos).LengthSquared() > 0.01f ? (_playerPos - enemy.Pos).Normalized() : Vector2.Down;
             DrawLine(p + aim * enemy.Radius * 0.8f, p + aim * (enemy.Radius + 62.0f + charge * 36.0f), Alpha(EnemyBulletColor(), 0.18f + charge * 0.32f), UiHairline + charge * 0.55f, true);
-            DrawCircle(p, enemy.Radius * (1.16f + charge * 0.22f), Alpha(EnemyBulletColor(), 0.24f + charge * 0.18f), false, UiHairline, true);
+            if (!artBacked)
+            {
+                DrawCircle(p, enemy.Radius * (1.16f + charge * 0.22f), Alpha(EnemyBulletColor(), 0.24f + charge * 0.18f), false, UiHairline, true);
+            }
         }
-        else if (overheat > 0.0f && !heavyVisualLoad)
+        else if (overheat > 0.0f && !heavyVisualLoad && !artBacked)
         {
             DrawCircle(p, enemy.Radius * (1.18f + overheat * 0.12f), Alpha(Gold, 0.18f + overheat * 0.16f), false, UiHairline, true);
         }
@@ -9487,6 +9993,11 @@ public partial class MainGame : Node2D
         if (enemy.Kind == EnemyKind.Boss)
         {
             DrawBoss(enemy, p, color, hp);
+            return;
+        }
+
+        if (TryDrawEnemyTexture(enemy, p, color, hp))
+        {
             return;
         }
 
@@ -9526,6 +10037,87 @@ public partial class MainGame : Node2D
         DrawEnemyMark(enemy, p, color, rotation);
         DrawRect(new Rect2(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f, 5.0f)), Alpha(Paper, 0.13f), true);
         DrawRect(new Rect2(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f * hp, 5.0f)), Alpha(color, 0.78f), true);
+    }
+
+    private bool HasEnemyTexture(Enemy enemy)
+    {
+        if (enemy.Kind == EnemyKind.Boss)
+        {
+            return _bossTextures.ContainsKey(enemy.BossArchetype);
+        }
+
+        return (enemy.Elite && _eliteEnemyTextures.ContainsKey(enemy.Kind)) || _enemyTextures.ContainsKey(enemy.Kind);
+    }
+
+    private bool TryDrawEnemyTexture(Enemy enemy, Vector2 p, Color color, float hp)
+    {
+        Texture2D? texture = null;
+        if (enemy.Elite)
+        {
+            _eliteEnemyTextures.TryGetValue(enemy.Kind, out texture);
+        }
+
+        if (texture == null && !_enemyTextures.TryGetValue(enemy.Kind, out texture))
+        {
+            return false;
+        }
+
+        Vector2 facing = EnemyFacingDirection(enemy);
+        Rect2 sourceRegion = EnemyTextureRegion(enemy, texture);
+        Vector2 drawSize = EnemyTextureDrawSize(enemy, sourceRegion.Size);
+        DrawFacingTexture(texture, sourceRegion, p, facing, drawSize, Alpha(Colors.White, 0.95f));
+
+        if (hp < 0.995f || enemy.Elite)
+        {
+            Rect2 bar = new(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f, 5.0f));
+            DrawRect(bar, Alpha(Paper, 0.13f), true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * hp, bar.Size.Y)), Alpha(color, 0.78f), true);
+        }
+
+        return true;
+    }
+
+    private Rect2 EnemyTextureRegion(Enemy enemy, Texture2D texture)
+    {
+        Dictionary<EnemyKind, Rect2> regions = enemy.Elite ? _eliteEnemyTextureRegions : _enemyTextureRegions;
+        if (regions.TryGetValue(enemy.Kind, out Rect2 region) && region.Size.X > 0.0f && region.Size.Y > 0.0f)
+        {
+            return region;
+        }
+
+        return new Rect2(Vector2.Zero, texture.GetSize());
+    }
+
+    private static Vector2 EnemyTextureDrawSize(Enemy enemy, Vector2 sourceSize)
+    {
+        if (sourceSize.X <= 0.0f || sourceSize.Y <= 0.0f)
+        {
+            return Vector2.Zero;
+        }
+
+        float rootScale = enemy.Elite ? EliteEnemyTextureRootScale : EnemyTextureRootScale;
+        float visualRoot = enemy.Radius * rootScale * EnemyTextureScaleBias(enemy.Kind, enemy.Elite);
+        return FitTextureSizeToArea(sourceSize, visualRoot * visualRoot, enemy.Radius * EnemyTextureMinMaxSideScale, enemy.Radius * EnemyTextureMaxMaxSideScale);
+    }
+
+    private static float EnemyTextureScaleBias(EnemyKind kind, bool elite)
+    {
+        float bias = kind switch
+        {
+            EnemyKind.Shard => 0.92f,
+            EnemyKind.Harrier => 0.96f,
+            EnemyKind.Chaser => 0.98f,
+            EnemyKind.Mine => 0.92f,
+            EnemyKind.Turret => 1.03f,
+            EnemyKind.Splitter => 1.04f,
+            EnemyKind.Siren => 1.04f,
+            EnemyKind.Lance => 1.06f,
+            EnemyKind.Bulwark => 1.08f,
+            EnemyKind.Warden => 1.1f,
+            _ => 1.0f,
+        };
+
+        return elite ? bias * 1.04f : bias;
     }
 
     private void DrawSimpleEnemy(Enemy enemy, Vector2 p, Color color, float hp, float rotation)
@@ -9631,6 +10223,12 @@ public partial class MainGame : Node2D
         Color accent = BossAccent(archetype);
         color = color.Lerp(accent, 0.32f);
         float rotation = _time * (archetype == BossArchetype.Prism ? 0.58f : archetype == BossArchetype.Forge ? 0.18f : 0.35f);
+        if (TryDrawBossTexture(enemy, p, accent))
+        {
+            DrawBossTextureCues(enemy, p, accent, rotation);
+            return;
+        }
+
         int sides = archetype switch
         {
             BossArchetype.Prism => 6,
@@ -9745,6 +10343,185 @@ public partial class MainGame : Node2D
             DrawLine(p - Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, p + Vector2.Down.Rotated(rotation) * enemy.Radius * 0.62f, Alpha(Paper, 0.28f), 1.8f, true);
         }
 
+    }
+
+    private bool TryDrawBossTexture(Enemy enemy, Vector2 p, Color accent)
+    {
+        if (!_bossTextures.TryGetValue(enemy.BossArchetype, out Texture2D? texture) || texture == null)
+        {
+            return false;
+        }
+
+        Vector2 facing = EnemyFacingDirection(enemy);
+        Rect2 sourceRegion = BossTextureRegion(enemy.BossArchetype, texture);
+        Vector2 drawSize = BossTextureDrawSize(enemy, sourceRegion.Size);
+        DrawFacingTexture(texture, sourceRegion, p, facing, drawSize, Alpha(Colors.White, 0.98f));
+        return true;
+    }
+
+    private Rect2 BossTextureRegion(BossArchetype archetype, Texture2D texture)
+    {
+        if (_bossTextureRegions.TryGetValue(archetype, out Rect2 region) && region.Size.X > 0.0f && region.Size.Y > 0.0f)
+        {
+            return region;
+        }
+
+        return new Rect2(Vector2.Zero, texture.GetSize());
+    }
+
+    private static Vector2 BossTextureDrawSize(Enemy enemy, Vector2 sourceSize)
+    {
+        if (sourceSize.X <= 0.0f || sourceSize.Y <= 0.0f)
+        {
+            return Vector2.Zero;
+        }
+
+        float visualRoot = enemy.Radius * BossTextureRootScale * BossTextureScaleBias(enemy.BossArchetype);
+        return FitTextureSizeToArea(sourceSize, visualRoot * visualRoot, enemy.Radius * BossTextureMinMaxSideScale, enemy.Radius * BossTextureMaxMaxSideScale);
+    }
+
+    private static float BossTextureScaleBias(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Choir => 0.94f,
+            BossArchetype.Prism => 0.98f,
+            BossArchetype.Swarm => 1.1f,
+            BossArchetype.Forge => 1.08f,
+            BossArchetype.Rift => 1.04f,
+            BossArchetype.Mirror => 1.04f,
+            BossArchetype.Tempest => 1.0f,
+            BossArchetype.Bastion => 1.14f,
+            BossArchetype.Serpent => 1.08f,
+            BossArchetype.Oracle => 1.02f,
+            _ => 1.0f,
+        };
+    }
+
+    private void DrawBossTextureCues(Enemy enemy, Vector2 p, Color accent, float rotation)
+    {
+        if (enemy.BossGuard > 0.0f)
+        {
+            float guard = Mathf.Clamp(enemy.BossGuard / 1.2f, 0.0f, 1.0f);
+            DrawCircle(p, enemy.Radius * (1.58f + guard * 0.18f), Alpha(Paper, 0.08f + guard * 0.12f), false, UiStroke, true);
+            DrawArc(p, enemy.Radius * 1.7f, -Mathf.Pi * 0.5f, -Mathf.Pi * 0.5f + Mathf.Tau * guard, 48, Alpha(accent, 0.34f + guard * 0.28f), UiStroke, true);
+        }
+
+        if (enemy.BossIntentPulse <= 0.0f)
+        {
+            return;
+        }
+
+        float intent = Mathf.Clamp(enemy.BossIntentPulse / 1.45f, 0.0f, 1.0f);
+        float ring = enemy.Radius * (1.62f + (1.0f - intent) * 0.28f);
+        Color cue = Alpha(accent.Lerp(Paper, intent * 0.18f), 0.22f + intent * 0.34f);
+        Vector2 aim = (_playerPos - enemy.Pos).LengthSquared() > 0.01f ? (_playerPos - enemy.Pos).Normalized() : Vector2.Down;
+        DrawCircle(p, ring, cue, false, UiHairline, true);
+        if (enemy.BossIntent is BossPatternKind.HeavyLance or BossPatternKind.OracleSnipe or BossPatternKind.HazardFan)
+        {
+            DrawLine(p, p + aim * ring * 1.18f, Alpha(EnemyBulletColor(), 0.22f + intent * 0.22f), UiStroke, true);
+        }
+        else if (enemy.BossIntent is BossPatternKind.SpiralRing or BossPatternKind.ReverseSpiral or BossPatternKind.TempestWheel or BossPatternKind.SerpentCoil)
+        {
+            DrawArc(p, ring * 0.92f, rotation, rotation + Mathf.Pi * 1.6f, 36, cue, UiStroke, true);
+        }
+        else if (enemy.BossIntent is BossPatternKind.SummonWing or BossPatternKind.WardenCall or BossPatternKind.MineDrift)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2 node = p + Vector2.Right.Rotated(rotation + i * Mathf.Tau / 4.0f) * ring * 0.62f;
+                DrawDiamond(node, enemy.Radius * 0.08f, cue, rotation);
+            }
+        }
+    }
+
+    private Vector2 EnemyFacingDirection(Enemy enemy)
+    {
+        if ((enemy.DashWarmup > 0.0f || enemy.DashTime > 0.0f) && enemy.DashDir.LengthSquared() > 0.01f)
+        {
+            return enemy.DashDir.Normalized();
+        }
+
+        Vector2 toPlayer = _playerPos - enemy.Pos;
+        if (toPlayer.LengthSquared() > 0.01f)
+        {
+            return toPlayer.Normalized();
+        }
+
+        if (enemy.Vel.LengthSquared() > 0.01f)
+        {
+            return enemy.Vel.Normalized();
+        }
+
+        return Vector2.Down;
+    }
+
+    private static Vector2 FitTextureSizeToArea(Vector2 sourceSize, float targetArea, float minMaxSide, float maxMaxSide)
+    {
+        float area = Mathf.Max(1.0f, sourceSize.X * sourceSize.Y);
+        Vector2 drawSize = sourceSize * Mathf.Sqrt(Mathf.Max(1.0f, targetArea) / area);
+        float maxSide = Mathf.Max(drawSize.X, drawSize.Y);
+        if (maxSide <= 0.0f)
+        {
+            return drawSize;
+        }
+
+        if (maxSide < minMaxSide)
+        {
+            drawSize *= minMaxSide / maxSide;
+        }
+        else if (maxSide > maxMaxSide)
+        {
+            drawSize *= maxMaxSide / maxSide;
+        }
+
+        return drawSize;
+    }
+
+    private void DrawFacingTexture(Texture2D texture, Rect2 sourceRegion, Vector2 center, Vector2 direction, Vector2 drawSize, Color tint)
+    {
+        if (sourceRegion.Size.X <= 0.0f || sourceRegion.Size.Y <= 0.0f || drawSize.X <= 0.0f || drawSize.Y <= 0.0f)
+        {
+            return;
+        }
+
+        Vector2 facing = direction.LengthSquared() > 0.01f ? direction.Normalized() : Vector2.Down;
+        DrawSetTransform(center, facing.Angle() + Mathf.Pi * 0.5f, Vector2.One);
+        DrawTextureRectRegion(texture, new Rect2(drawSize * -0.5f, drawSize), sourceRegion, tint);
+        DrawSetTransform(Vector2.Zero, 0.0f, Vector2.One);
+    }
+
+    private static Vector2 DroneTextureDrawSize(Vector2 sourceSize, bool kairo)
+    {
+        float targetArea = kairo ? DroneTextureKairoTargetArea : DroneTextureSupportTargetArea;
+        float maxSide = kairo ? DroneTextureMaxMaxSide : DroneTextureMaxMaxSide - 4.0f;
+        return FitTextureSizeToArea(sourceSize, targetArea, DroneTextureMinMaxSide, maxSide);
+    }
+
+    private static Vector2 DroneCommandTextureDrawSize(Vector2 sourceSize, float scale)
+    {
+        Vector2 size = FitTextureSizeToArea(sourceSize, DroneCommandTextureTargetArea, DroneCommandTextureMinMaxSide, DroneCommandTextureMaxMaxSide);
+        return size * scale;
+    }
+
+    private void DrawDroneCommandCue(DroneCommandCue cue)
+    {
+        float t = Mathf.Clamp(cue.Life / cue.MaxLife, 0.0f, 1.0f);
+        float age = 1.0f - t;
+        Vector2 pos = cue.Pos + ShakeOffset();
+        Vector2 facing = SafeDirection(cue.Facing, Vector2.Up);
+        float alpha = Mathf.Sin(t * Mathf.Pi) * 0.78f;
+
+        if (_kairoCommandTexture != null && _kairoCommandRegion.Size.X > 0.0f && _kairoCommandRegion.Size.Y > 0.0f)
+        {
+            Vector2 drawSize = DroneCommandTextureDrawSize(_kairoCommandRegion.Size, cue.Scale * (0.82f + age * 0.34f));
+            DrawFacingTexture(_kairoCommandTexture, _kairoCommandRegion, pos, facing, drawSize, Alpha(Colors.White, alpha));
+            return;
+        }
+
+        float radius = (22.0f + age * 18.0f) * cue.Scale;
+        DrawCircle(pos, radius, Alpha(cue.Color, alpha * 0.18f), false, UiHairline, true);
+        DrawLine(pos - facing * radius * 0.55f, pos + facing * radius * 0.75f, Alpha(cue.Color, alpha * 0.34f), UiHairline, true);
     }
 
     private void DrawShot(Shot shot)
@@ -10688,46 +11465,60 @@ public partial class MainGame : Node2D
 
     private void DrawPilotSelect()
     {
-        DrawText(T("menu.pilot"), new Vector2(0.0f, 690.0f), 15, Alpha(Paper, 0.34f), HorizontalAlignment.Center, ScreenWidth, false, 0);
-        for (int i = 0; i < PilotCount(); i++)
-        {
-            DrawPilotCard(i, PilotFromIndex(i), PilotCardRect(i));
-        }
-    }
-
-    private void DrawPilotCard(int index, PilotKind pilot, Rect2 rect)
-    {
+        Rect2 panel = PilotCardRect(0);
+        PilotKind pilot = TitleDisplayedPilot();
         bool unlocked = IsPilotUnlocked(pilot);
-        bool selected = _selectedPilot == pilot;
-        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
+        bool selected = unlocked && _selectedPilot == pilot;
         Color accent = unlocked ? PilotAccent(pilot) : GridLine;
-        Rect2 drawRect = hover ? rect.Grow(4.0f) : rect;
-        DrawPanel(drawRect, Alpha(Graphite, selected ? 0.46f : 0.24f), Alpha(accent, selected ? 0.72f : 0.22f));
-        DrawPilotGlyph(pilot, drawRect.Position + new Vector2(34.0f, 38.0f), accent, unlocked);
-        DrawText(PilotName(pilot).ToUpperInvariant(), drawRect.Position + new Vector2(72.0f, 27.0f), 18, unlocked ? Paper : Alpha(Paper, 0.38f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, true, 2);
-        DrawText(PilotWeapon(pilot), drawRect.Position + new Vector2(72.0f, 49.0f), 14, Alpha(accent, unlocked ? 0.88f : 0.42f), HorizontalAlignment.Left, drawRect.Size.X - 86.0f, false, 0);
-        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), drawRect.Position + new Vector2(18.0f, 65.0f), unlocked ? 11 : 10, Alpha(Paper, unlocked ? 0.58f : 0.46f), drawRect.Size.X - 36.0f, unlocked ? 13.0f : 12.0f);
-        if (selected)
-        {
-            DrawLine(drawRect.Position + new Vector2(12.0f, drawRect.Size.Y - 10.0f), drawRect.End - new Vector2(12.0f, 10.0f), Alpha(accent, 0.9f), UiAccentStroke, true);
-        }
+        Rect2 drawRect = panel;
+
+        DrawText(T("menu.pilot"), new Vector2(0.0f, panel.Position.Y - 20.0f), 14, Alpha(Paper, 0.34f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawPilotSwitchArrow(PilotPreviousButtonRect(), -1, accent);
+        DrawPilotSwitchArrow(PilotNextButtonRect(), 1, accent);
+
+        DrawGlow(drawRect.Position + new Vector2(170.0f, drawRect.Size.Y * 0.56f), accent, 210.0f, unlocked ? 0.022f : 0.012f, 4);
+
+        Vector2 artCenter = drawRect.Position + new Vector2(172.0f, 112.0f);
+        DrawLine(artCenter + new Vector2(-86.0f, 82.0f), artCenter + new Vector2(86.0f, 82.0f), Alpha(accent, unlocked ? 0.24f : 0.12f), UiHairline, true);
+        DrawLine(artCenter + new Vector2(-48.0f, 92.0f), artCenter + new Vector2(48.0f, 92.0f), Alpha(Paper, unlocked ? 0.16f : 0.07f), UiHairline, true);
+        DrawPilotHull(pilot, artCenter, Vector2.Up, accent, unlocked ? 0.95f : 0.3f, 1.62f);
+
+        Vector2 textPos = drawRect.Position + new Vector2(330.0f, 42.0f);
+        DrawText(PilotName(pilot).ToUpperInvariant(), textPos, 34, unlocked ? Paper : Alpha(Paper, 0.36f), HorizontalAlignment.Left, 300.0f, true, 4);
+        DrawText($"{_gamepadPilotIndex + 1:00}/{PilotCount():00}", drawRect.Position + new Vector2(drawRect.Size.X - 92.0f, 41.0f), 13, Alpha(accent, unlocked ? 0.68f : 0.34f), HorizontalAlignment.Right, 72.0f, false, 0);
+        DrawLine(textPos + new Vector2(0.0f, 44.0f), drawRect.Position + new Vector2(drawRect.Size.X - 30.0f, 86.0f), Alpha(accent, unlocked ? 0.26f : 0.12f), UiHairline, true);
+
+        DrawText(PilotWeapon(pilot), textPos + new Vector2(0.0f, 70.0f), 17, Alpha(accent, unlocked ? 0.9f : 0.42f), HorizontalAlignment.Left, 270.0f, true, 1);
+        DrawText($"{T("pilot.selector.skill")}: {TacticalSkillName(pilot)}", textPos + new Vector2(300.0f, 70.0f), 15, Alpha(Paper, unlocked ? 0.62f : 0.32f), HorizontalAlignment.Left, 238.0f, true, 1);
+        DrawText($"{T("pilot.selector.ultimate")}: {UltimateName(pilot)}", textPos + new Vector2(0.0f, 96.0f), 14, Alpha(Paper, unlocked ? 0.52f : 0.28f), HorizontalAlignment.Left, 540.0f, false, 0);
+        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), textPos + new Vector2(0.0f, 122.0f), unlocked ? 13 : 12, Alpha(Paper, unlocked ? 0.58f : 0.48f), 548.0f, unlocked ? 16.0f : 15.0f);
+
+        string stateText = unlocked ? T("pilot.selector.selected") : T("pilot.selector.locked");
+        Color stateColor = unlocked ? accent : Rose;
+        DrawText(stateText, drawRect.Position + new Vector2(drawRect.Size.X - 166.0f, drawRect.Size.Y - 24.0f), 11, Alpha(stateColor, selected ? 0.82f : 0.58f), HorizontalAlignment.Right, 134.0f, false, 0);
+
         if (!unlocked)
         {
-            DrawText(T("ui.lock"), drawRect.Position + new Vector2(drawRect.Size.X - 66.0f, 28.0f), 13, Alpha(Rose, 0.74f), HorizontalAlignment.Center, 50.0f, true, 2);
-            Rect2 bar = new(drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 14.0f), new Vector2(drawRect.Size.X - 36.0f, 5.0f));
+            Rect2 bar = new(drawRect.Position + new Vector2(330.0f, drawRect.Size.Y - 29.0f), new Vector2(360.0f, 4.0f));
             float progress = PilotUnlockProgress(pilot);
             DrawRect(bar, Alpha(Paper, 0.08f), true);
-            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(PilotAccent(pilot), 0.72f), true);
-            DrawRect(bar, Alpha(Paper, 0.2f), false, UiHairline, true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(PilotAccent(pilot), 0.58f), true);
         }
     }
 
-    private void DrawPilotGlyph(PilotKind pilot, Vector2 center, Color accent, bool unlocked)
+    private void DrawPilotSwitchArrow(Rect2 rect, int direction, Color accent)
     {
-        Color line = Alpha(accent, unlocked ? 0.88f : 0.34f);
-        DrawCircle(center, 22.0f, Alpha(Graphite, 0.9f));
-        DrawCircle(center, 22.0f, line, false, UiStroke, true);
-        DrawPilotHull(pilot, center, Vector2.Right, accent, unlocked ? 0.82f : 0.32f, 0.42f);
+        bool hover = rect.HasPoint(GetGlobalMousePosition());
+        Color line = Alpha(accent, hover ? 0.82f : 0.46f);
+        Rect2 drawRect = rect;
+
+        Vector2 center = drawRect.Position + drawRect.Size * 0.5f;
+        float sign = direction < 0 ? -1.0f : 1.0f;
+        Vector2 tip = center + new Vector2(sign * 10.0f, 0.0f);
+        Vector2 top = center + new Vector2(-sign * 9.0f, -17.0f);
+        Vector2 bottom = center + new Vector2(-sign * 9.0f, 17.0f);
+        DrawLine(top, tip, line, UiAccentStroke, true);
+        DrawLine(bottom, tip, line, UiAccentStroke, true);
     }
 
     private void DrawSettings()
@@ -11878,6 +12669,31 @@ public partial class MainGame : Node2D
         particle.Spin = _rng.RandfRange(-1.0f, 1.0f);
     }
 
+    private void AddDroneCommandCue(Vector2 pos, Vector2 facing, Color color, float scale)
+    {
+        if (_visualPressure > 0.9f)
+        {
+            return;
+        }
+
+        if (_droneCommandCues.Count >= MaxDroneCommandCues)
+        {
+            _droneCommandCues.RemoveAt(0);
+        }
+
+        Vector2 direction = SafeDirection(facing, _aimDir);
+        _droneCommandCues.Add(new DroneCommandCue
+        {
+            Pos = pos,
+            Vel = direction * 36.0f,
+            Facing = direction,
+            Color = color,
+            Life = 0.36f,
+            MaxLife = 0.36f,
+            Scale = scale,
+        });
+    }
+
     private void AddShockwave(Vector2 center, float radius, Color color)
     {
         if (_shockwaves.Count >= 6)
@@ -12035,9 +12851,19 @@ public partial class MainGame : Node2D
 
     private static Rect2 PilotCardRect(int index)
     {
-        int col = index % 4;
-        int row = index / 4;
-        return new Rect2(new Vector2(230.0f + col * 365.0f, 710.0f + row * 108.0f), new Vector2(330.0f, 96.0f));
+        return new Rect2(new Vector2(560.0f, 704.0f), new Vector2(800.0f, 214.0f));
+    }
+
+    private static Rect2 PilotPreviousButtonRect()
+    {
+        Rect2 panel = PilotCardRect(0);
+        return new Rect2(panel.Position + new Vector2(-72.0f, 70.0f), new Vector2(46.0f, 72.0f));
+    }
+
+    private static Rect2 PilotNextButtonRect()
+    {
+        Rect2 panel = PilotCardRect(0);
+        return new Rect2(panel.Position + new Vector2(panel.Size.X + 26.0f, 70.0f), new Vector2(46.0f, 72.0f));
     }
 
     private static int PilotCount()
@@ -13044,6 +13870,28 @@ public partial class MainGame : Node2D
             Mathf.Clamp(point.Y, Arena.Position.Y + margin, Arena.End.Y - margin));
     }
 
+    private static Vector2 SafeDirection(Vector2 value, Vector2 fallback)
+    {
+        if (value.LengthSquared() > 0.0001f)
+        {
+            return value.Normalized();
+        }
+
+        return fallback.LengthSquared() > 0.0001f ? fallback.Normalized() : Vector2.Up;
+    }
+
+    private static Vector2 LimitVector(Vector2 value, float maxLength)
+    {
+        float maxSquared = maxLength * maxLength;
+        float lengthSquared = value.LengthSquared();
+        if (lengthSquared <= maxSquared || lengthSquared <= 0.0001f)
+        {
+            return value;
+        }
+
+        return value / Mathf.Sqrt(lengthSquared) * maxLength;
+    }
+
     private Rect2 ExpandedArena(float amount)
     {
         return Arena.Grow(amount);
@@ -13689,6 +14537,8 @@ public partial class MainGame : Node2D
         _lastMeta = MetaHeld();
         _lastBack = CancelHeld();
         _lastSettingsShortcut = SettingsShortcutHeld();
+        _lastTitleLeft = KeyDown(Key.Left) || KeyDown(Key.A);
+        _lastTitleRight = KeyDown(Key.Right) || KeyDown(Key.D);
         _lastSettingsLeft = KeyDown(Key.Left) || KeyDown(Key.A);
         _lastSettingsRight = KeyDown(Key.Right) || KeyDown(Key.D);
     }

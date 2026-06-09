@@ -205,6 +205,25 @@ public partial class MainGame
         _particles.Clear();
     }
 
+    private void ClearDroneCommandCues()
+    {
+        _droneCommandCues.Clear();
+    }
+
+    private void ClearOrbiterVisuals()
+    {
+        for (int i = 0; i < _orbiterVisuals.Length; i++)
+        {
+            OrbiterVisual visual = _orbiterVisuals[i];
+            visual.Pos = _playerPos;
+            visual.Vel = Vector2.Zero;
+            visual.Facing = Vector2.Up;
+            visual.Phase = 0.0f;
+            visual.CommandPulse = 0.0f;
+            visual.Active = false;
+        }
+    }
+
     private void ClearDamageTexts()
     {
         for (int i = 0; i < _damageTexts.Count; i++)

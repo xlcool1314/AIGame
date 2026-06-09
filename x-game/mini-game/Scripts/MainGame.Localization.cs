@@ -93,6 +93,10 @@ difficulty.storm|Storm|风暴|Шторм|Tempestade|Sturm|Fırtına|Tempête|嵐
 difficulty.eclipse|Eclipse|日蚀|Затмение|Eclipse|Finsternis|Tutulma|Éclipse|日蝕
 difficulty.unlock|Clear {0} to unlock.|通关{0}解锁。|Пройди {0}, чтобы открыть.|Conclua {0} para liberar.|Schließe {0} ab.|{0} bitirerek aç.|Termine {0} pour débloquer.|{0}クリアで解放
 menu.pilot|PILOT|角色|ПИЛОТ|PILOTO|PILOT|PİLOT|PILOTE|パイロット
+pilot.selector.skill|Skill|技能|Навык|Habilidade|Skill|Yetenek|Compétence|スキル
+pilot.selector.ultimate|Ultimate|大招|Ульта|Ultimate|Ultimativ|Ulti|Ultime|必殺
+pilot.selector.selected|Selected|已选择|Выбран|Selecionado|Gewählt|Seçildi|Sélectionné|選択中
+pilot.selector.locked|Locked|未解锁|Закрыт|Travado|Gesperrt|Kilitli|Verrouillé|ロック
 menu.tip|Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.|点击开始、按 Enter 或 A。每局结束后用星尘强化永久节点。|Нажми старт, Enter или A. Между вылетами трать Звездную пыль на узлы.|Clique iniciar, Enter ou A. Gaste Pó Estelar em upgrades entre runs.|Klicke Start, Enter oder A. Gib Sternenstaub zwischen Runs aus.|Başlat, Enter veya A. Sefer aralarında Yıldız Tozu harca.|Clique, Enter ou A. Dépense la poussière stellaire entre deux runs.|開始、Enter、Aで出撃。星屑で恒久強化しよう。
 ui.lock|LOCK|未解锁|ЗАКРЫТ|TRAVADO|GESPERRT|KİLİTLİ|VERROUILLÉ|ロック
 ui.done|DONE|完成|ГОТОВО|FEITO|ERLEDIGT|TAMAM|FAIT|完了

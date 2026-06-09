@@ -352,6 +352,27 @@ public partial class MainGame
         public float Spin;
     }
 
+    private sealed class OrbiterVisual
+    {
+        public Vector2 Pos;
+        public Vector2 Vel;
+        public Vector2 Facing = Vector2.Up;
+        public float Phase;
+        public float CommandPulse;
+        public bool Active;
+    }
+
+    private sealed class DroneCommandCue
+    {
+        public Vector2 Pos;
+        public Vector2 Vel;
+        public Vector2 Facing = Vector2.Up;
+        public Color Color;
+        public float Life;
+        public float MaxLife;
+        public float Scale;
+    }
+
     private sealed class Shockwave
     {
         public Vector2 Center;
