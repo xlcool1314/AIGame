@@ -32,11 +32,10 @@ public partial class MainGame
         Shot shot = _shotPool.Count > 0 ? _shotPool.Pop() : new Shot();
         shot.FromPlayer = fromPlayer;
         shot.Rift = false;
-        shot.Pierce = 0;
-        shot.ChainDepth = 0;
-        shot.SplitDepth = 0;
-        shot.TrailCount = 0;
-        shot.Grazed = false;
+    shot.Pierce = 0;
+    shot.ChainDepth = 0;
+    shot.SplitDepth = 0;
+    shot.Grazed = false;
         _shots.Add(shot);
         if (!fromPlayer)
         {
@@ -243,7 +242,6 @@ public partial class MainGame
 
     private void RecycleShot(Shot shot)
     {
-        shot.TrailCount = 0;
         if (_shotPool.Count < MaxPoolSize)
         {
             _shotPool.Push(shot);
@@ -284,24 +282,6 @@ public partial class MainGame
         _playerTrail[0] = _playerPos;
         _playerTrailCount = Math.Min(PlayerTrailCapacity, _playerTrailCount + 1);
         _playerTrailTimer = _dashTimer > 0.0f ? 0.008f : (_visualPressure > 0.84f ? 0.044f : 0.022f);
-    }
-
-    private static void ResetShotTrail(Shot shot, Vector2 pos)
-    {
-        shot.Trail0 = pos;
-        shot.Trail1 = pos;
-        shot.Trail2 = pos;
-        shot.Trail3 = pos;
-        shot.TrailCount = 1;
-    }
-
-    private static void PushShotTrail(Shot shot, Vector2 pos)
-    {
-        shot.Trail3 = shot.Trail2;
-        shot.Trail2 = shot.Trail1;
-        shot.Trail1 = shot.Trail0;
-        shot.Trail0 = pos;
-        shot.TrailCount = Math.Min(ShotTrailCapacity, shot.TrailCount + 1);
     }
 
     private void RecyclePickup(Pickup pickup)

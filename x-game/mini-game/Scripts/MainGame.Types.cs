@@ -318,11 +318,6 @@ public partial class MainGame
         public float Damage;
         public float Life;
         public float MaxLife;
-        public Vector2 Trail0;
-        public Vector2 Trail1;
-        public Vector2 Trail2;
-        public Vector2 Trail3;
-        public int TrailCount;
         public int Polarity;
         public bool FromPlayer;
         public int Pierce;

@@ -36,7 +36,6 @@ public partial class MainGame : Node2D
     private const int PolygonScratchMaxSides = 24;
     private const int PolygonScratchSlots = 16;
     private const int PlayerTrailCapacity = 14;
-    private const int ShotTrailCapacity = 4;
     private const int CruiseStance = 0;
     private const int AssaultStance = 1;
     private const float PolaritySwitchCooldownBase = 6.4f;
@@ -994,11 +993,15 @@ public partial class MainGame : Node2D
     private Texture2D? _supportDroneTexture;
     private Texture2D? _kairoDroneTexture;
     private Texture2D? _kairoCommandTexture;
+    private Texture2D? _enemyBulletTexture;
     private Rect2 _supportDroneRegion;
     private Rect2 _kairoDroneRegion;
     private Rect2 _kairoCommandRegion;
+    private Rect2 _enemyBulletRegion;
     private readonly Dictionary<PilotKind, Texture2D> _pilotTextures = new();
     private readonly Dictionary<PilotKind, Rect2> _pilotTextureRegions = new();
+    private readonly Dictionary<PilotKind, Texture2D> _fighterBulletTextures = new();
+    private readonly Dictionary<PilotKind, Rect2> _fighterBulletTextureRegions = new();
     private readonly Dictionary<EnemyKind, Texture2D> _enemyTextures = new();
     private readonly Dictionary<EnemyKind, Texture2D> _eliteEnemyTextures = new();
     private readonly Dictionary<BossArchetype, Texture2D> _bossTextures = new();
@@ -1028,6 +1031,7 @@ public partial class MainGame : Node2D
         };
         LoadTitleLogos();
         LoadDroneTextures();
+        LoadBulletTextures();
         LoadPilotTextures();
         LoadEnemyTextures();
         GenerateBackdrop();
@@ -1044,8 +1048,11 @@ public partial class MainGame : Node2D
         _supportDroneTexture = null;
         _kairoDroneTexture = null;
         _kairoCommandTexture = null;
+        _enemyBulletTexture = null;
         _pilotTextures.Clear();
         _pilotTextureRegions.Clear();
+        _fighterBulletTextures.Clear();
+        _fighterBulletTextureRegions.Clear();
         _enemyTextures.Clear();
         _eliteEnemyTextures.Clear();
         _bossTextures.Clear();
@@ -1070,6 +1077,27 @@ public partial class MainGame : Node2D
         _supportDroneRegion = TextureRegionOrEmpty(_supportDroneTexture);
         _kairoDroneRegion = TextureRegionOrEmpty(_kairoDroneTexture);
         _kairoCommandRegion = TextureRegionOrEmpty(_kairoCommandTexture);
+    }
+
+    private void LoadBulletTextures()
+    {
+        _enemyBulletTexture = LoadFirstTextureInDirectory("res://Assets/EnemyBullet");
+        _enemyBulletRegion = TextureRegionOrEmpty(_enemyBulletTexture);
+        _fighterBulletTextures.Clear();
+        _fighterBulletTextureRegions.Clear();
+
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            Texture2D? texture = LoadFirstTextureInDirectory($"res://Assets/FighterBullets/{pilot}");
+            if (texture == null)
+            {
+                continue;
+            }
+
+            _fighterBulletTextures[pilot] = texture;
+            _fighterBulletTextureRegions[pilot] = VisibleTextureRegion(texture);
+        }
     }
 
     private static Rect2 TextureRegionOrEmpty(Texture2D? texture)
@@ -5218,8 +5246,6 @@ public partial class MainGame : Node2D
             shot.Polarity = _playerPolarity;
             shot.Pierce = _riftNeedle ? 2 : 0;
             shot.Rift = _riftNeedle;
-            ResetShotTrail(shot, shot.Pos);
-
             if (_echoChance > 0.0f && _rng.Randf() < _echoChance)
             {
                 Vector2 echoDir = dir.Rotated(_rng.RandfRange(-0.05f, 0.05f));
@@ -5236,7 +5262,6 @@ public partial class MainGame : Node2D
                     echo.Polarity = _playerPolarity;
                     echo.Pierce = 1;
                     echo.Rift = true;
-                    ResetShotTrail(echo, echo.Pos);
                 }
             }
         }
@@ -5451,7 +5476,6 @@ public partial class MainGame : Node2D
         shot.Polarity = shotPolarity;
         shot.Pierce = pierce + (_ricochetMatrix >= 3 ? 1 : 0);
         shot.Rift = rift;
-        ResetShotTrail(shot, shot.Pos);
     }
 
     private void FirePolarityStorm()
@@ -5477,7 +5501,6 @@ public partial class MainGame : Node2D
             shot.Polarity = _playerPolarity;
             shot.Pierce = 0;
             shot.Rift = true;
-            ResetShotTrail(shot, shot.Pos);
         }
         Burst(_playerPos, color, 12 + _polarityStorm * 4, 340.0f, 0.55f);
     }
@@ -6377,25 +6400,15 @@ public partial class MainGame : Node2D
             shot.Polarity = -1;
             shot.Pierce = 0;
             shot.Rift = false;
-            ResetShotTrail(shot, shot.Pos);
         }
     }
 
     private void UpdateShots(float dt)
     {
-        float pressure = PerformancePressure();
         for (int i = _shots.Count - 1; i >= 0; i--)
         {
             Shot shot = _shots[i];
             shot.Prev = shot.Pos;
-            if (ShouldRecordShotTrail(shot, pressure))
-            {
-                PushShotTrail(shot, shot.Pos);
-            }
-            else
-            {
-                shot.TrailCount = 0;
-            }
             shot.Pos += shot.Vel * dt;
             shot.Life -= dt;
 
@@ -7114,7 +7127,6 @@ public partial class MainGame : Node2D
         shard.ChainDepth = 0;
         shard.SplitDepth = splitDepth;
         shard.Rift = true;
-        ResetShotTrail(shard, shard.Pos);
     }
 
     private void DamagePlayer(float amount, Vector2 source)
@@ -7835,8 +7847,6 @@ public partial class MainGame : Node2D
         {
             shot.Rift = false;
         }
-        ResetShotTrail(shot, shot.Pos);
-
         AddParticle(origin, dir * 180.0f, PolarityColor(_playerPolarity), 7.0f, 0.16f);
         AddParticle(origin - dir * 6.0f, -dir * 90.0f, PickupBlue, 5.0f, 0.14f);
     }
@@ -10531,10 +10541,11 @@ public partial class MainGame : Node2D
         if (shot.FromPlayer)
         {
             bool heavyVisualLoad = _visualPressure > 0.78f;
-            if (_visualPressure < 0.9f || shot.Rift)
+            if (TryDrawShotTexture(shot, pos, color, heavyVisualLoad))
             {
-                DrawShotTrail(shot, pos, color, heavyVisualLoad);
+                return;
             }
+
             if (!heavyVisualLoad)
             {
                 DrawCircle(pos, shot.Radius * 1.05f, Alpha(Paper, 0.78f));
@@ -10548,94 +10559,94 @@ public partial class MainGame : Node2D
         else
         {
             bool heavyVisualLoad = _visualPressure > 0.68f;
+            if (TryDrawShotTexture(shot, pos, color, heavyVisualLoad))
+            {
+                return;
+            }
+
             if (!heavyVisualLoad)
             {
                 DrawGlow(pos, color, shot.Radius * 4.0f, 0.08f, 3);
                 DrawCircle(pos, shot.Radius * 1.82f, Alpha(Void, 0.74f));
             }
-            DrawShotTrail(shot, pos, color, heavyVisualLoad);
             DrawCircle(pos, shot.Radius * (heavyVisualLoad ? 1.22f : 1.55f), Alpha(color, heavyVisualLoad ? 0.92f : 0.86f), false, heavyVisualLoad ? 1.8f : 2.5f, true);
             DrawCircle(pos, shot.Radius * 0.88f, Alpha(Graphite, 0.92f));
             DrawCircle(pos, shot.Radius * 0.34f, Alpha(Paper, 0.92f));
         }
     }
 
-    private void DrawShotTrail(Shot shot, Vector2 current, Color color, bool heavyVisualLoad)
+    private bool TryDrawShotTexture(Shot shot, Vector2 pos, Color color, bool heavyVisualLoad)
     {
-        if (shot.TrailCount <= 0)
-        {
-            return;
-        }
-        if (heavyVisualLoad && !shot.FromPlayer && _visualPressure > 0.88f)
-        {
-            return;
-        }
-
-        int maxSegments = shot.FromPlayer ? (heavyVisualLoad ? 1 : (shot.Rift ? 4 : 3)) : (heavyVisualLoad ? 1 : 2);
-        int count = Math.Min(shot.TrailCount, maxSegments);
-        Vector2 shake = ShakeOffset();
-        Vector2 from = current;
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 to = ShotTrailPoint(shot, i) + shake;
-            if (from.DistanceSquaredTo(to) < 2.0f)
-            {
-                continue;
-            }
-
-            float t = (i + 1.0f) / (count + 1.0f);
-            if (shot.FromPlayer)
-            {
-                float width = Mathf.Lerp(shot.Rift ? 8.0f : 9.5f, 1.8f, t);
-                float alpha = (shot.Rift ? 0.34f : 0.24f) * (1.0f - t);
-                if (!heavyVisualLoad)
-                {
-                    DrawLine(from, to, Alpha(Paper, alpha * 0.52f), width * 1.55f, true);
-                }
-                DrawLine(from, to, Alpha(color, alpha * 1.2f), width * 0.52f, true);
-                DrawLine(from, to, Alpha(Paper, 0.46f * (1.0f - t)), Mathf.Max(1.0f, width * 0.18f), true);
-            }
-            else
-            {
-                float width = Mathf.Lerp(shot.Radius * 1.15f, 1.0f, t);
-                float alpha = (heavyVisualLoad ? 0.18f : 0.26f) * (1.0f - t);
-                DrawLine(from, to, Alpha(color, alpha), width, true);
-                if (!heavyVisualLoad)
-                {
-                    DrawLine(from, to, Alpha(Paper, alpha * 0.28f), 1.0f, true);
-                }
-            }
-
-            from = to;
-        }
-    }
-
-    private bool ShouldRecordShotTrail(Shot shot, float pressure)
-    {
+        Texture2D? texture;
+        Rect2 sourceRegion;
         if (shot.FromPlayer)
         {
-            if (shot.Rift)
+            if (!_fighterBulletTextures.TryGetValue(_runPilot, out texture) || texture == null)
             {
-                return pressure < 0.96f;
+                return false;
             }
 
-            return pressure < 0.93f;
+            sourceRegion = FighterBulletTextureRegion(_runPilot, texture);
+        }
+        else
+        {
+            texture = _enemyBulletTexture;
+            if (texture == null || _enemyBulletRegion.Size.X <= 0.0f || _enemyBulletRegion.Size.Y <= 0.0f)
+            {
+                return false;
+            }
+
+            sourceRegion = _enemyBulletRegion;
         }
 
-        return _visualQuality != VisualQuality.Low
-            ? pressure < 0.82f
-            : pressure < 0.62f;
+        Vector2 drawSize = ShotTextureDrawSize(shot, sourceRegion.Size);
+        if (drawSize.X <= 0.0f || drawSize.Y <= 0.0f)
+        {
+            return false;
+        }
+
+        Vector2 direction = shot.Vel.LengthSquared() > 0.01f ? shot.Vel.Normalized() : Vector2.Up;
+        if (shot.FromPlayer)
+        {
+            if (!heavyVisualLoad)
+            {
+                DrawCircle(pos, Mathf.Max(drawSize.X, drawSize.Y) * 0.46f, Alpha(color, shot.Rift ? 0.18f : 0.1f), false, UiHairline, true);
+            }
+
+            DrawFacingTexture(texture, sourceRegion, pos, direction, drawSize, Alpha(Colors.White, shot.Rift ? 0.96f : 0.92f));
+            return true;
+        }
+
+        if (!heavyVisualLoad)
+        {
+            DrawCircle(pos, Mathf.Max(drawSize.X, drawSize.Y) * 0.42f, Alpha(EnemyBulletColor(), 0.16f), false, UiHairline, true);
+        }
+
+        DrawFacingTexture(texture, sourceRegion, pos, direction, drawSize, Alpha(EnemyBulletColor().Lerp(Colors.White, 0.18f), 0.98f));
+        return true;
     }
 
-    private static Vector2 ShotTrailPoint(Shot shot, int index)
+    private Rect2 FighterBulletTextureRegion(PilotKind pilot, Texture2D texture)
     {
-        return index switch
+        if (_fighterBulletTextureRegions.TryGetValue(pilot, out Rect2 region) && region.Size.X > 0.0f && region.Size.Y > 0.0f)
         {
-            0 => shot.Trail0,
-            1 => shot.Trail1,
-            2 => shot.Trail2,
-            _ => shot.Trail3,
-        };
+            return region;
+        }
+
+        return new Rect2(Vector2.Zero, texture.GetSize());
+    }
+
+    private static Vector2 ShotTextureDrawSize(Shot shot, Vector2 sourceSize)
+    {
+        if (sourceSize.X <= 0.0f || sourceSize.Y <= 0.0f)
+        {
+            return Vector2.Zero;
+        }
+
+        float visualRoot = Mathf.Max(shot.FromPlayer ? 14.0f : 17.0f, shot.Radius * (shot.FromPlayer ? 2.45f : 2.6f));
+        float minSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * 2.05f, 14.0f, 24.0f) : Mathf.Clamp(shot.Radius * 2.15f, 18.0f, 26.0f);
+        float maxSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * 3.1f, 18.0f, 34.0f) : Mathf.Clamp(shot.Radius * 3.0f, 20.0f, 32.0f);
+        return FitTextureSizeToArea(sourceSize, visualRoot * visualRoot, minSide, maxSide);
     }
 
     private void DrawPickup(Pickup pickup)
@@ -11306,18 +11317,20 @@ public partial class MainGame : Node2D
     {
         Rect2 panel = LeaderboardPanelRect();
         Color accent = DifficultyAccent(_selectedDifficulty);
-        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 210.0f, 0.018f, 4);
-        DrawPanel(panel, Alpha(Ink, 0.28f), Alpha(accent, 0.24f));
-        DrawText($"{T("leader.title")} · {DifficultyName(_selectedDifficulty)}", panel.Position + new Vector2(0.0f, 30.0f), 17, Alpha(Paper, 0.68f), HorizontalAlignment.Center, panel.Size.X, true, 1);
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 180.0f, 0.014f, 3);
+        DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.26f));
+        DrawLine(panel.Position + new Vector2(18.0f, 44.0f), panel.Position + new Vector2(panel.Size.X - 18.0f, 44.0f), Alpha(accent, 0.22f), UiHairline, true);
+        DrawText(T("leader.title"), panel.Position + new Vector2(22.0f, 27.0f), 14, Alpha(Paper, 0.7f), HorizontalAlignment.Left, panel.Size.X - 44.0f, true, 1);
+        DrawText(DifficultyName(_selectedDifficulty), panel.Position + new Vector2(panel.Size.X - 146.0f, 27.0f), 13, Alpha(accent, 0.72f), HorizontalAlignment.Right, 124.0f, false, 0);
 
         var rows = LeaderboardRows();
         for (int i = 0; i < rows.Length; i++)
         {
             var rowData = rows[i];
-            Rect2 row = new(panel.Position + new Vector2(52.0f, 56.0f + i * 23.0f), new Vector2(panel.Size.X - 104.0f, 22.0f));
+            Rect2 row = new(panel.Position + new Vector2(26.0f, 60.0f + i * 29.0f), new Vector2(panel.Size.X - 52.0f, 25.0f));
             DrawLine(row.Position + new Vector2(0.0f, row.Size.Y - 1.0f), row.Position + new Vector2(row.Size.X, row.Size.Y - 1.0f), Alpha(Paper, 0.06f), UiHairline, true);
-            DrawText(rowData.Label, row.Position + new Vector2(0.0f, 17.0f), 13, Alpha(rowData.Accent, 0.68f), HorizontalAlignment.Left, 180.0f, true, 1);
-            DrawText(rowData.Value, row.Position + new Vector2(row.Size.X - 260.0f, 17.0f), 14, Alpha(rowData.Accent, 0.78f), HorizontalAlignment.Right, 260.0f, true, 1);
+            DrawText(rowData.Label, row.Position + new Vector2(0.0f, 18.0f), 12, Alpha(rowData.Accent, 0.64f), HorizontalAlignment.Left, 150.0f, true, 1);
+            DrawText(rowData.Value, row.Position + new Vector2(row.Size.X - 190.0f, 18.0f), 13, Alpha(rowData.Accent, 0.76f), HorizontalAlignment.Right, 190.0f, true, 1);
         }
     }
 
@@ -11472,26 +11485,29 @@ public partial class MainGame : Node2D
         Color accent = unlocked ? PilotAccent(pilot) : GridLine;
         Rect2 drawRect = panel;
 
-        DrawText(T("menu.pilot"), new Vector2(0.0f, panel.Position.Y - 20.0f), 14, Alpha(Paper, 0.34f), HorizontalAlignment.Center, ScreenWidth, false, 0);
+        DrawText(T("menu.pilot"), new Vector2(0.0f, panel.Position.Y - 18.0f), 13, Alpha(Paper, 0.34f), HorizontalAlignment.Center, ScreenWidth, false, 0);
         DrawPilotSwitchArrow(PilotPreviousButtonRect(), -1, accent);
         DrawPilotSwitchArrow(PilotNextButtonRect(), 1, accent);
 
-        DrawGlow(drawRect.Position + new Vector2(170.0f, drawRect.Size.Y * 0.56f), accent, 210.0f, unlocked ? 0.022f : 0.012f, 4);
+        DrawLine(drawRect.Position + new Vector2(260.0f, 24.0f), drawRect.Position + new Vector2(drawRect.Size.X - 42.0f, 24.0f), Alpha(accent, unlocked ? 0.16f : 0.08f), UiHairline, true);
+        DrawLine(drawRect.Position + new Vector2(260.0f, drawRect.Size.Y - 26.0f), drawRect.Position + new Vector2(drawRect.Size.X - 42.0f, drawRect.Size.Y - 26.0f), Alpha(Paper, unlocked ? 0.08f : 0.04f), UiHairline, true);
+        DrawGlow(drawRect.Position + new Vector2(190.0f, drawRect.Size.Y * 0.58f), accent, 210.0f, unlocked ? 0.02f : 0.01f, 4);
 
-        Vector2 artCenter = drawRect.Position + new Vector2(172.0f, 112.0f);
+        Vector2 artCenter = drawRect.Position + new Vector2(190.0f, 132.0f);
         DrawLine(artCenter + new Vector2(-86.0f, 82.0f), artCenter + new Vector2(86.0f, 82.0f), Alpha(accent, unlocked ? 0.24f : 0.12f), UiHairline, true);
         DrawLine(artCenter + new Vector2(-48.0f, 92.0f), artCenter + new Vector2(48.0f, 92.0f), Alpha(Paper, unlocked ? 0.16f : 0.07f), UiHairline, true);
-        DrawPilotHull(pilot, artCenter, Vector2.Up, accent, unlocked ? 0.95f : 0.3f, 1.62f);
+        DrawPilotHull(pilot, artCenter, Vector2.Up, accent, unlocked ? 0.95f : 0.3f, 1.5f);
 
-        Vector2 textPos = drawRect.Position + new Vector2(330.0f, 42.0f);
-        DrawText(PilotName(pilot).ToUpperInvariant(), textPos, 34, unlocked ? Paper : Alpha(Paper, 0.36f), HorizontalAlignment.Left, 300.0f, true, 4);
+        Vector2 textPos = drawRect.Position + new Vector2(370.0f, 52.0f);
+        float textWidth = drawRect.Size.X - 418.0f;
+        DrawText(PilotName(pilot).ToUpperInvariant(), textPos, 31, unlocked ? Paper : Alpha(Paper, 0.36f), HorizontalAlignment.Left, 320.0f, true, 4);
         DrawText($"{_gamepadPilotIndex + 1:00}/{PilotCount():00}", drawRect.Position + new Vector2(drawRect.Size.X - 92.0f, 41.0f), 13, Alpha(accent, unlocked ? 0.68f : 0.34f), HorizontalAlignment.Right, 72.0f, false, 0);
         DrawLine(textPos + new Vector2(0.0f, 44.0f), drawRect.Position + new Vector2(drawRect.Size.X - 30.0f, 86.0f), Alpha(accent, unlocked ? 0.26f : 0.12f), UiHairline, true);
 
         DrawText(PilotWeapon(pilot), textPos + new Vector2(0.0f, 70.0f), 17, Alpha(accent, unlocked ? 0.9f : 0.42f), HorizontalAlignment.Left, 270.0f, true, 1);
-        DrawText($"{T("pilot.selector.skill")}: {TacticalSkillName(pilot)}", textPos + new Vector2(300.0f, 70.0f), 15, Alpha(Paper, unlocked ? 0.62f : 0.32f), HorizontalAlignment.Left, 238.0f, true, 1);
-        DrawText($"{T("pilot.selector.ultimate")}: {UltimateName(pilot)}", textPos + new Vector2(0.0f, 96.0f), 14, Alpha(Paper, unlocked ? 0.52f : 0.28f), HorizontalAlignment.Left, 540.0f, false, 0);
-        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), textPos + new Vector2(0.0f, 122.0f), unlocked ? 13 : 12, Alpha(Paper, unlocked ? 0.58f : 0.48f), 548.0f, unlocked ? 16.0f : 15.0f);
+        DrawText($"{T("pilot.selector.skill")}: {TacticalSkillName(pilot)}", textPos + new Vector2(330.0f, 70.0f), 15, Alpha(Paper, unlocked ? 0.62f : 0.32f), HorizontalAlignment.Right, Mathf.Max(180.0f, textWidth - 330.0f), true, 1);
+        DrawText($"{T("pilot.selector.ultimate")}: {UltimateName(pilot)}", textPos + new Vector2(0.0f, 98.0f), 14, Alpha(Paper, unlocked ? 0.52f : 0.28f), HorizontalAlignment.Left, textWidth, false, 0);
+        DrawWrapped(unlocked ? PilotBody(pilot) : PilotUnlockText(pilot), textPos + new Vector2(0.0f, 126.0f), unlocked ? 13 : 12, Alpha(Paper, unlocked ? 0.58f : 0.48f), textWidth, unlocked ? 16.0f : 15.0f);
 
         string stateText = unlocked ? T("pilot.selector.selected") : T("pilot.selector.locked");
         Color stateColor = unlocked ? accent : Rose;
@@ -11499,7 +11515,7 @@ public partial class MainGame : Node2D
 
         if (!unlocked)
         {
-            Rect2 bar = new(drawRect.Position + new Vector2(330.0f, drawRect.Size.Y - 29.0f), new Vector2(360.0f, 4.0f));
+            Rect2 bar = new(drawRect.Position + new Vector2(370.0f, drawRect.Size.Y - 31.0f), new Vector2(430.0f, 4.0f));
             float progress = PilotUnlockProgress(pilot);
             DrawRect(bar, Alpha(Paper, 0.08f), true);
             DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(PilotAccent(pilot), 0.58f), true);
@@ -12816,17 +12832,17 @@ public partial class MainGame : Node2D
 
     private static Rect2 StartButtonRect()
     {
-        return new Rect2(new Vector2(820.0f, 946.0f), new Vector2(280.0f, 42.0f));
+        return new Rect2(new Vector2(810.0f, 928.0f), new Vector2(300.0f, 44.0f));
     }
 
     private static Rect2 MetaButtonRect()
     {
-        return new Rect2(new Vector2(520.0f, 956.0f), new Vector2(260.0f, 38.0f));
+        return new Rect2(new Vector2(372.0f, 940.0f), new Vector2(280.0f, 36.0f));
     }
 
     private static Rect2 TitleSettingsButtonRect()
     {
-        return new Rect2(new Vector2(1140.0f, 956.0f), new Vector2(260.0f, 38.0f));
+        return new Rect2(new Vector2(1268.0f, 940.0f), new Vector2(280.0f, 36.0f));
     }
 
     private static Rect2 GmUnlockButtonRect()
@@ -12836,34 +12852,34 @@ public partial class MainGame : Node2D
 
     private static Rect2 LeaderboardPanelRect()
     {
-        return new Rect2(new Vector2(650.0f, 500.0f), new Vector2(620.0f, 176.0f));
+        return new Rect2(new Vector2(1392.0f, 116.0f), new Vector2(430.0f, 218.0f));
     }
 
     private static Rect2 DifficultyButtonRect(int index)
     {
-        return new Rect2(new Vector2(650.0f + index * 210.0f, 398.0f), new Vector2(200.0f, 32.0f));
+        return new Rect2(new Vector2(650.0f + index * 210.0f, 404.0f), new Vector2(200.0f, 32.0f));
     }
 
     private static Rect2 TitleNextGoalRect()
     {
-        return new Rect2(new Vector2(650.0f, 442.0f), new Vector2(620.0f, 44.0f));
+        return new Rect2(new Vector2(560.0f, 454.0f), new Vector2(800.0f, 48.0f));
     }
 
     private static Rect2 PilotCardRect(int index)
     {
-        return new Rect2(new Vector2(560.0f, 704.0f), new Vector2(800.0f, 214.0f));
+        return new Rect2(new Vector2(410.0f, 600.0f), new Vector2(1100.0f, 280.0f));
     }
 
     private static Rect2 PilotPreviousButtonRect()
     {
         Rect2 panel = PilotCardRect(0);
-        return new Rect2(panel.Position + new Vector2(-72.0f, 70.0f), new Vector2(46.0f, 72.0f));
+        return new Rect2(panel.Position + new Vector2(-74.0f, 104.0f), new Vector2(48.0f, 82.0f));
     }
 
     private static Rect2 PilotNextButtonRect()
     {
         Rect2 panel = PilotCardRect(0);
-        return new Rect2(panel.Position + new Vector2(panel.Size.X + 26.0f, 70.0f), new Vector2(46.0f, 72.0f));
+        return new Rect2(panel.Position + new Vector2(panel.Size.X + 26.0f, 104.0f), new Vector2(48.0f, 82.0f));
     }
 
     private static int PilotCount()
