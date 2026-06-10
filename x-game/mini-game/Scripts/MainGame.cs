@@ -79,7 +79,12 @@ public partial class MainGame : Node2D
     private const float DroneCommandTextureMaxMaxSide = 76.0f;
     private const int MaxJoypadSlots = 8;
     private const float GamepadStickDeadZone = 0.24f;
-    private const float GamepadAimDeadZone = 0.2f;
+    private const float AutoAimTurnSpeed = 12.0f;
+    private const float AutoAimFallbackTurnSpeed = 8.0f;
+    private const float SeekerBaseCooldown = 0.86f;
+    private const float HeavySlugBaseCooldown = 1.55f;
+    private const float BasePlayerHull = 28.0f;
+    private const float HullPlatingPerRank = 4.0f;
     private const float GamepadTriggerThreshold = 0.45f;
     private const float GamepadNavThreshold = 0.56f;
     private const float GamepadNavRepeat = 0.18f;
@@ -211,6 +216,37 @@ public partial class MainGame : Node2D
         "corona",
         "volley",
         "volleys",
+        "homing",
+        "missile",
+        "missiles",
+        "rebound",
+        "reflect",
+        "reflected",
+        "shadow",
+        "clone",
+        "clones",
+        "ghost shots",
+        "giant bullet",
+        "heavy",
+        "pinball",
+        "bounce",
+        "bounces",
+        "turn faster",
+        "turning",
+        "move faster",
+        "move speed",
+        "dash cooldown",
+        "跟踪",
+        "导弹",
+        "反弹",
+        "影子",
+        "分身",
+        "巨弹",
+        "重型",
+        "弹球",
+        "转向",
+        "移速",
+        "冲刺冷却",
         "质变",
         "Boss",
         "Boss 护盾",
@@ -516,7 +552,7 @@ public partial class MainGame : Node2D
         ["hud.resonance_cooldown"] = new("COOLDOWN {0:0.0}s", "冷却 {0:0.0}秒"),
         ["hud.cruise_charge"] = new("FOCUS", "专注"),
         ["hud.assault_window"] = new("SKILL {0:0.0}s", "战术 {0:0.0}秒"),
-        ["hud.controls"] = new("WASD/LS MOVE  MOUSE/RS AIM  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT  START MENU", "WASD/左摇杆移动  鼠标/右摇杆瞄准  自动射击  A/LB冲刺  X/RB技能  Y/RT大招  Start菜单"),
+        ["hud.controls"] = new("WASD/LS MOVE  AUTO LOCK-ON  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT  START MENU", "WASD/左摇杆移动  自动锁敌  自动射击  A/LB冲刺  X/RB技能  Y/RT大招  Start菜单"),
         ["title.loop"] = new("LOOP", "循环"),
         ["title.fighter"] = new("FIGHTER", "战机"),
         ["title.subtitle"] = new("a pilot-build arcade roguelite built in Godot C#", "Godot C# 制作的角色构筑弹幕 Roguelite"),
@@ -619,7 +655,7 @@ public partial class MainGame : Node2D
         ["meta.chart.title"] = new("Starter Chart", "开局星图"),
         ["meta.chart.body"] = new("Gain extra rerolls on every upgrade screen.", "每次升级选择时获得更多重抽。"),
         ["meta.repair.title"] = new("Repair Protocol", "维修协议"),
-        ["meta.repair.body"] = new("Repair drops become more common and calm moments slowly restore hull.", "修复掉落更多，脱战后会缓慢回血。"),
+        ["meta.repair.body"] = new("Repair drops are slightly more common, and calm moments restore a little hull.", "修复掉落小幅提高，脱战后少量回血。"),
         ["meta.aegis.title"] = new("Aegis Matrix", "护盾矩阵"),
         ["meta.aegis.body"] = new("Incoming damage is reduced before temporary shields or repairs.", "降低受到的伤害，让后期容错更高。"),
         ["meta.nova.title"] = new("Nova Catalyst", "大招催化"),
@@ -632,7 +668,7 @@ public partial class MainGame : Node2D
         ["meta.survey.body"] = new("Earn a modest Star Dust bonus and read the opening waves more safely.", "略微提高星尘收益，并让开局节奏更稳。"),
         ["rank"] = new("Rank {0}", "等级 {0}"),
         ["upgrade.prism.title"] = new("Prism Array", "多重射击"),
-        ["upgrade.prism.body"] = new("Each shot fires one extra bullet.", "每次射击多一发子弹。"),
+        ["upgrade.prism.body"] = new("Weapon volleys gain more shots or lanes.", "武器齐射增加子弹或弹道。"),
         ["upgrade.rail.title"] = new("Rail Heart", "强力核心"),
         ["upgrade.rail.body"] = new("Weapon damage increases and fire rate improves slightly.", "提高武器伤害，并略微提高射速。"),
         ["upgrade.coolant.title"] = new("Coolant Lattice", "冷却装置"),
@@ -644,29 +680,29 @@ public partial class MainGame : Node2D
         ["upgrade.vital.title"] = new("Vital Shell", "生命护盾"),
         ["upgrade.vital.body"] = new("Increase max hull and heal now.", "提高生命上限，并立即回血。"),
         ["upgrade.leech.title"] = new("Repair Seed", "修复掉落"),
-        ["upgrade.leech.body"] = new("Kills can drop repair pickups.", "击杀有概率掉落修复。"),
+        ["upgrade.leech.body"] = new("Kills are more likely to drop repair pickups. Elites have a higher chance.", "击杀更容易掉落修复道具，精英敌人的概率更高。"),
         ["upgrade.wisp.title"] = new("Moon Wisp", "自动浮游炮"),
         ["upgrade.wisp.body"] = new("Add an orbiting drone that auto-fires at nearby enemies.", "增加一个环绕无人机，自动攻击附近敌人。"),
         ["upgrade.rift.title"] = new("Rift Needle", "穿透弹"),
-        ["upgrade.rift.body"] = new("Shots become faster piercing bullets.", "子弹变成更快的穿透弹。"),
+        ["upgrade.rift.body"] = new("Weapon shots fly faster and pierce more.", "武器子弹更快，并增加穿透。"),
         ["upgrade.mirror.title"] = new("Mirror Skin", "减伤装甲"),
         ["upgrade.mirror.body"] = new("Take less damage from hits.", "降低受到的伤害。"),
         ["upgrade.nova.title"] = new("Ultimate Capacitor", "大招强化"),
         ["upgrade.nova.body"] = new("Ultimate costs less energy and max energy increases.", "大招耗能降低，能量上限提高。"),
         ["upgrade.storm.title"] = new("Tactical Overdrive", "战术超载"),
-        ["upgrade.storm.body"] = new("Pilot skill cooldown is shorter and fires extra shots.", "角色技能冷却缩短，并追加反击弹。"),
+        ["upgrade.storm.body"] = new("Pilot skill cooldown is shorter. Using skill fires radial shots.", "角色技能冷却缩短。使用技能时发射环形子弹。"),
         ["upgrade.comet.title"] = new("Comet Trail", "冲刺强化"),
         ["upgrade.comet.body"] = new("Dash deals more damage and clears more bullets.", "冲刺伤害更高，并清除更多红弹。"),
         ["upgrade.aegis.title"] = new("Aegis Bloom", "自动回血"),
         ["upgrade.aegis.body"] = new("Slowly regenerates hull while you avoid damage.", "一段时间不受伤会缓慢回血。"),
         ["upgrade.echo.title"] = new("Quantum Echo", "额外射击"),
-        ["upgrade.echo.body"] = new("Weapon shots can fire an extra piercing shot.", "武器射击有概率追加穿透弹。"),
+        ["upgrade.echo.body"] = new("Weapon shots can echo into an extra piercing shot.", "武器射击有概率回响出额外穿透弹。"),
         ["upgrade.chain.title"] = new("Chain Relay", "连锁中继"),
         ["upgrade.chain.body"] = new("Weapon hits can jump damage to nearby enemies.", "武器命中可把伤害跳到附近敌人。"),
         ["upgrade.fractal.title"] = new("Fractal Split", "分裂棱片"),
         ["upgrade.fractal.body"] = new("Kills create small split shots.", "击杀会生成小型分裂弹。"),
         ["upgrade.solar.title"] = new("Flow Core", "流派核心"),
-        ["upgrade.solar.body"] = new("Pilot skills deal more damage.", "角色技能伤害更高。"),
+        ["upgrade.solar.body"] = new("Increase overall damage and skill-window burst damage.", "提高整体伤害和技能窗口爆发伤害。"),
         ["upgrade.repair.title"] = new("Emergency Repair", "紧急维修"),
         ["upgrade.repair.body"] = new("Repair hull immediately and gain a little max hull.", "立即回复生命，并少量提高最大生命。"),
         ["upgrade.overdrive.title"] = new("One-Wave Overdrive", "单波过载"),
@@ -674,7 +710,7 @@ public partial class MainGame : Node2D
         ["upgrade.glass.title"] = new("Glass Cannon", "玻璃大炮"),
         ["upgrade.glass.body"] = new("Permanent damage up, but max hull goes down.", "永久提高伤害，但降低最大生命。"),
         ["upgrade.bounty.title"] = new("Risk Reward", "高风险奖励"),
-        ["upgrade.bounty.body"] = new("Next wave has more enemies and better drops.", "下一波敌人更多，掉落更好。"),
+        ["upgrade.bounty.body"] = new("Next wave has more enemies and more experience drops.", "下一波敌人更多，经验掉落更多。"),
         ["upgrade.transmute.title"] = new("Bullet Transmute", "弹幕转化"),
         ["upgrade.transmute.body"] = new("Clear enemy bullets now and gain energy.", "立刻清除敌方子弹，并获得能量。"),
         ["upgrade.map.title"] = new("Harmonic Map", "升级地图"),
@@ -761,9 +797,10 @@ public partial class MainGame : Node2D
     private Vector2 _playerPos = ScreenCenter;
     private Vector2 _playerVel = Vector2.Zero;
     private Vector2 _aimDir = Vector2.Right;
+    private Vector2 _dashDir = Vector2.Right;
     private Vector2 _lastMousePos = ScreenCenter;
-    private float _playerHp = 120.0f;
-    private float _playerMaxHp = 120.0f;
+    private float _playerHp = BasePlayerHull;
+    private float _playerMaxHp = BasePlayerHull;
     private float _energy = 35.0f;
     private float _maxEnergy = 100.0f;
     private float _hudHullValue = 1.0f;
@@ -911,6 +948,16 @@ public partial class MainGame : Node2D
     private int _stasisField;
     private int _magnetizedCore;
     private int _ricochetMatrix;
+    private int _seekerRack;
+    private int _shieldRebound;
+    private int _shadowClone;
+    private int _heavySlug;
+    private int _pinballRounds;
+    private int _gyroStabilizer;
+    private int _vectorThrusters;
+    private float _seekerFireTimer;
+    private float _heavySlugTimer;
+    private float _autoAimTurnBonus;
     private float _nextWaveDamageBoost = 1.0f;
     private float _nextWaveRewardBoost = 1.0f;
     private int _polarityStorm;
@@ -1470,6 +1517,8 @@ public partial class MainGame : Node2D
         _settingsReturnMode = GameMode.Title;
         _playerPos = ScreenCenter;
         _playerVel = Vector2.Zero;
+        _aimDir = Vector2.Right;
+        _dashDir = Vector2.Right;
         ResetPlayerTrail(_playerPos);
         ClearShots();
         ClearEnemies();
@@ -1882,9 +1931,9 @@ public partial class MainGame : Node2D
     {
         return _runDifficulty switch
         {
-            GameDifficulty.Storm => 1.08f,
-            GameDifficulty.Eclipse => 1.24f,
-            _ => 0.94f,
+            GameDifficulty.Storm => 1.22f,
+            GameDifficulty.Eclipse => 1.42f,
+            _ => 1.05f,
         };
     }
 
@@ -2160,6 +2209,8 @@ public partial class MainGame : Node2D
         _xpPulse = 0.0f;
         _playerPos = ScreenCenter;
         _playerVel = Vector2.Zero;
+        _aimDir = Vector2.Right;
+        _dashDir = Vector2.Right;
         ResetPlayerTrail(_playerPos);
         int hullRank = MetaRank(MetaUpgradeId.HullPlating);
         int reactorRank = MetaRank(MetaUpgradeId.ReactorSeed);
@@ -2173,7 +2224,7 @@ public partial class MainGame : Node2D
         int droneRank = MetaRank(MetaUpgradeId.DroneDock);
         int tunerRank = MetaRank(MetaUpgradeId.PolarityTuner);
         int surveyRank = MetaRank(MetaUpgradeId.DeepSurvey);
-        _playerMaxHp = 140.0f + hullRank * 8.0f;
+        _playerMaxHp = BasePlayerHull + hullRank * HullPlatingPerRank;
         _playerHp = _playerMaxHp;
         _maxEnergy = 100.0f + reactorRank * 8.0f;
         _energy = Mathf.Min(_maxEnergy, 60.0f + reactorRank * 6.0f + novaRank * 4.0f);
@@ -2220,13 +2271,13 @@ public partial class MainGame : Node2D
         _dashPower = 1120.0f + engineRank * 28.0f;
         _pickupMagnet = 155.0f + salvageRank * 14.0f + surveyRank * 7.0f;
         _enemySlow = 1.0f - surveyRank * 0.01f;
-        _leechChance = repairRank * 0.025f;
+        _leechChance = repairRank * 0.006f;
         _mirrorReduction = 1.0f - aegisRank * 0.025f;
         _absorbEfficiency = 1.0f + tunerRank * 0.055f;
         _novaCost = UltimateCostBase - reactorRank * 1.2f - novaRank * 2.0f;
         _critMultiplier = 1.55f + tunerRank * 0.035f;
         _dashDamage = 70.0f;
-        _aegisRegen = repairRank * 0.08f;
+        _aegisRegen = repairRank * 0.025f;
         _echoChance = 0.0f;
         _nextWaveDamageBoost = 1.0f;
         _nextWaveRewardBoost = 1.0f;
@@ -2258,6 +2309,16 @@ public partial class MainGame : Node2D
         _stasisField = 0;
         _magnetizedCore = 0;
         _ricochetMatrix = 0;
+        _seekerRack = 0;
+        _shieldRebound = 0;
+        _shadowClone = 0;
+        _heavySlug = 0;
+        _pinballRounds = 0;
+        _gyroStabilizer = 0;
+        _vectorThrusters = 0;
+        _seekerFireTimer = 0.0f;
+        _heavySlugTimer = 0.0f;
+        _autoAimTurnBonus = 0.0f;
         _nyxOrbit = 0;
         _nyxSingularity = 0;
         _nyxEventHorizon = 0;
@@ -2348,8 +2409,8 @@ public partial class MainGame : Node2D
                 _fireInterval = 0.48f;
                 _maxEnergy += 24.0f;
                 _energy = Mathf.Clamp(_energy + 24.0f, 0.0f, _maxEnergy);
-                _playerMaxHp += 10.0f;
-                _playerHp += 10.0f;
+                _playerMaxHp += 4.0f;
+                _playerHp += 4.0f;
                 break;
             case PilotKind.Nyx:
                 _fireInterval = 0.38f;
@@ -2362,9 +2423,9 @@ public partial class MainGame : Node2D
                 _fireInterval = 0.72f;
                 _damageMultiplier += 0.12f;
                 _playerSpeed -= 38.0f;
-                _playerMaxHp += 52.0f;
-                _playerHp += 52.0f;
-                _mirrorReduction *= 0.88f;
+                _playerMaxHp += 14.0f;
+                _playerHp += 14.0f;
+                _mirrorReduction *= 0.92f;
                 break;
             case PilotKind.Lyra:
                 _fireInterval = 0.3f;
@@ -2461,7 +2522,10 @@ public partial class MainGame : Node2D
         {
             QueueCenterText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
             SpawnPickup(ScreenCenter + new Vector2(-72.0f, 34.0f), PickupKind.Energy);
-            SpawnPickup(ScreenCenter + new Vector2(72.0f, 34.0f), PickupKind.Repair);
+            if (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.42f)
+            {
+                SpawnPickup(ScreenCenter + new Vector2(72.0f, 34.0f), PickupKind.Repair);
+            }
         }
         AddWaveEnemyCallout(primaryKind, supportKind, info.Accent);
         ShowWaveTutorial();
@@ -2889,7 +2953,8 @@ public partial class MainGame : Node2D
 
     private void SpawnWaveEventPickup(int eventIndex)
     {
-        SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), eventIndex == 0 ? PickupKind.Energy : PickupKind.Repair);
+        bool repair = eventIndex > 0 && (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.35f);
+        SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), repair ? PickupKind.Repair : PickupKind.Energy);
     }
 
     private void SpawnPendingEnemy(PendingSpawn spawn)
@@ -2898,6 +2963,7 @@ public partial class MainGame : Node2D
         if (enemy != null)
         {
             enemy.Value = (int)(enemy.Value * spawn.RewardBoost);
+            enemy.DropMultiplier = Mathf.Clamp(spawn.RewardBoost, 1.0f, 3.0f);
             if (spawn.Elite && enemy.Kind != EnemyKind.Boss)
             {
                 enemy.Elite = true;
@@ -2906,6 +2972,7 @@ public partial class MainGame : Node2D
                 enemy.Hp = enemy.MaxHp;
                 enemy.Armor *= 1.12f;
                 enemy.Value = Mathf.RoundToInt(enemy.Value * 1.65f);
+                enemy.DropMultiplier = Mathf.Clamp(enemy.DropMultiplier * 1.18f, 1.0f, 3.2f);
                 enemy.SpawnPulse = 1.0f;
             }
         }
@@ -3056,7 +3123,7 @@ public partial class MainGame : Node2D
             _runPerfectWaves++;
             AddObjectiveProgress(RunObjectiveKind.PerfectWaves, 1);
             _energy = Mathf.Clamp(_energy + 10.0f, 0.0f, _maxEnergy);
-            _playerHp = Mathf.Clamp(_playerHp + 4.0f, 0.0f, _playerMaxHp);
+            _playerHp = Mathf.Clamp(_playerHp + 1.5f, 0.0f, _playerMaxHp);
             AddText(T("objective.clean_wave"), ScreenCenter + new Vector2(0.0f, -118.0f), Jade, 22.0f);
         }
 
@@ -3088,9 +3155,10 @@ public partial class MainGame : Node2D
                 AddText(T("flow.reward.elite"), ScreenCenter + new Vector2(0.0f, -82.0f), Rose.Lerp(accent, 0.22f), 19.0f);
                 break;
             case WavePaceKind.Recovery:
-                _playerHp = Mathf.Clamp(_playerHp + 16.0f + sector * 3.0f, 0.0f, _playerMaxHp);
-                _energy = Mathf.Clamp(_energy + 18.0f + sector * 3.0f, 0.0f, _maxEnergy);
-                SpawnPickup(ScreenCenter + new Vector2(_rng.RandfRange(-88.0f, 88.0f), 42.0f), clean ? PickupKind.Repair : PickupKind.Energy);
+                _playerHp = Mathf.Clamp(_playerHp + 4.0f + sector * 1.2f, 0.0f, _playerMaxHp);
+                _energy = Mathf.Clamp(_energy + 16.0f + sector * 3.0f, 0.0f, _maxEnergy);
+                PickupKind recoveryDrop = clean && (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.42f) ? PickupKind.Repair : PickupKind.Energy;
+                SpawnPickup(ScreenCenter + new Vector2(_rng.RandfRange(-88.0f, 88.0f), 42.0f), recoveryDrop);
                 AddText(T("flow.reward.recovery"), ScreenCenter + new Vector2(0.0f, -82.0f), Jade, 19.0f);
                 break;
             case WavePaceKind.Pressure:
@@ -3131,7 +3199,7 @@ public partial class MainGame : Node2D
         float energyGain = 14.0f + _combatChain * 5.0f + CurrentSectorIndex() * 2.0f;
         _energy = Mathf.Clamp(_energy + energyGain, 0.0f, _maxEnergy);
         _cruiseCharge = Mathf.Clamp(_cruiseCharge + 16.0f + _combatChain * 8.0f, 0.0f, CruiseChargeMax);
-        _playerHp = Mathf.Clamp(_playerHp + 3.0f + _combatChain * 2.0f, 0.0f, _playerMaxHp);
+        _playerHp = Mathf.Clamp(_playerHp + 1.0f + _combatChain * 0.75f, 0.0f, _playerMaxHp);
         _nextWaveDamageBoost = Mathf.Max(_nextWaveDamageBoost, 1.08f + _combatChain * 0.04f);
         AddText(T("flow.momentum"), ScreenCenter + new Vector2(0.0f, -118.0f), PilotAccent(_runPilot), 24.0f);
         Burst(ScreenCenter + new Vector2(0.0f, -84.0f), PilotAccent(_runPilot), 24 + _combatChain * 8, 320.0f, 0.82f);
@@ -3399,7 +3467,10 @@ public partial class MainGame : Node2D
         boss.ContactTimer = 0.0f;
         boss.Polarity = _rng.RandiRange(0, 1);
         boss.Value = 8000 + sector * 5000;
+        boss.DropMultiplier = 1.0f;
         boss.SplitDepth = 0;
+        boss.LastHitChainDepth = 0;
+        boss.LastHitSplitDepth = 0;
         boss.Elite = true;
         boss.Armor = (1.12f + sector * 0.1f) * BossArmorScale(archetype) * DifficultyBossArmorScale();
         boss.BossIntent = BossPatternKind.AimedFan;
@@ -3599,6 +3670,7 @@ public partial class MainGame : Node2D
         enemy.ContactTimer = 0.0f;
         enemy.Polarity = polarity;
         enemy.Value = (int)((100 + _wave * 32 + (int)kind * 45) * (elite ? 2.8f : 1.0f));
+        enemy.DropMultiplier = 1.0f;
         enemy.SplitDepth = splitDepth;
         enemy.LastHitChainDepth = 0;
         enemy.LastHitSplitDepth = 0;
@@ -4370,25 +4442,9 @@ public partial class MainGame : Node2D
     private void UpdatePlayer(float dt)
     {
         Vector2 move = ReadMoveInput();
-
-        Vector2 gamepadAim = ReadGamepadStick(JoyAxis.RightX, JoyAxis.RightY, GamepadAimDeadZone);
-        if (gamepadAim.LengthSquared() > 0.01f)
-        {
-            _aimDir = gamepadAim.Normalized();
-        }
-        else if (_usingGamepad && move.LengthSquared() > 0.01f)
-        {
-            _aimDir = move.Normalized();
-        }
-        else if (!_usingGamepad)
-        {
-            Vector2 mouse = GetGlobalMousePosition();
-            Vector2 aim = mouse - _playerPos;
-            if (aim.LengthSquared() > 0.01f)
-            {
-                _aimDir = aim.Normalized();
-            }
-        }
+        _seekerFireTimer = Mathf.Max(0.0f, _seekerFireTimer - dt);
+        _heavySlugTimer = Mathf.Max(0.0f, _heavySlugTimer - dt);
+        UpdateAutoAim(move, dt);
 
         bool tactical = TacticalHeld();
         if (tactical && !_lastToggle)
@@ -4427,7 +4483,7 @@ public partial class MainGame : Node2D
         if (_dashTimer > 0.0f)
         {
             speed = _dashPower;
-            move = _aimDir;
+            move = _dashDir;
             _invulnTimer = Mathf.Max(_invulnTimer, 0.05f);
             ClearBulletsNear(_playerPos, 62.0f + (_dashDamage - 70.0f) * 0.24f, true);
         }
@@ -4440,6 +4496,7 @@ public partial class MainGame : Node2D
         {
             FirePlayerShot();
             FirePulseMagazine();
+            FirePublicAuxiliaryShots();
             _fireTimer = _fireInterval;
         }
 
@@ -5181,18 +5238,54 @@ public partial class MainGame : Node2D
         PlaySfx(118.0f, 1.8f, 0.5f, 0.56f, 0.12f, 1);
     }
 
+    private void UpdateAutoAim(Vector2 fallbackMove, float dt)
+    {
+        Enemy? target = FindNearestEnemy(_playerPos, 4096.0f);
+        if (target != null)
+        {
+            Vector2 toTarget = target.Pos - _playerPos;
+            if (toTarget.LengthSquared() > 0.01f)
+            {
+                _aimDir = TurnTowardDirection(_aimDir, toTarget, (AutoAimTurnSpeed + _autoAimTurnBonus) * dt);
+                return;
+            }
+        }
+
+        if (fallbackMove.LengthSquared() > 0.01f)
+        {
+            _aimDir = TurnTowardDirection(_aimDir, fallbackMove, (AutoAimFallbackTurnSpeed + _autoAimTurnBonus * 0.72f) * dt);
+            return;
+        }
+
+        if (_aimDir.LengthSquared() < 0.01f)
+        {
+            _aimDir = Vector2.Right;
+        }
+    }
+
     private void StartDash(Vector2 direction)
     {
         if (direction.LengthSquared() < 0.1f)
         {
             direction = Vector2.Right;
         }
+        _dashDir = direction.Normalized();
         _dashTimer = 0.16f;
-        _dashCooldown = 0.86f;
+        _dashCooldown = DashCooldownDuration();
         _invulnTimer = 0.22f;
-        _playerVel = direction.Normalized() * _dashPower;
+        _playerVel = _dashDir * _dashPower;
         Burst(_playerPos, PolarityColor(_playerPolarity), 24, 520.0f, 0.7f);
         PlaySfx(150.0f, 1.2f, 0.16f, 0.34f, 0.12f, 2);
+    }
+
+    private float DashCooldownDuration()
+    {
+        float reduction = Mathf.Min(0.28f, _vectorThrusters * 0.045f);
+        if (IsUpgradeMaxed(UpgradeId.VectorThrusters))
+        {
+            reduction += 0.08f;
+        }
+        return 0.86f * Mathf.Clamp(1.0f - reduction, 0.58f, 1.0f);
     }
 
     private void FirePlayerShot()
@@ -5246,24 +5339,8 @@ public partial class MainGame : Node2D
             shot.Polarity = _playerPolarity;
             shot.Pierce = _riftNeedle ? 2 : 0;
             shot.Rift = _riftNeedle;
-            if (_echoChance > 0.0f && _rng.Randf() < _echoChance)
-            {
-                Vector2 echoDir = dir.Rotated(_rng.RandfRange(-0.05f, 0.05f));
-                Shot? echo = AddShot(true);
-                if (echo != null)
-                {
-                    echo.Pos = shot.Pos - echoDir * 14.0f;
-                    echo.Prev = shot.Prev;
-                    echo.Vel = echoDir * 1460.0f;
-                    echo.Radius = 4.5f;
-                    echo.Damage = shot.Damage * 0.46f;
-                    echo.Life = 0.62f;
-                    echo.MaxLife = 0.62f;
-                    echo.Polarity = _playerPolarity;
-                    echo.Pierce = 1;
-                    echo.Rift = true;
-                }
-            }
+            FinalizePlayerShot(shot);
+            TrySpawnQuantumEcho(shot);
         }
 
         if (IsUpgradeMaxed(UpgradeId.AstraRefraction))
@@ -5452,7 +5529,157 @@ public partial class MainGame : Node2D
         {
             float offset = count == 1 ? 0.0f : (i - (count - 1) * 0.5f) * spread;
             Vector2 dir = _aimDir.Rotated(offset);
-            SpawnPlayerShot(_playerPos + dir * 30.0f, dir, 1180.0f, 4.0f, (7.0f + _pulseMagazine * 1.8f) * _damageMultiplier, 0.52f, _ricochetMatrix >= 3 ? 1 : 0, _riftNeedle);
+            SpawnPlayerShot(_playerPos + dir * 30.0f, dir, 1180.0f, 4.0f, (7.0f + _pulseMagazine * 1.8f) * _damageMultiplier, 0.52f, 0, _riftNeedle);
+        }
+    }
+
+    private void FirePublicAuxiliaryShots()
+    {
+        TryFireSeekerMissiles();
+        TryFireHeavySlug();
+        TryFireShadowClones();
+    }
+
+    private void TryFireSeekerMissiles()
+    {
+        if (_seekerRack <= 0 || _seekerFireTimer > 0.0f || _shots.Count > MaxShots * 0.88f)
+        {
+            return;
+        }
+
+        Enemy? target = FindNearestEnemy(_playerPos, 1480.0f);
+        if (target == null)
+        {
+            return;
+        }
+
+        float pressure = PerformancePressure();
+        int count = 1 + (_seekerRack >= 4 ? 1 : 0) + (IsUpgradeMaxed(UpgradeId.SeekerRack) ? 1 : 0);
+        if (pressure > 0.82f)
+        {
+            count = Math.Min(count, 1);
+        }
+
+        Vector2 toTarget = SafeDirection(target.Pos - _playerPos, _aimDir);
+        Vector2 right = new(-toTarget.Y, toTarget.X);
+        for (int i = 0; i < count; i++)
+        {
+            float side = count == 1 ? 0.0f : (i - (count - 1) * 0.5f);
+            Shot? shot = AddShot(true);
+            if (shot == null)
+            {
+                continue;
+            }
+
+            Vector2 origin = _playerPos + toTarget * 36.0f + right * side * 34.0f;
+            shot.Pos = origin;
+            shot.Prev = _playerPos;
+            shot.Vel = toTarget.Rotated(side * 0.12f) * (720.0f + _seekerRack * 34.0f);
+            shot.Radius = 5.2f + _seekerRack * 0.18f;
+            shot.Damage = (10.0f + _seekerRack * 2.7f) * _damageMultiplier * PlayerShotDamageScale(_playerPolarity);
+            shot.Life = 1.55f + _seekerRack * 0.06f;
+            shot.MaxLife = shot.Life;
+            shot.Polarity = _playerPolarity;
+            shot.Pierce = IsUpgradeMaxed(UpgradeId.SeekerRack) ? 1 : 0;
+            shot.Rift = true;
+            shot.Homing = _seekerRack;
+            FinalizePlayerShot(shot);
+            AddParticle(origin, shot.Vel.Normalized() * 120.0f, UpgradeAccent(UpgradeId.SeekerRack), 7.0f, 0.18f);
+        }
+
+        float cooldown = Mathf.Max(0.34f, SeekerBaseCooldown - _seekerRack * 0.055f);
+        if (IsUpgradeMaxed(UpgradeId.SeekerRack))
+        {
+            cooldown *= 0.82f;
+        }
+        _seekerFireTimer = cooldown;
+    }
+
+    private void TryFireHeavySlug()
+    {
+        if (_heavySlug <= 0 || _heavySlugTimer > 0.0f || _shots.Count > MaxShots * 0.9f)
+        {
+            return;
+        }
+
+        Vector2 dir = SafeDirection(_aimDir, Vector2.Right);
+        Enemy? target = FindNearestEnemy(_playerPos, 1260.0f);
+        if (target != null)
+        {
+            dir = SafeDirection(target.Pos - _playerPos, dir);
+        }
+
+        Shot? shot = AddShot(true);
+        if (shot == null)
+        {
+            return;
+        }
+
+        shot.Pos = _playerPos + dir * 48.0f;
+        shot.Prev = _playerPos;
+        shot.Vel = dir * (520.0f + _heavySlug * 22.0f);
+        shot.Radius = 10.0f + _heavySlug * 1.35f;
+        shot.Damage = (42.0f + _heavySlug * 12.5f) * _damageMultiplier * PlayerShotDamageScale(_playerPolarity);
+        shot.Life = 2.15f + _heavySlug * 0.08f;
+        shot.MaxLife = shot.Life;
+        shot.Polarity = _playerPolarity;
+        shot.Pierce = 1 + _heavySlug / 2 + (IsUpgradeMaxed(UpgradeId.HeavySlug) ? 1 : 0);
+        shot.Rift = false;
+        shot.Heavy = true;
+        FinalizePlayerShot(shot);
+        Burst(shot.Pos, UpgradeAccent(UpgradeId.HeavySlug), _visualPressure > 0.84f ? 5 : 11, 220.0f, 0.34f);
+
+        float cooldown = Mathf.Max(0.78f, HeavySlugBaseCooldown - _heavySlug * 0.095f);
+        if (IsUpgradeMaxed(UpgradeId.HeavySlug))
+        {
+            cooldown *= 0.84f;
+        }
+        _heavySlugTimer = cooldown;
+    }
+
+    private void TryFireShadowClones()
+    {
+        if (_shadowClone <= 0 || _shots.Count > MaxShots * 0.86f)
+        {
+            return;
+        }
+
+        float chance = 0.1f + _shadowClone * 0.055f + (IsUpgradeMaxed(UpgradeId.ShadowClone) ? 0.16f : 0.0f);
+        if (PerformancePressure() > 0.82f)
+        {
+            chance *= 0.55f;
+        }
+        if (_rng.Randf() > chance)
+        {
+            return;
+        }
+
+        Vector2 dir = SafeDirection(_aimDir, Vector2.Right);
+        Vector2 right = new(-dir.Y, dir.X);
+        int count = IsUpgradeMaxed(UpgradeId.ShadowClone) ? 2 : 1;
+        for (int i = 0; i < count; i++)
+        {
+            float side = count == 1 ? (_rng.Randf() < 0.5f ? -1.0f : 1.0f) : i == 0 ? -1.0f : 1.0f;
+            Shot? shot = AddShot(true);
+            if (shot == null)
+            {
+                continue;
+            }
+
+            Vector2 shotDir = dir.Rotated(side * (0.1f + _shadowClone * 0.012f));
+            shot.Pos = _playerPos + dir * 28.0f + right * side * (34.0f + _shadowClone * 3.0f);
+            shot.Prev = _playerPos;
+            shot.Vel = shotDir * (980.0f + _shadowClone * 42.0f);
+            shot.Radius = 4.0f + _shadowClone * 0.14f;
+            shot.Damage = (8.0f + _shadowClone * 2.15f) * _damageMultiplier * PlayerShotDamageScale(_playerPolarity);
+            shot.Life = 0.7f + _shadowClone * 0.035f;
+            shot.MaxLife = shot.Life;
+            shot.Polarity = _playerPolarity;
+            shot.Pierce = _shadowClone >= 4 ? 1 : 0;
+            shot.Rift = true;
+            shot.Shadow = true;
+            shot.Homing = IsUpgradeMaxed(UpgradeId.ShadowClone) ? 1 : 0;
+            FinalizePlayerShot(shot);
         }
     }
 
@@ -5474,8 +5701,79 @@ public partial class MainGame : Node2D
         shot.Life = life;
         shot.MaxLife = life;
         shot.Polarity = shotPolarity;
-        shot.Pierce = pierce + (_ricochetMatrix >= 3 ? 1 : 0);
+        shot.Pierce = pierce;
         shot.Rift = rift;
+        FinalizePlayerShot(shot);
+        TrySpawnQuantumEcho(shot);
+    }
+
+    private void TrySpawnQuantumEcho(Shot source)
+    {
+        if (_echoChance <= 0.0f || !source.FromPlayer || source.Shadow || source.Heavy || _shots.Count > MaxShots * 0.9f)
+        {
+            return;
+        }
+
+        float chance = _echoChance + (source.Rift ? 0.025f : 0.0f);
+        if (_rng.Randf() > Mathf.Clamp(chance, 0.0f, 0.72f))
+        {
+            return;
+        }
+
+        Vector2 dir = source.Vel.LengthSquared() > 0.01f ? source.Vel.Normalized() : SafeDirection(_aimDir, Vector2.Right);
+        Vector2 echoDir = dir.Rotated(_rng.RandfRange(-0.055f, 0.055f));
+        Shot? echo = AddShot(true);
+        if (echo == null)
+        {
+            return;
+        }
+
+        float sourceSpeed = source.Vel.Length();
+        echo.Pos = source.Pos - echoDir * 14.0f + echoDir.Orthogonal() * _rng.RandfRange(-7.0f, 7.0f);
+        echo.Prev = source.Prev;
+        echo.Vel = echoDir * Mathf.Clamp(sourceSpeed * 1.04f, 920.0f, 1900.0f);
+        echo.Radius = Mathf.Clamp(source.Radius * 0.82f, 3.6f, 5.8f);
+        echo.Damage = source.Damage * (0.34f + Mathf.Min(_echoChance, 0.55f) * 0.18f);
+        echo.Life = Mathf.Clamp(source.MaxLife * 0.56f, 0.38f, 0.78f);
+        echo.MaxLife = echo.Life;
+        echo.Polarity = source.Polarity;
+        echo.Pierce = Math.Max(1, Math.Min(source.Pierce + 1, 2));
+        echo.ChainDepth = source.ChainDepth;
+        echo.SplitDepth = source.SplitDepth;
+        echo.Rift = true;
+        echo.Homing = source.Homing;
+        echo.Shadow = true;
+        FinalizePlayerShot(echo);
+    }
+
+    private void FinalizePlayerShot(Shot shot, bool allowPinball = true)
+    {
+        if (!shot.FromPlayer)
+        {
+            return;
+        }
+
+        if (_pinballRounds <= 0 || !allowPinball)
+        {
+            return;
+        }
+
+        float chance = shot.Heavy ? 1.0f : 0.2f + _pinballRounds * 0.085f;
+        if (shot.Shadow)
+        {
+            chance += 0.08f;
+        }
+        if (IsUpgradeMaxed(UpgradeId.PinballRounds))
+        {
+            chance += 0.2f;
+        }
+        if (_rng.Randf() > Mathf.Clamp(chance, 0.0f, 0.94f))
+        {
+            return;
+        }
+
+        int bounces = 1 + (_pinballRounds >= 3 ? 1 : 0) + (IsUpgradeMaxed(UpgradeId.PinballRounds) ? 1 : 0);
+        shot.Bounces = Math.Max(shot.Bounces, bounces);
     }
 
     private void FirePolarityStorm()
@@ -5501,6 +5799,7 @@ public partial class MainGame : Node2D
             shot.Polarity = _playerPolarity;
             shot.Pierce = 0;
             shot.Rift = true;
+            FinalizePlayerShot(shot);
         }
         Burst(_playerPos, color, 12 + _polarityStorm * 4, 340.0f, 0.55f);
     }
@@ -6409,6 +6708,10 @@ public partial class MainGame : Node2D
         {
             Shot shot = _shots[i];
             shot.Prev = shot.Pos;
+            if (shot.FromPlayer && shot.Homing > 0)
+            {
+                UpdateHomingShot(shot, dt);
+            }
             shot.Pos += shot.Vel * dt;
             shot.Life -= dt;
 
@@ -6421,11 +6724,91 @@ public partial class MainGame : Node2D
                 shot.Vel *= 1.0f - dt * Mathf.Min(0.18f, 0.035f * _stasisField);
             }
 
+            if (shot.FromPlayer && shot.Bounces > 0 && TryBouncePlayerShot(shot))
+            {
+                shot.Bounces--;
+                shot.Damage *= shot.Heavy ? 0.92f : 0.86f;
+                shot.Life = Mathf.Max(shot.Life, 0.32f);
+                AddParticle(shot.Pos, -shot.Vel.Normalized() * 110.0f, UpgradeAccent(UpgradeId.PinballRounds), shot.Heavy ? 9.0f : 5.0f, 0.18f);
+            }
+
             if (shot.Life <= 0.0f || !ShotCullBounds.HasPoint(shot.Pos))
             {
                 RemoveShotAt(i);
             }
         }
+    }
+
+    private void UpdateHomingShot(Shot shot, float dt)
+    {
+        float speed = shot.Vel.Length();
+        if (speed <= 1.0f)
+        {
+            return;
+        }
+
+        Enemy? target = FindNearestEnemy(shot.Pos, 560.0f + shot.Homing * 145.0f);
+        if (target == null)
+        {
+            return;
+        }
+
+        Vector2 desired = target.Pos - shot.Pos;
+        if (desired.LengthSquared() <= 1.0f)
+        {
+            return;
+        }
+
+        float turn = 4.4f + shot.Homing * 1.15f + (shot.Shadow ? 0.8f : 0.0f);
+        shot.Vel = TurnTowardDirection(shot.Vel, desired, turn * dt) * speed;
+    }
+
+    private static bool TryBouncePlayerShot(Shot shot)
+    {
+        float margin = Mathf.Max(shot.Radius + 3.0f, 8.0f);
+        Vector2 pos = shot.Pos;
+        Vector2 vel = shot.Vel;
+        bool bounced = false;
+
+        float left = Arena.Position.X + margin;
+        float right = Arena.End.X - margin;
+        float top = Arena.Position.Y + margin;
+        float bottom = Arena.End.Y - margin;
+
+        if (pos.X < left)
+        {
+            pos.X = left;
+            vel.X = Mathf.Abs(vel.X);
+            bounced = true;
+        }
+        else if (pos.X > right)
+        {
+            pos.X = right;
+            vel.X = -Mathf.Abs(vel.X);
+            bounced = true;
+        }
+
+        if (pos.Y < top)
+        {
+            pos.Y = top;
+            vel.Y = Mathf.Abs(vel.Y);
+            bounced = true;
+        }
+        else if (pos.Y > bottom)
+        {
+            pos.Y = bottom;
+            vel.Y = -Mathf.Abs(vel.Y);
+            bounced = true;
+        }
+
+        if (!bounced)
+        {
+            return false;
+        }
+
+        shot.Pos = pos;
+        shot.Vel = SafeDirection(vel, shot.Vel) * Mathf.Max(shot.Vel.Length(), 1.0f);
+        return true;
     }
 
     private void ResolveCombat(float dt)
@@ -6472,7 +6855,8 @@ public partial class MainGame : Node2D
                                 float windowBonus = overheated
                                     ? (tacticalShot ? 1.18f + (_critMultiplier - 1.0f) * 0.72f + (enemy.Elite ? 0.14f : 0.0f) : 1.06f)
                                     : (tacticalShot ? 1.08f : 1.0f);
-                                float damage = shot.Damage * windowBonus * _nextWaveDamageBoost;
+                                float assaultPower = tacticalShot ? Mathf.Max(1.0f, _assaultPower) : 1.0f;
+                                float damage = shot.Damage * windowBonus * assaultPower * _nextWaveDamageBoost;
                                 if (_executionMark > 0 && (overheated || enemy.Hp / Mathf.Max(1.0f, enemy.MaxHp) < 0.34f || (enemy.Kind == EnemyKind.Boss && enemy.BossGuard <= 0.0f)))
                                 {
                                     damage *= 1.0f + _executionMark * 0.075f + (IsUpgradeMaxed(UpgradeId.ExecutionMark) ? 0.12f : 0.0f);
@@ -6568,6 +6952,11 @@ public partial class MainGame : Node2D
                     }
                     else
                     {
+                        if (TryShieldRebound(shot))
+                        {
+                            continue;
+                        }
+
                         float incoming = shot.Damage * 0.92f;
                         AddCruiseCharge(3.0f, shot.Pos);
                         DamagePlayer(incoming, shot.Pos);
@@ -6597,6 +6986,58 @@ public partial class MainGame : Node2D
                 }
             }
         }
+    }
+
+    private bool TryShieldRebound(Shot shot)
+    {
+        if (_shieldRebound <= 0 || shot.FromPlayer || _playerHp <= 0.0f)
+        {
+            return false;
+        }
+
+        float chance = 0.15f + _shieldRebound * 0.075f + (IsUpgradeMaxed(UpgradeId.ShieldRebound) ? 0.18f : 0.0f);
+        if (_rng.Randf() > Mathf.Clamp(chance, 0.0f, 0.78f))
+        {
+            return false;
+        }
+
+        Enemy? target = FindNearestEnemy(_playerPos, 1320.0f);
+        Vector2 dir = target != null
+            ? SafeDirection(target.Pos - _playerPos, -shot.Vel)
+            : SafeDirection(-shot.Vel, _aimDir);
+
+        _activeEnemyBullets = Math.Max(0, _activeEnemyBullets - 1);
+        shot.FromPlayer = true;
+        shot.Pos = _playerPos + dir * 34.0f;
+        shot.Prev = _playerPos;
+        shot.Vel = dir * (820.0f + _shieldRebound * 54.0f);
+        shot.Radius = Mathf.Clamp(shot.Radius * 1.15f + _shieldRebound * 0.18f, 5.0f, 11.5f);
+        shot.Damage = (13.0f + _shieldRebound * 4.2f + shot.Damage * 0.28f) * _damageMultiplier * PlayerShotDamageScale(_playerPolarity);
+        shot.Life = 0.88f + _shieldRebound * 0.055f;
+        shot.MaxLife = shot.Life;
+        shot.Polarity = _playerPolarity;
+        shot.Pierce = _shieldRebound >= 3 ? 1 : 0;
+        shot.ChainDepth = 0;
+        shot.SplitDepth = 0;
+        shot.Rift = true;
+        shot.Grazed = false;
+        shot.Homing = _shieldRebound >= 4 || IsUpgradeMaxed(UpgradeId.ShieldRebound) ? 1 : 0;
+        shot.Heavy = false;
+        shot.Shadow = false;
+        FinalizePlayerShot(shot);
+
+        AddCruiseCharge(7.0f + _shieldRebound, shot.Pos);
+        _energy = Mathf.Clamp(_energy + 2.4f * _absorbEfficiency, 0.0f, _maxEnergy);
+        IncreaseCombo(shot.Pos);
+        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
+        Burst(_playerPos, UpgradeAccent(UpgradeId.ShieldRebound), _visualPressure > 0.82f ? 7 : 14, 300.0f, 0.48f);
+        if (_absorbTextCooldown <= 0.0f)
+        {
+            AddText(T("rebound.proc"), _playerPos + new Vector2(0.0f, -78.0f), UpgradeAccent(UpgradeId.ShieldRebound), 19.0f);
+            _absorbTextCooldown = 0.2f;
+        }
+        PlaySfx(620.0f, 120.0f, 0.09f, 0.14f, 0.02f, 2);
+        return true;
     }
 
     private void DamageEnemy(Enemy enemy, float damage, Vector2 source, bool heavy, int chainDepth = 0, int splitDepth = 0)
@@ -7011,12 +7452,12 @@ public partial class MainGame : Node2D
         }
         PlaySfx(enemy.Kind == EnemyKind.Boss ? 64.0f : 180.0f, enemy.Kind == EnemyKind.Boss ? 0.2f : -50.0f, enemy.Kind == EnemyKind.Boss ? 1.4f : 0.16f, enemy.Kind == EnemyKind.Boss ? 0.62f : 0.28f, enemy.Kind == EnemyKind.Boss ? 0.38f : 0.08f, enemy.Kind == EnemyKind.Boss ? 0 : 2);
 
-        int drops = enemy.Kind == EnemyKind.Boss ? 32 + CurrentSectorIndex() * 6 : 2 + (enemy.Kind == EnemyKind.Splitter ? 2 : 0) + (enemy.Elite ? 4 : 0);
+        int drops = EnemyDustDropCount(enemy);
         for (int i = 0; i < drops; i++)
         {
             SpawnPickup(enemy.Pos, PickupKind.Dust);
         }
-        if (_rng.Randf() < 0.08f + _leechChance + (CurrentSectorIndex() == 2 ? 0.06f : 0.0f) + (enemy.Elite ? 0.05f : 0.0f))
+        if (_rng.Randf() < RepairDropChance(enemy))
         {
             SpawnPickup(enemy.Pos, PickupKind.Repair);
         }
@@ -7029,6 +7470,44 @@ public partial class MainGame : Node2D
             SpawnEnemy(EnemyKind.Chaser, ClampToArena(enemy.Pos + new Vector2(42.0f, 36.0f), 30.0f), enemy.Polarity, enemy.SplitDepth + 1);
         }
         RecycleEnemy(enemy);
+    }
+
+    private int EnemyDustDropCount(Enemy enemy)
+    {
+        int baseDrops = enemy.Kind == EnemyKind.Boss ? 32 + CurrentSectorIndex() * 6 : 2 + (enemy.Kind == EnemyKind.Splitter ? 2 : 0) + (enemy.Elite ? 4 : 0);
+        float rewardBonus = Mathf.Max(0.0f, enemy.DropMultiplier - 1.0f);
+        float scaledDrops = baseDrops * (1.0f + rewardBonus * 0.62f);
+        int drops = Mathf.FloorToInt(scaledDrops);
+        if (_rng.Randf() < scaledDrops - drops)
+        {
+            drops++;
+        }
+
+        int cap = enemy.Kind == EnemyKind.Boss ? 76 : 16;
+        return Mathf.Clamp(drops, Math.Max(1, baseDrops), cap);
+    }
+
+    private float RepairDropChance(Enemy enemy)
+    {
+        float chance = 0.004f + _leechChance;
+        if (_leechChance > 0.0f)
+        {
+            chance += CurrentSectorIndex() * 0.006f;
+            if (enemy.Elite)
+            {
+                chance += 0.035f;
+            }
+            if (enemy.Kind == EnemyKind.Boss)
+            {
+                chance += 0.12f;
+            }
+        }
+        else if (enemy.Elite)
+        {
+            chance += 0.006f;
+        }
+
+        return Mathf.Clamp(chance, 0.0f, 0.58f);
     }
 
     private void SpawnFractalSplit(Enemy enemy)
@@ -7127,6 +7606,7 @@ public partial class MainGame : Node2D
         shard.ChainDepth = 0;
         shard.SplitDepth = splitDepth;
         shard.Rift = true;
+        FinalizePlayerShot(shard);
     }
 
     private void DamagePlayer(float amount, Vector2 source)
@@ -7250,7 +7730,7 @@ public partial class MainGame : Node2D
                 }
                 break;
             case PickupKind.Repair:
-                _playerHp = Mathf.Clamp(_playerHp + 18.0f, 0.0f, _playerMaxHp);
+                _playerHp = Mathf.Clamp(_playerHp + Mathf.Max(9.0f, _playerMaxHp * 0.32f), 0.0f, _playerMaxHp);
                 AddText(T("repair"), _playerPos + new Vector2(0.0f, -70.0f), Jade, 22.0f);
                 break;
         }
@@ -7847,6 +8327,7 @@ public partial class MainGame : Node2D
         {
             shot.Rift = false;
         }
+        FinalizePlayerShot(shot);
         AddParticle(origin, dir * 180.0f, PolarityColor(_playerPolarity), 7.0f, 0.16f);
         AddParticle(origin - dir * 6.0f, -dir * 90.0f, PickupBlue, 5.0f, 0.14f);
     }
@@ -7983,22 +8464,9 @@ public partial class MainGame : Node2D
         RemoveMaxed(commonPool);
         RemoveMaxed(pilotPool);
 
-        int pilotSlots = Math.Min(_wave <= 24 ? 2 : 1, pilotPool.Count);
-        for (int i = 0; i < pilotSlots; i++)
+        while (_upgradeChoices.Count < 3 && (commonPool.Count > 0 || pilotPool.Count > 0))
         {
-            AddRandomUpgradeChoice(pilotPool);
-        }
-
-        TryAddFlowUpgradeChoice(commonPool);
-
-        while (_upgradeChoices.Count < 3 && commonPool.Count > 0)
-        {
-            AddRandomUpgradeChoice(commonPool);
-        }
-
-        while (_upgradeChoices.Count < 3 && pilotPool.Count > 0)
-        {
-            AddRandomUpgradeChoice(pilotPool);
+            AddRandomUpgradeChoice(commonPool, pilotPool);
         }
 
         const float cardWidth = 386.0f;
@@ -8013,6 +8481,66 @@ public partial class MainGame : Node2D
         }
 
         _gamepadUpgradeIndex = Mathf.Clamp(_gamepadUpgradeIndex, 0, Math.Max(0, _upgradeChoices.Count - 1));
+    }
+
+    private void TryAddFeaturedCommonUpgradeChoice(List<UpgradeId> commonPool)
+    {
+        if (_upgradeChoices.Count >= 3 || commonPool.Count <= 0)
+        {
+            return;
+        }
+
+        List<UpgradeId> candidates = FeaturedCommonUpgradeCandidates(commonPool);
+        if (candidates.Count <= 0)
+        {
+            return;
+        }
+
+        bool needsRecoveryPlan = _playerHp < _playerMaxHp * 0.58f && GetRank(UpgradeId.ResonanceLeech) <= 0;
+        float revealChance = _runLevel <= 4 ? 0.94f : _runLevel <= 8 ? 0.82f : _runLevel <= 14 ? 0.58f : 0.34f;
+        if (!needsRecoveryPlan && _rng.Randf() > revealChance)
+        {
+            return;
+        }
+
+        int index = WeightedUpgradeIndex(candidates);
+        UpgradeId choice = candidates[index];
+        _upgradeChoices.Add(CreateCard(choice));
+        commonPool.Remove(choice);
+    }
+
+    private List<UpgradeId> FeaturedCommonUpgradeCandidates(List<UpgradeId> commonPool)
+    {
+        List<UpgradeId> candidates = new();
+        if (_playerHp < _playerMaxHp * 0.58f || _leechChance < 0.025f)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.ResonanceLeech);
+        }
+
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.SeekerRack);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.HeavySlug);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.PinballRounds);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.ShadowClone);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.ShieldRebound);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.GyroStabilizer);
+        AddFreshCommonMechanic(candidates, commonPool, UpgradeId.VectorThrusters);
+
+        if (_runLevel >= 6)
+        {
+            AddFlowCandidate(candidates, commonPool, UpgradeId.ChainRelay);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.FractalSplit);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+        }
+
+        return candidates;
+    }
+
+    private void AddFreshCommonMechanic(List<UpgradeId> candidates, List<UpgradeId> commonPool, UpgradeId id)
+    {
+        if (GetRank(id) <= 0 || _runLevel <= 10)
+        {
+            AddFlowCandidate(candidates, commonPool, id);
+        }
     }
 
     private void TryAddFlowUpgradeChoice(List<UpgradeId> commonPool)
@@ -8067,6 +8595,8 @@ public partial class MainGame : Node2D
             AddFlowCandidate(candidates, commonPool, UpgradeId.QuantumEcho);
             AddFlowCandidate(candidates, commonPool, UpgradeId.RiftNeedle);
             AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.SeekerRack);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.ShadowClone);
         }
 
         if (_fractalSplit > 0)
@@ -8075,16 +8605,21 @@ public partial class MainGame : Node2D
             AddFlowCandidate(candidates, commonPool, UpgradeId.RiftNeedle);
             AddFlowCandidate(candidates, commonPool, UpgradeId.MoonWisp);
             AddFlowCandidate(candidates, commonPool, UpgradeId.PulseMagazine);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.PinballRounds);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.HeavySlug);
         }
         if (_executionMark > 0)
         {
             AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
             AddFlowCandidate(candidates, commonPool, UpgradeId.StasisField);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.HeavySlug);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.SeekerRack);
         }
         if (_magnetizedCore > 0)
         {
             AddFlowCandidate(candidates, commonPool, UpgradeId.GravityWell);
             AddFlowCandidate(candidates, commonPool, UpgradeId.PulseMagazine);
+            AddFlowCandidate(candidates, commonPool, UpgradeId.VectorThrusters);
         }
 
         AddFlowCandidate(candidates, commonPool, UpgradeId.ChainRelay);
@@ -8094,6 +8629,12 @@ public partial class MainGame : Node2D
         AddFlowCandidate(candidates, commonPool, UpgradeId.StasisField);
         AddFlowCandidate(candidates, commonPool, UpgradeId.MagnetizedCore);
         AddFlowCandidate(candidates, commonPool, UpgradeId.RicochetMatrix);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.SeekerRack);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.ShadowClone);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.HeavySlug);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.PinballRounds);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.GyroStabilizer);
+        AddFlowCandidate(candidates, commonPool, UpgradeId.VectorThrusters);
         return candidates;
     }
 
@@ -8115,6 +8656,122 @@ public partial class MainGame : Node2D
         int index = WeightedUpgradeIndex(pool);
         _upgradeChoices.Add(CreateCard(pool[index]));
         pool.RemoveAt(index);
+    }
+
+    private void AddRandomUpgradeChoice(List<UpgradeId> commonPool, List<UpgradeId> pilotPool)
+    {
+        if (commonPool.Count <= 0)
+        {
+            AddRandomUpgradeChoice(pilotPool);
+            return;
+        }
+        if (pilotPool.Count <= 0)
+        {
+            AddRandomUpgradeChoice(commonPool);
+            return;
+        }
+
+        int pilotCards = 0;
+        int commonCards = 0;
+        for (int i = 0; i < _upgradeChoices.Count; i++)
+        {
+            if (IsPilotUpgrade(_runPilot, _upgradeChoices[i].Id))
+            {
+                pilotCards++;
+            }
+            else
+            {
+                commonCards++;
+            }
+        }
+
+        float total = 0.0f;
+        for (int i = 0; i < commonPool.Count; i++)
+        {
+            total += UpgradeDraftWeight(commonPool[i]) * UpgradeSourceWeight(commonPool[i], false, pilotCards, commonCards);
+        }
+        for (int i = 0; i < pilotPool.Count; i++)
+        {
+            total += UpgradeDraftWeight(pilotPool[i]) * UpgradeSourceWeight(pilotPool[i], true, pilotCards, commonCards);
+        }
+
+        float roll = _rng.RandfRange(0.0f, Math.Max(0.001f, total));
+        float accum = 0.0f;
+        for (int i = 0; i < commonPool.Count; i++)
+        {
+            UpgradeId id = commonPool[i];
+            accum += UpgradeDraftWeight(id) * UpgradeSourceWeight(id, false, pilotCards, commonCards);
+            if (roll <= accum)
+            {
+                _upgradeChoices.Add(CreateCard(id));
+                commonPool.RemoveAt(i);
+                return;
+            }
+        }
+        for (int i = 0; i < pilotPool.Count; i++)
+        {
+            UpgradeId id = pilotPool[i];
+            accum += UpgradeDraftWeight(id) * UpgradeSourceWeight(id, true, pilotCards, commonCards);
+            if (roll <= accum)
+            {
+                _upgradeChoices.Add(CreateCard(id));
+                pilotPool.RemoveAt(i);
+                return;
+            }
+        }
+
+        AddRandomUpgradeChoice(commonPool);
+    }
+
+    private float UpgradeSourceWeight(UpgradeId id, bool pilotUpgrade, int pilotCards, int commonCards)
+    {
+        int rank = GetRank(id);
+        if (pilotUpgrade)
+        {
+            float weight = _runLevel <= 4 ? 5.0f : _runLevel <= 12 ? 4.25f : 3.4f;
+            if (rank > 0)
+            {
+                weight += 1.15f + Math.Min(rank, 4) * 0.35f;
+            }
+            if (pilotCards <= 0)
+            {
+                weight *= 1.24f;
+            }
+            else if (pilotCards == 1)
+            {
+                weight *= rank > 0 ? 0.82f : 0.52f;
+            }
+            else
+            {
+                weight *= 0.18f;
+            }
+            return weight;
+        }
+
+        float commonWeight = 1.0f;
+        if (commonCards <= 0)
+        {
+            commonWeight *= 1.28f;
+        }
+        else if (commonCards >= 2)
+        {
+            commonWeight *= 0.74f;
+        }
+
+        if (rank > 0)
+        {
+            commonWeight *= 1.55f + Math.Min(rank, 4) * 0.18f;
+        }
+        if (IsFreshPublicMechanic(id))
+        {
+            commonWeight *= _runLevel <= 8 ? 2.05f : 1.42f;
+        }
+        if (id == UpgradeId.ResonanceLeech && _playerHp < _playerMaxHp * 0.58f)
+        {
+            commonWeight *= 1.55f;
+        }
+
+        return commonWeight;
     }
 
     private int WeightedUpgradeIndex(List<UpgradeId> pool)
@@ -8157,10 +8814,10 @@ public partial class MainGame : Node2D
         int maxRank = MaxRank(id);
         if (maxRank < 20 && rank > 0)
         {
-            weight += 0.28f + rank * 0.08f;
+            weight += 1.05f + rank * 0.26f;
             if (rank + 1 >= maxRank)
             {
-                weight += 0.42f;
+                weight += 0.82f;
             }
         }
 
@@ -8172,7 +8829,33 @@ public partial class MainGame : Node2D
         {
             weight += 0.42f;
         }
+        if (IsFreshPublicMechanic(id))
+        {
+            weight += _runLevel <= 8 ? 2.2f : 1.0f;
+        }
+        if (id == UpgradeId.ResonanceLeech)
+        {
+            if (_leechChance < 0.025f)
+            {
+                weight += 0.9f;
+            }
+            if (_playerHp < _playerMaxHp * 0.58f)
+            {
+                weight += 1.8f;
+            }
+        }
         return Mathf.Max(0.1f, weight);
+    }
+
+    private bool IsFreshPublicMechanic(UpgradeId id)
+    {
+        return GetRank(id) <= 0 && (id is UpgradeId.SeekerRack
+            or UpgradeId.ShieldRebound
+            or UpgradeId.ShadowClone
+            or UpgradeId.HeavySlug
+            or UpgradeId.PinballRounds
+            or UpgradeId.GyroStabilizer
+            or UpgradeId.VectorThrusters);
     }
 
     private bool IsSynergyUpgrade(UpgradeId id)
@@ -8186,6 +8869,13 @@ public partial class MainGame : Node2D
             UpgradeId.ExecutionMark => _critMultiplier > 1.7f || _orionCometSpear > 0 || _vesperCharge > 0,
             UpgradeId.ChainRelay => _ricochetMatrix > 0 || _kairoRelayProtocol > 0 || _solFlareCore > 0,
             UpgradeId.FractalSplit => _pulseMagazine > 0 || _astraTwinRefraction > 0 || _lyraHarmonicCascade > 0,
+            UpgradeId.SeekerRack => _chainRelay > 0 || _executionMark > 0 || _gyroStabilizer > 0,
+            UpgradeId.ShadowClone => _echoChance > 0.08f || _chainRelay > 0 || _pulseMagazine > 0,
+            UpgradeId.HeavySlug => _fractalSplit > 0 || _executionMark > 0 || _pinballRounds > 0,
+            UpgradeId.PinballRounds => _heavySlug > 0 || _fractalSplit > 0 || _ricochetMatrix > 0,
+            UpgradeId.GyroStabilizer => _seekerRack > 0 || _vectorThrusters > 0,
+            UpgradeId.VectorThrusters => _gyroStabilizer > 0 || _magnetizedCore > 0,
+            UpgradeId.ShieldRebound => _mirrorReduction < 0.98f || _playerHp < _playerMaxHp * 0.58f,
             UpgradeId.NovaCapacitor => _novaCost > UltimateCostFloor + 0.5f,
             UpgradeId.GravityWell => _magnetizedCore > 0,
             _ => false,
@@ -8373,8 +9063,8 @@ public partial class MainGame : Node2D
         switch (path)
         {
             case 1:
-                _playerMaxHp += 12.0f + tierScale * 8.0f;
-                _playerHp = Mathf.Clamp(_playerHp + 22.0f + tierScale * 12.0f, 0.0f, _playerMaxHp);
+                _playerMaxHp += 4.0f + tierScale * 3.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 6.0f + tierScale * 4.0f, 0.0f, _playerMaxHp);
                 _mirrorReduction *= 0.965f - tier * 0.015f;
                 _invulnTimer = Mathf.Max(_invulnTimer, 0.35f + tier * 0.16f);
                 break;
@@ -8437,9 +9127,9 @@ public partial class MainGame : Node2D
     {
         return id switch
         {
-            UpgradeId.VitalShell or UpgradeId.MirrorSkin or UpgradeId.AegisBloom or UpgradeId.StasisField or UpgradeId.RookBulwarkCore or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.SolRadiantMantle => 1,
-            UpgradeId.NovaCapacitor or UpgradeId.PolarityStorm or UpgradeId.CometTrail or UpgradeId.OneWaveOverdrive or UpgradeId.BulletTransmute or UpgradeId.AstraNovaBloom or UpgradeId.VesperJudgmentCoil or UpgradeId.KairoOverrideMatrix or UpgradeId.SolFlareCore or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.LyraEncoreField or UpgradeId.OrionPerihelionVector => 2,
-            UpgradeId.MoonWisp or UpgradeId.QuantumEcho or UpgradeId.ChainRelay or UpgradeId.FractalSplit or UpgradeId.RicochetMatrix or UpgradeId.KairoDroneBay or UpgradeId.KairoRelayProtocol or UpgradeId.LyraHarmonicCascade or UpgradeId.NyxGravityCantor => 3,
+            UpgradeId.VitalShell or UpgradeId.MirrorSkin or UpgradeId.AegisBloom or UpgradeId.StasisField or UpgradeId.ShieldRebound or UpgradeId.RookBulwarkCore or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.SolRadiantMantle => 1,
+            UpgradeId.NovaCapacitor or UpgradeId.PolarityStorm or UpgradeId.CometTrail or UpgradeId.OneWaveOverdrive or UpgradeId.BulletTransmute or UpgradeId.HeavySlug or UpgradeId.AstraNovaBloom or UpgradeId.VesperJudgmentCoil or UpgradeId.KairoOverrideMatrix or UpgradeId.SolFlareCore or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.LyraEncoreField or UpgradeId.OrionPerihelionVector => 2,
+            UpgradeId.MoonWisp or UpgradeId.QuantumEcho or UpgradeId.ChainRelay or UpgradeId.FractalSplit or UpgradeId.RicochetMatrix or UpgradeId.SeekerRack or UpgradeId.ShadowClone or UpgradeId.PinballRounds or UpgradeId.GyroStabilizer or UpgradeId.VectorThrusters or UpgradeId.KairoDroneBay or UpgradeId.KairoRelayProtocol or UpgradeId.LyraHarmonicCascade or UpgradeId.NyxGravityCantor => 3,
             UpgradeId.GravityWell or UpgradeId.ResonanceLeech or UpgradeId.BountyContract or UpgradeId.HarmonicMap or UpgradeId.MagnetizedCore or UpgradeId.SolSolarForge => 4,
             _ => 0,
         };
@@ -8489,6 +9179,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField,
             UpgradeId.MagnetizedCore,
             UpgradeId.RicochetMatrix,
+            UpgradeId.SeekerRack,
+            UpgradeId.ShieldRebound,
+            UpgradeId.ShadowClone,
+            UpgradeId.HeavySlug,
+            UpgradeId.PinballRounds,
+            UpgradeId.GyroStabilizer,
+            UpgradeId.VectorThrusters,
         };
     }
 
@@ -8650,12 +9347,12 @@ public partial class MainGame : Node2D
                 _enemySlow *= 0.92f;
                 break;
             case UpgradeId.VitalShell:
-                _playerMaxHp += 28.0f;
-                _playerHp = Mathf.Clamp(_playerHp + 48.0f, 0.0f, _playerMaxHp);
+                _playerMaxHp += 8.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 12.0f, 0.0f, _playerMaxHp);
                 break;
             case UpgradeId.ResonanceLeech:
-                _leechChance += 0.09f;
-                _energy = Mathf.Clamp(_energy + 35.0f, 0.0f, _maxEnergy);
+                _leechChance += 0.07f;
+                _energy = Mathf.Clamp(_energy + 22.0f, 0.0f, _maxEnergy);
                 break;
             case UpgradeId.MoonWisp:
                 _orbiters = Math.Min(4, _orbiters + 1);
@@ -8667,7 +9364,7 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.MirrorSkin:
                 _mirrorReduction *= 0.86f;
-                _playerHp = Mathf.Clamp(_playerHp + 22.0f, 0.0f, _playerMaxHp);
+                _playerHp = Mathf.Clamp(_playerHp + 6.0f, 0.0f, _playerMaxHp);
                 break;
             case UpgradeId.NovaCapacitor:
                 _novaCost = Mathf.Max(38.0f, _novaCost - 7.0f);
@@ -8684,9 +9381,9 @@ public partial class MainGame : Node2D
                 _dashPower += 85.0f;
                 break;
             case UpgradeId.AegisBloom:
-                _aegisRegen += 0.7f;
-                _playerMaxHp += 12.0f;
-                _playerHp = Mathf.Clamp(_playerHp + 20.0f, 0.0f, _playerMaxHp);
+                _aegisRegen += 0.34f;
+                _playerMaxHp += 5.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 8.0f, 0.0f, _playerMaxHp);
                 break;
             case UpgradeId.QuantumEcho:
                 _echoChance = Mathf.Min(0.55f, _echoChance + 0.11f);
@@ -8705,8 +9402,8 @@ public partial class MainGame : Node2D
                 _damageMultiplier += 0.1f;
                 break;
             case UpgradeId.EmergencyRepair:
-                _playerMaxHp += 8.0f;
-                _playerHp = Mathf.Clamp(_playerHp + 70.0f, 0.0f, _playerMaxHp);
+                _playerMaxHp += 4.0f;
+                _playerHp = Mathf.Clamp(_playerHp + 24.0f, 0.0f, _playerMaxHp);
                 break;
             case UpgradeId.OneWaveOverdrive:
                 _nextWaveDamageBoost = 1.55f;
@@ -8714,7 +9411,7 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.GlassCannon:
                 _damageMultiplier += 0.42f;
-                _playerMaxHp = Mathf.Max(70.0f, _playerMaxHp - 18.0f);
+                _playerMaxHp = Mathf.Max(12.0f, _playerMaxHp - 8.0f);
                 _playerHp = Mathf.Min(_playerHp, _playerMaxHp);
                 break;
             case UpgradeId.BountyContract:
@@ -8751,8 +9448,43 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.RicochetMatrix:
                 _ricochetMatrix = Math.Min(5, _ricochetMatrix + 1);
-                _chainRelay = Math.Max(_chainRelay, 1);
-                _echoChance = Mathf.Min(0.62f, _echoChance + 0.04f);
+                _damageMultiplier += 0.025f;
+                break;
+            case UpgradeId.SeekerRack:
+                _seekerRack = Math.Min(5, _seekerRack + 1);
+                _seekerFireTimer = 0.0f;
+                _damageMultiplier += 0.025f;
+                break;
+            case UpgradeId.ShieldRebound:
+                _shieldRebound = Math.Min(5, _shieldRebound + 1);
+                _mirrorReduction *= 0.965f;
+                _playerHp = Mathf.Clamp(_playerHp + 5.0f, 0.0f, _playerMaxHp);
+                break;
+            case UpgradeId.ShadowClone:
+                _shadowClone = Math.Min(5, _shadowClone + 1);
+                _echoChance = Mathf.Min(0.68f, _echoChance + 0.035f);
+                _damageMultiplier += 0.025f;
+                break;
+            case UpgradeId.HeavySlug:
+                _heavySlug = Math.Min(5, _heavySlug + 1);
+                _heavySlugTimer = Mathf.Min(_heavySlugTimer, 0.18f);
+                _damageMultiplier += 0.04f;
+                _fireInterval = Mathf.Max(0.1f, _fireInterval + 0.006f);
+                break;
+            case UpgradeId.PinballRounds:
+                _pinballRounds = Math.Min(5, _pinballRounds + 1);
+                _damageMultiplier += 0.02f;
+                break;
+            case UpgradeId.GyroStabilizer:
+                _gyroStabilizer = Math.Min(4, _gyroStabilizer + 1);
+                _autoAimTurnBonus += 2.2f;
+                _fireInterval = Mathf.Max(0.09f, _fireInterval - 0.01f);
+                break;
+            case UpgradeId.VectorThrusters:
+                _vectorThrusters = Math.Min(5, _vectorThrusters + 1);
+                _playerSpeed += 34.0f;
+                _dashPower += 62.0f;
+                _dashCooldown = Math.Min(_dashCooldown, DashCooldownDuration() * 0.55f);
                 break;
             case UpgradeId.AstraRefraction:
                 _astraRefraction = Math.Min(4, _astraRefraction + 1);
@@ -8770,7 +9502,6 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.VesperSplitRail:
                 _vesperFork = Math.Min(3, _vesperFork + 1);
-                _fractalSplit = Math.Max(_fractalSplit, 1);
                 _fireInterval = Mathf.Max(0.32f, _fireInterval - 0.026f);
                 break;
             case UpgradeId.KairoDroneBay:
@@ -8827,7 +9558,6 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.SolFlareCore:
                 _solFlareCore = Math.Min(4, _solFlareCore + 1);
-                _chainRelay = Math.Max(_chainRelay, 1);
                 _maxEnergy += 10.0f;
                 _energy = Mathf.Clamp(_energy + 16.0f, 0.0f, _maxEnergy);
                 _damageMultiplier += 0.04f;
@@ -8841,7 +9571,6 @@ public partial class MainGame : Node2D
             case UpgradeId.NyxOrbit:
                 _nyxOrbit = Math.Min(5, _nyxOrbit + 1);
                 _fireInterval = Mathf.Max(0.17f, _fireInterval - 0.025f);
-                _fractalSplit = Math.Max(_fractalSplit, 1);
                 break;
             case UpgradeId.NyxSingularity:
                 _nyxSingularity = Math.Min(5, _nyxSingularity + 1);
@@ -8855,7 +9584,6 @@ public partial class MainGame : Node2D
                 break;
             case UpgradeId.NyxGravityCantor:
                 _nyxGravityCantor = Math.Min(3, _nyxGravityCantor + 1);
-                _chainRelay = Math.Max(_chainRelay, 1);
                 _damageMultiplier += 0.04f;
                 break;
             case UpgradeId.RookBulwarkCore:
@@ -8913,7 +9641,6 @@ public partial class MainGame : Node2D
             case UpgradeId.OrionStarfallQuiver:
                 _orionStarfallQuiver = Math.Min(4, _orionStarfallQuiver + 1);
                 _fireInterval = Mathf.Max(0.38f, _fireInterval - 0.04f);
-                _fractalSplit = Math.Max(_fractalSplit, 1);
                 break;
             case UpgradeId.OrionPerihelionVector:
                 _orionPerihelionVector = Math.Min(3, _orionPerihelionVector + 1);
@@ -8954,7 +9681,33 @@ public partial class MainGame : Node2D
                 _pickupMagnet += 180.0f;
                 break;
             case UpgradeId.RicochetMatrix:
-                _chainRelay = Math.Max(_chainRelay, 3);
+                _damageMultiplier += 0.06f;
+                break;
+            case UpgradeId.SeekerRack:
+                _seekerFireTimer = 0.0f;
+                _damageMultiplier += 0.05f;
+                break;
+            case UpgradeId.ShieldRebound:
+                _mirrorReduction *= 0.9f;
+                ClearBulletsNear(_playerPos, 180.0f, true);
+                break;
+            case UpgradeId.ShadowClone:
+                _echoChance = Mathf.Min(0.76f, _echoChance + 0.08f);
+                break;
+            case UpgradeId.HeavySlug:
+                _heavySlugTimer = 0.0f;
+                _damageMultiplier += 0.08f;
+                break;
+            case UpgradeId.PinballRounds:
+                _damageMultiplier += 0.04f;
+                break;
+            case UpgradeId.GyroStabilizer:
+                _autoAimTurnBonus += 4.0f;
+                break;
+            case UpgradeId.VectorThrusters:
+                _playerSpeed += 52.0f;
+                _dashPower += 110.0f;
+                _dashCooldown = 0.0f;
                 break;
             case UpgradeId.AstraRefraction:
             case UpgradeId.AstraPrismWake:
@@ -9002,6 +9755,10 @@ public partial class MainGame : Node2D
             case UpgradeId.NyxEventHorizon:
             case UpgradeId.NyxGravityCantor:
                 _novaCost = Mathf.Max(30.0f, _novaCost - 8.0f);
+                if (id == UpgradeId.NyxGravityCantor)
+                {
+                    _chainRelay = Math.Max(_chainRelay, 1);
+                }
                 break;
             case UpgradeId.RookBulwarkCore:
             case UpgradeId.RookAegisRelay:
@@ -9070,6 +9827,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField => new UpgradeCard { Id = id, Title = T("upgrade.stasis.title"), Tag = rank, Body = T("upgrade.stasis.body"), Accent = new Color(0.6f, 0.8f, 1.0f) },
             UpgradeId.MagnetizedCore => new UpgradeCard { Id = id, Title = T("upgrade.magnet.title"), Tag = rank, Body = T("upgrade.magnet.body"), Accent = new Color(0.64f, 1.0f, 0.72f) },
             UpgradeId.RicochetMatrix => new UpgradeCard { Id = id, Title = T("upgrade.ricochet.title"), Tag = rank, Body = T("upgrade.ricochet.body"), Accent = new Color(0.96f, 0.76f, 1.0f) },
+            UpgradeId.SeekerRack => new UpgradeCard { Id = id, Title = T("upgrade.seeker.title"), Tag = rank, Body = T("upgrade.seeker.body"), Accent = new Color(0.48f, 0.9f, 1.0f) },
+            UpgradeId.ShieldRebound => new UpgradeCard { Id = id, Title = T("upgrade.rebound.title"), Tag = rank, Body = T("upgrade.rebound.body"), Accent = new Color(0.66f, 1.0f, 0.76f) },
+            UpgradeId.ShadowClone => new UpgradeCard { Id = id, Title = T("upgrade.shadow.title"), Tag = rank, Body = T("upgrade.shadow.body"), Accent = new Color(0.68f, 0.58f, 1.0f) },
+            UpgradeId.HeavySlug => new UpgradeCard { Id = id, Title = T("upgrade.slug.title"), Tag = rank, Body = T("upgrade.slug.body"), Accent = new Color(1.0f, 0.72f, 0.28f) },
+            UpgradeId.PinballRounds => new UpgradeCard { Id = id, Title = T("upgrade.pinball.title"), Tag = rank, Body = T("upgrade.pinball.body"), Accent = new Color(0.96f, 0.58f, 1.0f) },
+            UpgradeId.GyroStabilizer => new UpgradeCard { Id = id, Title = T("upgrade.gyro.title"), Tag = rank, Body = T("upgrade.gyro.body"), Accent = new Color(0.5f, 0.96f, 0.94f) },
+            UpgradeId.VectorThrusters => new UpgradeCard { Id = id, Title = T("upgrade.thrusters.title"), Tag = rank, Body = T("upgrade.thrusters.body"), Accent = new Color(1.0f, 0.64f, 0.22f) },
             UpgradeId.AstraRefraction => new UpgradeCard { Id = id, Title = T("upgrade.astra.refraction.title"), Tag = rank, Body = T("upgrade.astra.refraction.body"), Accent = PolarityBlue },
             UpgradeId.AstraPrismWake => new UpgradeCard { Id = id, Title = T("upgrade.astra.wake.title"), Tag = rank, Body = T("upgrade.astra.wake.body"), Accent = PolarityAmber },
             UpgradeId.VesperCapacitor => new UpgradeCard { Id = id, Title = T("upgrade.vesper.charge.title"), Tag = rank, Body = T("upgrade.vesper.charge.body"), Accent = AlertRed },
@@ -9137,6 +9901,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField => T("capstone.stasis"),
             UpgradeId.MagnetizedCore => T("capstone.magnet"),
             UpgradeId.RicochetMatrix => T("capstone.ricochet"),
+            UpgradeId.SeekerRack => T("capstone.seeker"),
+            UpgradeId.ShieldRebound => T("capstone.rebound"),
+            UpgradeId.ShadowClone => T("capstone.shadow"),
+            UpgradeId.HeavySlug => T("capstone.slug"),
+            UpgradeId.PinballRounds => T("capstone.pinball"),
+            UpgradeId.GyroStabilizer => T("capstone.gyro"),
+            UpgradeId.VectorThrusters => T("capstone.thrusters"),
             UpgradeId.AstraRefraction => T("capstone.astra.refraction"),
             UpgradeId.AstraPrismWake => T("capstone.astra.wake"),
             UpgradeId.AstraNovaBloom => T("capstone.astra.nova"),
@@ -9206,6 +9977,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField => T("upgrade.stasis.title"),
             UpgradeId.MagnetizedCore => T("upgrade.magnet.title"),
             UpgradeId.RicochetMatrix => T("upgrade.ricochet.title"),
+            UpgradeId.SeekerRack => T("upgrade.seeker.title"),
+            UpgradeId.ShieldRebound => T("upgrade.rebound.title"),
+            UpgradeId.ShadowClone => T("upgrade.shadow.title"),
+            UpgradeId.HeavySlug => T("upgrade.slug.title"),
+            UpgradeId.PinballRounds => T("upgrade.pinball.title"),
+            UpgradeId.GyroStabilizer => T("upgrade.gyro.title"),
+            UpgradeId.VectorThrusters => T("upgrade.thrusters.title"),
             UpgradeId.AstraRefraction => T("upgrade.astra.refraction.title"),
             UpgradeId.AstraPrismWake => T("upgrade.astra.wake.title"),
             UpgradeId.VesperCapacitor => T("upgrade.vesper.charge.title"),
@@ -9275,6 +10053,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField => PickupBlue.Lerp(Paper, 0.18f),
             UpgradeId.MagnetizedCore => Jade.Lerp(Paper, 0.08f),
             UpgradeId.RicochetMatrix => Rose.Lerp(Paper, 0.16f),
+            UpgradeId.SeekerRack => Cyan.Lerp(Paper, 0.18f),
+            UpgradeId.ShieldRebound => Jade.Lerp(Paper, 0.18f),
+            UpgradeId.ShadowClone => Violet.Lerp(Paper, 0.12f),
+            UpgradeId.HeavySlug => Gold.Lerp(Paper, 0.1f),
+            UpgradeId.PinballRounds => Rose.Lerp(Violet, 0.24f),
+            UpgradeId.GyroStabilizer => Cyan.Lerp(Jade, 0.32f),
+            UpgradeId.VectorThrusters => Gold.Lerp(AlertRed, 0.16f),
             UpgradeId.AstraRefraction => PolarityBlue,
             UpgradeId.AstraPrismWake => PolarityAmber,
             UpgradeId.VesperCapacitor => AlertRed,
@@ -9355,6 +10140,13 @@ public partial class MainGame : Node2D
             UpgradeId.StasisField => 5,
             UpgradeId.MagnetizedCore => 4,
             UpgradeId.RicochetMatrix => 5,
+            UpgradeId.SeekerRack => 5,
+            UpgradeId.ShieldRebound => 5,
+            UpgradeId.ShadowClone => 5,
+            UpgradeId.HeavySlug => 5,
+            UpgradeId.PinballRounds => 5,
+            UpgradeId.GyroStabilizer => 4,
+            UpgradeId.VectorThrusters => 5,
             UpgradeId.AstraRefraction => 4,
             UpgradeId.AstraPrismWake => 5,
             UpgradeId.VesperCapacitor => 5,
@@ -10548,8 +11340,16 @@ public partial class MainGame : Node2D
 
             if (!heavyVisualLoad)
             {
-                DrawCircle(pos, shot.Radius * 1.05f, Alpha(Paper, 0.78f));
-                DrawCircle(pos, shot.Radius * 1.8f, Alpha(color, 0.32f), false, 1.0f, true);
+                DrawCircle(pos, shot.Radius * (shot.Heavy ? 1.24f : 1.05f), Alpha(Paper, shot.Shadow ? 0.42f : 0.78f));
+                DrawCircle(pos, shot.Radius * (shot.Heavy ? 2.35f : 1.8f), Alpha(color, shot.Shadow ? 0.18f : 0.32f), false, shot.Heavy ? 1.35f : 1.0f, true);
+                if (shot.Homing > 0)
+                {
+                    DrawCircle(pos, shot.Radius * 2.55f, Alpha(UpgradeAccent(UpgradeId.SeekerRack), 0.18f), false, UiHairline, true);
+                }
+                if (shot.Bounces > 0)
+                {
+                    DrawDiamond(pos, shot.Radius * 1.55f, Alpha(UpgradeAccent(UpgradeId.PinballRounds), 0.24f), _time * 1.6f);
+                }
             }
             else
             {
@@ -10610,10 +11410,19 @@ public partial class MainGame : Node2D
         {
             if (!heavyVisualLoad)
             {
-                DrawCircle(pos, Mathf.Max(drawSize.X, drawSize.Y) * 0.46f, Alpha(color, shot.Rift ? 0.18f : 0.1f), false, UiHairline, true);
+                float visualRadius = Mathf.Max(drawSize.X, drawSize.Y);
+                DrawCircle(pos, visualRadius * (shot.Heavy ? 0.58f : 0.46f), Alpha(color, shot.Shadow ? 0.08f : shot.Rift ? 0.18f : 0.1f), false, shot.Heavy ? UiStroke : UiHairline, true);
+                if (shot.Homing > 0)
+                {
+                    DrawCircle(pos, visualRadius * 0.68f, Alpha(UpgradeAccent(UpgradeId.SeekerRack), 0.16f), false, UiHairline, true);
+                }
+                if (shot.Bounces > 0)
+                {
+                    DrawDiamond(pos, visualRadius * 0.44f, Alpha(UpgradeAccent(UpgradeId.PinballRounds), 0.18f), _time * 1.8f);
+                }
             }
 
-            DrawFacingTexture(texture, sourceRegion, pos, direction, drawSize, Alpha(Colors.White, shot.Rift ? 0.96f : 0.92f));
+            DrawFacingTexture(texture, sourceRegion, pos, direction, drawSize, Alpha(Colors.White, shot.Shadow ? 0.54f : shot.Rift ? 0.96f : 0.92f));
             return true;
         }
 
@@ -10643,9 +11452,10 @@ public partial class MainGame : Node2D
             return Vector2.Zero;
         }
 
-        float visualRoot = Mathf.Max(shot.FromPlayer ? 14.0f : 17.0f, shot.Radius * (shot.FromPlayer ? 2.45f : 2.6f));
-        float minSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * 2.05f, 14.0f, 24.0f) : Mathf.Clamp(shot.Radius * 2.15f, 18.0f, 26.0f);
-        float maxSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * 3.1f, 18.0f, 34.0f) : Mathf.Clamp(shot.Radius * 3.0f, 20.0f, 32.0f);
+        float playerScale = shot.Heavy ? 3.05f : 2.45f;
+        float visualRoot = Mathf.Max(shot.FromPlayer ? 14.0f : 17.0f, shot.Radius * (shot.FromPlayer ? playerScale : 2.6f));
+        float minSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (shot.Heavy ? 2.55f : 2.05f), 14.0f, shot.Heavy ? 38.0f : 24.0f) : Mathf.Clamp(shot.Radius * 2.15f, 18.0f, 26.0f);
+        float maxSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (shot.Heavy ? 4.15f : 3.1f), 18.0f, shot.Heavy ? 58.0f : 34.0f) : Mathf.Clamp(shot.Radius * 3.0f, 20.0f, 32.0f);
         return FitTextureSizeToArea(sourceSize, visualRoot * visualRoot, minSide, maxSide);
     }
 
@@ -11003,6 +11813,47 @@ public partial class MainGame : Node2D
         Color soft = Alpha(accent, 0.18f);
         switch (id)
         {
+            case UpgradeId.SeekerRack:
+                DrawLine(center - Vector2.Right * radius * 0.6f, center + Vector2.Right * radius * 0.48f, line, UiStroke, true);
+                DrawLine(center + new Vector2(radius * 0.1f, -radius * 0.34f), center + Vector2.Right * radius * 0.48f, Alpha(Paper, 0.62f), UiHairline, true);
+                DrawLine(center + new Vector2(radius * 0.1f, radius * 0.34f), center + Vector2.Right * radius * 0.48f, Alpha(Paper, 0.62f), UiHairline, true);
+                DrawCircle(center - Vector2.Right * radius * 0.22f, radius * 0.5f, soft, false, UiHairline, true);
+                DrawCircle(center + Vector2.Right * radius * 0.64f, radius * 0.12f, Alpha(Paper, 0.7f));
+                break;
+            case UpgradeId.ShieldRebound:
+                DrawCircle(center, radius * 0.72f, soft, false, UiStroke, true);
+                DrawDiamond(center, radius * 0.56f, line, 0.0f);
+                DrawLine(center - Vector2.Right * radius * 0.46f, center + Vector2.Right * radius * 0.34f, Alpha(Paper, 0.68f), UiHairline, true);
+                DrawLine(center + Vector2.Right * radius * 0.34f, center + new Vector2(radius * 0.08f, -radius * 0.22f), Alpha(Paper, 0.58f), UiHairline, true);
+                break;
+            case UpgradeId.ShadowClone:
+                DrawDiamond(center - Vector2.Right * radius * 0.28f, radius * 0.52f, Alpha(accent, 0.34f), 0.0f);
+                DrawDiamond(center + Vector2.Right * radius * 0.28f, radius * 0.52f, line, 0.0f);
+                DrawCircle(center, radius * 0.18f, Alpha(Paper, 0.68f));
+                break;
+            case UpgradeId.HeavySlug:
+                DrawCircle(center, radius * 0.62f, soft);
+                DrawCircle(center, radius * 0.62f, line, false, UiAccentStroke, true);
+                DrawLine(center - Vector2.Right * radius * 0.64f, center + Vector2.Right * radius * 0.64f, Alpha(Paper, 0.64f), UiStroke, true);
+                break;
+            case UpgradeId.PinballRounds:
+                DrawDiamond(center, radius * 0.62f, line, Mathf.Pi * 0.25f);
+                DrawLine(center - new Vector2(radius * 0.58f, radius * 0.45f), center + new Vector2(radius * 0.58f, -radius * 0.45f), Alpha(Paper, 0.52f), UiHairline, true);
+                DrawCircle(center + new Vector2(radius * 0.38f, -radius * 0.24f), radius * 0.16f, accent);
+                break;
+            case UpgradeId.GyroStabilizer:
+                DrawCircle(center, radius * 0.72f, soft, false, UiHairline, true);
+                DrawCircle(center, radius * 0.46f, line, false, UiStroke, true);
+                DrawLine(center - Vector2.Right * radius * 0.6f, center + Vector2.Right * radius * 0.6f, Alpha(Paper, 0.5f), UiHairline, true);
+                DrawLine(center - Vector2.Down * radius * 0.6f, center + Vector2.Down * radius * 0.6f, Alpha(Paper, 0.5f), UiHairline, true);
+                break;
+            case UpgradeId.VectorThrusters:
+                DrawLine(center + new Vector2(-radius * 0.62f, -radius * 0.46f), center + new Vector2(radius * 0.44f, 0.0f), line, UiStroke, true);
+                DrawLine(center + new Vector2(-radius * 0.62f, radius * 0.46f), center + new Vector2(radius * 0.44f, 0.0f), line, UiStroke, true);
+                DrawLine(center - Vector2.Right * radius * 0.7f, center - Vector2.Right * radius * 0.18f, Alpha(Paper, 0.6f), UiHairline, true);
+                DrawLine(center - new Vector2(radius * 0.74f, radius * 0.28f), center - new Vector2(radius * 0.32f, radius * 0.18f), Alpha(accent, 0.5f), UiHairline, true);
+                DrawLine(center - new Vector2(radius * 0.74f, -radius * 0.28f), center - new Vector2(radius * 0.32f, -radius * 0.18f), Alpha(accent, 0.5f), UiHairline, true);
+                break;
             case UpgradeId.PrismArray:
             case UpgradeId.AstraRefraction:
             case UpgradeId.AstraPrismWake:
@@ -13894,6 +14745,25 @@ public partial class MainGame : Node2D
         }
 
         return fallback.LengthSquared() > 0.0001f ? fallback.Normalized() : Vector2.Up;
+    }
+
+    private static Vector2 TurnTowardDirection(Vector2 current, Vector2 desired, float maxRadians)
+    {
+        Vector2 from = SafeDirection(current, Vector2.Right);
+        Vector2 to = SafeDirection(desired, from);
+        if (maxRadians <= 0.0f)
+        {
+            return from;
+        }
+
+        float fromAngle = from.Angle();
+        float delta = Mathf.PosMod(to.Angle() - fromAngle + Mathf.Pi, Mathf.Tau) - Mathf.Pi;
+        if (Mathf.Abs(delta) <= maxRadians)
+        {
+            return to;
+        }
+
+        return Vector2.Right.Rotated(fromAngle + Mathf.Sign(delta) * maxRadians);
     }
 
     private static Vector2 LimitVector(Vector2 value, float maxLength)

@@ -105,7 +105,28 @@ public partial class MainGame
 
     private Color ShotVisualColor(Shot shot)
     {
-        return shot.FromPlayer ? PolarityColor(shot.Polarity) : EnemyBulletColor();
+        if (!shot.FromPlayer)
+        {
+            return EnemyBulletColor();
+        }
+        Color color = PolarityColor(shot.Polarity);
+        if (shot.Heavy)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.HeavySlug), 0.46f).Lerp(Paper, 0.08f);
+        }
+        if (shot.Homing > 0)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.SeekerRack), 0.42f);
+        }
+        if (shot.Shadow)
+        {
+            return color.Lerp(Violet, 0.48f);
+        }
+        if (shot.Bounces > 0)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.PinballRounds), 0.28f);
+        }
+        return color;
     }
 
     private Color EnemyStateColor(Enemy enemy)

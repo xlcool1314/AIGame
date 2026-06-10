@@ -32,10 +32,14 @@ public partial class MainGame
         Shot shot = _shotPool.Count > 0 ? _shotPool.Pop() : new Shot();
         shot.FromPlayer = fromPlayer;
         shot.Rift = false;
-    shot.Pierce = 0;
-    shot.ChainDepth = 0;
-    shot.SplitDepth = 0;
-    shot.Grazed = false;
+        shot.Pierce = 0;
+        shot.ChainDepth = 0;
+        shot.SplitDepth = 0;
+        shot.Grazed = false;
+        shot.Homing = 0;
+        shot.Bounces = 0;
+        shot.Heavy = false;
+        shot.Shadow = false;
         _shots.Add(shot);
         if (!fromPlayer)
         {

@@ -242,6 +242,13 @@ public partial class MainGame
         StasisField,
         MagnetizedCore,
         RicochetMatrix,
+        SeekerRack,
+        ShieldRebound,
+        ShadowClone,
+        HeavySlug,
+        PinballRounds,
+        GyroStabilizer,
+        VectorThrusters,
         AstraRefraction,
         AstraPrismWake,
         VesperCapacitor,
@@ -292,6 +299,7 @@ public partial class MainGame
         public float ContactTimer;
         public int Polarity;
         public int Value;
+        public float DropMultiplier = 1.0f;
         public int SplitDepth;
         public int LastHitChainDepth;
         public int LastHitSplitDepth;
@@ -325,6 +333,10 @@ public partial class MainGame
         public int SplitDepth;
         public bool Rift;
         public bool Grazed;
+        public int Homing;
+        public int Bounces;
+        public bool Heavy;
+        public bool Shadow;
     }
 
     private sealed class Pickup
