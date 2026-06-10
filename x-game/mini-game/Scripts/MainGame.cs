@@ -1070,6 +1070,7 @@ public partial class MainGame : Node2D
     {
         _rng.Randomize();
         _noiseSeed = _rng.RandfRange(-1000.0f, 1000.0f);
+        ApplyContentScale();
         _language = DetectLanguage();
         _uiFont = new SystemFont
         {
@@ -2057,6 +2058,7 @@ public partial class MainGame : Node2D
             return;
         }
 
+        ApplyContentScale();
         Vector2I size = ResolutionSize(_resolutionPreset);
         DisplayServer.WindowSetMinSize(new Vector2I(960, 540));
         DisplayServer.WindowSetSize(size);
@@ -2066,6 +2068,19 @@ public partial class MainGame : Node2D
             Vector2I offset = new((usable.Size.X - size.X) / 2, (usable.Size.Y - size.Y) / 2);
             DisplayServer.WindowSetPosition(usable.Position + offset);
         }
+    }
+
+    private void ApplyContentScale()
+    {
+        if (IsHeadlessLaunch())
+        {
+            return;
+        }
+
+        Window window = GetWindow();
+        window.ContentScaleSize = new Vector2I(ScreenWidth, ScreenHeight);
+        window.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+        window.ContentScaleAspect = Window.ContentScaleAspectEnum.Keep;
     }
 
     private static bool IsHeadlessLaunch()
