@@ -420,6 +420,7 @@ public partial class MainGame : Node2D
 
     private const string MetaSavePath = "user://astra_fracture_meta.cfg";
     private const string LocalSettingsPath = "user://loopfighter_local_settings.cfg";
+    private const int PilotUnlockOrderVersion = 2;
 
     private static readonly MetaUpgradeDef[] MetaUpgrades =
     {
@@ -435,6 +436,10 @@ public partial class MainGame : Node2D
         new(MetaUpgradeId.DroneDock, "meta.drone.title", "meta.drone.body", PickupBlue, 4, 175, 70),
         new(MetaUpgradeId.PolarityTuner, "meta.tuner.title", "meta.tuner.body", PolarityAmber, 4, 150, 62),
         new(MetaUpgradeId.DeepSurvey, "meta.survey.title", "meta.survey.body", new Color(0.74f, 0.44f, 0.92f), 4, 185, 78),
+        new(MetaUpgradeId.StarterModule, "meta.module.title", "meta.module.body", new Color(0.18f, 0.92f, 0.76f), 3, 260, 126),
+        new(MetaUpgradeId.PilotCodex, "meta.codex.title", "meta.codex.body", new Color(1.0f, 0.36f, 0.68f), 4, 225, 96),
+        new(MetaUpgradeId.ComboEngine, "meta.combo.title", "meta.combo.body", new Color(0.2f, 0.78f, 1.0f), 4, 205, 88),
+        new(MetaUpgradeId.EliteAnalyzer, "meta.elite.title", "meta.elite.body", new Color(1.0f, 0.68f, 0.22f), 5, 240, 104),
     };
 
     private static readonly Dictionary<string, LocalizedText> Texts = new()
@@ -998,7 +1003,16 @@ public partial class MainGame : Node2D
     private int _orionDeadeyeMark;
     private int _orionStarfallQuiver;
     private int _orionPerihelionVector;
+    private int _astraPrismOrbit;
+    private int _vesperOverchargeRail;
+    private int _kairoHunterWing;
+    private int _solIgnitionWave;
+    private int _nyxVoidTax;
+    private int _rookCounterBattery;
+    private int _lyraBeatTrigger;
+    private int _orionMarkedPrey;
     private int _lyraBeat;
+    private int _pilotMechanicPulse;
     private int _draftBiasWeapon;
     private int _draftBiasDefense;
     private int _draftBiasSkill;
@@ -1054,9 +1068,11 @@ public partial class MainGame : Node2D
     private readonly Dictionary<EnemyKind, Texture2D> _enemyTextures = new();
     private readonly Dictionary<EnemyKind, Texture2D> _eliteEnemyTextures = new();
     private readonly Dictionary<BossArchetype, Texture2D> _bossTextures = new();
+    private readonly Dictionary<UpgradeId, Texture2D> _upgradeIconTextures = new();
     private readonly Dictionary<EnemyKind, Rect2> _enemyTextureRegions = new();
     private readonly Dictionary<EnemyKind, Rect2> _eliteEnemyTextureRegions = new();
     private readonly Dictionary<BossArchetype, Rect2> _bossTextureRegions = new();
+    private readonly Dictionary<UpgradeId, Rect2> _upgradeIconTextureRegions = new();
 
     private static List<Enemy>[] CreateEnemyGrid()
     {
@@ -1084,6 +1100,7 @@ public partial class MainGame : Node2D
         LoadBulletTextures();
         LoadPilotTextures();
         LoadEnemyTextures();
+        LoadUpgradeIconTextures();
         GenerateBackdrop();
         SetupAudio();
         _steamAchievements.Initialize();
@@ -1110,9 +1127,11 @@ public partial class MainGame : Node2D
         _enemyTextures.Clear();
         _eliteEnemyTextures.Clear();
         _bossTextures.Clear();
+        _upgradeIconTextures.Clear();
         _enemyTextureRegions.Clear();
         _eliteEnemyTextureRegions.Clear();
         _bossTextureRegions.Clear();
+        _upgradeIconTextureRegions.Clear();
         _musicPlayback = null;
     }
 
@@ -1225,6 +1244,50 @@ public partial class MainGame : Node2D
                 _bossTextureRegions[archetype] = VisibleTextureRegion(texture);
             }
         }
+    }
+
+    private void LoadUpgradeIconTextures()
+    {
+        _upgradeIconTextures.Clear();
+        _upgradeIconTextureRegions.Clear();
+
+        foreach (UpgradeId id in Enum.GetValues(typeof(UpgradeId)))
+        {
+            Texture2D? texture = TryLoadUpgradeIconTexture(id);
+            if (texture == null)
+            {
+                continue;
+            }
+
+            _upgradeIconTextures[id] = texture;
+            _upgradeIconTextureRegions[id] = TextureRegionOrEmpty(texture);
+        }
+    }
+
+    private static Texture2D? TryLoadUpgradeIconTexture(UpgradeId id)
+    {
+        string directory = "res://Assets/三选一图标";
+        string[] candidates =
+        {
+            $"{directory}/{UpgradeIconChineseName(id)}_{id}.png",
+            $"{directory}/{id}.png",
+        };
+
+        foreach (string path in candidates)
+        {
+            if (!ResourceLoader.Exists(path))
+            {
+                continue;
+            }
+
+            Texture2D? texture = GD.Load<Texture2D>(path);
+            if (texture != null)
+            {
+                return texture;
+            }
+        }
+
+        return null;
     }
 
     private static Texture2D? LoadFirstTextureInDirectory(string directory)
@@ -1743,6 +1806,7 @@ public partial class MainGame : Node2D
         _careerBestCombo = Mathf.Max(0, ReadConfigInt(config, "career", "best_combo", 0));
         _careerBossKills = Mathf.Max(0, ReadConfigInt(config, "career", "boss_kills", 0));
         _careerPerfectWaves = Mathf.Max(0, ReadConfigInt(config, "career", "perfect_waves", 0));
+        int unlockOrderVersion = ReadConfigInt(config, "stats", "pilot_unlock_order_version", 0);
         LoadClearTimeRecords(config);
         LoadDifficultyTestUnlocks(config);
         _pilotRuns.Clear();
@@ -1760,6 +1824,10 @@ public partial class MainGame : Node2D
         if (pilotRunTotal == 0 && _runsCompleted > 0)
         {
             _pilotRuns[PilotKind.Astra] = _runsCompleted;
+        }
+        else if (unlockOrderVersion < PilotUnlockOrderVersion && pilotRunTotal > 0)
+        {
+            MigratePilotUnlockOrder();
         }
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
@@ -1787,6 +1855,7 @@ public partial class MainGame : Node2D
         config.SetValue("stats", "best_wave", _bestWave);
         config.SetValue("stats", "runs_completed", _runsCompleted);
         config.SetValue("stats", "won_once", _wonOnce ? 1 : 0);
+        config.SetValue("stats", "pilot_unlock_order_version", PilotUnlockOrderVersion);
         config.SetValue("career", "kills", _careerKills);
         config.SetValue("career", "pickups", _careerPickups);
         config.SetValue("career", "absorbs", _careerAbsorbs);
@@ -1844,6 +1913,43 @@ public partial class MainGame : Node2D
         {
             AddText($"SETTINGS SAVE ERROR {error}", ScreenCenter + new Vector2(0.0f, -210.0f), Rose, 22.0f);
         }
+    }
+
+    private void MigratePilotUnlockOrder()
+    {
+        Dictionary<PilotKind, int> originalRuns = new(_pilotRuns);
+        for (int i = 1; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            if (!WasPilotUnlockedByLegacyOrder(pilot, originalRuns))
+            {
+                continue;
+            }
+
+            PilotKind previous = PreviousPilot(pilot);
+            _pilotRuns[previous] = Math.Max(PilotRunCount(previous), 1);
+        }
+    }
+
+    private static bool WasPilotUnlockedByLegacyOrder(PilotKind pilot, Dictionary<PilotKind, int> runs)
+    {
+        static bool Ran(Dictionary<PilotKind, int> pilotRuns, PilotKind pilot)
+        {
+            return pilotRuns.TryGetValue(pilot, out int count) && count > 0;
+        }
+
+        return pilot switch
+        {
+            PilotKind.Astra => true,
+            PilotKind.Vesper => Ran(runs, PilotKind.Astra),
+            PilotKind.Rook => Ran(runs, PilotKind.Vesper),
+            PilotKind.Kairo => Ran(runs, PilotKind.Rook) || Ran(runs, PilotKind.Nyx),
+            PilotKind.Nyx => Ran(runs, PilotKind.Rook) || Ran(runs, PilotKind.Kairo),
+            PilotKind.Lyra => Ran(runs, PilotKind.Kairo) || Ran(runs, PilotKind.Nyx),
+            PilotKind.Sol => Ran(runs, PilotKind.Lyra),
+            PilotKind.Orion => Ran(runs, PilotKind.Sol),
+            _ => false,
+        };
     }
 
     private void DeleteSaveData()
@@ -2400,6 +2506,8 @@ public partial class MainGame : Node2D
         int droneRank = MetaRank(MetaUpgradeId.DroneDock);
         int tunerRank = MetaRank(MetaUpgradeId.PolarityTuner);
         int surveyRank = MetaRank(MetaUpgradeId.DeepSurvey);
+        int starterModuleRank = MetaRank(MetaUpgradeId.StarterModule);
+        int pilotCodexRank = MetaRank(MetaUpgradeId.PilotCodex);
         _playerMaxHp = BasePlayerHull + hullRank * HullPlatingPerRank;
         _playerHp = _playerMaxHp;
         _maxEnergy = 100.0f + reactorRank * 8.0f;
@@ -2511,7 +2619,16 @@ public partial class MainGame : Node2D
         _orionDeadeyeMark = 0;
         _orionStarfallQuiver = 0;
         _orionPerihelionVector = 0;
+        _astraPrismOrbit = 0;
+        _vesperOverchargeRail = 0;
+        _kairoHunterWing = 0;
+        _solIgnitionWave = 0;
+        _nyxVoidTax = 0;
+        _rookCounterBattery = 0;
+        _lyraBeatTrigger = 0;
+        _orionMarkedPrey = 0;
         _lyraBeat = 0;
+        _pilotMechanicPulse = 0;
         _draftBiasWeapon = 0;
         _draftBiasDefense = 0;
         _draftBiasSkill = 0;
@@ -2539,6 +2656,7 @@ public partial class MainGame : Node2D
         _upgradeOrder.Clear();
         SetupRunObjectives();
         ApplyPilotBaseline();
+        ApplyMetaStarterModules(starterModuleRank, pilotCodexRank);
         ClampUltimateCost();
         if (droneRank > 0)
         {
@@ -2620,6 +2738,125 @@ public partial class MainGame : Node2D
             default:
                 break;
         }
+    }
+
+    private void ApplyMetaStarterModules(int moduleRank, int codexRank)
+    {
+        if (moduleRank <= 0)
+        {
+            return;
+        }
+
+        List<UpgradeId> granted = new();
+        GrantMetaStarterUpgrade(PickMetaStarterUpgrade(StarterUtilityPool(), granted), granted);
+        if (moduleRank >= 2)
+        {
+            GrantMetaStarterUpgrade(PickMetaStarterUpgrade(StarterMechanicPool(), granted), granted);
+        }
+        if (moduleRank >= 3)
+        {
+            UpgradeId[] pilotPool = PilotStarterPool(_runPilot, codexRank);
+            GrantMetaStarterUpgrade(PickMetaStarterUpgrade(pilotPool, granted), granted);
+        }
+    }
+
+    private void GrantMetaStarterUpgrade(UpgradeId id, List<UpgradeId> granted)
+    {
+        if (granted.Contains(id) || IsUpgradeMaxed(id))
+        {
+            return;
+        }
+
+        _upgradeRanks[id] = GetRank(id) + 1;
+        _upgradeOrder.Add(id);
+        granted.Add(id);
+        ApplyUpgrade(id);
+    }
+
+    private UpgradeId PickMetaStarterUpgrade(UpgradeId[] pool, List<UpgradeId> granted)
+    {
+        if (pool.Length <= 0)
+        {
+            return UpgradeId.CoolantLattice;
+        }
+
+        List<UpgradeId> candidates = new();
+        for (int i = 0; i < pool.Length; i++)
+        {
+            UpgradeId id = pool[i];
+            if (!granted.Contains(id) && !IsUpgradeMaxed(id))
+            {
+                candidates.Add(id);
+            }
+        }
+
+        if (candidates.Count <= 0)
+        {
+            return pool[_rng.RandiRange(0, pool.Length - 1)];
+        }
+
+        return candidates[_rng.RandiRange(0, candidates.Count - 1)];
+    }
+
+    private static UpgradeId[] StarterUtilityPool()
+    {
+        return new[]
+        {
+            UpgradeId.CoolantLattice,
+            UpgradeId.KineticBloom,
+            UpgradeId.GravityWell,
+            UpgradeId.VitalShell,
+            UpgradeId.MagnetizedCore,
+            UpgradeId.VectorThrusters,
+        };
+    }
+
+    private static UpgradeId[] StarterMechanicPool()
+    {
+        return new[]
+        {
+            UpgradeId.ChainRelay,
+            UpgradeId.FractalSplit,
+            UpgradeId.PulseMagazine,
+            UpgradeId.ExecutionMark,
+            UpgradeId.RicochetMatrix,
+            UpgradeId.SeekerRack,
+            UpgradeId.HeavySlug,
+            UpgradeId.PinballRounds,
+            UpgradeId.ShadowClone,
+        };
+    }
+
+    private static UpgradeId[] PilotStarterPool(PilotKind pilot, int codexRank)
+    {
+        bool deepCodex = codexRank >= 2;
+        return pilot switch
+        {
+            PilotKind.Vesper => deepCodex
+                ? new[] { UpgradeId.VesperCapacitor, UpgradeId.VesperSplitRail, UpgradeId.VesperOverchargeRail, UpgradeId.ExecutionMark }
+                : new[] { UpgradeId.VesperCapacitor, UpgradeId.VesperSplitRail, UpgradeId.RailHeart },
+            PilotKind.Kairo => deepCodex
+                ? new[] { UpgradeId.KairoDroneBay, UpgradeId.KairoSwarmSync, UpgradeId.KairoHunterWing, UpgradeId.SeekerRack }
+                : new[] { UpgradeId.KairoDroneBay, UpgradeId.KairoSwarmSync, UpgradeId.MoonWisp },
+            PilotKind.Sol => deepCodex
+                ? new[] { UpgradeId.SolCoronaBloom, UpgradeId.SolSolarForge, UpgradeId.SolIgnitionWave, UpgradeId.ChainRelay }
+                : new[] { UpgradeId.SolCoronaBloom, UpgradeId.SolSolarForge, UpgradeId.PrismArray },
+            PilotKind.Nyx => deepCodex
+                ? new[] { UpgradeId.NyxSingularity, UpgradeId.NyxOrbit, UpgradeId.NyxVoidTax, UpgradeId.StasisField }
+                : new[] { UpgradeId.NyxSingularity, UpgradeId.NyxOrbit, UpgradeId.GravityWell },
+            PilotKind.Rook => deepCodex
+                ? new[] { UpgradeId.RookBulwarkCore, UpgradeId.RookSiegeBattery, UpgradeId.RookCounterBattery, UpgradeId.ShieldRebound }
+                : new[] { UpgradeId.RookBulwarkCore, UpgradeId.RookSiegeBattery, UpgradeId.VitalShell },
+            PilotKind.Lyra => deepCodex
+                ? new[] { UpgradeId.LyraResonanceChord, UpgradeId.LyraTempoBloom, UpgradeId.LyraBeatTrigger, UpgradeId.QuantumEcho }
+                : new[] { UpgradeId.LyraResonanceChord, UpgradeId.LyraTempoBloom, UpgradeId.PulseMagazine },
+            PilotKind.Orion => deepCodex
+                ? new[] { UpgradeId.OrionCometSpear, UpgradeId.OrionDeadeyeMark, UpgradeId.OrionMarkedPrey, UpgradeId.HeavySlug }
+                : new[] { UpgradeId.OrionCometSpear, UpgradeId.OrionDeadeyeMark, UpgradeId.ExecutionMark },
+            _ => deepCodex
+                ? new[] { UpgradeId.AstraRefraction, UpgradeId.AstraPrismWake, UpgradeId.AstraPrismOrbit, UpgradeId.FractalSplit }
+                : new[] { UpgradeId.AstraRefraction, UpgradeId.AstraPrismWake, UpgradeId.PrismArray },
+        };
     }
 
     private void ClampUltimateCost()
@@ -3447,7 +3684,7 @@ public partial class MainGame : Node2D
         }
 
         _combo += amount;
-        _comboTimer = 2.4f;
+        _comboTimer = 2.4f + MetaRank(MetaUpgradeId.ComboEngine) * 0.22f;
         RefreshRunBestCombo();
         UpdateComboTier(source);
         AddComboPopText(source);
@@ -5540,6 +5777,18 @@ public partial class MainGame : Node2D
             SpawnPlayerShot(_playerPos + echoDir * 30.0f, echoDir, 1500.0f, 4.6f, (14.0f + _astraWake * 2.6f) * _damageMultiplier, 0.56f, 1, true);
         }
 
+        if (_astraPrismOrbit > 0 && _shots.Count < MaxShots * 0.86f)
+        {
+            int orbitShots = Math.Min(4, 1 + _astraPrismOrbit);
+            float spin = _time * (1.8f + _astraPrismOrbit * 0.25f);
+            for (int i = 0; i < orbitShots; i++)
+            {
+                Vector2 orbitDir = Vector2.Right.Rotated(spin + i * Mathf.Tau / orbitShots);
+                Vector2 fireDir = SafeDirection(_aimDir.Lerp(orbitDir, 0.34f + _astraPrismOrbit * 0.06f), _aimDir);
+                SpawnPlayerShot(_playerPos + orbitDir * (46.0f + _astraPrismOrbit * 5.0f), fireDir, 1180.0f + _astraPrismOrbit * 55.0f, 4.2f, (9.5f + _astraPrismOrbit * 2.8f) * _damageMultiplier, 0.72f, _astraPrismOrbit >= 3 ? 1 : 0, true);
+            }
+        }
+
         AddParticle(_playerPos + _aimDir * 32.0f, _aimDir * 180.0f, color, 10.0f, 0.18f);
         PlaySfx(690.0f, -140.0f, 0.06f, 0.14f, 0.01f, 1);
     }
@@ -5569,6 +5818,19 @@ public partial class MainGame : Node2D
             SpawnPlayerShot(_playerPos + _aimDir * 32.0f, _aimDir.Rotated(-0.18f), 1420.0f, 4.4f, (22.0f + _vesperFork * 4.0f) * _damageMultiplier, 0.55f, 2, true);
         }
 
+        if (_vesperOverchargeRail > 0)
+        {
+            _pilotMechanicPulse++;
+            int cadence = Math.Max(2, 5 - _vesperOverchargeRail);
+            if (_pilotMechanicPulse % cadence == 0)
+            {
+                Vector2 start = _playerPos + _aimDir * 18.0f;
+                Vector2 end = _playerPos + _aimDir * (940.0f + _vesperOverchargeRail * 120.0f);
+                DamageVesperBeam(start, end, 9.0f + _vesperOverchargeRail * 3.0f, 42.0f + _vesperOverchargeRail * 19.0f, UpgradeAccent(UpgradeId.VesperOverchargeRail));
+                SpawnPlayerShot(_playerPos + _aimDir * 52.0f, _aimDir, 1860.0f, 6.2f + _vesperOverchargeRail * 0.55f, (42.0f + _vesperOverchargeRail * 10.0f) * _damageMultiplier, 0.62f, 5 + _vesperOverchargeRail, true);
+            }
+        }
+
         AddParticle(_playerPos + _aimDir * 34.0f, _aimDir * 220.0f, color, 9.0f, 0.16f);
         PlaySfx(430.0f, -180.0f, 0.08f, 0.18f, 0.01f, 1);
     }
@@ -5582,6 +5844,43 @@ public partial class MainGame : Node2D
             float offset = count == 1 ? 0.0f : (i == 0 ? -0.08f : 0.08f);
             Vector2 shotDir = dir.Rotated(offset);
             SpawnPlayerShot(_playerPos + shotDir * 36.0f, shotDir, _riftNeedle ? 1320.0f : 1120.0f, _riftNeedle ? 4.2f : 5.0f, (12.8f + _kairoSync * 2.6f + (_riftNeedle ? 3.0f : 0.0f)) * _damageMultiplier, 1.05f, _riftNeedle ? 1 : 0, _riftNeedle);
+        }
+
+        if (_kairoHunterWing > 0 && _shots.Count < MaxShots * 0.86f)
+        {
+            EnsureOrbiterVisuals();
+            int hunterCount = Math.Min(Math.Min(_orbiters, MaxOrbiters), 1 + _kairoHunterWing);
+            for (int i = 0; i < hunterCount; i++)
+            {
+                OrbiterVisual visual = _orbiterVisuals[i];
+                Vector2 origin = visual.Active ? visual.Pos : _playerPos + dir.Rotated((i - hunterCount * 0.5f) * 0.24f) * 58.0f;
+                Enemy? target = FindNearestEnemy(origin, 980.0f + _kairoHunterWing * 120.0f);
+                if (target == null)
+                {
+                    continue;
+                }
+
+                Vector2 hunterDir = SafeDirection(target.Pos - origin, dir);
+                Shot? hunter = AddShot(true);
+                if (hunter == null)
+                {
+                    continue;
+                }
+
+                hunter.Pos = origin + hunterDir * 18.0f;
+                hunter.Prev = origin;
+                hunter.Vel = hunterDir * (900.0f + _kairoHunterWing * 80.0f);
+                hunter.Radius = 4.4f + _kairoHunterWing * 0.18f;
+                hunter.Damage = (12.0f + _kairoHunterWing * 4.8f + _kairoSync * 1.4f) * _damageMultiplier * PlayerShotDamageScale(_playerPolarity);
+                hunter.Life = 1.25f + _kairoHunterWing * 0.12f;
+                hunter.MaxLife = hunter.Life;
+                hunter.Polarity = _playerPolarity;
+                hunter.Pierce = _kairoHunterWing >= 3 ? 1 : 0;
+                hunter.Rift = true;
+                hunter.Homing = 2 + _kairoHunterWing;
+                FinalizePlayerShot(hunter);
+                visual.CommandPulse = 1.0f;
+            }
         }
 
         AddParticle(_playerPos + dir * 28.0f, dir * 120.0f, PolarityColor(_playerPolarity), 7.0f, 0.14f);
@@ -5598,6 +5897,22 @@ public partial class MainGame : Node2D
             float offset = (i - (count - 1) * 0.5f) * spread;
             Vector2 dir = _aimDir.Rotated(offset);
             SpawnPlayerShot(_playerPos + dir * 36.0f, dir, _riftNeedle ? 1180.0f : 1040.0f, _riftNeedle ? 5.0f : 6.2f, (13.5f + _solForge * 2.0f + (_riftNeedle ? 2.0f : 0.0f)) * _damageMultiplier, 0.62f + _solBloom * 0.025f, _riftNeedle ? 1 : 0, _riftNeedle);
+        }
+
+        if (_solIgnitionWave > 0)
+        {
+            _pilotMechanicPulse++;
+            int cadence = Math.Max(3, 7 - _solIgnitionWave);
+            if (_pilotMechanicPulse % cadence == 0 && _shots.Count < MaxShots * 0.86f)
+            {
+                int rays = Math.Min(10, 4 + _solIgnitionWave * 2);
+                for (int i = 0; i < rays; i++)
+                {
+                    Vector2 ray = Vector2.Right.Rotated(i * Mathf.Tau / rays + _time * 0.18f);
+                    SpawnPlayerShot(_playerPos + ray * 30.0f, ray, 720.0f + _solIgnitionWave * 50.0f, 7.2f + _solIgnitionWave * 0.4f, (13.0f + _solIgnitionWave * 4.0f) * _damageMultiplier, 0.68f, _solIgnitionWave >= 3 ? 1 : 0, false);
+                }
+                DrawPulseParticles(_playerPos, 82.0f + _solIgnitionWave * 18.0f, UpgradeAccent(UpgradeId.SolIgnitionWave));
+            }
         }
 
         AddParticle(_playerPos + _aimDir * 28.0f, _aimDir * 160.0f, color, 12.0f, 0.16f);
@@ -5623,6 +5938,21 @@ public partial class MainGame : Node2D
             SpawnPlayerShot(_playerPos - side * 34.0f, baseDir.Rotated(-0.28f), 940.0f, 4.6f, (14.0f + _nyxOrbit * 2.4f) * _damageMultiplier, 0.75f, 1, true);
         }
 
+        if (_nyxVoidTax > 0)
+        {
+            Enemy? target = FindNearestEnemy(_playerPos, 520.0f + _nyxVoidTax * 105.0f);
+            if (target != null)
+            {
+                Vector2 pull = SafeDirection(_playerPos - target.Pos, Vector2.Zero);
+                target.Vel += pull * (38.0f + _nyxVoidTax * 26.0f);
+                target.Cooldown = Mathf.Max(target.Cooldown, 0.06f + _nyxVoidTax * 0.02f);
+                if (_pilotMechanicPulse++ % Math.Max(3, 7 - _nyxVoidTax) == 0)
+                {
+                    SpawnChainArc(_playerPos, target.Pos, UpgradeAccent(UpgradeId.NyxVoidTax));
+                }
+            }
+        }
+
         AddParticle(_playerPos + baseDir * 28.0f, baseDir * 130.0f, PilotAccent(_runPilot), 9.0f, 0.16f);
         PlaySfx(520.0f, -150.0f, 0.06f, 0.14f, 0.01f, 1);
     }
@@ -5640,6 +5970,19 @@ public partial class MainGame : Node2D
         if (IsUpgradeMaxed(UpgradeId.RookSiegeBattery))
         {
             SpawnPlayerShot(_playerPos + dir * 28.0f, dir, 840.0f, 11.0f, (36.0f + _rookSiegeBattery * 5.0f) * _damageMultiplier, 0.62f, 1, false);
+        }
+
+        if (_rookCounterBattery > 0)
+        {
+            int sideShells = Math.Min(4, 1 + _rookCounterBattery);
+            Vector2 right = new(-dir.Y, dir.X);
+            for (int i = 0; i < sideShells; i++)
+            {
+                float side = sideShells == 1 ? 0.0f : (i - (sideShells - 1) * 0.5f);
+                Vector2 origin = _playerPos - dir * 8.0f + right * side * 32.0f;
+                Vector2 shellDir = SafeDirection(dir.Rotated(side * 0.18f), dir);
+                SpawnPlayerShot(origin + shellDir * 38.0f, shellDir, 780.0f + _rookCounterBattery * 46.0f, 9.2f + _rookCounterBattery * 0.75f, (23.0f + _rookCounterBattery * 7.5f + _rookBulwarkCore * 2.0f) * _damageMultiplier, 0.88f, 1 + _rookCounterBattery / 2, false);
+            }
         }
 
         AddParticle(_playerPos + dir * 34.0f, dir * 230.0f, PilotAccent(_runPilot), 12.0f, 0.18f);
@@ -5669,6 +6012,24 @@ public partial class MainGame : Node2D
             SpawnPlayerShot(_playerPos + back * 20.0f, back, 760.0f, 4.2f, (9.0f + _lyraTempoBloom * 2.0f) * _damageMultiplier, 0.52f, 0, true);
         }
 
+        if (_lyraBeatTrigger > 0 && _shots.Count < MaxShots * 0.86f)
+        {
+            int beatCycle = Math.Max(2, 5 - _lyraBeatTrigger);
+            if (_lyraBeat % beatCycle == 0)
+            {
+                int echoes = Math.Min(6, 2 + _lyraBeatTrigger);
+                float echoSpread = 0.18f + _lyraBeatTrigger * 0.015f;
+                for (int i = 0; i < echoes; i++)
+                {
+                    float offset = (i - (echoes - 1) * 0.5f) * echoSpread;
+                    Vector2 echoDir = _aimDir.Rotated(offset);
+                    SpawnPlayerShot(_playerPos + echoDir * 30.0f, echoDir, 980.0f + _lyraTempoBloom * 30.0f, 3.8f, (8.5f + _lyraBeatTrigger * 2.8f + _lyraHarmonicCascade * 1.2f) * _damageMultiplier, 0.58f, _lyraBeatTrigger >= 3 ? 1 : 0, true);
+                }
+                _energy = Mathf.Clamp(_energy + 2.0f + _lyraBeatTrigger, 0.0f, _maxEnergy);
+                DrawPulseParticles(_playerPos, 56.0f + _lyraBeatTrigger * 12.0f, UpgradeAccent(UpgradeId.LyraBeatTrigger));
+            }
+        }
+
         AddParticle(_playerPos + _aimDir * 26.0f, _aimDir * 120.0f, PilotAccent(_runPilot), 8.0f, 0.14f);
         PlaySfx(820.0f + (_lyraBeat % 3) * 72.0f, -90.0f, 0.045f, 0.11f, 0.01f, 2);
     }
@@ -5692,6 +6053,21 @@ public partial class MainGame : Node2D
         if (IsUpgradeMaxed(UpgradeId.OrionDeadeyeMark) && target != null)
         {
             SpawnChainArc(_playerPos, target.Pos, PilotAccent(_runPilot));
+        }
+        if (_orionMarkedPrey > 0 && target != null)
+        {
+            float missingRatio = 1.0f - Mathf.Clamp(target.Hp / Mathf.Max(1.0f, target.MaxHp), 0.0f, 1.0f);
+            float markDamage = (14.0f + _orionMarkedPrey * 9.0f + missingRatio * (28.0f + _orionMarkedPrey * 11.0f)) * _damageMultiplier;
+            DamageEnemy(target, markDamage, _playerPos, true, 0, 0, false);
+            if (_orionMarkedPrey >= 3)
+            {
+                Enemy? next = FindChainTarget(target.Pos, target, 420.0f + _orionMarkedPrey * 80.0f);
+                if (next != null)
+                {
+                    SpawnChainArc(target.Pos, next.Pos, UpgradeAccent(UpgradeId.OrionMarkedPrey));
+                    DamageEnemy(next, markDamage * 0.44f, target.Pos, false, 1, 0, false);
+                }
+            }
         }
         AddParticle(_playerPos + dir * 34.0f, dir * 260.0f, PilotAccent(_runPilot), 9.0f, 0.16f);
         PlaySfx(360.0f, -220.0f, 0.08f, 0.18f, 0.01f, 1);
@@ -7221,7 +7597,7 @@ public partial class MainGame : Node2D
         return true;
     }
 
-    private void DamageEnemy(Enemy enemy, float damage, Vector2 source, bool heavy, int chainDepth = 0, int splitDepth = 0)
+    private void DamageEnemy(Enemy enemy, float damage, Vector2 source, bool heavy, int chainDepth = 0, int splitDepth = 0, bool triggerPilotEffects = true)
     {
         enemy.LastHitChainDepth = Math.Max(0, chainDepth);
         enemy.LastHitSplitDepth = Math.Max(0, splitDepth);
@@ -7234,6 +7610,29 @@ public partial class MainGame : Node2D
         else
         {
             finalDamage *= DifficultyEnemyDamageTakenScale(enemy);
+        }
+        int analyzerRank = MetaRank(MetaUpgradeId.EliteAnalyzer);
+        if (analyzerRank > 0)
+        {
+            if (enemy.Kind == EnemyKind.Boss)
+            {
+                finalDamage *= 1.0f + analyzerRank * 0.026f;
+            }
+            else if (enemy.Elite)
+            {
+                finalDamage *= 1.0f + analyzerRank * 0.045f;
+            }
+        }
+        if (_runPilot == PilotKind.Nyx && _nyxVoidTax > 0)
+        {
+            float taxRadius = 230.0f + _nyxVoidTax * 58.0f + _nyxSingularity * 16.0f;
+            float distance = enemy.Pos.DistanceTo(_playerPos);
+            if (distance <= taxRadius + enemy.Radius)
+            {
+                float tax = Mathf.Lerp(0.2f + _nyxVoidTax * 0.085f, 0.06f + _nyxVoidTax * 0.025f, Mathf.Clamp(distance / Math.Max(1.0f, taxRadius), 0.0f, 1.0f));
+                finalDamage *= 1.0f + tax;
+                enemy.Vel *= Mathf.Clamp(0.98f - _nyxVoidTax * 0.025f, 0.82f, 0.98f);
+            }
         }
         enemy.Hp -= finalDamage;
         Vector2 knock = enemy.Pos - source;
@@ -7249,7 +7648,56 @@ public partial class MainGame : Node2D
 
         if (enemy.Hp <= 0.0f)
         {
+            if (triggerPilotEffects)
+            {
+                TriggerPilotKillEffect(enemy, finalDamage, source, heavy);
+            }
             KillEnemy(enemy);
+        }
+    }
+
+    private void TriggerPilotKillEffect(Enemy killed, float finalDamage, Vector2 source, bool heavy)
+    {
+        switch (_runPilot)
+        {
+            case PilotKind.Sol when _solIgnitionWave > 0:
+            {
+                float radius = 105.0f + _solIgnitionWave * 34.0f + _solFlareCore * 12.0f;
+                float damage = (16.0f + _solIgnitionWave * 7.5f + finalDamage * 0.08f) * _damageMultiplier;
+                Color color = UpgradeAccent(UpgradeId.SolIgnitionWave);
+                Burst(killed.Pos, color, PerformancePressure() > 0.82f ? 8 : 18, 360.0f, 0.48f);
+                for (int i = _enemies.Count - 1; i >= 0; i--)
+                {
+                    Enemy enemy = _enemies[i];
+                    if (ReferenceEquals(enemy, killed) || enemy.Hp <= 0.0f)
+                    {
+                        continue;
+                    }
+                    float distance = enemy.Pos.DistanceTo(killed.Pos);
+                    if (distance > radius + enemy.Radius)
+                    {
+                        continue;
+                    }
+                    DamageEnemy(enemy, damage * (1.0f - Mathf.Clamp(distance / radius, 0.0f, 0.72f)), killed.Pos, false, 0, 0, false);
+                }
+                break;
+            }
+            case PilotKind.Astra when _astraPrismOrbit > 0 && _shots.Count < MaxShots * 0.88f:
+            {
+                int shards = Math.Min(8, 3 + _astraPrismOrbit);
+                for (int i = 0; i < shards; i++)
+                {
+                    Vector2 dir = Vector2.Right.Rotated(i * Mathf.Tau / shards + _time * 0.12f);
+                    SpawnPlayerShot(killed.Pos + dir * 18.0f, dir, 920.0f + _astraPrismOrbit * 70.0f, 3.8f, (7.0f + _astraPrismOrbit * 2.3f) * _damageMultiplier, 0.48f, _astraPrismOrbit >= 3 ? 1 : 0, true);
+                }
+                break;
+            }
+            case PilotKind.Nyx when _nyxVoidTax > 0:
+                _energy = Mathf.Clamp(_energy + 1.6f + _nyxVoidTax * 0.85f, 0.0f, _maxEnergy);
+                break;
+            case PilotKind.Lyra when _lyraBeatTrigger > 0:
+                _fireTimer = Math.Min(_fireTimer, Math.Max(0.02f, _fireInterval * (0.72f - _lyraBeatTrigger * 0.06f)));
+                break;
         }
     }
 
@@ -7805,11 +8253,12 @@ public partial class MainGame : Node2D
         _invulnTimer = 0.86f;
         if (_combo > 0)
         {
+            int comboRank = MetaRank(MetaUpgradeId.ComboEngine);
             _combo = 0;
             _comboTimer = 0.0f;
             _comboTier = 0;
             _comboTierPulse = 0.0f;
-            _waveSpawnTimer = Math.Max(_waveSpawnTimer, 0.75f);
+            _waveSpawnTimer = Math.Max(_waveSpawnTimer, Math.Max(0.34f, 0.75f - comboRank * 0.1f));
             AddText(T("score.combo_break"), _playerPos + new Vector2(0.0f, -92.0f), Rose, 20.0f);
         }
         _shake = Mathf.Max(_shake, 0.72f);
@@ -7822,6 +8271,20 @@ public partial class MainGame : Node2D
         if (knock.LengthSquared() > 0.01f)
         {
             _playerVel += knock.Normalized() * 620.0f;
+        }
+
+        if (_runPilot == PilotKind.Rook && _rookCounterBattery > 0 && _shots.Count < MaxShots * 0.86f)
+        {
+            Vector2 dir = source.DistanceSquaredTo(_playerPos) > 0.01f ? (_playerPos - source).Normalized() : SafeDirection(_aimDir, Vector2.Right);
+            int counterShots = Math.Min(7, 3 + _rookCounterBattery);
+            for (int i = 0; i < counterShots; i++)
+            {
+                float offset = (i - (counterShots - 1) * 0.5f) * (0.12f + _rookCounterBattery * 0.015f);
+                Vector2 shotDir = dir.Rotated(offset);
+                SpawnPlayerShot(_playerPos + shotDir * 42.0f, shotDir, 920.0f + _rookCounterBattery * 52.0f, 8.5f + _rookCounterBattery * 0.65f, (28.0f + _rookCounterBattery * 8.0f) * _damageMultiplier, 0.82f, 1 + _rookCounterBattery / 2, false);
+            }
+            _invulnTimer = Mathf.Max(_invulnTimer, 0.18f + _rookCounterBattery * 0.06f);
+            Burst(_playerPos, UpgradeAccent(UpgradeId.RookCounterBattery), 18, 420.0f, 0.58f);
         }
 
         if (_playerHp <= 0.0f)
@@ -8919,14 +9382,20 @@ public partial class MainGame : Node2D
         int rank = GetRank(id);
         if (pilotUpgrade)
         {
+            int codexRank = MetaRank(MetaUpgradeId.PilotCodex);
             float weight = _runLevel <= 4 ? 5.0f : _runLevel <= 12 ? 4.25f : 3.4f;
+            weight *= 1.0f + codexRank * 0.16f;
+            if (_runLevel <= 8)
+            {
+                weight *= 1.0f + codexRank * 0.07f;
+            }
             if (rank > 0)
             {
-                weight += 1.15f + Math.Min(rank, 4) * 0.35f;
+                weight += 1.15f + Math.Min(rank, 4) * (0.35f + codexRank * 0.035f);
             }
             if (pilotCards <= 0)
             {
-                weight *= 1.24f;
+                weight *= 1.24f + codexRank * 0.04f;
             }
             else if (pilotCards == 1)
             {
@@ -9067,6 +9536,14 @@ public partial class MainGame : Node2D
             UpgradeId.GyroStabilizer => _seekerRack > 0 || _vectorThrusters > 0,
             UpgradeId.VectorThrusters => _gyroStabilizer > 0 || _magnetizedCore > 0,
             UpgradeId.ShieldRebound => _mirrorReduction < 0.98f || _playerHp < _playerMaxHp * 0.58f,
+            UpgradeId.AstraPrismOrbit => _fractalSplit > 0 || _echoChance > 0.08f || _astraTwinRefraction > 0,
+            UpgradeId.VesperOverchargeRail => _executionMark > 0 || _critMultiplier > 1.8f || _vesperJudgmentCoil > 0,
+            UpgradeId.KairoHunterWing => _seekerRack > 0 || _orbiters >= 3 || _kairoDroneBay > 0,
+            UpgradeId.SolIgnitionWave => _chainRelay > 0 || _solFlareCore > 0 || _solBloom > 0,
+            UpgradeId.NyxVoidTax => _stasisField > 0 || _nyxSingularity > 0 || _enemySlow < 0.98f,
+            UpgradeId.RookCounterBattery => _shieldRebound > 0 || _rookBulwarkCore > 0 || _mirrorReduction < 0.98f,
+            UpgradeId.LyraBeatTrigger => _echoChance > 0.08f || _lyraTempoBloom > 0 || _pulseMagazine > 0,
+            UpgradeId.OrionMarkedPrey => _executionMark > 0 || _orionDeadeyeMark > 0 || _critMultiplier > 1.8f,
             UpgradeId.NovaCapacitor => _novaCost > UltimateCostFloor + 0.5f,
             UpgradeId.GravityWell => _magnetizedCore > 0,
             _ => false,
@@ -9318,10 +9795,10 @@ public partial class MainGame : Node2D
     {
         return id switch
         {
-            UpgradeId.VitalShell or UpgradeId.MirrorSkin or UpgradeId.AegisBloom or UpgradeId.StasisField or UpgradeId.ShieldRebound or UpgradeId.RookBulwarkCore or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.SolRadiantMantle => 1,
-            UpgradeId.NovaCapacitor or UpgradeId.PolarityStorm or UpgradeId.CometTrail or UpgradeId.OneWaveOverdrive or UpgradeId.BulletTransmute or UpgradeId.HeavySlug or UpgradeId.AstraNovaBloom or UpgradeId.VesperJudgmentCoil or UpgradeId.KairoOverrideMatrix or UpgradeId.SolFlareCore or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.LyraEncoreField or UpgradeId.OrionPerihelionVector => 2,
-            UpgradeId.MoonWisp or UpgradeId.QuantumEcho or UpgradeId.ChainRelay or UpgradeId.FractalSplit or UpgradeId.RicochetMatrix or UpgradeId.SeekerRack or UpgradeId.ShadowClone or UpgradeId.PinballRounds or UpgradeId.GyroStabilizer or UpgradeId.VectorThrusters or UpgradeId.KairoDroneBay or UpgradeId.KairoRelayProtocol or UpgradeId.LyraHarmonicCascade or UpgradeId.NyxGravityCantor => 3,
-            UpgradeId.GravityWell or UpgradeId.ResonanceLeech or UpgradeId.BountyContract or UpgradeId.HarmonicMap or UpgradeId.MagnetizedCore or UpgradeId.SolSolarForge => 4,
+            UpgradeId.VitalShell or UpgradeId.MirrorSkin or UpgradeId.AegisBloom or UpgradeId.StasisField or UpgradeId.ShieldRebound or UpgradeId.RookBulwarkCore or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.RookCounterBattery or UpgradeId.SolRadiantMantle => 1,
+            UpgradeId.NovaCapacitor or UpgradeId.PolarityStorm or UpgradeId.CometTrail or UpgradeId.OneWaveOverdrive or UpgradeId.BulletTransmute or UpgradeId.HeavySlug or UpgradeId.AstraNovaBloom or UpgradeId.VesperJudgmentCoil or UpgradeId.VesperOverchargeRail or UpgradeId.KairoOverrideMatrix or UpgradeId.SolFlareCore or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.LyraEncoreField or UpgradeId.OrionPerihelionVector or UpgradeId.OrionMarkedPrey => 2,
+            UpgradeId.MoonWisp or UpgradeId.QuantumEcho or UpgradeId.ChainRelay or UpgradeId.FractalSplit or UpgradeId.RicochetMatrix or UpgradeId.SeekerRack or UpgradeId.ShadowClone or UpgradeId.PinballRounds or UpgradeId.GyroStabilizer or UpgradeId.VectorThrusters or UpgradeId.AstraPrismOrbit or UpgradeId.KairoDroneBay or UpgradeId.KairoRelayProtocol or UpgradeId.KairoHunterWing or UpgradeId.SolIgnitionWave or UpgradeId.LyraHarmonicCascade or UpgradeId.LyraBeatTrigger or UpgradeId.NyxGravityCantor => 3,
+            UpgradeId.GravityWell or UpgradeId.ResonanceLeech or UpgradeId.BountyContract or UpgradeId.HarmonicMap or UpgradeId.MagnetizedCore or UpgradeId.SolSolarForge or UpgradeId.NyxVoidTax => 4,
             _ => 0,
         };
     }
@@ -9384,14 +9861,14 @@ public partial class MainGame : Node2D
     {
         return pilot switch
         {
-            PilotKind.Vesper => new List<UpgradeId> { UpgradeId.VesperCapacitor, UpgradeId.VesperSplitRail, UpgradeId.VesperJudgmentCoil, UpgradeId.VesperSeverLine },
-            PilotKind.Kairo => new List<UpgradeId> { UpgradeId.KairoDroneBay, UpgradeId.KairoSwarmSync, UpgradeId.KairoOverrideMatrix, UpgradeId.KairoRelayProtocol },
-            PilotKind.Sol => new List<UpgradeId> { UpgradeId.SolCoronaBloom, UpgradeId.SolSolarForge, UpgradeId.SolFlareCore, UpgradeId.SolRadiantMantle },
-            PilotKind.Nyx => new List<UpgradeId> { UpgradeId.NyxOrbit, UpgradeId.NyxSingularity, UpgradeId.NyxEventHorizon, UpgradeId.NyxGravityCantor },
-            PilotKind.Rook => new List<UpgradeId> { UpgradeId.RookBulwarkCore, UpgradeId.RookSiegeBattery, UpgradeId.RookAegisRelay, UpgradeId.RookCitadelProtocol },
-            PilotKind.Lyra => new List<UpgradeId> { UpgradeId.LyraResonanceChord, UpgradeId.LyraTempoBloom, UpgradeId.LyraHarmonicCascade, UpgradeId.LyraEncoreField },
-            PilotKind.Orion => new List<UpgradeId> { UpgradeId.OrionCometSpear, UpgradeId.OrionDeadeyeMark, UpgradeId.OrionStarfallQuiver, UpgradeId.OrionPerihelionVector },
-            _ => new List<UpgradeId> { UpgradeId.AstraRefraction, UpgradeId.AstraPrismWake, UpgradeId.AstraNovaBloom, UpgradeId.AstraTwinRefraction },
+            PilotKind.Vesper => new List<UpgradeId> { UpgradeId.VesperCapacitor, UpgradeId.VesperSplitRail, UpgradeId.VesperJudgmentCoil, UpgradeId.VesperSeverLine, UpgradeId.VesperOverchargeRail },
+            PilotKind.Kairo => new List<UpgradeId> { UpgradeId.KairoDroneBay, UpgradeId.KairoSwarmSync, UpgradeId.KairoOverrideMatrix, UpgradeId.KairoRelayProtocol, UpgradeId.KairoHunterWing },
+            PilotKind.Sol => new List<UpgradeId> { UpgradeId.SolCoronaBloom, UpgradeId.SolSolarForge, UpgradeId.SolFlareCore, UpgradeId.SolRadiantMantle, UpgradeId.SolIgnitionWave },
+            PilotKind.Nyx => new List<UpgradeId> { UpgradeId.NyxOrbit, UpgradeId.NyxSingularity, UpgradeId.NyxEventHorizon, UpgradeId.NyxGravityCantor, UpgradeId.NyxVoidTax },
+            PilotKind.Rook => new List<UpgradeId> { UpgradeId.RookBulwarkCore, UpgradeId.RookSiegeBattery, UpgradeId.RookAegisRelay, UpgradeId.RookCitadelProtocol, UpgradeId.RookCounterBattery },
+            PilotKind.Lyra => new List<UpgradeId> { UpgradeId.LyraResonanceChord, UpgradeId.LyraTempoBloom, UpgradeId.LyraHarmonicCascade, UpgradeId.LyraEncoreField, UpgradeId.LyraBeatTrigger },
+            PilotKind.Orion => new List<UpgradeId> { UpgradeId.OrionCometSpear, UpgradeId.OrionDeadeyeMark, UpgradeId.OrionStarfallQuiver, UpgradeId.OrionPerihelionVector, UpgradeId.OrionMarkedPrey },
+            _ => new List<UpgradeId> { UpgradeId.AstraRefraction, UpgradeId.AstraPrismWake, UpgradeId.AstraNovaBloom, UpgradeId.AstraTwinRefraction, UpgradeId.AstraPrismOrbit },
         };
     }
 
@@ -9399,14 +9876,14 @@ public partial class MainGame : Node2D
     {
         return pilot switch
         {
-            PilotKind.Vesper => id is UpgradeId.VesperCapacitor or UpgradeId.VesperSplitRail or UpgradeId.VesperJudgmentCoil or UpgradeId.VesperSeverLine,
-            PilotKind.Kairo => id is UpgradeId.KairoDroneBay or UpgradeId.KairoSwarmSync or UpgradeId.KairoOverrideMatrix or UpgradeId.KairoRelayProtocol,
-            PilotKind.Sol => id is UpgradeId.SolCoronaBloom or UpgradeId.SolSolarForge or UpgradeId.SolFlareCore or UpgradeId.SolRadiantMantle,
-            PilotKind.Nyx => id is UpgradeId.NyxOrbit or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.NyxGravityCantor,
-            PilotKind.Rook => id is UpgradeId.RookBulwarkCore or UpgradeId.RookSiegeBattery or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol,
-            PilotKind.Lyra => id is UpgradeId.LyraResonanceChord or UpgradeId.LyraTempoBloom or UpgradeId.LyraHarmonicCascade or UpgradeId.LyraEncoreField,
-            PilotKind.Orion => id is UpgradeId.OrionCometSpear or UpgradeId.OrionDeadeyeMark or UpgradeId.OrionStarfallQuiver or UpgradeId.OrionPerihelionVector,
-            _ => id is UpgradeId.AstraRefraction or UpgradeId.AstraPrismWake or UpgradeId.AstraNovaBloom or UpgradeId.AstraTwinRefraction,
+            PilotKind.Vesper => id is UpgradeId.VesperCapacitor or UpgradeId.VesperSplitRail or UpgradeId.VesperJudgmentCoil or UpgradeId.VesperSeverLine or UpgradeId.VesperOverchargeRail,
+            PilotKind.Kairo => id is UpgradeId.KairoDroneBay or UpgradeId.KairoSwarmSync or UpgradeId.KairoOverrideMatrix or UpgradeId.KairoRelayProtocol or UpgradeId.KairoHunterWing,
+            PilotKind.Sol => id is UpgradeId.SolCoronaBloom or UpgradeId.SolSolarForge or UpgradeId.SolFlareCore or UpgradeId.SolRadiantMantle or UpgradeId.SolIgnitionWave,
+            PilotKind.Nyx => id is UpgradeId.NyxOrbit or UpgradeId.NyxSingularity or UpgradeId.NyxEventHorizon or UpgradeId.NyxGravityCantor or UpgradeId.NyxVoidTax,
+            PilotKind.Rook => id is UpgradeId.RookBulwarkCore or UpgradeId.RookSiegeBattery or UpgradeId.RookAegisRelay or UpgradeId.RookCitadelProtocol or UpgradeId.RookCounterBattery,
+            PilotKind.Lyra => id is UpgradeId.LyraResonanceChord or UpgradeId.LyraTempoBloom or UpgradeId.LyraHarmonicCascade or UpgradeId.LyraEncoreField or UpgradeId.LyraBeatTrigger,
+            PilotKind.Orion => id is UpgradeId.OrionCometSpear or UpgradeId.OrionDeadeyeMark or UpgradeId.OrionStarfallQuiver or UpgradeId.OrionPerihelionVector or UpgradeId.OrionMarkedPrey,
+            _ => id is UpgradeId.AstraRefraction or UpgradeId.AstraPrismWake or UpgradeId.AstraNovaBloom or UpgradeId.AstraTwinRefraction or UpgradeId.AstraPrismOrbit,
         };
     }
 
@@ -9727,6 +10204,11 @@ public partial class MainGame : Node2D
                 _fractalSplit = Math.Max(_fractalSplit, 1);
                 _damageMultiplier += 0.05f;
                 break;
+            case UpgradeId.AstraPrismOrbit:
+                _astraPrismOrbit = Math.Min(3, _astraPrismOrbit + 1);
+                _fractalSplit = Math.Max(_fractalSplit, 1);
+                _damageMultiplier += 0.04f;
+                break;
             case UpgradeId.VesperJudgmentCoil:
                 _vesperJudgmentCoil = Math.Min(4, _vesperJudgmentCoil + 1);
                 _novaCost = Mathf.Max(36.0f, _novaCost - 4.0f);
@@ -9735,6 +10217,11 @@ public partial class MainGame : Node2D
             case UpgradeId.VesperSeverLine:
                 _vesperSeverLine = Math.Min(3, _vesperSeverLine + 1);
                 _damageMultiplier += 0.04f;
+                break;
+            case UpgradeId.VesperOverchargeRail:
+                _vesperOverchargeRail = Math.Min(3, _vesperOverchargeRail + 1);
+                _executionMark = Math.Max(_executionMark, 1);
+                _damageMultiplier += 0.06f;
                 break;
             case UpgradeId.KairoOverrideMatrix:
                 _kairoOverrideMatrix = Math.Min(4, _kairoOverrideMatrix + 1);
@@ -9747,6 +10234,12 @@ public partial class MainGame : Node2D
                 _damageMultiplier += 0.04f;
                 _orbiterFireTimer = Mathf.Min(_orbiterFireTimer, 0.06f);
                 break;
+            case UpgradeId.KairoHunterWing:
+                _kairoHunterWing = Math.Min(3, _kairoHunterWing + 1);
+                _orbiters = Math.Min(8, _orbiters + 1);
+                _seekerRack = Math.Max(_seekerRack, 1);
+                _orbiterFireTimer = Mathf.Min(_orbiterFireTimer, 0.07f);
+                break;
             case UpgradeId.SolFlareCore:
                 _solFlareCore = Math.Min(4, _solFlareCore + 1);
                 _maxEnergy += 10.0f;
@@ -9758,6 +10251,11 @@ public partial class MainGame : Node2D
                 _playerMaxHp += 8.0f;
                 _playerHp = Mathf.Clamp(_playerHp + 18.0f, 0.0f, _playerMaxHp);
                 _novaCost = Mathf.Max(36.0f, _novaCost - 4.0f);
+                break;
+            case UpgradeId.SolIgnitionWave:
+                _solIgnitionWave = Math.Min(3, _solIgnitionWave + 1);
+                _chainRelay = Math.Max(_chainRelay, 1);
+                _damageMultiplier += 0.045f;
                 break;
             case UpgradeId.NyxOrbit:
                 _nyxOrbit = Math.Min(5, _nyxOrbit + 1);
@@ -9776,6 +10274,12 @@ public partial class MainGame : Node2D
             case UpgradeId.NyxGravityCantor:
                 _nyxGravityCantor = Math.Min(3, _nyxGravityCantor + 1);
                 _damageMultiplier += 0.04f;
+                break;
+            case UpgradeId.NyxVoidTax:
+                _nyxVoidTax = Math.Min(3, _nyxVoidTax + 1);
+                _stasisField = Math.Max(_stasisField, 1);
+                _pickupMagnet += 30.0f;
+                _damageMultiplier += 0.035f;
                 break;
             case UpgradeId.RookBulwarkCore:
                 _rookBulwarkCore = Math.Min(5, _rookBulwarkCore + 1);
@@ -9799,6 +10303,11 @@ public partial class MainGame : Node2D
                 _dashDamage += 22.0f;
                 _novaCost = Mathf.Max(36.0f, _novaCost - 5.0f);
                 break;
+            case UpgradeId.RookCounterBattery:
+                _rookCounterBattery = Math.Min(3, _rookCounterBattery + 1);
+                _mirrorReduction *= 0.97f;
+                _damageMultiplier += 0.045f;
+                break;
             case UpgradeId.LyraResonanceChord:
                 _lyraResonanceChord = Math.Min(5, _lyraResonanceChord + 1);
                 _multiShot = Math.Min(5, _multiShot + (_lyraResonanceChord % 2 == 1 ? 1 : 0));
@@ -9820,6 +10329,11 @@ public partial class MainGame : Node2D
                 _energy = Mathf.Clamp(_energy + 18.0f, 0.0f, _maxEnergy);
                 _novaCost = Mathf.Max(34.0f, _novaCost - 5.0f);
                 break;
+            case UpgradeId.LyraBeatTrigger:
+                _lyraBeatTrigger = Math.Min(3, _lyraBeatTrigger + 1);
+                _echoChance = Mathf.Min(0.68f, _echoChance + 0.035f);
+                _fireInterval = Mathf.Max(0.12f, _fireInterval - 0.012f);
+                break;
             case UpgradeId.OrionCometSpear:
                 _orionCometSpear = Math.Min(5, _orionCometSpear + 1);
                 _damageMultiplier += 0.09f;
@@ -9838,6 +10352,11 @@ public partial class MainGame : Node2D
                 _playerSpeed += 22.0f;
                 _dashPower += 70.0f;
                 _novaCost = Mathf.Max(34.0f, _novaCost - 5.0f);
+                break;
+            case UpgradeId.OrionMarkedPrey:
+                _orionMarkedPrey = Math.Min(3, _orionMarkedPrey + 1);
+                _executionMark = Math.Max(_executionMark, 1);
+                _critMultiplier += 0.08f;
                 break;
         }
 
@@ -9899,6 +10418,32 @@ public partial class MainGame : Node2D
                 _playerSpeed += 52.0f;
                 _dashPower += 110.0f;
                 _dashCooldown = 0.0f;
+                break;
+            case UpgradeId.AstraPrismOrbit:
+                _echoChance = Mathf.Min(0.72f, _echoChance + 0.08f);
+                break;
+            case UpgradeId.VesperOverchargeRail:
+                _critMultiplier += 0.18f;
+                break;
+            case UpgradeId.KairoHunterWing:
+                _seekerFireTimer = 0.0f;
+                _orbiterFireTimer = 0.0f;
+                break;
+            case UpgradeId.SolIgnitionWave:
+                _chainRelay = Math.Min(6, Math.Max(_chainRelay, 2));
+                break;
+            case UpgradeId.NyxVoidTax:
+                _enemySlow *= 0.94f;
+                break;
+            case UpgradeId.RookCounterBattery:
+                _invulnTimer = Mathf.Max(_invulnTimer, 0.45f);
+                break;
+            case UpgradeId.LyraBeatTrigger:
+                _fireTimer = 0.0f;
+                _echoChance = Mathf.Min(0.76f, _echoChance + 0.08f);
+                break;
+            case UpgradeId.OrionMarkedPrey:
+                _critMultiplier += 0.22f;
                 break;
             case UpgradeId.AstraRefraction:
             case UpgradeId.AstraPrismWake:
@@ -10035,28 +10580,36 @@ public partial class MainGame : Node2D
             UpgradeId.SolSolarForge => new UpgradeCard { Id = id, Title = T("upgrade.sol.forge.title"), Tag = rank, Body = T("upgrade.sol.forge.body"), Accent = new Color(1.0f, 0.48f, 0.2f) },
             UpgradeId.AstraNovaBloom => new UpgradeCard { Id = id, Title = T("upgrade.astra.nova.title"), Tag = rank, Body = T("upgrade.astra.nova.body"), Accent = PolarityBlue },
             UpgradeId.AstraTwinRefraction => new UpgradeCard { Id = id, Title = T("upgrade.astra.twin.title"), Tag = rank, Body = T("upgrade.astra.twin.body"), Accent = PolarityAmber },
+            UpgradeId.AstraPrismOrbit => new UpgradeCard { Id = id, Title = T("upgrade.astra.orbit.title"), Tag = rank, Body = T("upgrade.astra.orbit.body"), Accent = Cyan },
             UpgradeId.VesperJudgmentCoil => new UpgradeCard { Id = id, Title = T("upgrade.vesper.judgment.title"), Tag = rank, Body = T("upgrade.vesper.judgment.body"), Accent = AlertRed },
             UpgradeId.VesperSeverLine => new UpgradeCard { Id = id, Title = T("upgrade.vesper.sever.title"), Tag = rank, Body = T("upgrade.vesper.sever.body"), Accent = Rose },
+            UpgradeId.VesperOverchargeRail => new UpgradeCard { Id = id, Title = T("upgrade.vesper.overcharge.title"), Tag = rank, Body = T("upgrade.vesper.overcharge.body"), Accent = AlertRed.Lerp(Paper, 0.12f) },
             UpgradeId.KairoOverrideMatrix => new UpgradeCard { Id = id, Title = T("upgrade.kairo.override.title"), Tag = rank, Body = T("upgrade.kairo.override.body"), Accent = PickupBlue },
             UpgradeId.KairoRelayProtocol => new UpgradeCard { Id = id, Title = T("upgrade.kairo.relay.title"), Tag = rank, Body = T("upgrade.kairo.relay.body"), Accent = XpGreen },
+            UpgradeId.KairoHunterWing => new UpgradeCard { Id = id, Title = T("upgrade.kairo.hunter.title"), Tag = rank, Body = T("upgrade.kairo.hunter.body"), Accent = Cyan.Lerp(XpGreen, 0.26f) },
             UpgradeId.SolFlareCore => new UpgradeCard { Id = id, Title = T("upgrade.sol.flare.title"), Tag = rank, Body = T("upgrade.sol.flare.body"), Accent = Gold },
             UpgradeId.SolRadiantMantle => new UpgradeCard { Id = id, Title = T("upgrade.sol.mantle.title"), Tag = rank, Body = T("upgrade.sol.mantle.body"), Accent = new Color(1.0f, 0.72f, 0.34f) },
+            UpgradeId.SolIgnitionWave => new UpgradeCard { Id = id, Title = T("upgrade.sol.ignition.title"), Tag = rank, Body = T("upgrade.sol.ignition.body"), Accent = Gold.Lerp(AlertRed, 0.22f) },
             UpgradeId.NyxOrbit => new UpgradeCard { Id = id, Title = T("upgrade.nyx.orbit.title"), Tag = rank, Body = T("upgrade.nyx.orbit.body"), Accent = PilotAccent(PilotKind.Nyx) },
             UpgradeId.NyxSingularity => new UpgradeCard { Id = id, Title = T("upgrade.nyx.singularity.title"), Tag = rank, Body = T("upgrade.nyx.singularity.body"), Accent = PilotAccent(PilotKind.Nyx).Lerp(Paper, 0.18f) },
             UpgradeId.NyxEventHorizon => new UpgradeCard { Id = id, Title = T("upgrade.nyx.horizon.title"), Tag = rank, Body = T("upgrade.nyx.horizon.body"), Accent = Violet },
             UpgradeId.NyxGravityCantor => new UpgradeCard { Id = id, Title = T("upgrade.nyx.cantor.title"), Tag = rank, Body = T("upgrade.nyx.cantor.body"), Accent = new Color(0.54f, 0.7f, 1.0f) },
+            UpgradeId.NyxVoidTax => new UpgradeCard { Id = id, Title = T("upgrade.nyx.tax.title"), Tag = rank, Body = T("upgrade.nyx.tax.body"), Accent = Violet.Lerp(Cyan, 0.18f) },
             UpgradeId.RookBulwarkCore => new UpgradeCard { Id = id, Title = T("upgrade.rook.bulwark.title"), Tag = rank, Body = T("upgrade.rook.bulwark.body"), Accent = PilotAccent(PilotKind.Rook) },
             UpgradeId.RookSiegeBattery => new UpgradeCard { Id = id, Title = T("upgrade.rook.siege.title"), Tag = rank, Body = T("upgrade.rook.siege.body"), Accent = Gold },
             UpgradeId.RookAegisRelay => new UpgradeCard { Id = id, Title = T("upgrade.rook.aegis.title"), Tag = rank, Body = T("upgrade.rook.aegis.body"), Accent = Jade },
             UpgradeId.RookCitadelProtocol => new UpgradeCard { Id = id, Title = T("upgrade.rook.citadel.title"), Tag = rank, Body = T("upgrade.rook.citadel.body"), Accent = new Color(1.0f, 0.84f, 0.42f) },
+            UpgradeId.RookCounterBattery => new UpgradeCard { Id = id, Title = T("upgrade.rook.counter.title"), Tag = rank, Body = T("upgrade.rook.counter.body"), Accent = Gold.Lerp(Paper, 0.18f) },
             UpgradeId.LyraResonanceChord => new UpgradeCard { Id = id, Title = T("upgrade.lyra.chord.title"), Tag = rank, Body = T("upgrade.lyra.chord.body"), Accent = PilotAccent(PilotKind.Lyra) },
             UpgradeId.LyraTempoBloom => new UpgradeCard { Id = id, Title = T("upgrade.lyra.tempo.title"), Tag = rank, Body = T("upgrade.lyra.tempo.body"), Accent = new Color(0.5f, 0.98f, 0.9f) },
             UpgradeId.LyraHarmonicCascade => new UpgradeCard { Id = id, Title = T("upgrade.lyra.cascade.title"), Tag = rank, Body = T("upgrade.lyra.cascade.body"), Accent = new Color(0.62f, 0.86f, 1.0f) },
             UpgradeId.LyraEncoreField => new UpgradeCard { Id = id, Title = T("upgrade.lyra.encore.title"), Tag = rank, Body = T("upgrade.lyra.encore.body"), Accent = Violet },
+            UpgradeId.LyraBeatTrigger => new UpgradeCard { Id = id, Title = T("upgrade.lyra.trigger.title"), Tag = rank, Body = T("upgrade.lyra.trigger.body"), Accent = Jade.Lerp(Cyan, 0.28f) },
             UpgradeId.OrionCometSpear => new UpgradeCard { Id = id, Title = T("upgrade.orion.spear.title"), Tag = rank, Body = T("upgrade.orion.spear.body"), Accent = PilotAccent(PilotKind.Orion) },
             UpgradeId.OrionDeadeyeMark => new UpgradeCard { Id = id, Title = T("upgrade.orion.deadeye.title"), Tag = rank, Body = T("upgrade.orion.deadeye.body"), Accent = Rose },
             UpgradeId.OrionStarfallQuiver => new UpgradeCard { Id = id, Title = T("upgrade.orion.quiver.title"), Tag = rank, Body = T("upgrade.orion.quiver.body"), Accent = new Color(0.9f, 0.78f, 1.0f) },
             UpgradeId.OrionPerihelionVector => new UpgradeCard { Id = id, Title = T("upgrade.orion.perihelion.title"), Tag = rank, Body = T("upgrade.orion.perihelion.body"), Accent = Cyan },
+            UpgradeId.OrionMarkedPrey => new UpgradeCard { Id = id, Title = T("upgrade.orion.prey.title"), Tag = rank, Body = T("upgrade.orion.prey.body"), Accent = Rose.Lerp(Gold, 0.16f) },
             _ => new UpgradeCard { Id = id, Title = T("upgrade.unknown.title"), Tag = Tf("rank", 1), Body = T("upgrade.unknown.body"), Accent = Paper },
         };
         return ApplyCapstonePreview(card, nextRank);
@@ -10103,34 +10656,42 @@ public partial class MainGame : Node2D
             UpgradeId.AstraPrismWake => T("capstone.astra.wake"),
             UpgradeId.AstraNovaBloom => T("capstone.astra.nova"),
             UpgradeId.AstraTwinRefraction => T("capstone.astra.twin"),
+            UpgradeId.AstraPrismOrbit => T("capstone.astra.orbit"),
             UpgradeId.VesperCapacitor => T("capstone.vesper.charge"),
             UpgradeId.VesperSplitRail => T("capstone.vesper.fork"),
             UpgradeId.VesperJudgmentCoil => T("capstone.vesper.judgment"),
             UpgradeId.VesperSeverLine => T("capstone.vesper.sever"),
+            UpgradeId.VesperOverchargeRail => T("capstone.vesper.overcharge"),
             UpgradeId.KairoDroneBay => T("capstone.kairo.bay"),
             UpgradeId.KairoSwarmSync => T("capstone.kairo.sync"),
             UpgradeId.KairoOverrideMatrix => T("capstone.kairo.override"),
             UpgradeId.KairoRelayProtocol => T("capstone.kairo.relay"),
+            UpgradeId.KairoHunterWing => T("capstone.kairo.hunter"),
             UpgradeId.SolCoronaBloom => T("capstone.sol.bloom"),
             UpgradeId.SolSolarForge => T("capstone.sol.forge"),
             UpgradeId.SolFlareCore => T("capstone.sol.flare"),
             UpgradeId.SolRadiantMantle => T("capstone.sol.mantle"),
+            UpgradeId.SolIgnitionWave => T("capstone.sol.ignition"),
             UpgradeId.NyxOrbit => T("capstone.nyx.orbit"),
             UpgradeId.NyxSingularity => T("capstone.nyx.singularity"),
             UpgradeId.NyxEventHorizon => T("capstone.nyx.horizon"),
             UpgradeId.NyxGravityCantor => T("capstone.nyx.cantor"),
+            UpgradeId.NyxVoidTax => T("capstone.nyx.tax"),
             UpgradeId.RookBulwarkCore => T("capstone.rook.bulwark"),
             UpgradeId.RookSiegeBattery => T("capstone.rook.siege"),
             UpgradeId.RookAegisRelay => T("capstone.rook.aegis"),
             UpgradeId.RookCitadelProtocol => T("capstone.rook.citadel"),
+            UpgradeId.RookCounterBattery => T("capstone.rook.counter"),
             UpgradeId.LyraResonanceChord => T("capstone.lyra.chord"),
             UpgradeId.LyraTempoBloom => T("capstone.lyra.tempo"),
             UpgradeId.LyraHarmonicCascade => T("capstone.lyra.cascade"),
             UpgradeId.LyraEncoreField => T("capstone.lyra.encore"),
+            UpgradeId.LyraBeatTrigger => T("capstone.lyra.trigger"),
             UpgradeId.OrionCometSpear => T("capstone.orion.spear"),
             UpgradeId.OrionDeadeyeMark => T("capstone.orion.deadeye"),
             UpgradeId.OrionStarfallQuiver => T("capstone.orion.quiver"),
             UpgradeId.OrionPerihelionVector => T("capstone.orion.perihelion"),
+            UpgradeId.OrionMarkedPrey => T("capstone.orion.prey"),
             _ => string.Empty,
         };
     }
@@ -10185,29 +10746,113 @@ public partial class MainGame : Node2D
             UpgradeId.SolSolarForge => T("upgrade.sol.forge.title"),
             UpgradeId.AstraNovaBloom => T("upgrade.astra.nova.title"),
             UpgradeId.AstraTwinRefraction => T("upgrade.astra.twin.title"),
+            UpgradeId.AstraPrismOrbit => T("upgrade.astra.orbit.title"),
             UpgradeId.VesperJudgmentCoil => T("upgrade.vesper.judgment.title"),
             UpgradeId.VesperSeverLine => T("upgrade.vesper.sever.title"),
+            UpgradeId.VesperOverchargeRail => T("upgrade.vesper.overcharge.title"),
             UpgradeId.KairoOverrideMatrix => T("upgrade.kairo.override.title"),
             UpgradeId.KairoRelayProtocol => T("upgrade.kairo.relay.title"),
+            UpgradeId.KairoHunterWing => T("upgrade.kairo.hunter.title"),
             UpgradeId.SolFlareCore => T("upgrade.sol.flare.title"),
             UpgradeId.SolRadiantMantle => T("upgrade.sol.mantle.title"),
+            UpgradeId.SolIgnitionWave => T("upgrade.sol.ignition.title"),
             UpgradeId.NyxOrbit => T("upgrade.nyx.orbit.title"),
             UpgradeId.NyxSingularity => T("upgrade.nyx.singularity.title"),
             UpgradeId.NyxEventHorizon => T("upgrade.nyx.horizon.title"),
             UpgradeId.NyxGravityCantor => T("upgrade.nyx.cantor.title"),
+            UpgradeId.NyxVoidTax => T("upgrade.nyx.tax.title"),
             UpgradeId.RookBulwarkCore => T("upgrade.rook.bulwark.title"),
             UpgradeId.RookSiegeBattery => T("upgrade.rook.siege.title"),
             UpgradeId.RookAegisRelay => T("upgrade.rook.aegis.title"),
             UpgradeId.RookCitadelProtocol => T("upgrade.rook.citadel.title"),
+            UpgradeId.RookCounterBattery => T("upgrade.rook.counter.title"),
             UpgradeId.LyraResonanceChord => T("upgrade.lyra.chord.title"),
             UpgradeId.LyraTempoBloom => T("upgrade.lyra.tempo.title"),
             UpgradeId.LyraHarmonicCascade => T("upgrade.lyra.cascade.title"),
             UpgradeId.LyraEncoreField => T("upgrade.lyra.encore.title"),
+            UpgradeId.LyraBeatTrigger => T("upgrade.lyra.trigger.title"),
             UpgradeId.OrionCometSpear => T("upgrade.orion.spear.title"),
             UpgradeId.OrionDeadeyeMark => T("upgrade.orion.deadeye.title"),
             UpgradeId.OrionStarfallQuiver => T("upgrade.orion.quiver.title"),
             UpgradeId.OrionPerihelionVector => T("upgrade.orion.perihelion.title"),
+            UpgradeId.OrionMarkedPrey => T("upgrade.orion.prey.title"),
             _ => T("upgrade.unknown.title"),
+        };
+    }
+
+    private static string UpgradeIconChineseName(UpgradeId id)
+    {
+        return id switch
+        {
+            UpgradeId.PrismArray => "多重射击",
+            UpgradeId.RailHeart => "强力核心",
+            UpgradeId.CoolantLattice => "冷却装置",
+            UpgradeId.KineticBloom => "机动强化",
+            UpgradeId.GravityWell => "拾取范围",
+            UpgradeId.VitalShell => "生命护盾",
+            UpgradeId.ResonanceLeech => "修复掉落",
+            UpgradeId.MoonWisp => "自动浮游炮",
+            UpgradeId.RiftNeedle => "穿透弹",
+            UpgradeId.MirrorSkin => "减伤装甲",
+            UpgradeId.NovaCapacitor => "大招强化",
+            UpgradeId.PolarityStorm => "战术超载",
+            UpgradeId.CometTrail => "冲刺强化",
+            UpgradeId.AegisBloom => "自动回血",
+            UpgradeId.QuantumEcho => "额外射击",
+            UpgradeId.ChainRelay => "连锁中继",
+            UpgradeId.FractalSplit => "分裂棱片",
+            UpgradeId.SolarThesis => "流派核心",
+            UpgradeId.EmergencyRepair => "紧急维修",
+            UpgradeId.OneWaveOverdrive => "单波过载",
+            UpgradeId.GlassCannon => "玻璃大炮",
+            UpgradeId.BountyContract => "高风险奖励",
+            UpgradeId.BulletTransmute => "弹幕转化",
+            UpgradeId.HarmonicMap => "升级地图",
+            UpgradeId.PulseMagazine => "脉冲弹匣",
+            UpgradeId.ExecutionMark => "处决标记",
+            UpgradeId.StasisField => "停滞力场",
+            UpgradeId.MagnetizedCore => "磁化核心",
+            UpgradeId.RicochetMatrix => "回弹矩阵",
+            UpgradeId.SeekerRack => "跟踪导弹",
+            UpgradeId.ShieldRebound => "反弹护盾",
+            UpgradeId.ShadowClone => "影子分身",
+            UpgradeId.HeavySlug => "重型巨弹",
+            UpgradeId.PinballRounds => "弹球弹丸",
+            UpgradeId.GyroStabilizer => "转向稳定器",
+            UpgradeId.VectorThrusters => "矢量推进",
+            UpgradeId.AstraRefraction => "折射阵列",
+            UpgradeId.AstraPrismWake => "棱光余波",
+            UpgradeId.VesperCapacitor => "蓄能脊柱",
+            UpgradeId.VesperSplitRail => "分裂轨道",
+            UpgradeId.KairoDroneBay => "无人机舱",
+            UpgradeId.KairoSwarmSync => "蜂群同步",
+            UpgradeId.SolCoronaBloom => "日冕绽放",
+            UpgradeId.SolSolarForge => "太阳熔炉",
+            UpgradeId.AstraNovaBloom => "星爆棱镜",
+            UpgradeId.AstraTwinRefraction => "双相折射",
+            UpgradeId.VesperJudgmentCoil => "裁决线圈",
+            UpgradeId.VesperSeverLine => "裂轨余震",
+            UpgradeId.KairoOverrideMatrix => "覆写矩阵",
+            UpgradeId.KairoRelayProtocol => "接力协议",
+            UpgradeId.SolFlareCore => "耀斑核心",
+            UpgradeId.SolRadiantMantle => "光冕护层",
+            UpgradeId.NyxOrbit => "虚空轨道",
+            UpgradeId.NyxSingularity => "奇点种子",
+            UpgradeId.NyxEventHorizon => "事件视界",
+            UpgradeId.NyxGravityCantor => "重力咏唱",
+            UpgradeId.RookBulwarkCore => "壁垒核心",
+            UpgradeId.RookSiegeBattery => "攻城电池",
+            UpgradeId.RookAegisRelay => "护盾中继",
+            UpgradeId.RookCitadelProtocol => "城垒协议",
+            UpgradeId.LyraResonanceChord => "共鸣和弦",
+            UpgradeId.LyraTempoBloom => "节拍绽放",
+            UpgradeId.LyraHarmonicCascade => "谐波连瀑",
+            UpgradeId.LyraEncoreField => "返场力场",
+            UpgradeId.OrionCometSpear => "彗星星矛",
+            UpgradeId.OrionDeadeyeMark => "死眼刻痕",
+            UpgradeId.OrionStarfallQuiver => "星陨箭匣",
+            UpgradeId.OrionPerihelionVector => "近日点矢量",
+            _ => "未知升级",
         };
     }
 
@@ -10261,28 +10906,36 @@ public partial class MainGame : Node2D
             UpgradeId.SolSolarForge => Gold.Lerp(AlertRed, 0.28f),
             UpgradeId.AstraNovaBloom => PolarityBlue,
             UpgradeId.AstraTwinRefraction => PolarityAmber,
+            UpgradeId.AstraPrismOrbit => Cyan,
             UpgradeId.VesperJudgmentCoil => AlertRed,
             UpgradeId.VesperSeverLine => Rose,
+            UpgradeId.VesperOverchargeRail => AlertRed.Lerp(Paper, 0.12f),
             UpgradeId.KairoOverrideMatrix => PickupBlue,
             UpgradeId.KairoRelayProtocol => XpGreen,
+            UpgradeId.KairoHunterWing => Cyan.Lerp(XpGreen, 0.26f),
             UpgradeId.SolFlareCore => Gold,
             UpgradeId.SolRadiantMantle => Gold.Lerp(Paper, 0.14f),
+            UpgradeId.SolIgnitionWave => Gold.Lerp(AlertRed, 0.22f),
             UpgradeId.NyxOrbit => Violet.Lerp(Cyan, 0.1f),
             UpgradeId.NyxSingularity => Violet.Lerp(Paper, 0.18f),
             UpgradeId.NyxEventHorizon => Violet,
             UpgradeId.NyxGravityCantor => Violet.Lerp(Cyan, 0.22f),
+            UpgradeId.NyxVoidTax => Violet.Lerp(Cyan, 0.18f),
             UpgradeId.RookBulwarkCore => Gold.Lerp(Paper, 0.3f),
             UpgradeId.RookSiegeBattery => Gold,
             UpgradeId.RookAegisRelay => Jade,
             UpgradeId.RookCitadelProtocol => Gold.Lerp(Paper, 0.18f),
+            UpgradeId.RookCounterBattery => Gold.Lerp(Paper, 0.18f),
             UpgradeId.LyraResonanceChord => Jade,
             UpgradeId.LyraTempoBloom => Jade.Lerp(Cyan, 0.18f),
             UpgradeId.LyraHarmonicCascade => Cyan.Lerp(Paper, 0.1f),
             UpgradeId.LyraEncoreField => Violet,
+            UpgradeId.LyraBeatTrigger => Jade.Lerp(Cyan, 0.28f),
             UpgradeId.OrionCometSpear => Gold.Lerp(AlertRed, 0.12f),
             UpgradeId.OrionDeadeyeMark => Rose,
             UpgradeId.OrionStarfallQuiver => Rose.Lerp(Paper, 0.24f),
             UpgradeId.OrionPerihelionVector => Cyan,
+            UpgradeId.OrionMarkedPrey => Rose.Lerp(Gold, 0.16f),
             _ => Paper,
         };
     }
@@ -10305,7 +10958,9 @@ public partial class MainGame : Node2D
 
     private static int MetaUpgradeCost(MetaUpgradeDef def, int currentRank)
     {
-        return def.BaseCost + currentRank * def.StepCost + currentRank * currentRank * 18 + Math.Max(0, currentRank - 2) * 35;
+        int rank = Math.Max(0, currentRank);
+        float lateCurve = rank * rank * 34.0f + Math.Max(0, rank - 2) * 68.0f + Math.Max(0, rank - 4) * 118.0f;
+        return Mathf.RoundToInt(def.BaseCost + rank * def.StepCost + lateCurve);
     }
 
     private int MaxRank(UpgradeId id)
@@ -10348,28 +11003,36 @@ public partial class MainGame : Node2D
             UpgradeId.SolSolarForge => 5,
             UpgradeId.AstraNovaBloom => 4,
             UpgradeId.AstraTwinRefraction => 3,
+            UpgradeId.AstraPrismOrbit => 3,
             UpgradeId.VesperJudgmentCoil => 4,
             UpgradeId.VesperSeverLine => 3,
+            UpgradeId.VesperOverchargeRail => 3,
             UpgradeId.KairoOverrideMatrix => 4,
             UpgradeId.KairoRelayProtocol => 3,
+            UpgradeId.KairoHunterWing => 3,
             UpgradeId.SolFlareCore => 4,
             UpgradeId.SolRadiantMantle => 3,
+            UpgradeId.SolIgnitionWave => 3,
             UpgradeId.NyxOrbit => 5,
             UpgradeId.NyxSingularity => 5,
             UpgradeId.NyxEventHorizon => 4,
             UpgradeId.NyxGravityCantor => 3,
+            UpgradeId.NyxVoidTax => 3,
             UpgradeId.RookBulwarkCore => 5,
             UpgradeId.RookSiegeBattery => 5,
             UpgradeId.RookAegisRelay => 4,
             UpgradeId.RookCitadelProtocol => 3,
+            UpgradeId.RookCounterBattery => 3,
             UpgradeId.LyraResonanceChord => 5,
             UpgradeId.LyraTempoBloom => 5,
             UpgradeId.LyraHarmonicCascade => 4,
             UpgradeId.LyraEncoreField => 3,
+            UpgradeId.LyraBeatTrigger => 3,
             UpgradeId.OrionCometSpear => 5,
             UpgradeId.OrionDeadeyeMark => 5,
             UpgradeId.OrionStarfallQuiver => 4,
             UpgradeId.OrionPerihelionVector => 3,
+            UpgradeId.OrionMarkedPrey => 3,
             _ => 5,
         };
     }
@@ -11999,6 +12662,31 @@ public partial class MainGame : Node2D
         DrawText(rankText, badge + new Vector2(-8.0f, 5.5f), 12, Paper, HorizontalAlignment.Center, 16.0f, false, 0);
     }
 
+    private void DrawUpgradeCardIcon(UpgradeId id, Rect2 slot, Color accent, bool hover)
+    {
+        Vector2 center = slot.Position + slot.Size * 0.5f;
+        DrawRect(slot, Alpha(Graphite, hover ? 0.72f : 0.54f), true);
+        DrawRect(slot, Alpha(accent, hover ? 0.62f : 0.34f), false, UiStroke, true);
+        DrawRect(slot.Grow(-5.0f), Alpha(Paper, hover ? 0.12f : 0.06f), false, UiHairline, true);
+        DrawGlow(center, accent, hover ? 74.0f : 48.0f, hover ? 0.048f : 0.024f, 3);
+
+        if (_upgradeIconTextures.TryGetValue(id, out Texture2D? texture) &&
+            _upgradeIconTextureRegions.TryGetValue(id, out Rect2 sourceRegion) &&
+            sourceRegion.Size.X > 0.0f &&
+            sourceRegion.Size.Y > 0.0f)
+        {
+            Vector2 maxSize = slot.Size * 0.76f;
+            float scale = Mathf.Min(maxSize.X / sourceRegion.Size.X, maxSize.Y / sourceRegion.Size.Y);
+            Vector2 drawSize = sourceRegion.Size * scale;
+            Rect2 drawRect = new(center - drawSize * 0.5f, drawSize);
+            DrawTextureRectRegion(texture, drawRect, sourceRegion, Alpha(Colors.White, hover ? 0.98f : 0.88f));
+            return;
+        }
+
+        DrawCircle(center, slot.Size.X * 0.31f, Alpha(accent, 0.1f), false, UiHairline, true);
+        DrawUpgradeGlyph(id, center, slot.Size.X * 0.28f, accent);
+    }
+
     private void DrawUpgradeGlyph(UpgradeId id, Vector2 center, float radius, Color accent)
     {
         Color line = Alpha(accent, 0.88f);
@@ -12702,11 +13390,14 @@ public partial class MainGame : Node2D
             DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 82.0f, hover ? 0.065f : 0.034f, 4);
             DrawPanel(drawRect, Alpha(Ink, hover ? 0.88f : 0.76f), Alpha(accent, hover ? 0.86f : 0.42f));
             DrawHoverFrame(drawRect, accent, hover, 0.8f);
-            DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 35.0f, 34.0f), 18.0f, Alpha(accent, 0.72f));
-            DrawText($"{i + 1}", drawRect.Position + new Vector2(drawRect.Size.X - 50.0f, 41.0f), 18, Ink, HorizontalAlignment.Center, 30.0f, false, 0);
-            DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(20.0f, 39.0f), 21, Paper, HorizontalAlignment.Left, drawRect.Size.X - 78.0f, true, 2);
-            DrawText(Tf("meta.rank", rank, def.MaxRank), drawRect.Position + new Vector2(20.0f, 68.0f), 15, Alpha(accent, 0.95f), HorizontalAlignment.Left, 170.0f, true, 1);
-            DrawWrapped(T(def.BodyKey), drawRect.Position + new Vector2(20.0f, 86.0f), 15, Alpha(Paper, 0.72f), drawRect.Size.X - 40.0f, 18.0f);
+            DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 28.0f, 28.0f), 13.0f, Alpha(accent, 0.58f));
+            if (i < 9)
+            {
+                DrawText($"{i + 1}", drawRect.Position + new Vector2(drawRect.Size.X - 39.0f, 33.0f), 13, Ink, HorizontalAlignment.Center, 22.0f, false, 0);
+            }
+            DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(18.0f, 34.0f), 18, Paper, HorizontalAlignment.Left, drawRect.Size.X - 64.0f, true, 2);
+            DrawText(Tf("meta.rank", rank, def.MaxRank), drawRect.Position + new Vector2(18.0f, 58.0f), 13, Alpha(accent, 0.95f), HorizontalAlignment.Left, 160.0f, true, 1);
+            DrawWrapped(T(def.BodyKey), drawRect.Position + new Vector2(18.0f, 75.0f), 13, Alpha(Paper, 0.72f), drawRect.Size.X - 36.0f, 16.0f);
 
             Rect2 bar = new(drawRect.Position + new Vector2(20.0f, drawRect.Size.Y - 28.0f), new Vector2(drawRect.Size.X - 40.0f, 7.0f));
             float progress = def.MaxRank <= 0 ? 1.0f : (float)rank / def.MaxRank;
@@ -12717,7 +13408,7 @@ public partial class MainGame : Node2D
             DrawText(maxed ? T("meta.max") : Tf("meta.cost", cost), drawRect.Position + new Vector2(20.0f, drawRect.Size.Y - 7.0f), 15, maxed ? Jade : (_starDust >= cost ? Gold : Rose), HorizontalAlignment.Left, drawRect.Size.X - 40.0f, true, 1);
         }
 
-        DrawText(T("meta.buy_hint"), new Vector2(0.0f, 884.0f), 20, Alpha(Paper, 0.62f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText(T("meta.buy_hint"), new Vector2(0.0f, 890.0f), 18, Alpha(Paper, 0.56f), HorizontalAlignment.Center, ScreenWidth, true, 2);
         DrawMenuButton(MetaBackButtonRect(), T("meta.back"), Violet, false);
     }
 
@@ -12740,31 +13431,22 @@ public partial class MainGame : Node2D
             DrawPanel(rect, Alpha(Ink, hover ? 0.92f : 0.78f), border);
             DrawHoverFrame(rect, card.Accent, hover, 0.92f);
 
-            Rect2 header = new(rect.Position, new Vector2(rect.Size.X, 104.0f));
+            Rect2 header = new(rect.Position, new Vector2(rect.Size.X, 126.0f));
             DrawRect(header, Alpha(card.Accent, hover ? 0.13f : 0.085f), true);
             DrawLine(header.Position + new Vector2(22.0f, header.Size.Y), header.Position + new Vector2(header.Size.X - 22.0f, header.Size.Y), Alpha(card.Accent, hover ? 0.42f : 0.24f), UiHairline, true);
 
             for (int line = 0; line < 5; line++)
             {
-                float y = rect.Position.Y + 132.0f + line * 45.0f;
+                float y = rect.Position.Y + 156.0f + line * 39.0f;
                 DrawLine(new Vector2(rect.Position.X + 26.0f, y), new Vector2(rect.End.X - 26.0f, y + Mathf.Sin(_time + line) * 4.0f), Alpha(card.Accent, hover ? 0.065f : 0.035f), UiHairline, true);
             }
 
-            Vector2 iconCenter = rect.Position + new Vector2(rect.Size.X - 62.0f, 62.0f);
-            DrawCircle(iconCenter, 34.0f, Alpha(Graphite, 0.76f));
-            DrawCircle(iconCenter, 34.0f, Alpha(card.Accent, hover ? 0.58f : 0.36f), false, UiStroke, true);
-            DrawCircle(iconCenter, 24.0f, Alpha(card.Accent, 0.12f));
-            DrawUpgradeGlyph(card.Id, iconCenter, 23.0f, card.Accent);
+            Rect2 iconSlot = new(rect.Position + new Vector2(26.0f, 54.0f), new Vector2(70.0f, 70.0f));
+            DrawUpgradeCardIcon(card.Id, iconSlot, card.Accent, hover);
 
             DrawText(card.Tag.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 38.0f), 15, Alpha(card.Accent, 0.96f), HorizontalAlignment.Left, rect.Size.X - 118.0f, true, 1);
-            string badgeText = UpgradeBadgeText(card.Id);
-            float badgeWidth = Mathf.Clamp(EstimateTextPixelWidth(badgeText.ToUpperInvariant(), 11) + 20.0f, 76.0f, 196.0f);
-            Rect2 badge = new(rect.Position + new Vector2(26.0f, 52.0f), new Vector2(badgeWidth, 22.0f));
-            DrawRect(badge, Alpha(card.Accent, hover ? 0.18f : 0.1f), true);
-            DrawRect(badge, Alpha(card.Accent, hover ? 0.44f : 0.26f), false, UiHairline, true);
-            DrawText(badgeText.ToUpperInvariant(), badge.Position + new Vector2(9.0f, 15.5f), 11, Alpha(card.Accent.Lerp(Paper, 0.18f), 0.9f), HorizontalAlignment.Left, badge.Size.X - 18.0f, false, 0);
-            DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 82.0f), 27, Paper, HorizontalAlignment.Left, rect.Size.X - 122.0f, true, 3);
-            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 152.0f), 20, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 31.0f);
+            DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(112.0f, 92.0f), 25, Paper, HorizontalAlignment.Left, rect.Size.X - 180.0f, true, 3);
+            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 172.0f), 18, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 27.0f);
 
             int rank = GetRank(card.Id);
             int maxRank = MaxRank(card.Id);
@@ -13117,8 +13799,9 @@ public partial class MainGame : Node2D
             return 1.0f;
         }
 
+        int comboRank = MetaRank(MetaUpgradeId.ComboEngine);
         float combo01 = 1.0f - Mathf.Exp(-Mathf.Min(_combo, 160) / 76.0f);
-        return 1.0f + combo01 * 0.38f;
+        return 1.0f + combo01 * (0.38f + comboRank * 0.055f);
     }
 
     private int ComboSpawnBonusPercent()
@@ -14014,11 +14697,11 @@ public partial class MainGame : Node2D
         {
             1 => PilotKind.Vesper,
             2 => PilotKind.Rook,
-            3 => PilotKind.Kairo,
+            3 => PilotKind.Orion,
             4 => PilotKind.Nyx,
-            5 => PilotKind.Lyra,
-            6 => PilotKind.Sol,
-            7 => PilotKind.Orion,
+            5 => PilotKind.Sol,
+            6 => PilotKind.Kairo,
+            7 => PilotKind.Lyra,
             _ => PilotKind.Astra,
         };
     }
@@ -14029,11 +14712,11 @@ public partial class MainGame : Node2D
         {
             PilotKind.Vesper => 1,
             PilotKind.Rook => 2,
-            PilotKind.Kairo => 3,
+            PilotKind.Orion => 3,
             PilotKind.Nyx => 4,
-            PilotKind.Lyra => 5,
-            PilotKind.Sol => 6,
-            PilotKind.Orion => 7,
+            PilotKind.Sol => 5,
+            PilotKind.Kairo => 6,
+            PilotKind.Lyra => 7,
             _ => 0,
         };
     }
@@ -14214,12 +14897,12 @@ public partial class MainGame : Node2D
     private static Rect2 MetaUpgradeRect(int index)
     {
         const float width = 390.0f;
-        const float height = 145.0f;
+        const float height = 126.0f;
         const float gapX = 24.0f;
-        const float gapY = 20.0f;
+        const float gapY = 14.0f;
         int column = index % 4;
         int row = index / 4;
-        return new Rect2(new Vector2(144.0f + column * (width + gapX), 336.0f + row * (height + gapY)), new Vector2(width, height));
+        return new Rect2(new Vector2(144.0f + column * (width + gapX), 318.0f + row * (height + gapY)), new Vector2(width, height));
     }
 
     private static Vector2 RandomOrbit(float phase)

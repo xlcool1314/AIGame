@@ -77,6 +77,10 @@ public partial class MainGame
         DroneDock,
         PolarityTuner,
         DeepSurvey,
+        StarterModule,
+        PilotCodex,
+        ComboEngine,
+        EliteAnalyzer,
     }
 
     private readonly struct LocalizedText
@@ -281,6 +285,14 @@ public partial class MainGame
         OrionDeadeyeMark,
         OrionStarfallQuiver,
         OrionPerihelionVector,
+        AstraPrismOrbit,
+        VesperOverchargeRail,
+        KairoHunterWing,
+        SolIgnitionWave,
+        NyxVoidTax,
+        RookCounterBattery,
+        LyraBeatTrigger,
+        OrionMarkedPrey,
     }
 
     private sealed class Enemy
