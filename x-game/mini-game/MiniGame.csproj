@@ -5,4 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Steamworks.NET" Version="15.0.1" />
+  </ItemGroup>
 </Project>

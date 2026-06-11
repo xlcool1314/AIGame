@@ -419,6 +419,7 @@ public partial class MainGame : Node2D
     };
 
     private const string MetaSavePath = "user://astra_fracture_meta.cfg";
+    private const string LocalSettingsPath = "user://loopfighter_local_settings.cfg";
 
     private static readonly MetaUpgradeDef[] MetaUpgrades =
     {
@@ -632,7 +633,7 @@ public partial class MainGame : Node2D
         ["settings.main_menu"] = new("MAIN MENU", "回到主界面"),
         ["settings.delete_save"] = new("DELETE SAVE", "删除存档"),
         ["settings.delete_confirm"] = new("CLICK AGAIN TO DELETE", "再次点击确认删除"),
-        ["settings.delete_warning"] = new("Clears Star Dust, permanent upgrades, unlocks, and records.", "清空星尘、永久升级、角色解锁和纪录。"),
+        ["settings.delete_warning"] = new("Clears progress, unlocks, upgrades, and records. Keeps local settings.", "清空进度、解锁、永久升级和纪录。保留本机设置。"),
         ["settings.delete_notice"] = new("SAVE DATA CLEARED", "存档已删除"),
         ["settings.resume"] = new("RESUME", "继续游戏"),
         ["settings.back"] = new("BACK", "返回"),
@@ -767,6 +768,7 @@ public partial class MainGame : Node2D
     private readonly List<UpgradeId> _upgradeOrder = new();
     private readonly List<RunObjective> _runObjectives = new();
     private readonly List<SfxVoice> _voices = new();
+    private readonly SteamAchievements _steamAchievements = new();
     private readonly Queue<TextCue> _centerTextQueue = new();
     private readonly Vector2[] _playerTrail = new Vector2[PlayerTrailCapacity];
     private readonly OrbiterVisual[] _orbiterVisuals = CreateOrbiterVisuals();
@@ -1084,7 +1086,10 @@ public partial class MainGame : Node2D
         LoadEnemyTextures();
         GenerateBackdrop();
         SetupAudio();
+        _steamAchievements.Initialize();
         LoadMetaProgress();
+        SyncPersistentAchievements();
+        RequestSelectedLeaderboard();
         ApplyWindowTitle();
         ResetTitle();
         SetProcess(true);
@@ -1092,6 +1097,7 @@ public partial class MainGame : Node2D
 
     public override void _ExitTree()
     {
+        _steamAchievements.Shutdown();
         _voices.Clear();
         _supportDroneTexture = null;
         _kairoDroneTexture = null;
@@ -1118,9 +1124,9 @@ public partial class MainGame : Node2D
 
     private void LoadDroneTextures()
     {
-        _supportDroneTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/01_PlayerSupportDrone");
-        _kairoDroneTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/02_KairoSwarmDrone") ?? _supportDroneTexture;
-        _kairoCommandTexture = LoadFirstTextureInDirectory("res://Assets/DroneArt/03_KairoCommandBurst");
+        _supportDroneTexture = LoadTextureOrFirstInDirectory("res://Assets/DroneArt/01_PlayerSupportDrone/1.png", "res://Assets/DroneArt/01_PlayerSupportDrone");
+        _kairoDroneTexture = LoadTextureOrFirstInDirectory("res://Assets/DroneArt/02_KairoSwarmDrone/2.png", "res://Assets/DroneArt/02_KairoSwarmDrone") ?? _supportDroneTexture;
+        _kairoCommandTexture = LoadTextureOrFirstInDirectory("res://Assets/DroneArt/03_KairoCommandBurst/3.png", "res://Assets/DroneArt/03_KairoCommandBurst");
 
         _supportDroneRegion = TextureRegionOrEmpty(_supportDroneTexture);
         _kairoDroneRegion = TextureRegionOrEmpty(_kairoDroneTexture);
@@ -1129,7 +1135,7 @@ public partial class MainGame : Node2D
 
     private void LoadBulletTextures()
     {
-        _enemyBulletTexture = LoadFirstTextureInDirectory("res://Assets/EnemyBullet");
+        _enemyBulletTexture = LoadTextureOrFirstInDirectory("res://Assets/EnemyBullet/28.png", "res://Assets/EnemyBullet");
         _enemyBulletRegion = TextureRegionOrEmpty(_enemyBulletTexture);
         _fighterBulletTextures.Clear();
         _fighterBulletTextureRegions.Clear();
@@ -1137,7 +1143,8 @@ public partial class MainGame : Node2D
         for (int i = 0; i < PilotCount(); i++)
         {
             PilotKind pilot = PilotFromIndex(i);
-            Texture2D? texture = LoadFirstTextureInDirectory($"res://Assets/FighterBullets/{pilot}");
+            string directory = $"res://Assets/FighterBullets/{pilot}";
+            Texture2D? texture = LoadTextureOrFirstInDirectory(FighterBulletTexturePath(pilot), directory);
             if (texture == null)
             {
                 continue;
@@ -1171,7 +1178,8 @@ public partial class MainGame : Node2D
 
     private static Texture2D? LoadPilotTexture(PilotKind pilot)
     {
-        return LoadFirstTextureInDirectory($"res://Assets/FighterArt/{pilot}");
+        string directory = $"res://Assets/FighterArt/{pilot}";
+        return LoadTextureOrFirstInDirectory(PilotTexturePath(pilot), directory);
     }
 
     private void LoadEnemyTextures()
@@ -1190,14 +1198,16 @@ public partial class MainGame : Node2D
                 continue;
             }
 
-            Texture2D? normal = LoadFirstTextureInDirectory(EnemyArtDirectory(kind, false));
+            string normalDirectory = EnemyArtDirectory(kind, false);
+            Texture2D? normal = LoadTextureOrFirstInDirectory(EnemyTexturePath(kind, false), normalDirectory);
             if (normal != null)
             {
                 _enemyTextures[kind] = normal;
                 _enemyTextureRegions[kind] = VisibleTextureRegion(normal);
             }
 
-            Texture2D? elite = LoadFirstTextureInDirectory(EnemyArtDirectory(kind, true));
+            string eliteDirectory = EnemyArtDirectory(kind, true);
+            Texture2D? elite = LoadTextureOrFirstInDirectory(EnemyTexturePath(kind, true), eliteDirectory);
             if (elite != null)
             {
                 _eliteEnemyTextures[kind] = elite;
@@ -1207,7 +1217,8 @@ public partial class MainGame : Node2D
 
         foreach (BossArchetype archetype in Enum.GetValues(typeof(BossArchetype)))
         {
-            Texture2D? texture = LoadFirstTextureInDirectory(BossArtDirectory(archetype));
+            string directory = BossArtDirectory(archetype);
+            Texture2D? texture = LoadTextureOrFirstInDirectory(BossTexturePath(archetype), directory);
             if (texture != null)
             {
                 _bossTextures[archetype] = texture;
@@ -1228,12 +1239,15 @@ public partial class MainGame : Node2D
         Array.Sort(files, StringComparer.OrdinalIgnoreCase);
         foreach (string file in files)
         {
-            if (!IsTextureAsset(file))
+            string assetFile = file.EndsWith(".remap", StringComparison.OrdinalIgnoreCase)
+                ? file[..^".remap".Length]
+                : file;
+            if (!IsTextureAsset(assetFile))
             {
                 continue;
             }
 
-            Texture2D? texture = GD.Load<Texture2D>($"{directory}/{file}");
+            Texture2D? texture = GD.Load<Texture2D>($"{directory}/{assetFile}");
             if (texture != null)
             {
                 return texture;
@@ -1241,6 +1255,112 @@ public partial class MainGame : Node2D
         }
 
         return null;
+    }
+
+    private static Texture2D? LoadTextureOrFirstInDirectory(string path, string directory)
+    {
+        Texture2D? texture = GD.Load<Texture2D>(path);
+        return texture ?? LoadFirstTextureInDirectory(directory);
+    }
+
+    private static string PilotTexturePath(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Astra => "res://Assets/FighterArt/Astra/1.png",
+            PilotKind.Kairo => "res://Assets/FighterArt/Kairo/2.png",
+            PilotKind.Lyra => "res://Assets/FighterArt/Lyra/3.png",
+            PilotKind.Nyx => "res://Assets/FighterArt/Nyx/4.png",
+            PilotKind.Orion => "res://Assets/FighterArt/Orion/5.png",
+            PilotKind.Rook => "res://Assets/FighterArt/Rook/6.png",
+            PilotKind.Sol => "res://Assets/FighterArt/Sol/7.png",
+            PilotKind.Vesper => "res://Assets/FighterArt/Vesper/8.png",
+            _ => "res://Assets/FighterArt/Astra/1.png",
+        };
+    }
+
+    private static string FighterBulletTexturePath(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Astra => "res://Assets/FighterBullets/Astra/11.png",
+            PilotKind.Kairo => "res://Assets/FighterBullets/Kairo/22.png",
+            PilotKind.Lyra => "res://Assets/FighterBullets/Lyra/33.png",
+            PilotKind.Nyx => "res://Assets/FighterBullets/Nyx/44.png",
+            PilotKind.Orion => "res://Assets/FighterBullets/Orion/55.png",
+            PilotKind.Rook => "res://Assets/FighterBullets/Rook/66.png",
+            PilotKind.Sol => "res://Assets/FighterBullets/Sol/77.png",
+            PilotKind.Vesper => "res://Assets/FighterBullets/Vesper/88.png",
+            _ => "res://Assets/FighterBullets/Astra/11.png",
+        };
+    }
+
+    private static string EnemyTexturePath(EnemyKind kind, bool elite)
+    {
+        return $"{EnemyArtDirectory(kind, elite)}/{EnemyTextureFile(kind, elite)}";
+    }
+
+    private static string EnemyTextureFile(EnemyKind kind, bool elite)
+    {
+        if (elite)
+        {
+            return kind switch
+            {
+                EnemyKind.Chaser => "1.png",
+                EnemyKind.Weaver => "2.png",
+                EnemyKind.Drifter => "3.png",
+                EnemyKind.Mine => "4.png",
+                EnemyKind.Turret => "5.png",
+                EnemyKind.Lance => "6.png",
+                EnemyKind.Siren => "1.png",
+                EnemyKind.Splitter => "2.png",
+                EnemyKind.Harrier => "3.png",
+                EnemyKind.Shard => "4.png",
+                EnemyKind.Bulwark => "5.png",
+                EnemyKind.Warden => "6.png",
+                _ => "1.png",
+            };
+        }
+
+        return kind switch
+        {
+            EnemyKind.Chaser => "7.png",
+            EnemyKind.Weaver => "8.png",
+            EnemyKind.Drifter => "9.png",
+            EnemyKind.Mine => "10.png",
+            EnemyKind.Turret => "11.png",
+            EnemyKind.Lance => "20.png",
+            EnemyKind.Siren => "21.png",
+            EnemyKind.Splitter => "22.png",
+            EnemyKind.Harrier => "24.png",
+            EnemyKind.Shard => "25.png",
+            EnemyKind.Bulwark => "26.png",
+            EnemyKind.Warden => "27.png",
+            _ => "7.png",
+        };
+    }
+
+    private static string BossTexturePath(BossArchetype archetype)
+    {
+        return $"{BossArtDirectory(archetype)}/{BossTextureFile(archetype)}";
+    }
+
+    private static string BossTextureFile(BossArchetype archetype)
+    {
+        return archetype switch
+        {
+            BossArchetype.Choir => "7.png",
+            BossArchetype.Prism => "8.png",
+            BossArchetype.Forge => "9.png",
+            BossArchetype.Swarm => "13.png",
+            BossArchetype.Mirror => "14.png",
+            BossArchetype.Rift => "15.png",
+            BossArchetype.Bastion => "16.png",
+            BossArchetype.Tempest => "17.png",
+            BossArchetype.Oracle => "18.png",
+            BossArchetype.Serpent => "19.png",
+            _ => "7.png",
+        };
     }
 
     private static string EnemyArtDirectory(EnemyKind kind, bool elite)
@@ -1348,6 +1468,7 @@ public partial class MainGame : Node2D
 
     public override void _Process(double delta)
     {
+        _steamAchievements.Update();
         float dt = Mathf.Min((float)delta, 0.033f);
         _time += dt;
         FillAudio();
@@ -1544,13 +1665,40 @@ public partial class MainGame : Node2D
     private void LoadMetaProgress()
     {
         _metaRanks.Clear();
-        ConfigFile config = new();
-        if (config.Load(MetaSavePath) != Error.Ok)
+        ConfigFile cloudConfig = new();
+        bool cloudLoaded = cloudConfig.Load(MetaSavePath) == Error.Ok;
+        ConfigFile localSettingsConfig = new();
+        bool localSettingsLoaded = localSettingsConfig.Load(LocalSettingsPath) == Error.Ok;
+
+        if (cloudLoaded)
         {
-            ApplyRuntimeSettings(false);
-            return;
+            LoadCloudProgress(cloudConfig);
         }
 
+        if (localSettingsLoaded)
+        {
+            LoadLocalSettings(localSettingsConfig);
+        }
+        else if (cloudLoaded)
+        {
+            LoadLocalSettings(cloudConfig);
+            SaveLocalSettings();
+        }
+
+        _selectedDifficulty = ClampDifficulty(_selectedDifficulty);
+        _runDifficulty = _selectedDifficulty;
+        if (!IsPilotUnlocked(_selectedPilot))
+        {
+            _selectedPilot = PilotKind.Astra;
+        }
+
+        _gamepadPilotIndex = PilotIndex(_selectedPilot);
+        _gamepadTitleIndex = TitlePilotFocusStart;
+        ApplyRuntimeSettings(false);
+    }
+
+    private void LoadLocalSettings(ConfigFile config)
+    {
         string languageName = ReadConfigString(config, "settings", "language", _language.ToString());
         if (Enum.TryParse(languageName, out GameLanguage loadedLanguage))
         {
@@ -1566,15 +1714,23 @@ public partial class MainGame : Node2D
         {
             _visualQuality = loadedQuality;
         }
-        GameDifficulty loadedDifficulty = _selectedDifficulty;
         string difficultyName = ReadConfigString(config, "settings", "difficulty", _selectedDifficulty.ToString());
         if (Enum.TryParse(difficultyName, out GameDifficulty parsedDifficulty))
         {
-            loadedDifficulty = parsedDifficulty;
+            _selectedDifficulty = parsedDifficulty;
         }
         _musicVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
         _sfxVolume = Mathf.Clamp(ReadConfigInt(config, "settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f)) / 100.0f, 0.0f, 1.0f);
 
+        string pilotName = ReadConfigString(config, "settings", "pilot", PilotKind.Astra.ToString());
+        if (Enum.TryParse(pilotName, out PilotKind loadedPilot))
+        {
+            _selectedPilot = loadedPilot;
+        }
+    }
+
+    private void LoadCloudProgress(ConfigFile config)
+    {
         _starDust = Mathf.Max(0, ReadConfigInt(config, "meta", "star_dust", 0));
         _lifetimeDust = Mathf.Max(0, ReadConfigInt(config, "meta", "lifetime_dust", 0));
         _bestScore = Mathf.Max(0, ReadConfigInt(config, "stats", "best_score", 0));
@@ -1589,8 +1745,6 @@ public partial class MainGame : Node2D
         _careerPerfectWaves = Mathf.Max(0, ReadConfigInt(config, "career", "perfect_waves", 0));
         LoadClearTimeRecords(config);
         LoadDifficultyTestUnlocks(config);
-        _selectedDifficulty = ClampDifficulty(loadedDifficulty);
-        _runDifficulty = _selectedDifficulty;
         _pilotRuns.Clear();
         int pilotRunTotal = 0;
         for (int i = 0; i < PilotCount(); i++)
@@ -1607,18 +1761,6 @@ public partial class MainGame : Node2D
         {
             _pilotRuns[PilotKind.Astra] = _runsCompleted;
         }
-        string pilotName = ReadConfigString(config, "settings", "pilot", PilotKind.Astra.ToString());
-        if (Enum.TryParse(pilotName, out PilotKind loadedPilot) && IsPilotUnlocked(loadedPilot))
-        {
-            _selectedPilot = loadedPilot;
-        }
-        else
-        {
-            _selectedPilot = PilotKind.Astra;
-        }
-        _gamepadPilotIndex = PilotIndex(_selectedPilot);
-        _gamepadTitleIndex = TitlePilotFocusStart;
-        ApplyRuntimeSettings(false);
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
         {
@@ -1631,6 +1773,12 @@ public partial class MainGame : Node2D
     }
 
     private void SaveMetaProgress()
+    {
+        SaveCloudProgress();
+        SaveLocalSettings();
+    }
+
+    private void SaveCloudProgress()
     {
         ConfigFile config = new();
         config.SetValue("meta", "star_dust", _starDust);
@@ -1667,13 +1815,6 @@ public partial class MainGame : Node2D
             PilotKind pilot = PilotFromIndex(i);
             config.SetValue("pilot_runs", pilot.ToString(), PilotRunCount(pilot));
         }
-        config.SetValue("settings", "pilot", _selectedPilot.ToString());
-        config.SetValue("settings", "difficulty", _selectedDifficulty.ToString());
-        config.SetValue("settings", "language", _language.ToString());
-        config.SetValue("settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f));
-        config.SetValue("settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f));
-        config.SetValue("settings", "resolution", _resolutionPreset.ToString());
-        config.SetValue("settings", "quality", _visualQuality.ToString());
 
         foreach (MetaUpgradeDef def in MetaUpgrades)
         {
@@ -1684,6 +1825,24 @@ public partial class MainGame : Node2D
         if (error != Error.Ok)
         {
             AddText($"SAVE ERROR {error}", ScreenCenter + new Vector2(0.0f, -250.0f), Rose, 24.0f);
+        }
+    }
+
+    private void SaveLocalSettings()
+    {
+        ConfigFile config = new();
+        config.SetValue("settings", "pilot", _selectedPilot.ToString());
+        config.SetValue("settings", "difficulty", _selectedDifficulty.ToString());
+        config.SetValue("settings", "language", _language.ToString());
+        config.SetValue("settings", "music_volume", Mathf.RoundToInt(_musicVolume * 100.0f));
+        config.SetValue("settings", "sfx_volume", Mathf.RoundToInt(_sfxVolume * 100.0f));
+        config.SetValue("settings", "resolution", _resolutionPreset.ToString());
+        config.SetValue("settings", "quality", _visualQuality.ToString());
+
+        Error error = config.Save(LocalSettingsPath);
+        if (error != Error.Ok)
+        {
+            AddText($"SETTINGS SAVE ERROR {error}", ScreenCenter + new Vector2(0.0f, -210.0f), Rose, 22.0f);
         }
     }
 
@@ -2181,6 +2340,7 @@ public partial class MainGame : Node2D
         if (victory)
         {
             _lastClearRecordRank = AddClearTimeRecord(_runDifficulty, _runTimer);
+            UploadClearTimeToLeaderboard(_runDifficulty, _runTimer);
         }
         _careerKills += _runKills;
         _careerPickups += _runPickups;
@@ -2188,6 +2348,7 @@ public partial class MainGame : Node2D
         _careerBestCombo = Math.Max(_careerBestCombo, _runBestCombo);
         _careerBossKills += _runBossKills;
         _careerPerfectWaves += _runPerfectWaves;
+        OnRunRewardedAchievements(victory, reachedWave, _lastUnlockedPilot);
         SaveMetaProgress();
         AddText(Tf("end.reward", earned, reachedWave), ScreenCenter + new Vector2(0.0f, -220.0f), Gold, 28.0f);
     }
@@ -2401,6 +2562,7 @@ public partial class MainGame : Node2D
         Burst(ScreenCenter, Cyan, 64, 680.0f, 2.2f);
         AddText(T("wake"), ScreenCenter + new Vector2(0.0f, -90.0f), Cyan, 42.0f);
         PlaySfx(220.0f, 0.9f, 0.22f, 0.36f, 0.05f, 1);
+        OnRunStartedAchievements();
         BeginNextWave();
     }
 
@@ -3141,6 +3303,7 @@ public partial class MainGame : Node2D
             _playerHp = Mathf.Clamp(_playerHp + 1.5f, 0.0f, _playerMaxHp);
             AddText(T("objective.clean_wave"), ScreenCenter + new Vector2(0.0f, -118.0f), Jade, 22.0f);
         }
+        OnWaveClearedAchievements(!_waveTookDamage);
 
         if (_wave < TotalWaves)
         {
@@ -3273,6 +3436,7 @@ public partial class MainGame : Node2D
 
         _runBestCombo = _combo;
         SetObjectiveProgress(RunObjectiveKind.BestCombo, _runBestCombo);
+        CheckCareerComboAchievements(Math.Max(_careerBestCombo, _runBestCombo));
     }
 
     private void IncreaseCombo(Vector2 source, int amount = 1)
@@ -3784,7 +3948,7 @@ public partial class MainGame : Node2D
         {
             TryStartTitleRun();
         }
-        else if (click && GmUnlockButtonRect().HasPoint(mouse))
+        else if (IsGmUnlockAvailable() && click && GmUnlockButtonRect().HasPoint(mouse))
         {
             UnlockAllForTesting();
         }
@@ -3909,6 +4073,7 @@ public partial class MainGame : Node2D
         _selectedDifficulty = difficulty;
         _runDifficulty = difficulty;
         SaveMetaProgress();
+        RequestSelectedLeaderboard();
         PlaySfx(310.0f + DifficultyIndex(difficulty) * 92.0f, 60.0f, 0.12f, 0.16f, 0.02f, 1);
     }
 
@@ -4365,6 +4530,7 @@ public partial class MainGame : Node2D
 
         _starDust -= cost;
         _metaRanks[def.Id] = rank + 1;
+        OnMetaUpgradeBoughtAchievements();
         SaveMetaProgress();
         Burst(ScreenCenter + new Vector2(0.0f, 40.0f), def.Accent, 48, 420.0f, 1.2f);
         AddText(T("meta.bought"), ScreenCenter + new Vector2(0.0f, -250.0f), def.Accent, 28.0f);
@@ -6939,7 +7105,7 @@ public partial class MainGame : Node2D
                         _energy = Mathf.Clamp(_energy + 1.15f * _absorbEfficiency, 0.0f, _maxEnergy);
                         AddRunScore(8 + Math.Min(_combo, 40), shot.Pos, PolarityBlue);
                         IncreaseCombo(shot.Pos);
-                        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
+                        RegisterAbsorb(1);
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(ChargeText(), playerPos + new Vector2(0.0f, -72.0f), PolarityBlue, 18.0f);
@@ -6956,7 +7122,7 @@ public partial class MainGame : Node2D
                         _energy = Mathf.Clamp(_energy + absorbGain, 0.0f, _maxEnergy);
                         AddRunScore(15 + _combo, shot.Pos, EnemyBulletColor());
                         IncreaseCombo(shot.Pos);
-                        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
+                        RegisterAbsorb(1);
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(AbsorbText(absorbGain), playerPos + new Vector2(0.0f, -72.0f), EnemyBulletColor(), 20.0f);
@@ -7044,7 +7210,7 @@ public partial class MainGame : Node2D
         AddCruiseCharge(7.0f + _shieldRebound, shot.Pos);
         _energy = Mathf.Clamp(_energy + 2.4f * _absorbEfficiency, 0.0f, _maxEnergy);
         IncreaseCombo(shot.Pos);
-        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 1);
+        RegisterAbsorb(1);
         Burst(_playerPos, UpgradeAccent(UpgradeId.ShieldRebound), _visualPressure > 0.82f ? 7 : 14, 300.0f, 0.48f);
         if (_absorbTextCooldown <= 0.0f)
         {
@@ -7465,6 +7631,7 @@ public partial class MainGame : Node2D
             AddObjectiveProgress(RunObjectiveKind.DefeatBosses, 1);
             AddText(Tf("sector.cleared", T(CurrentSector().NameKey)), ScreenCenter + new Vector2(0.0f, -225.0f), CurrentSector().Accent, 36.0f);
         }
+        OnEnemyKilledAchievements(enemy.Kind == EnemyKind.Boss);
         PlaySfx(enemy.Kind == EnemyKind.Boss ? 64.0f : 180.0f, enemy.Kind == EnemyKind.Boss ? 0.2f : -50.0f, enemy.Kind == EnemyKind.Boss ? 1.4f : 0.16f, enemy.Kind == EnemyKind.Boss ? 0.62f : 0.28f, enemy.Kind == EnemyKind.Boss ? 0.38f : 0.08f, enemy.Kind == EnemyKind.Boss ? 0 : 2);
 
         int drops = EnemyDustDropCount(enemy);
@@ -7723,6 +7890,7 @@ public partial class MainGame : Node2D
     {
         _runPickups++;
         AddObjectiveProgress(RunObjectiveKind.CollectPickups, 1);
+        OnPickupCollectedAchievements();
 
         switch (pickup.Kind)
         {
@@ -7862,7 +8030,7 @@ public partial class MainGame : Node2D
                     {
                         float absorbGain = (2.8f + inside * 3.2f) * _absorbEfficiency;
                         _energy = Mathf.Clamp(_energy + absorbGain, 0.0f, _maxEnergy);
-                        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 2);
+                        RegisterAbsorb(2);
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(AbsorbText(absorbGain), _playerPos + new Vector2(0.0f, -80.0f), field.Color, 21.0f);
@@ -7903,7 +8071,7 @@ public partial class MainGame : Node2D
                     {
                         float absorbGain = 4.0f * _absorbEfficiency;
                         _energy = Mathf.Clamp(_energy + absorbGain, 0.0f, _maxEnergy);
-                        AddObjectiveProgress(RunObjectiveKind.AbsorbBullets, 3);
+                        RegisterAbsorb(3);
                         if (_absorbTextCooldown <= 0.0f)
                         {
                             AddText(AbsorbText(absorbGain), _playerPos + new Vector2(0.0f, -80.0f), EnemyBulletColor(), 22.0f);
@@ -8430,6 +8598,10 @@ public partial class MainGame : Node2D
                 RemoveShotAt(i);
             }
         }
+        if (score && cleared > 0)
+        {
+            RegisterAbsorb(cleared);
+        }
     }
 
     private void ClearEnemyBulletsInBeam(Vector2 start, Vector2 end, float width, bool score)
@@ -8458,6 +8630,10 @@ public partial class MainGame : Node2D
                 cleared++;
                 RemoveShotAt(i);
             }
+        }
+        if (score && cleared > 0)
+        {
+            RegisterAbsorb(cleared);
         }
     }
 
@@ -11799,13 +11975,14 @@ public partial class MainGame : Node2D
 
     private void DrawUpgradeIcon(Rect2 rect, UpgradeId id, int rank, Color accent, bool hover)
     {
-        Rect2 drawRect = hover ? rect.Grow(3.0f) : rect;
+        Rect2 drawRect = rect;
         bool capstone = IsUpgradeMaxed(id) && CapstoneBody(id).Length > 0;
         if (capstone)
         {
             DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 58.0f : 42.0f, hover ? 0.05f : 0.032f, 3);
         }
         DrawPanel(drawRect, Alpha(Graphite, hover ? 0.76f : 0.58f), Alpha(accent, hover ? 0.72f : 0.42f));
+        DrawHoverFrame(drawRect, accent, hover, 0.72f);
         if (capstone)
         {
             Vector2 center = drawRect.Position + drawRect.Size * 0.5f;
@@ -12041,7 +12218,10 @@ public partial class MainGame : Node2D
 
         DrawTitleTextButton(MetaButtonRect(), T("menu.meta"), Gold);
         DrawTitleTextButton(TitleSettingsButtonRect(), T("menu.settings"), Alpha(Paper, 0.68f));
-        DrawGmUnlockButton();
+        if (IsGmUnlockAvailable())
+        {
+            DrawGmUnlockButton();
+        }
 
         if (_wonOnce)
         {
@@ -12115,10 +12295,11 @@ public partial class MainGame : Node2D
         bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
         Color accent = hover ? Gold.Lerp(Paper, 0.22f) : Gold;
         float glow = hover ? 0.048f : 0.026f + pulse * 0.008f;
-        Rect2 drawRect = hover ? rect.Grow(3.0f) : rect;
+        Rect2 drawRect = rect;
 
         DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 86.0f, glow, 4);
         DrawPanel(drawRect, Alpha(Ink, hover ? 0.7f : 0.48f), Alpha(accent, hover ? 0.82f : 0.42f));
+        DrawHoverFrame(drawRect, accent, hover, 0.82f);
         DrawRect(drawRect.Grow(-5.0f), Alpha(accent, 0.05f + pulse * 0.025f), false, UiHairline, true);
         DrawLine(drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 7.0f), drawRect.End - new Vector2(18.0f, 7.0f), Alpha(accent, 0.4f + pulse * 0.18f), UiHairline, true);
         DrawText(T("menu.start"), drawRect.Position + new Vector2(0.0f, drawRect.Size.Y * 0.68f), 20, Alpha(Paper, hover ? 0.94f : 0.76f), HorizontalAlignment.Center, drawRect.Size.X, true, 2);
@@ -12186,7 +12367,7 @@ public partial class MainGame : Node2D
         DrawGlow(panel.Position + panel.Size * 0.5f, accent, 180.0f, 0.014f, 3);
         DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.26f));
         DrawLine(panel.Position + new Vector2(18.0f, 44.0f), panel.Position + new Vector2(panel.Size.X - 18.0f, 44.0f), Alpha(accent, 0.22f), UiHairline, true);
-        DrawText(T("leader.title"), panel.Position + new Vector2(22.0f, 27.0f), 14, Alpha(Paper, 0.7f), HorizontalAlignment.Left, panel.Size.X - 44.0f, true, 1);
+        DrawText(T("leader.global_title"), panel.Position + new Vector2(22.0f, 27.0f), 14, Alpha(Paper, 0.7f), HorizontalAlignment.Left, panel.Size.X - 44.0f, true, 1);
         DrawText(DifficultyName(_selectedDifficulty), panel.Position + new Vector2(panel.Size.X - 146.0f, 27.0f), 13, Alpha(accent, 0.72f), HorizontalAlignment.Right, 124.0f, false, 0);
 
         var rows = LeaderboardRows();
@@ -12203,13 +12384,27 @@ public partial class MainGame : Node2D
     private (string Label, string Value, Color Accent)[] LeaderboardRows()
     {
         (string Label, string Value, Color Accent)[] rows = new (string Label, string Value, Color Accent)[ClearRecordCount];
-        List<float> records = ClearTimeRecords(_selectedDifficulty);
+        string leaderboardName = SteamLeaderboardName(_selectedDifficulty);
+        _steamAchievements.RequestLeaderboardRows(leaderboardName);
+        IReadOnlyList<SteamLeaderboardEntryView> records = _steamAchievements.LeaderboardRows(leaderboardName);
+        bool loading = _steamAchievements.IsLeaderboardLoading(leaderboardName);
+        bool unavailable = _steamAchievements.IsLeaderboardUnavailable(leaderboardName);
         for (int i = 0; i < rows.Length; i++)
         {
             bool hasRecord = i < records.Count;
+            if (!hasRecord && i == 0)
+            {
+                string status = loading ? T("leader.loading") : unavailable ? T("leader.offline") : T("leader.empty");
+                rows[i] = (status, string.Empty, LeaderboardRankAccent(i, false));
+                continue;
+            }
+
+            string label = hasRecord
+                ? $"{Tf("leader.rank", records[i].Rank)}  {CompactLeaderboardName(records[i].Name)}"
+                : Tf("leader.rank", i + 1);
             rows[i] = (
-                Tf("leader.rank", i + 1),
-                hasRecord ? FormatRecordTime(records[i]) : T("leader.no_record"),
+                label,
+                hasRecord ? FormatRecordTime(records[i].ScoreMilliseconds / 1000.0f) : T("leader.no_record"),
                 LeaderboardRankAccent(i, hasRecord)
             );
         }
@@ -12502,10 +12697,11 @@ public partial class MainGame : Node2D
             int cost = maxed ? 0 : MetaUpgradeCost(def, rank);
             Rect2 rect = MetaUpgradeRect(i);
             bool hover = rect.HasPoint(mouse) || IsGamepadFocused(rect);
-            Rect2 drawRect = hover ? rect.Grow(5.0f) : rect;
+            Rect2 drawRect = rect;
             Color accent = def.Accent;
             DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 82.0f, hover ? 0.065f : 0.034f, 4);
             DrawPanel(drawRect, Alpha(Ink, hover ? 0.88f : 0.76f), Alpha(accent, hover ? 0.86f : 0.42f));
+            DrawHoverFrame(drawRect, accent, hover, 0.8f);
             DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 35.0f, 34.0f), 18.0f, Alpha(accent, 0.72f));
             DrawText($"{i + 1}", drawRect.Position + new Vector2(drawRect.Size.X - 50.0f, 41.0f), 18, Ink, HorizontalAlignment.Center, 30.0f, false, 0);
             DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(20.0f, 39.0f), 21, Paper, HorizontalAlignment.Left, drawRect.Size.X - 78.0f, true, 2);
@@ -12538,10 +12734,11 @@ public partial class MainGame : Node2D
         {
             UpgradeCard card = _upgradeChoices[i];
             bool hover = card.Rect.HasPoint(mouse) || IsGamepadFocused(card.Rect);
-            Rect2 rect = hover ? card.Rect.Grow(7.0f) : card.Rect;
+            Rect2 rect = card.Rect;
             Color border = Alpha(card.Accent, hover ? 0.86f : 0.46f);
             DrawGlow(rect.Position + rect.Size * 0.5f, card.Accent, hover ? 178.0f : 116.0f, hover ? 0.075f : 0.034f, 5);
             DrawPanel(rect, Alpha(Ink, hover ? 0.92f : 0.78f), border);
+            DrawHoverFrame(rect, card.Accent, hover, 0.92f);
 
             Rect2 header = new(rect.Position, new Vector2(rect.Size.X, 104.0f));
             DrawRect(header, Alpha(card.Accent, hover ? 0.13f : 0.085f), true);
@@ -12773,12 +12970,38 @@ public partial class MainGame : Node2D
         DrawLine(rect.Position, rect.Position + new Vector2(rect.Size.X, 0.0f), Alpha(Paper, 0.08f), UiHairline, true);
     }
 
+    private void DrawHoverFrame(Rect2 rect, Color accent, bool hover, float strength = 1.0f)
+    {
+        if (!hover)
+        {
+            return;
+        }
+
+        float a = Mathf.Clamp(strength, 0.0f, 1.0f);
+        Color line = Alpha(accent.Lerp(Paper, 0.16f), 0.48f + 0.32f * a);
+        Color soft = Alpha(accent, 0.12f + 0.12f * a);
+        Rect2 inner = rect.Grow(-4.0f);
+        float corner = Mathf.Min(28.0f, Mathf.Min(rect.Size.X, rect.Size.Y) * 0.28f);
+
+        DrawRect(rect, soft, false, UiStroke, true);
+        DrawRect(inner, Alpha(Paper, 0.08f + 0.08f * a), false, UiHairline, true);
+        DrawLine(rect.Position, rect.Position + new Vector2(corner, 0.0f), line, UiStroke, true);
+        DrawLine(rect.Position, rect.Position + new Vector2(0.0f, corner), line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(rect.Size.X - corner, 0.0f), rect.Position + new Vector2(rect.Size.X, 0.0f), line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(rect.Size.X, 0.0f), rect.Position + new Vector2(rect.Size.X, corner), line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(0.0f, rect.Size.Y), rect.Position + new Vector2(corner, rect.Size.Y), line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(0.0f, rect.Size.Y - corner), rect.Position + new Vector2(0.0f, rect.Size.Y), line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(rect.Size.X - corner, rect.Size.Y), rect.End, line, UiStroke, true);
+        DrawLine(rect.Position + new Vector2(rect.Size.X, rect.Size.Y - corner), rect.End, line, UiStroke, true);
+    }
+
     private void DrawSettingsValueRow(Rect2 rect, string label, string value, Color accent, float fill01)
     {
         bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
-        Rect2 drawRect = hover ? rect.Grow(5.0f) : rect;
+        Rect2 drawRect = rect;
         DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 120.0f : 72.0f, hover ? 0.056f : 0.028f, 4);
         DrawPanel(drawRect, Alpha(Ink, hover ? 0.72f : 0.58f), Alpha(accent, hover ? 0.78f : 0.38f));
+        DrawHoverFrame(drawRect, accent, hover, 0.72f);
         DrawText(label.ToUpperInvariant(), drawRect.Position + new Vector2(24.0f, 32.0f), 17, Alpha(Paper, hover ? 0.9f : 0.68f), HorizontalAlignment.Left, drawRect.Size.X - 280.0f, true, 2);
         DrawText("<", drawRect.Position + new Vector2(drawRect.Size.X - 204.0f, 32.0f), 18, Alpha(accent, hover ? 0.9f : 0.5f), HorizontalAlignment.Center, 34.0f, true, 1);
         DrawText(value, drawRect.Position + new Vector2(drawRect.Size.X - 170.0f, 32.0f), 17, Alpha(Paper, hover ? 0.92f : 0.68f), HorizontalAlignment.Center, 126.0f, true, 2);
@@ -12793,9 +13016,10 @@ public partial class MainGame : Node2D
     private void DrawMenuButton(Rect2 rect, string label, Color accent, bool primary)
     {
         bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
-        Rect2 drawRect = hover ? rect.Grow(primary ? 8.0f : 5.0f) : rect;
+        Rect2 drawRect = rect;
         DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, primary ? 150.0f : 90.0f, hover ? 0.08f : 0.045f, 4);
         DrawPanel(drawRect, Alpha(Ink, primary ? 0.78f : 0.62f), Alpha(accent, hover ? 0.82f : 0.42f));
+        DrawHoverFrame(drawRect, accent, hover, primary ? 0.9f : 0.72f);
         DrawText(label, drawRect.Position + new Vector2(0.0f, primary ? 43.0f : 34.0f), primary ? 28 : 21, Paper, HorizontalAlignment.Center, drawRect.Size.X, true, 3);
     }
 
@@ -13187,10 +13411,9 @@ public partial class MainGame : Node2D
 
     private void DrawWrapped(string text, Vector2 pos, int size, Color color, float width, float lineHeight)
     {
-        float maxUnits = Mathf.Max(8.0f, width / Mathf.Max(1.0f, size * 0.52f));
         int lineIndex = 0;
         string line = string.Empty;
-        float lineUnits = 0.0f;
+        float lineWidth = 0.0f;
 
         foreach (char c in text)
         {
@@ -13198,24 +13421,24 @@ public partial class MainGame : Node2D
             {
                 DrawText(line, pos + new Vector2(0.0f, lineIndex * lineHeight), size, color, HorizontalAlignment.Left, width, true, 2);
                 line = string.Empty;
-                lineUnits = 0.0f;
+                lineWidth = 0.0f;
                 lineIndex++;
                 continue;
             }
 
-            float units = EstimateGlyphUnits(c);
+            float glyphWidth = MeasureTextPixelWidth(c.ToString(), size);
             bool isSpace = c == ' ';
-            if (line.Length > 0 && lineUnits + units > maxUnits)
+            if (line.Length > 0 && lineWidth + glyphWidth > width)
             {
                 DrawText(line.TrimEnd(), pos + new Vector2(0.0f, lineIndex * lineHeight), size, color, HorizontalAlignment.Left, width, true, 2);
                 line = isSpace ? string.Empty : c.ToString();
-                lineUnits = isSpace ? 0.0f : units;
+                lineWidth = isSpace ? 0.0f : glyphWidth;
                 lineIndex++;
             }
             else
             {
                 line += c;
-                lineUnits += units;
+                lineWidth += glyphWidth;
             }
         }
 
@@ -13227,9 +13450,8 @@ public partial class MainGame : Node2D
 
     private void DrawHighlightedWrapped(string text, Vector2 pos, int size, Color color, Color accent, float width, float lineHeight)
     {
-        float maxUnits = Mathf.Max(8.0f, width / Mathf.Max(1.0f, size * 0.52f));
         int lineIndex = 0;
-        float lineUnits = 0.0f;
+        float lineWidth = 0.0f;
         List<RichTextSegment> line = new();
 
         foreach (RichTextSegment segment in SplitHighlightedSegments(text))
@@ -13240,18 +13462,18 @@ public partial class MainGame : Node2D
                 {
                     DrawRichLine(line, pos + new Vector2(0.0f, lineIndex * lineHeight), size, color, accent, width);
                     line.Clear();
-                    lineUnits = 0.0f;
+                    lineWidth = 0.0f;
                     lineIndex++;
                     continue;
                 }
 
-                float units = EstimateGlyphUnits(c);
+                float glyphWidth = MeasureTextPixelWidth(c.ToString(), size);
                 bool isSpace = c == ' ';
-                if (line.Count > 0 && lineUnits + units > maxUnits)
+                if (line.Count > 0 && lineWidth + glyphWidth > width)
                 {
                     DrawRichLine(line, pos + new Vector2(0.0f, lineIndex * lineHeight), size, color, accent, width);
                     line.Clear();
-                    lineUnits = 0.0f;
+                    lineWidth = 0.0f;
                     lineIndex++;
                     if (isSpace)
                     {
@@ -13262,7 +13484,7 @@ public partial class MainGame : Node2D
                 if (!isSpace || line.Count > 0)
                 {
                     AppendRichSegment(line, c.ToString(), segment.Highlight);
-                    lineUnits += units;
+                    lineWidth += glyphWidth;
                 }
             }
         }
@@ -13278,9 +13500,11 @@ public partial class MainGame : Node2D
         List<RichTextSegment> cleanLine = TrimRichLineEnd(line);
         float cursor = pos.X;
         float right = pos.X + width;
-        foreach (RichTextSegment segment in cleanLine)
+        const float SegmentSafetyGap = 2.0f;
+        for (int i = 0; i < cleanLine.Count; i++)
         {
-            float segmentWidth = EstimateTextPixelWidth(segment.Text, size);
+            RichTextSegment segment = cleanLine[i];
+            float segmentWidth = MeasureTextPixelWidth(segment.Text, size);
             Color textColor = segment.Highlight ? accent.Lerp(Paper, 0.18f) : color;
             if (segment.Highlight)
             {
@@ -13288,8 +13512,20 @@ public partial class MainGame : Node2D
             }
 
             DrawText(segment.Text, new Vector2(cursor, pos.Y), size, textColor, HorizontalAlignment.Left, Mathf.Max(segmentWidth + 24.0f, right - cursor), true, 1);
-            cursor += segmentWidth;
+            cursor += segmentWidth + (i < cleanLine.Count - 1 ? SegmentSafetyGap : 0.0f);
         }
+    }
+
+    private float MeasureTextPixelWidth(string text, int size)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return 0.0f;
+        }
+
+        Font font = _uiFont ?? ThemeDB.FallbackFont;
+        float measured = font.GetStringSize(text, HorizontalAlignment.Left, -1.0f, size).X;
+        return Mathf.Max(measured, EstimateTextPixelWidth(text, size));
     }
 
     private static List<RichTextSegment> TrimRichLineEnd(List<RichTextSegment> line)
@@ -13714,6 +13950,11 @@ public partial class MainGame : Node2D
     private static Rect2 GmUnlockButtonRect()
     {
         return new Rect2(new Vector2(1810.0f, 46.0f), new Vector2(58.0f, 28.0f));
+    }
+
+    private static bool IsGmUnlockAvailable()
+    {
+        return OS.HasFeature("editor") || OS.HasFeature("debug");
     }
 
     private static Rect2 LeaderboardPanelRect()

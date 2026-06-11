@@ -4,8 +4,18 @@ $appId = "3804330"
 $defaultDepotId = "3804331"
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $repoRoot = Resolve-Path (Join-Path $projectRoot "..")
-$contentRoot = Join-Path $projectRoot "Builds\SteamReview_LoopFighter_Windows_x64_20260609_0034"
+$contentRoot = Get-ChildItem -LiteralPath (Join-Path $projectRoot "Builds") -Directory -Filter "SteamReview_LoopFighter_Windows_x64_*" |
+    Where-Object {
+        (Test-Path (Join-Path $_.FullName "LoopFighter.exe")) -and
+        (Test-Path (Join-Path $_.FullName "data_MiniGame_windows_x86_64"))
+    } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1 -ExpandProperty FullName
 $steamCmd = Join-Path $repoRoot "Tooling\SteamCMD\steamcmd.exe"
+
+if ([string]::IsNullOrWhiteSpace($contentRoot)) {
+    throw "No Steam review build folder was found under: $(Join-Path $projectRoot "Builds")"
+}
 
 if (!(Test-Path $steamCmd)) {
     throw "steamcmd.exe was not found at: $steamCmd"

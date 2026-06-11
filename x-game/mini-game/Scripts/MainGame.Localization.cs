@@ -366,8 +366,12 @@ meta.dust|Star Dust|星尘|Звездная пыль|Pó Estelar|Sternenstaub|Y�
 meta.wallet|STAR DUST {0}|星尘 {0}|ПЫЛЬ {0}|PÓ {0}|STAUB {0}|TOZ {0}|POUSSIÈRE {0}|星屑 {0}
 meta.best|BEST WAVE {0}/40   RUNS {2}|最高波次 {0}/40   出航 {2}|ЛУЧШАЯ {0}/40   ВЫЛЕТЫ {2}|MELHOR {0}/40   RUNS {2}|BESTE {0}/40   RUNS {2}|EN İYİ {0}/40   SEFER {2}|MEILLEURE {0}/40   RUNS {2}|最高 {0}/40   遠征 {2}
 leader.title|FASTEST CLEARS|最快通关|ЛУЧШЕЕ ВРЕМЯ|MELHORES TEMPOS|BESTZEITEN|EN İYİ SÜRELER|MEILLEURS TEMPS|最速クリア
+leader.global_title|GLOBAL FASTEST CLEARS|全球最快通关|МИРОВОЕ ВРЕМЯ|TEMPOS GLOBAIS|GLOBALE BESTZEITEN|KÜRESEL EN İYİ SÜRELER|MEILLEURS TEMPS MONDIAUX|世界最速クリア
 leader.rank|#{0}|第 {0} 名|№{0}|#{0}|#{0}|#{0}|N° {0}|#{0}
 leader.no_record|--:--|--:--|--:--|--:--|--:--|--:--|--:--|--:--
+leader.loading|Loading global records|正在读取全球榜|Загрузка мирового рейтинга|Carregando ranking global|Globale Zeiten laden|Küresel liste yükleniyor|Chargement du classement mondial|世界ランキング読込中
+leader.offline|Steam leaderboard unavailable|Steam 排行榜不可用|Рейтинг Steam недоступен|Ranking Steam indisponível|Steam-Rangliste nicht verfügbar|Steam sıralaması yok|Classement Steam indisponible|Steamランキング利用不可
+leader.empty|No global clears yet|暂无全球通关记录|Пока нет мировых зачисток|Sem clears globais ainda|Noch keine globalen Clears|Henüz küresel bitiriş yok|Aucun clear mondial|世界記録なし
 goal.title|NEXT TARGET|下个目标|СЛЕДУЮЩАЯ ЦЕЛЬ|PRÓXIMA META|NÄCHSTES ZIEL|SONRAKİ HEDEF|PROCHAIN BUT|次の目標
 goal.unlock_pilot|Play {0} once to unlock {1}|用 {0} 完成一局，解锁 {1}|Сыграй за {0} один вылет и открой {1}|Jogue uma vez com {0} para liberar {1}|Spiele einmal mit {0}, um {1} freizuschalten|{1} için {0} ile bir sefer oyna|Joue une fois avec {0} pour débloquer {1}|{0}で1回出撃して{1}を解放
 goal.clear_40|Clear wave 40 and finish a run|通关 40 波，完成远征|Пройди 40 волн и заверши вылет|Passe a onda 40 e conclua a run|Schaffe Welle 40 und beende den Run|40. dalgayı geç ve seferi bitir|Passe la vague 40 et termine le run|40波を突破して遠征完了
@@ -387,7 +391,7 @@ settings.guide|GAME GUIDE|游戏说明|СПРАВОЧНИК|GUIA DO JOGO|SPIELGU
 settings.main_menu|MAIN MENU|回到主界面|ГЛАВНОЕ МЕНЮ|MENU PRINCIPAL|HAUPTMENÜ|ANA MENÜ|MENU PRINCIPAL|メインメニュー
 settings.delete_save|DELETE SAVE|删除存档|УДАЛИТЬ СЕЙВ|APAGAR SAVE|SPIELSTAND LÖSCHEN|KAYDI SİL|SUPPRIMER SAUVEGARDE|セーブ削除
 settings.delete_confirm|CLICK AGAIN TO DELETE|再次点击确认删除|ЕЩЕ РАЗ ДЛЯ УДАЛЕНИЯ|CLIQUE DE NOVO|NOCHMAL KLICKEN|SİLMEK İÇİN TEKRAR|RECLIQUER POUR SUPPRIMER|もう一度で削除
-settings.delete_warning|Clears Star Dust, permanent upgrades, unlocks, and records.|清空星尘、永久升级、角色解锁与记录。|Сотрет пыль, узлы, пилотов и рекорды.|Apaga pó, upgrades, desbloqueios e recordes.|Löscht Staub, Upgrades, Freischaltungen und Rekorde.|Toz, gelişim, kilit ve kayıtları siler.|Efface poussière, améliorations, déblocages et records.|星屑、強化、解放、記録を消去。
+settings.delete_warning|Clears progress, unlocks, upgrades, and records. Keeps local settings.|清空进度、解锁、永久升级和记录。保留本机设置。|Стирает прогресс, пилотов, улучшения и рекорды. Настройки останутся.|Apaga progresso, pilotos, upgrades e recordes. Mantém ajustes locais.|Löscht Fortschritt, Piloten, Upgrades und Rekorde. Lokale Einstellungen bleiben.|İlerleme, pilotlar, gelişim ve kayıtları siler. Yerel ayarlar kalır.|Efface progression, pilotes, améliorations et records. Garde les réglages locaux.|進行、機体、強化、記録を消去。ローカル設定は残る。
 settings.delete_notice|SAVE DATA CLEARED|存档已删除|СЕЙВ УДАЛЕН|SAVE APAGADO|SPIELSTAND GELÖSCHT|KAYIT SİLİNDİ|SAUVEGARDE EFFACÉE|セーブ削除済み
 settings.resume|RESUME|继续游戏|ПРОДОЛЖИТЬ|CONTINUAR|FORTSETZEN|DEVAM|REPRENDRE|再開
 settings.back|BACK|返回|НАЗАД|VOLTAR|ZURÜCK|GERİ|RETOUR|戻る
