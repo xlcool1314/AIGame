@@ -480,7 +480,7 @@ public partial class MainGame : Node2D
         ["language.changed"] = new("LANGUAGE: ENGLISH", "当前语言：中文"),
         ["language.hint"] = new("LANGUAGE: ENGLISH  [L]", "中文  [L切换]"),
         ["menu.start"] = new("START GAME", "开始游戏"),
-        ["menu.meta"] = new("PERMANENT UPGRADES", "永久升级"),
+        ["menu.meta"] = new("FIGHTER BAY", "战机升级室"),
         ["menu.language"] = new("SWITCH LANGUAGE", "切换语言"),
         ["menu.settings"] = new("SETTINGS", "设置"),
         ["gm.unlock.label"] = new("GM", "GM"),
@@ -490,7 +490,7 @@ public partial class MainGame : Node2D
         ["pilot.selector.ultimate"] = new("Ultimate", "大招"),
         ["pilot.selector.selected"] = new("Selected", "已选择"),
         ["pilot.selector.locked"] = new("Locked", "未解锁"),
-        ["menu.tip"] = new("Click START, press Enter, or press A. Spend Star Dust in Permanent Upgrades between runs.", "点击“开始远征”、按 Enter 或按 A。每局结束后可用星尘购买永久升级。"),
+        ["menu.tip"] = new("Click START, press Enter, or press A. Spend Star Dust in the Fighter Bay between runs.", "点击“开始远征”、按 Enter 或按 A。每局结束后可在战机升级室改装。"),
         ["boss.choir_core"] = new("CHOIR CORE", "合唱核心"),
         ["boss.sector"] = new("{0} CORE", "{0} Boss"),
         ["wave.engage"] = new("ENGAGE", "接战"),
@@ -618,7 +618,7 @@ public partial class MainGame : Node2D
         ["loading.title"] = new("LOADING", "载入中"),
         ["loading.start"] = new("LAUNCHING", "准备出航"),
         ["loading.menu"] = new("RETURNING", "返回主界面"),
-        ["loading.meta"] = new("OPENING VAULT", "打开永久升级"),
+        ["loading.meta"] = new("OPENING FIGHTER BAY", "进入战机升级室"),
         ["loading.victory"] = new("RUN COMPLETE", "战斗结算"),
         ["loading.defeat"] = new("SIGNAL RECOVERING", "信号回收"),
         ["title.won_once"] = new("Choir Core fractured once. It remembers.", "合唱核心曾被击碎。它记得你。"),
@@ -648,25 +648,31 @@ public partial class MainGame : Node2D
         ["capstone.sol.forge"] = new("MAX RANK: max energy increases and energy refills.", "满级：能量上限提高，并回复大量能量。"),
         ["capstone.sol.flare"] = new("MAX RANK: skill pulses jump through nearby enemies.", "满级：技能脉冲会在附近敌人之间连锁。"),
         ["capstone.sol.mantle"] = new("MAX RANK: skill gives a short shield.", "满级：使用技能会获得短暂护盾。"),
-        ["end.victory.title"] = new("CORE FRACTURED", "核心已碎裂"),
-        ["end.defeat.title"] = new("SIGNAL LOST", "信号丢失"),
-        ["end.wave"] = new("REACHED WAVE {0}/{1}", "抵达波次 {0}/{1}"),
-        ["end.victory.body"] = new("The starfield exhales. Your pattern survives.", "你击败了全部 Boss，完成了这次航行。"),
-        ["end.defeat.body"] = new("The Choir rewinds the arena. Tune again.", "这次失败了。调整升级选择，再试一次。"),
-        ["end.restart"] = new("ENTER / CLICK / A TO RESTART", "ENTER / 点击 / A 重新开始"),
-        ["end.reward"] = new("STAR DUST +{0}   REACHED WAVE {1}/40", "获得星尘 +{0}   到达波次 {1}/40"),
-        ["end.objective_bonus"] = new("GOAL BONUS +{0}", "目标奖励 +{0}"),
-        ["end.score_bonus"] = new("CACHE DUST +{0}", "缓存星尘 +{0}"),
-        ["end.meta_hint"] = new("B/Esc returns to title. Y opens Permanent Upgrades.", "B/Esc 返回主界面。Y 打开永久升级。"),
+        ["end.victory.title"] = new("EXPEDITION COMPLETE", "远征完成"),
+        ["end.defeat.title"] = new("RUN ENDED", "远征结束"),
+        ["end.wave"] = new("Wave {0}/{1}", "波次 {0}/{1}"),
+        ["end.victory.body"] = new("All bosses defeated. Clear time recorded.", "已击败全部 Boss，通关用时已记录。"),
+        ["end.defeat.body"] = new("Keep the Star Dust, upgrade, and launch again.", "保留本局星尘，升级后再出发。"),
+        ["end.summary"] = new("RUN SUMMARY", "本局结算"),
+        ["end.wave_label"] = new("Wave", "波次"),
+        ["end.dust_label"] = new("Star Dust", "星尘"),
+        ["end.run_bonus_label"] = new("Run Bonus", "流程奖励"),
+        ["end.goal_bonus_label"] = new("Goal Bonus", "目标奖励"),
+        ["end.time_label"] = new("Clear Time", "通关用时"),
+        ["end.restart"] = new("RESTART", "重新开始"),
+        ["end.reward"] = new("STAR DUST +{0}", "获得星尘 +{0}"),
+        ["end.objective_bonus"] = new("Goal Bonus +{0}", "目标奖励 +{0}"),
+        ["end.score_bonus"] = new("Run Bonus +{0}", "流程奖励 +{0}"),
+        ["end.meta_hint"] = new("Enter/A restart   B/Esc main menu   Y Fighter Bay", "Enter/A 重新开始   B/Esc 主界面   Y 战机升级室"),
         ["objective.complete"] = new("GOAL DONE +{0} DUST", "目标完成 +{0} 星尘"),
         ["objective.clean_wave"] = new("NO DAMAGE WAVE +ENERGY", "无伤通过本波 +能量"),
-        ["meta.title"] = new("STAR VAULT", "星尘工坊"),
-        ["meta.subtitle"] = new("Permanent upgrades are a long route across many expeditions.", "永久升级需要多次远征逐步推进。"),
+        ["meta.title"] = new("FIGHTER UPGRADE BAY", "战机升级室"),
+        ["meta.subtitle"] = new("Install long-term fighter upgrades.", "消耗星尘，改装战机。"),
         ["meta.dust"] = new("Star Dust", "星尘"),
         ["meta.wallet"] = new("STAR DUST {0}", "星尘 {0}"),
         ["meta.best"] = new("BEST WAVE {0}/40   RUNS {2}", "最高波次 {0}/40   出航 {2}"),
-        ["meta.open_hint"] = new("Press U or click Permanent Upgrades.", "按 U 或点击“永久升级”。"),
-        ["meta.buy_hint"] = new("Click or use LS/D-Pad + A to buy. Keys 1-9 buy nodes. B/Esc returns.", "点击或用左摇杆/方向键 + A 购买。1-9 可快捷购买。B/Esc 返回。"),
+        ["meta.open_hint"] = new("Open the Fighter Bay between runs.", "每局结束后可进入战机升级室。"),
+        ["meta.buy_hint"] = new("Click a module or press A to install.", "点击模块或按 A 安装。"),
         ["meta.back"] = new("BACK", "返回"),
         ["meta.cost"] = new("COST {0}", "花费 {0}"),
         ["meta.max"] = new("MAX", "已满"),
@@ -679,7 +685,7 @@ public partial class MainGame : Node2D
         ["settings.main_menu"] = new("MAIN MENU", "回到主界面"),
         ["settings.delete_save"] = new("DELETE SAVE", "删除存档"),
         ["settings.delete_confirm"] = new("CLICK AGAIN TO DELETE", "再次点击确认删除"),
-        ["settings.delete_warning"] = new("Clears progress, unlocks, upgrades, and records. Keeps local settings.", "清空进度、解锁、永久升级和纪录。保留本机设置。"),
+        ["settings.delete_warning"] = new("Clears progress, unlocks, Fighter Bay upgrades, and records. Keeps local settings.", "清空进度、解锁、战机升级室改装和纪录。保留本机设置。"),
         ["settings.delete_notice"] = new("SAVE DATA CLEARED", "存档已删除"),
         ["settings.resume"] = new("RESUME", "继续游戏"),
         ["settings.back"] = new("BACK", "返回"),
@@ -5025,30 +5031,13 @@ public partial class MainGame : Node2D
 
         for (int i = 0; i < MetaUpgrades.Length; i++)
         {
-            if (MetaHotkeyPressed(i) || (click && MetaUpgradeRect(i).HasPoint(mouse)))
+            if (click && MetaUpgradeRect(i).HasPoint(mouse))
             {
                 _gamepadMetaIndex = i;
                 TryBuyMetaUpgrade(MetaUpgrades[i]);
                 return;
             }
         }
-    }
-
-    private bool MetaHotkeyPressed(int index)
-    {
-        return index switch
-        {
-            0 => KeyDown(Key.Key1) && !_lastOne,
-            1 => KeyDown(Key.Key2) && !_lastTwo,
-            2 => KeyDown(Key.Key3) && !_lastThree,
-            3 => KeyDown(Key.Key4) && !_lastFour,
-            4 => KeyDown(Key.Key5) && !_lastFive,
-            5 => KeyDown(Key.Key6) && !_lastSix,
-            6 => KeyDown(Key.Key7) && !_lastSeven,
-            7 => KeyDown(Key.Key8) && !_lastEight,
-            8 => KeyDown(Key.Key9) && !_lastNine,
-            _ => false,
-        };
     }
 
     private void TryBuyMetaUpgrade(MetaUpgradeDef def)
@@ -12124,18 +12113,19 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
-        if (MetaHeld() && !_lastMeta)
+        bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
+        Vector2 mouse = GetGlobalMousePosition();
+        if ((MetaHeld() && !_lastMeta) || (click && EndMetaButtonRect().HasPoint(mouse)))
         {
             BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
             return;
         }
 
-        bool restart = ConfirmHeld() || StartHeld() || Input.IsMouseButtonPressed(MouseButton.Left);
-        if (restart && !_lastRestart)
+        if ((ConfirmHeld() && !_lastConfirm) || (StartHeld() && !_lastStart) || (click && EndRestartButtonRect().HasPoint(mouse)))
         {
             BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
         }
-        if (CancelHeld() && !_lastCancel)
+        if ((CancelHeld() && !_lastCancel) || (click && EndTitleButtonRect().HasPoint(mouse)))
         {
             BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
         }
@@ -13799,7 +13789,7 @@ public partial class MainGame : Node2D
         float meter = _polarityCooldown > 0.0f ? PolaritySwitchReady01() : skillMeter;
         DrawRect(new Rect2(polarityBar.Position, new Vector2(polarityBar.Size.X * meter, polarityBar.Size.Y)), Alpha(polarity, _polarityCooldown <= 0.0f ? 0.9f : 0.58f), true);
 
-        DrawBar(new Rect2(new Vector2(342.0f, 46.0f), new Vector2(280.0f, 12.0f)), _hudHullValue, _hudHullTrail, AlertRed, T("hud.hull"), $"{Mathf.CeilToInt(_playerHp)}/{Mathf.CeilToInt(_playerMaxHp)}");
+        DrawBar(new Rect2(new Vector2(342.0f, 46.0f), new Vector2(280.0f, 12.0f)), _hudHullValue, _hudHullTrail, AlertRed, T("hud.hull"), $"{Mathf.CeilToInt(_playerHp)}/{Mathf.CeilToInt(_playerMaxHp)}", true);
         DrawBar(new Rect2(new Vector2(648.0f, 46.0f), new Vector2(280.0f, 12.0f)), _hudEnergyValue, _hudEnergyTrail, polarity, T("hud.energy"), $"{Mathf.FloorToInt(_energy)}/{Mathf.FloorToInt(_maxEnergy)}");
         float dashReady = Mathf.Clamp(1.0f - Mathf.Max(_dashCooldown, 0.0f) / 0.86f, 0.0f, 1.0f);
         DrawBar(new Rect2(new Vector2(954.0f, 46.0f), new Vector2(200.0f, 12.0f)), _hudDashValue, _hudDashTrail, XpGreen, T("hud.dash"), $"{Mathf.RoundToInt(dashReady * 100.0f)}%");
@@ -14196,33 +14186,34 @@ public partial class MainGame : Node2D
             return;
         }
 
-        float rowHeight = 57.0f;
-        Rect2 panel = new(new Vector2(1360.0f, 92.0f), new Vector2(464.0f, 56.0f + _runObjectives.Count * rowHeight));
+        float panelWidth = 404.0f;
+        float rowHeight = 39.0f;
+        Rect2 panel = new(new Vector2(ScreenWidth - panelWidth - 72.0f, 88.0f), new Vector2(panelWidth, 38.0f + _runObjectives.Count * rowHeight));
         Color panelAccent = DifficultyAccent(_selectedDifficulty).Lerp(CurrentSector().Accent, 0.18f);
-        DrawPanel(panel, Alpha(Ink, 0.42f), Alpha(panelAccent, 0.24f));
-        DrawText(T("hud.objectives").ToUpperInvariant(), panel.Position + new Vector2(16.0f, 23.0f), 12, Alpha(Paper, 0.62f), HorizontalAlignment.Left, 214.0f, false, 0);
+        DrawPanel(panel, Alpha(Ink, 0.38f), Alpha(panelAccent, 0.22f));
+        DrawText(T("hud.objectives").ToUpperInvariant(), panel.Position + new Vector2(14.0f, 21.0f), 11, Alpha(Paper, 0.58f), HorizontalAlignment.Left, 190.0f, false, 0);
         int visibleBonusDust = _runObjectiveBonusDust + _runScoreBonusDust;
         string bonusText = Tf("objective.bonus", visibleBonusDust);
-        DrawText(bonusText, panel.Position + new Vector2(panel.Size.X - 142.0f, 23.0f), 12, Alpha(Gold, 0.72f), HorizontalAlignment.Right, 124.0f, false, 0);
-        DrawLine(panel.Position + new Vector2(14.0f, 33.0f), panel.Position + new Vector2(panel.Size.X - 14.0f, 33.0f), Alpha(panelAccent, 0.18f), UiHairline, true);
+        DrawText(bonusText, panel.Position + new Vector2(panel.Size.X - 120.0f, 21.0f), 11, Alpha(Gold, 0.7f), HorizontalAlignment.Right, 104.0f, false, 0);
+        DrawLine(panel.Position + new Vector2(12.0f, 29.0f), panel.Position + new Vector2(panel.Size.X - 12.0f, 29.0f), Alpha(panelAccent, 0.16f), UiHairline, true);
 
         for (int i = 0; i < _runObjectives.Count; i++)
         {
             RunObjective objective = _runObjectives[i];
             float progress = objective.Target <= 0 ? 1.0f : Mathf.Clamp(objective.Progress / (float)objective.Target, 0.0f, 1.0f);
             Color accent = ObjectiveAccent(objective);
-            Rect2 row = new(panel.Position + new Vector2(12.0f, 42.0f + i * rowHeight), new Vector2(panel.Size.X - 24.0f, 48.0f));
-            Rect2 marker = new(row.Position + new Vector2(15.0f, 17.0f), new Vector2(10.0f, 10.0f));
-            Rect2 bar = new(row.Position + new Vector2(34.0f, row.Size.Y - 7.0f), new Vector2(row.Size.X - 50.0f, 3.0f));
-            DrawRect(row, Alpha(Graphite, objective.Completed ? 0.34f : 0.2f), true);
-            DrawLine(row.Position + new Vector2(0.0f, 7.0f), row.Position + new Vector2(0.0f, row.Size.Y - 7.0f), Alpha(accent, objective.Completed ? 0.82f : 0.5f), UiHairline, true);
-            DrawRect(marker, Alpha(accent, objective.Completed ? 0.28f : 0.12f), true);
-            DrawRect(marker, Alpha(accent, objective.Completed ? 0.72f : 0.42f), false, UiHairline, true);
-            DrawText(ObjectiveTitle(objective), row.Position + new Vector2(34.0f, 18.0f), 12, Alpha(accent, objective.Completed ? 0.88f : 0.78f), HorizontalAlignment.Left, row.Size.X - 144.0f, true, 1);
-            DrawText(ObjectiveBody(objective), row.Position + new Vector2(34.0f, 36.0f), 11, objective.Completed ? Alpha(Jade, 0.72f) : Alpha(Paper, 0.55f), HorizontalAlignment.Left, row.Size.X - 142.0f, false, 0);
-            DrawText(ObjectiveProgressText(objective), row.Position + new Vector2(row.Size.X - 102.0f, 20.0f), 13, Alpha(accent, objective.Completed ? 0.9f : 0.8f), HorizontalAlignment.Right, 90.0f, false, 0);
-            DrawRect(bar, Alpha(Paper, 0.08f), true);
-            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, objective.Completed ? 0.86f : 0.62f), true);
+            Rect2 row = new(panel.Position + new Vector2(10.0f, 34.0f + i * rowHeight), new Vector2(panel.Size.X - 20.0f, 34.0f));
+            Rect2 marker = new(row.Position + new Vector2(12.0f, 12.0f), new Vector2(8.0f, 8.0f));
+            Rect2 bar = new(row.Position + new Vector2(28.0f, row.Size.Y - 3.0f), new Vector2(row.Size.X - 40.0f, 2.0f));
+            DrawRect(row, Alpha(Graphite, objective.Completed ? 0.24f : 0.13f), true);
+            DrawLine(row.Position + new Vector2(0.0f, 5.0f), row.Position + new Vector2(0.0f, row.Size.Y - 5.0f), Alpha(accent, objective.Completed ? 0.72f : 0.45f), UiHairline, true);
+            DrawRect(marker, Alpha(accent, objective.Completed ? 0.24f : 0.1f), true);
+            DrawRect(marker, Alpha(accent, objective.Completed ? 0.66f : 0.38f), false, UiHairline, true);
+            DrawText(ObjectiveTitle(objective), row.Position + new Vector2(28.0f, 14.0f), 11, Alpha(accent, objective.Completed ? 0.86f : 0.76f), HorizontalAlignment.Left, row.Size.X - 122.0f, true, 1);
+            DrawText(ObjectiveBody(objective), row.Position + new Vector2(28.0f, 28.0f), 9, objective.Completed ? Alpha(Jade, 0.68f) : Alpha(Paper, 0.48f), HorizontalAlignment.Left, row.Size.X - 124.0f, false, 0);
+            DrawText(ObjectiveProgressText(objective), row.Position + new Vector2(row.Size.X - 86.0f, 18.0f), 12, Alpha(accent, objective.Completed ? 0.88f : 0.78f), HorizontalAlignment.Right, 78.0f, false, 0);
+            DrawRect(bar, Alpha(Paper, 0.06f), true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, objective.Completed ? 0.78f : 0.56f), true);
         }
     }
 
@@ -14704,12 +14695,18 @@ public partial class MainGame : Node2D
         DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, 0.46f), true);
         DrawGlow(ScreenCenter + new Vector2(0.0f, -40.0f), Gold, 520.0f, 0.055f, 8);
         DrawGlow(ScreenCenter + new Vector2(-380.0f, 160.0f), Cyan, 340.0f, 0.035f, 7);
-        DrawText(T("meta.title"), new Vector2(0.0f, 116.0f), 60, Gold, HorizontalAlignment.Center, ScreenWidth, true, 5);
-        DrawText(T("meta.subtitle"), new Vector2(0.0f, 170.0f), 22, Alpha(Paper, 0.72f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        DrawText(T("meta.title"), new Vector2(0.0f, 96.0f), 52, Gold, HorizontalAlignment.Center, ScreenWidth, true, 5);
 
-        DrawPanel(new Rect2(new Vector2(640.0f, 210.0f), new Vector2(640.0f, 50.0f)), Alpha(Ink, 0.72f), Alpha(Gold, 0.5f));
-        DrawText(Tf("meta.wallet", _starDust), new Vector2(640.0f, 243.0f), 23, Gold, HorizontalAlignment.Center, 640.0f, true, 2);
-        DrawText(Tf("meta.best", _bestWave, _bestScore, _runsCompleted), new Vector2(0.0f, 296.0f), 18, Alpha(Paper, 0.62f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+        Rect2 wallet = new(new Vector2(730.0f, 126.0f), new Vector2(460.0f, 54.0f));
+        DrawPanel(wallet, Alpha(Ink, 0.74f), Alpha(Gold, 0.42f));
+        DrawLine(wallet.Position + new Vector2(22.0f, wallet.Size.Y - 8.0f), wallet.Position + new Vector2(wallet.Size.X - 22.0f, wallet.Size.Y - 8.0f), Alpha(Gold, 0.3f), UiHairline, true);
+        DrawText(T("meta.dust").ToUpperInvariant(), wallet.Position + new Vector2(28.0f, 32.0f), 13, Alpha(Paper, 0.52f), HorizontalAlignment.Left, 160.0f, false, 0);
+        DrawText($"{_starDust}", wallet.Position + new Vector2(wallet.Size.X - 206.0f, 35.0f), 24, Gold, HorizontalAlignment.Right, 178.0f, true, 2);
+
+        Rect2 gridPanel = new(new Vector2(104.0f, 214.0f), new Vector2(1712.0f, 650.0f));
+        DrawPanel(gridPanel, Alpha(Ink, 0.24f), Alpha(GridLine, 0.18f));
+        DrawLine(gridPanel.Position + new Vector2(28.0f, 18.0f), gridPanel.Position + new Vector2(gridPanel.Size.X - 28.0f, 18.0f), Alpha(Paper, 0.06f), UiHairline, true);
+        DrawLine(gridPanel.Position + new Vector2(28.0f, gridPanel.Size.Y - 18.0f), gridPanel.Position + new Vector2(gridPanel.Size.X - 28.0f, gridPanel.Size.Y - 18.0f), Alpha(Paper, 0.06f), UiHairline, true);
 
         Vector2 mouse = GetGlobalMousePosition();
         for (int i = 0; i < MetaUpgrades.Length; i++)
@@ -14722,28 +14719,43 @@ public partial class MainGame : Node2D
             bool hover = rect.HasPoint(mouse) || IsGamepadFocused(rect);
             Rect2 drawRect = rect;
             Color accent = def.Accent;
-            DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 128.0f : 82.0f, hover ? 0.065f : 0.034f, 4);
-            DrawPanel(drawRect, Alpha(Ink, hover ? 0.88f : 0.76f), Alpha(accent, hover ? 0.86f : 0.42f));
-            DrawHoverFrame(drawRect, accent, hover, 0.8f);
-            DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 28.0f, 28.0f), 13.0f, Alpha(accent, 0.58f));
-            if (i < 9)
-            {
-                DrawText($"{i + 1}", drawRect.Position + new Vector2(drawRect.Size.X - 39.0f, 33.0f), 13, Ink, HorizontalAlignment.Center, 22.0f, false, 0);
-            }
-            DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(18.0f, 34.0f), 18, Paper, HorizontalAlignment.Left, drawRect.Size.X - 64.0f, true, 2);
-            DrawText(Tf("meta.rank", rank, def.MaxRank), drawRect.Position + new Vector2(18.0f, 58.0f), 13, Alpha(accent, 0.95f), HorizontalAlignment.Left, 160.0f, true, 1);
-            DrawWrapped(T(def.BodyKey), drawRect.Position + new Vector2(18.0f, 75.0f), 13, Alpha(Paper, 0.72f), drawRect.Size.X - 36.0f, 16.0f);
+            bool affordable = !maxed && _starDust >= cost;
+            DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 112.0f : 66.0f, hover ? 0.045f : 0.018f, 4);
+            DrawPanel(drawRect, Alpha(Ink, hover ? 0.78f : 0.58f), Alpha(accent, hover ? 0.72f : 0.28f));
+            DrawHoverFrame(drawRect, accent, hover, 0.68f);
 
-            Rect2 bar = new(drawRect.Position + new Vector2(20.0f, drawRect.Size.Y - 28.0f), new Vector2(drawRect.Size.X - 40.0f, 7.0f));
+            Rect2 header = new(drawRect.Position, new Vector2(drawRect.Size.X, 42.0f));
+            DrawRect(header, Alpha(accent, hover ? 0.11f : 0.065f), true);
+            DrawLine(header.Position + new Vector2(16.0f, header.Size.Y), header.Position + new Vector2(header.Size.X - 16.0f, header.Size.Y), Alpha(accent, hover ? 0.34f : 0.18f), UiHairline, true);
+            DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 24.0f, 22.0f), 5.0f, Alpha(accent, hover ? 0.86f : 0.56f));
+
+            DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(18.0f, 29.0f), 17, Paper, HorizontalAlignment.Left, drawRect.Size.X - 58.0f, true, 2);
+            DrawText(Tf("meta.rank", rank, def.MaxRank), drawRect.Position + new Vector2(18.0f, 60.0f), 12, Alpha(accent, 0.9f), HorizontalAlignment.Left, 92.0f, true, 1);
+
+            Rect2 bar = new(drawRect.Position + new Vector2(112.0f, 50.0f), new Vector2(drawRect.Size.X - 132.0f, 9.0f));
             float progress = def.MaxRank <= 0 ? 1.0f : (float)rank / def.MaxRank;
-            DrawRect(bar.Grow(2.0f), Alpha(Paper, 0.08f), true);
-            DrawRect(bar, Alpha(accent, 0.14f), true);
-            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.78f), true);
-            DrawRect(bar, Alpha(Paper, 0.28f), false, UiHairline, true);
-            DrawText(maxed ? T("meta.max") : Tf("meta.cost", cost), drawRect.Position + new Vector2(20.0f, drawRect.Size.Y - 7.0f), 15, maxed ? Jade : (_starDust >= cost ? Gold : Rose), HorizontalAlignment.Left, drawRect.Size.X - 40.0f, true, 1);
+            DrawRect(bar.Grow(2.0f), Alpha(Void, 0.34f), true);
+            DrawRect(bar.Grow(1.0f), Alpha(Paper, 0.07f), true);
+            DrawRect(bar, Alpha(Paper, 0.1f), true);
+            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, maxed ? 0.78f : 0.62f), true);
+            DrawLine(bar.Position + new Vector2(0.0f, 2.0f), bar.Position + new Vector2(bar.Size.X * progress, 2.0f), Alpha(Paper, hover ? 0.24f : 0.16f), UiHairline, true);
+            if (def.MaxRank > 1)
+            {
+                for (int step = 1; step < def.MaxRank; step++)
+                {
+                    float x = bar.Position.X + bar.Size.X * step / def.MaxRank;
+                    DrawLine(new Vector2(x, bar.Position.Y), new Vector2(x, bar.End.Y), Alpha(Void, 0.42f), UiHairline, true);
+                    DrawLine(new Vector2(x, bar.Position.Y + 1.0f), new Vector2(x, bar.End.Y - 1.0f), Alpha(Paper, 0.08f), UiHairline, true);
+                }
+            }
+            DrawRect(bar, Alpha(accent, hover ? 0.38f : 0.24f), false, UiHairline, true);
+
+            DrawWrapped(T(def.BodyKey), drawRect.Position + new Vector2(18.0f, 82.0f), 11, Alpha(Paper, 0.62f), drawRect.Size.X - 36.0f, 14.0f);
+
+            Color costColor = maxed ? Jade : affordable ? Gold : Alpha(Rose, 0.86f);
+            DrawText(maxed ? T("meta.max") : Tf("meta.cost", cost), drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 6.0f), 14, costColor, HorizontalAlignment.Left, drawRect.Size.X - 36.0f, true, 1);
         }
 
-        DrawText(T("meta.buy_hint"), new Vector2(0.0f, 890.0f), 18, Alpha(Paper, 0.56f), HorizontalAlignment.Center, ScreenWidth, true, 2);
         DrawMenuButton(MetaBackButtonRect(), T("meta.back"), Violet, false);
     }
 
@@ -14848,41 +14860,81 @@ public partial class MainGame : Node2D
     {
         DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, victory ? 0.34f : 0.58f), true);
         Color color = victory ? Gold : Rose;
-        DrawGlow(ScreenCenter, color, victory ? 620.0f : 460.0f, 0.07f, 9);
-        DrawText(victory ? T("end.victory.title") : T("end.defeat.title"), new Vector2(0.0f, 430.0f), 82, color, HorizontalAlignment.Center, ScreenWidth, true, 7);
-        DrawText(Tf("end.wave", _lastRunWave, TotalWaves), new Vector2(0.0f, 506.0f), 32, Paper, HorizontalAlignment.Center, ScreenWidth, true, 4);
-        DrawText(victory ? T("end.victory.body") : T("end.defeat.body"), new Vector2(0.0f, 568.0f), 24, Alpha(Paper, 0.72f), HorizontalAlignment.Center, ScreenWidth, true, 3);
-        DrawText(Tf("end.reward", _lastDustEarned, _lastRunWave), new Vector2(0.0f, 620.0f), 25, Gold, HorizontalAlignment.Center, ScreenWidth, true, 3);
-        float bonusY = 656.0f;
+        Rect2 card = new(new Vector2(500.0f, 152.0f), new Vector2(920.0f, 788.0f));
+        DrawGlow(card.Position + card.Size * 0.5f, color, victory ? 560.0f : 430.0f, victory ? 0.045f : 0.052f, 8);
+        DrawPanel(card, Alpha(Ink, 0.7f), Alpha(color, 0.42f));
+        DrawLine(card.Position + new Vector2(46.0f, 112.0f), card.Position + new Vector2(card.Size.X - 46.0f, 112.0f), Alpha(color, 0.28f), UiHairline, true);
+
+        DrawText(victory ? T("end.victory.title") : T("end.defeat.title"), card.Position + new Vector2(0.0f, 78.0f), 56, color, HorizontalAlignment.Center, card.Size.X, true, 5);
+        DrawText(victory ? T("end.victory.body") : T("end.defeat.body"), card.Position + new Vector2(0.0f, 132.0f), 19, Alpha(Paper, 0.72f), HorizontalAlignment.Center, card.Size.X, true, 2);
+
+        List<(string Label, string Value, Color Color)> rows = new()
+        {
+            (T("end.wave_label"), $"{_lastRunWave}/{TotalWaves}", Alpha(Paper, 0.88f)),
+            (T("end.dust_label"), $"+{_lastDustEarned}", Gold),
+        };
         if (_lastScoreBonusDust > 0)
         {
-            DrawText(Tf("end.score_bonus", _lastScoreBonusDust), new Vector2(0.0f, bonusY), 20, Alpha(Gold, 0.86f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-            bonusY += 30.0f;
+            rows.Add((T("end.run_bonus_label"), $"+{_lastScoreBonusDust}", Alpha(Gold, 0.86f)));
         }
         if (_lastObjectiveBonusDust > 0)
         {
-            DrawText(Tf("end.objective_bonus", _lastObjectiveBonusDust), new Vector2(0.0f, bonusY), 20, Alpha(Jade, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-        }
-        DrawPanel(new Rect2(new Vector2(760.0f, 700.0f), new Vector2(400.0f, 58.0f)), Alpha(Ink, 0.72f), Alpha(color, 0.48f));
-        DrawText(T("end.restart"), new Vector2(760.0f, 738.0f), 23, Paper, HorizontalAlignment.Center, 400.0f, true, 3);
-        float hintY = 786.0f;
-        if (_lastUnlockedPilot.HasValue)
-        {
-            DrawText(Tf("end.unlock_pilot", PilotName(_lastUnlockedPilot.Value)), new Vector2(0.0f, hintY), 22, Alpha(PilotAccent(_lastUnlockedPilot.Value), 0.9f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-            hintY += 34.0f;
+            rows.Add((T("end.goal_bonus_label"), $"+{_lastObjectiveBonusDust}", Alpha(Jade, 0.86f)));
         }
         if (victory && _lastClearTime > 0.0f)
         {
-            string recordText = _lastClearRecordRank > 0
-                ? Tf("end.clear_record", _lastClearRecordRank, FormatRecordTime(_lastClearTime))
-                : Tf("end.clear_time", FormatRecordTime(_lastClearTime));
-            DrawText(recordText, new Vector2(0.0f, hintY), 20, Alpha(_lastClearRecordRank > 0 ? Gold : Paper, 0.82f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-            hintY += 34.0f;
+            rows.Add((T("end.time_label"), FormatRecordTime(_lastClearTime), Alpha(Paper, 0.86f)));
         }
-        DrawNextGoalPanel(new Rect2(new Vector2(600.0f, hintY), new Vector2(720.0f, 52.0f)), false);
-        hintY += 76.0f;
-        DrawText(T("end.meta_hint"), new Vector2(0.0f, hintY), 20, Alpha(Paper, 0.64f), HorizontalAlignment.Center, ScreenWidth, true, 2);
-        DrawText(T("language.hint"), new Vector2(0.0f, hintY + 30.0f), 20, Alpha(Paper, 0.58f), HorizontalAlignment.Center, ScreenWidth, true, 2);
+
+        float summaryHeight = 58.0f + rows.Count * 34.0f;
+        Rect2 summary = new(card.Position + new Vector2(94.0f, 174.0f), new Vector2(card.Size.X - 188.0f, summaryHeight));
+        DrawPanel(summary, Alpha(Graphite, 0.42f), Alpha(color, 0.28f));
+        DrawText(T("end.summary"), summary.Position + new Vector2(22.0f, 30.0f), 13, Alpha(color, 0.78f), HorizontalAlignment.Left, 260.0f, false, 0);
+        DrawLine(summary.Position + new Vector2(20.0f, 42.0f), summary.Position + new Vector2(summary.Size.X - 20.0f, 42.0f), Alpha(Paper, 0.1f), UiHairline, true);
+        for (int i = 0; i < rows.Count; i++)
+        {
+            DrawEndSummaryRow(summary, 72.0f + i * 34.0f, rows[i].Label, rows[i].Value, rows[i].Color);
+        }
+
+        float nextY = summary.End.Y + 18.0f;
+        if (_lastUnlockedPilot.HasValue)
+        {
+            DrawEndNotice(new Rect2(new Vector2(card.Position.X + 94.0f, nextY), new Vector2(card.Size.X - 188.0f, 40.0f)), Tf("end.unlock_pilot", PilotName(_lastUnlockedPilot.Value)), PilotAccent(_lastUnlockedPilot.Value));
+            nextY += 52.0f;
+        }
+        if (victory && _lastClearTime > 0.0f && _lastClearRecordRank > 0)
+        {
+            DrawEndNotice(new Rect2(new Vector2(card.Position.X + 94.0f, nextY), new Vector2(card.Size.X - 188.0f, 40.0f)), Tf("end.clear_record", _lastClearRecordRank, FormatRecordTime(_lastClearTime)), Gold);
+            nextY += 52.0f;
+        }
+
+        DrawNextGoalPanel(new Rect2(new Vector2(card.Position.X + 94.0f, nextY), new Vector2(card.Size.X - 188.0f, 50.0f)), true);
+
+        DrawEndActionButton(EndTitleButtonRect(), T("settings.main_menu"), GridLine, false);
+        DrawEndActionButton(EndRestartButtonRect(), T("end.restart"), color, true);
+        DrawEndActionButton(EndMetaButtonRect(), T("menu.meta"), Gold, false);
+        DrawText(T("end.meta_hint"), card.Position + new Vector2(0.0f, card.Size.Y - 28.0f), 14, Alpha(Paper, 0.44f), HorizontalAlignment.Center, card.Size.X, false, 0);
+    }
+
+    private void DrawEndSummaryRow(Rect2 panel, float y, string label, string value, Color accent)
+    {
+        DrawText(label.ToUpperInvariant(), panel.Position + new Vector2(26.0f, y), 12, Alpha(Paper, 0.5f), HorizontalAlignment.Left, 260.0f, false, 0);
+        DrawText(value, panel.Position + new Vector2(panel.Size.X - 246.0f, y + 2.0f), 19, accent, HorizontalAlignment.Right, 220.0f, true, 2);
+        DrawLine(panel.Position + new Vector2(24.0f, y + 12.0f), panel.Position + new Vector2(panel.Size.X - 24.0f, y + 12.0f), Alpha(Paper, 0.06f), UiHairline, true);
+    }
+
+    private void DrawEndNotice(Rect2 rect, string text, Color accent)
+    {
+        DrawPanel(rect, Alpha(Ink, 0.44f), Alpha(accent, 0.32f));
+        DrawText(text, rect.Position + new Vector2(18.0f, 26.0f), 16, Alpha(accent.Lerp(Paper, 0.12f), 0.86f), HorizontalAlignment.Left, rect.Size.X - 36.0f, true, 1);
+    }
+
+    private void DrawEndActionButton(Rect2 rect, string text, Color accent, bool primary)
+    {
+        bool hover = rect.HasPoint(GetGlobalMousePosition()) || IsGamepadFocused(rect);
+        DrawPanel(rect, Alpha(Ink, primary ? 0.72f : 0.46f), Alpha(accent, hover ? 0.78f : primary ? 0.52f : 0.32f));
+        DrawHoverFrame(rect, accent, hover, primary ? 0.9f : 0.62f);
+        DrawText(text, rect.Position + new Vector2(0.0f, primary ? 36.0f : 28.0f), primary ? 22 : 16, Alpha(Paper, primary ? 0.92f : 0.68f), HorizontalAlignment.Center, rect.Size.X, true, primary ? 2 : 1);
     }
 
     private void DrawHudMetric(Rect2 rect, string label, string value, Color accent)
@@ -14971,23 +15023,61 @@ public partial class MainGame : Node2D
         }
     }
 
-    private void DrawBar(Rect2 rect, float value, float trailValue, Color color, string label, string valueText)
+    private void DrawBar(Rect2 rect, float value, float trailValue, Color color, string label, string valueText, bool isHull = false)
     {
         value = Mathf.Clamp(value, 0.0f, 1.0f);
         trailValue = Mathf.Clamp(trailValue, 0.0f, 1.0f);
-        DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(0.0f, -8.0f), 13, Alpha(Paper, 0.5f), HorizontalAlignment.Left, 120.0f, false, 0);
-        DrawText(valueText, rect.Position + new Vector2(0.0f, -8.0f), 13, Alpha(Paper, 0.74f), HorizontalAlignment.Right, rect.Size.X, false, 0);
-        DrawRect(rect.Grow(3.0f), Alpha(Paper, 0.08f), true);
-        DrawRect(rect, Alpha(color, 0.12f), true);
-        DrawRect(new Rect2(rect.Position, new Vector2(rect.Size.X * trailValue, rect.Size.Y)), Alpha(Paper, 0.12f), true);
-        DrawRect(new Rect2(rect.Position, new Vector2(rect.Size.X * trailValue, rect.Size.Y)), Alpha(color, 0.24f), true);
-        DrawRect(new Rect2(rect.Position, new Vector2(rect.Size.X * value, rect.Size.Y)), Alpha(color, 0.92f), true);
-        float lead = rect.Position.X + rect.Size.X * value;
+
+        float dangerPulse = isHull && value < 0.32f ? 0.5f + 0.5f * Mathf.Sin(_time * 8.0f) : 0.0f;
+        Color fillColor = isHull
+            ? new Color(0.66f, 0.2f, 0.24f).Lerp(new Color(0.88f, 0.32f, 0.24f), dangerPulse * 0.34f)
+            : color.Lerp(Paper, 0.2f);
+        Color edgeColor = isHull ? new Color(0.8f, 0.34f, 0.26f) : color.Lerp(Paper, 0.34f);
+        Color trailColor = isHull ? new Color(0.72f, 0.38f, 0.26f) : color.Lerp(Paper, 0.12f);
+        Rect2 frame = rect.Grow(3.0f);
+        Rect2 track = rect;
+        Rect2 inner = rect.Grow(-2.0f);
+        float fillWidth = Mathf.Max(0.0f, inner.Size.X * value);
+        float trailWidth = Mathf.Max(0.0f, inner.Size.X * trailValue);
+
+        DrawText(label.ToUpperInvariant(), rect.Position + new Vector2(0.0f, -8.0f), 13, Alpha(Paper, 0.46f), HorizontalAlignment.Left, 120.0f, false, 0);
+        DrawText(valueText, rect.Position + new Vector2(0.0f, -8.0f), 13, Alpha(Paper, isHull && value < 0.32f ? 0.88f : 0.72f), HorizontalAlignment.Right, rect.Size.X, false, 0);
+        DrawRect(frame, Alpha(Paper, 0.06f), true);
+        DrawRect(frame, Alpha(edgeColor, isHull ? 0.28f + dangerPulse * 0.1f : 0.22f), false, UiHairline, true);
+        DrawRect(track, Alpha(Void, 0.5f), true);
+        DrawRect(track.Grow(-1.0f), Alpha(Graphite, 0.74f), true);
+        DrawLine(track.Position + new Vector2(1.0f, 2.0f), track.Position + new Vector2(track.Size.X - 1.0f, 2.0f), Alpha(Paper, 0.12f), UiHairline, true);
+
+        if (trailWidth > fillWidth + 0.5f)
+        {
+            Rect2 loss = new(inner.Position + new Vector2(fillWidth, 0.0f), new Vector2(trailWidth - fillWidth, inner.Size.Y));
+            DrawRect(loss, Alpha(trailColor, isHull ? 0.32f : 0.2f), true);
+            DrawLine(loss.Position + new Vector2(0.0f, 1.0f), loss.Position + new Vector2(loss.Size.X, 1.0f), Alpha(Paper, 0.08f), UiHairline, true);
+        }
+
+        if (fillWidth > 0.5f)
+        {
+            Rect2 fill = new(inner.Position, new Vector2(fillWidth, inner.Size.Y));
+            DrawRect(fill, Alpha(fillColor, isHull ? 0.86f : 0.78f), true);
+            DrawLine(fill.Position + new Vector2(0.0f, 1.0f), fill.Position + new Vector2(fill.Size.X, 1.0f), Alpha(Paper, isHull ? 0.22f : 0.2f), UiHairline, true);
+            DrawLine(fill.Position + new Vector2(0.0f, fill.Size.Y - 1.0f), fill.Position + new Vector2(fill.Size.X, fill.Size.Y - 1.0f), Alpha(Void, 0.22f), UiHairline, true);
+        }
+
+        if (isHull)
+        {
+            for (int i = 1; i < 4; i++)
+            {
+                float x = inner.Position.X + inner.Size.X * i / 4.0f;
+                DrawLine(new Vector2(x, track.Position.Y + 1.0f), new Vector2(x, track.End.Y - 1.0f), Alpha(Paper, 0.11f), UiHairline, true);
+            }
+        }
+
+        float lead = inner.Position.X + fillWidth;
         if (value > 0.015f && value < 0.985f)
         {
-            DrawLine(new Vector2(lead, rect.Position.Y - 3.0f), new Vector2(lead, rect.End.Y + 3.0f), Alpha(Paper, 0.38f + 0.18f * Mathf.Sin(_time * 12.0f)), UiStroke, true);
+            DrawLine(new Vector2(lead, track.Position.Y - 3.0f), new Vector2(lead, track.End.Y + 3.0f), Alpha(Paper, isHull ? 0.3f + dangerPulse * 0.16f : 0.28f + 0.1f * Mathf.Sin(_time * 12.0f)), UiStroke, true);
         }
-        DrawRect(rect, Alpha(Paper, 0.32f), false, UiHairline, true);
+        DrawRect(track, Alpha(Paper, 0.22f), false, UiHairline, true);
     }
 
     private void DrawPanel(Rect2 rect, Color fill, Color stroke)
@@ -15990,6 +16080,21 @@ public partial class MainGame : Node2D
         return new Rect2(new Vector2(1810.0f, 46.0f), new Vector2(58.0f, 28.0f));
     }
 
+    private static Rect2 EndTitleButtonRect()
+    {
+        return new Rect2(new Vector2(594.0f, 782.0f), new Vector2(210.0f, 42.0f));
+    }
+
+    private static Rect2 EndRestartButtonRect()
+    {
+        return new Rect2(new Vector2(815.0f, 772.0f), new Vector2(290.0f, 56.0f));
+    }
+
+    private static Rect2 EndMetaButtonRect()
+    {
+        return new Rect2(new Vector2(1116.0f, 782.0f), new Vector2(210.0f, 42.0f));
+    }
+
     private static bool IsGmUnlockAvailable()
     {
         return OS.HasFeature("editor") || OS.HasFeature("debug");
@@ -16278,18 +16383,18 @@ public partial class MainGame : Node2D
 
     private static Rect2 MetaBackButtonRect()
     {
-        return new Rect2(new Vector2(790.0f, 916.0f), new Vector2(340.0f, 50.0f));
+        return new Rect2(new Vector2(810.0f, 922.0f), new Vector2(300.0f, 44.0f));
     }
 
     private static Rect2 MetaUpgradeRect(int index)
     {
-        const float width = 390.0f;
-        const float height = 126.0f;
-        const float gapX = 24.0f;
+        const float width = 394.0f;
+        const float height = 136.0f;
+        const float gapX = 22.0f;
         const float gapY = 14.0f;
         int column = index % 4;
         int row = index / 4;
-        return new Rect2(new Vector2(144.0f + column * (width + gapX), 318.0f + row * (height + gapY)), new Vector2(width, height));
+        return new Rect2(new Vector2(138.0f + column * (width + gapX), 242.0f + row * (height + gapY)), new Vector2(width, height));
     }
 
     private static Vector2 RandomOrbit(float phase)

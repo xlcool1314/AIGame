@@ -64,7 +64,7 @@ key|en|zh|ru|pt|de|tr|fr|ja
 loading.title|LOADING|载入中|ЗАГРУЗКА|CARREGANDO|LADEN|YÜKLENİYOR|CHARGEMENT|ロード中
 loading.start|LAUNCHING|准备出航|ЗАПУСК|LANÇANDO|START|KALKIŞ|LANCEMENT|発進準備
 loading.menu|RETURNING|返回主界面|ВОЗВРАТ|VOLTANDO|ZURÜCK|DÖNÜŞ|RETOUR|メニューへ
-loading.meta|OPENING VAULT|打开永久升级|ОТКРЫТИЕ ХРАНИЛИЩА|ABRINDO COFRE|VAULT ÖFFNEN|KASA AÇILIYOR|OUVERTURE DU COFFRE|強化庫を開く
+loading.meta|OPENING FIGHTER BAY|进入战机升级室|ОТКРЫТИЕ АНГАРА|ABRINDO HANGAR|HANGAR ÖFFNEN|HANGAR AÇILIYOR|OUVERTURE DU HANGAR|格納庫を開く
 loading.victory|RUN COMPLETE|战斗结算|ЗАБЕГ ЗАВЕРШЕН|RUN COMPLETA|LAUF BEENDET|KOŞU TAMAM|RUN TERMINÉ|出撃完了
 loading.defeat|SIGNAL RECOVERING|信号回收|СИГНАЛ ВОССТАНАВЛИВАЕТСЯ|RECUPERANDO SINAL|SIGNAL BERGEN|SİNYAL TOPLANIYOR|SIGNAL RÉCUPÉRÉ|信号回収中
 intro.channel|PILOT LINK|驾驶员通讯|СВЯЗЬ ПИЛОТА|CANAL DO PILOTO|PILOTENKANAL|PİLOT HATTI|LIAISON PILOTE|パイロット通信
@@ -138,7 +138,7 @@ repair|REPAIR|修复|РЕМОНТ|REPARO|REPARATUR|ONARIM|RÉPARATION|修理
 language.changed|LANGUAGE: ENGLISH|当前语言：中文|ЯЗЫК: РУССКИЙ|IDIOMA: PORTUGUÊS BR|SPRACHE: DEUTSCH|DİL: TÜRKÇE|LANGUE : FRANÇAIS|言語：日本語
 language.hint|LANGUAGE: ENGLISH  [L]|中文  [L切换]|РУССКИЙ  [L]|PORTUGUÊS BR  [L]|DEUTSCH  [L]|TÜRKÇE  [L]|FRANÇAIS  [L]|日本語  [L]
 menu.start|START GAME|开始游戏|НАЧАТЬ ИГРУ|INICIAR JOGO|SPIEL STARTEN|OYUNA BAŞLA|COMMENCER|ゲーム開始
-menu.meta|PERMANENT UPGRADES|永久升级|ПОСТОЯННЫЕ УЗЛЫ|UPGRADES PERMANENTES|DAUER-UPGRADES|KALICI GELİŞİMLER|AMÉLIORATIONS PERMANENTES|恒久強化
+menu.meta|FIGHTER BAY|战机升级室|АНГАР ИСТРЕБИТЕЛЯ|HANGAR DO CAÇA|JÄGERHANGAR|SAVAŞÇI HANGARI|HANGAR DU CHASSEUR|戦機格納庫
 menu.language|SWITCH LANGUAGE|切换语言|СМЕНИТЬ ЯЗЫК|TROCAR IDIOMA|SPRACHE WECHSELN|DİL DEĞİŞTİR|CHANGER DE LANGUE|言語切替
 menu.settings|SETTINGS|设置|НАСТРОЙКИ|CONFIGURAÇÕES|EINSTELLUNGEN|AYARLAR|PARAMÈTRES|設定
 gm.unlock.label|GM|GM|GM|GM|GM|GM|GM|GM
@@ -404,21 +404,27 @@ upgrade.delta.label|THIS LEVEL|本级提升|ЭТОТ РАНГ|ESTE RANK|DIESE ST
 upgrade.select_gamepad|A SELECT|A 选择|A ВЫБОР|A ESCOLHER|A WÄHLEN|A SEÇ|A CHOISIR|A 選択
 upgrade.select_key|PRESS {0}|按 {0} 选择|ЖМИ {0}|APERTE {0}|TASTE {0}|{0} BAS|TOUCHE {0}|{0} で選択
 rank|Rank {0}|等级 {0}|Ранг {0}|Rank {0}|Rang {0}|Rütbe {0}|Rang {0}|ランク {0}
-end.victory.title|CORE FRACTURED|核心破裂|ЯДРО РАСКОЛОТО|NÚCLEO ROMPIDO|KERN GEBROCHEN|ÇEKİRDEK KIRILDI|NOYAU FRACTURÉ|コア破砕
-end.defeat.title|SIGNAL LOST|信号丢失|СИГНАЛ ПОТЕРЯН|SINAL PERDIDO|SIGNAL VERLOREN|SİNYAL KOPTU|SIGNAL PERDU|信号途絶
-end.wave|REACHED WAVE {0}/{1}|抵达波次 {0}/{1}|ВОЛНА {0}/{1}|ONDA {0}/{1}|WELLE {0}/{1}|DALGA {0}/{1}|VAGUE {0}/{1}|到達 {0}/{1}
-end.victory.body|The starfield exhales. Your pattern survives.|星海终于松了一口气。你的轨迹留下来了。|Звезды выдыхают. Твой узор выжил.|O campo estelar respira. Seu padrão venceu.|Das Sternfeld atmet aus. Dein Muster bleibt.|Yıldız alanı nefes alır. İzlerin kalır.|Le champ stellaire expire. Ton motif survit.|星空が息を吐く。軌跡は残った。
-end.defeat.body|The Choir rewinds the arena. Tune again.|合唱回卷战场。重新调频。|Хор отматывает арену. Настройся снова.|O Coro reinicia a arena. Sintonize de novo.|Der Chor spult zurück. Stimme dich neu.|Koro arenayı sarar. Yeniden ayarla.|Le Chœur rembobine. Réaccorde-toi.|合唱が戦場を巻き戻す。再調律せよ。
-end.restart|ENTER / CLICK / A TO RESTART|ENTER / 点击 / A 重新开始|ENTER / КЛИК / A ПОВТОР|ENTER / CLIQUE / A REINICIAR|ENTER / KLICK / A NEU|ENTER / TIKLA / A YENİDEN|ENTRÉE / CLIC / A REJOUER|ENTER / クリック / A 再開
-end.reward|STAR DUST +{0}   REACHED WAVE {1}/40|星尘 +{0}   抵达波次 {1}/40|ПЫЛЬ +{0}   ВОЛНА {1}/40|PÓ +{0}   ONDA {1}/40|STAUB +{0}   WELLE {1}/40|TOZ +{0}   DALGA {1}/40|POUSSIÈRE +{0}   VAGUE {1}/40|星屑 +{0}   到達 {1}/40
-end.objective_bonus|GOAL BONUS +{0}|目标奖励 +{0}|БОНУС ЦЕЛИ +{0}|BÔNUS META +{0}|ZIELBONUS +{0}|HEDEF BONUSU +{0}|BONUS OBJECTIF +{0}|目標ボーナス +{0}
-end.score_bonus|CACHE DUST +{0}|缓存星尘 +{0}|ПЫЛЬ КЭША +{0}|PÓ DE CACHE +{0}|CACHE-STAUB +{0}|ÖNBELLEK TOZU +{0}|POUSSIÈRE CACHE +{0}|蓄積星屑 +{0}
+end.victory.title|EXPEDITION COMPLETE|远征完成|ЭКСПЕДИЦИЯ ЗАВЕРШЕНА|EXPEDIÇÃO CONCLUÍDA|EXPEDITION ABGESCHLOSSEN|SEFER TAMAMLANDI|EXPÉDITION TERMINÉE|遠征完了
+end.defeat.title|RUN ENDED|远征结束|ЗАБЕГ ЗАВЕРШЕН|RUN ENCERRADA|RUN BEENDET|SEFER BİTTİ|RUN TERMINÉ|遠征終了
+end.wave|Wave {0}/{1}|波次 {0}/{1}|Волна {0}/{1}|Onda {0}/{1}|Welle {0}/{1}|Dalga {0}/{1}|Vague {0}/{1}|Wave {0}/{1}
+end.victory.body|All bosses defeated. Clear time recorded.|已击败全部 Boss，通关用时已记录。|Все боссы побеждены. Время записано.|Todos os chefes derrotados. Tempo registrado.|Alle Bosse besiegt. Zeit gespeichert.|Tüm bosslar yenildi. Süre kaydedildi.|Tous les boss sont vaincus. Temps enregistré.|全Boss撃破。クリア時間を記録。
+end.defeat.body|Keep the Star Dust, upgrade, and launch again.|保留本局星尘，升级后再出发。|Пыль сохранена. Улучшись и лети снова.|Você mantém o pó. Melhore e tente de novo.|Staub bleibt. Verbessere dich und starte neu.|Toz sende kalır. Güçlenip tekrar kalk.|Tu gardes la poussière. Améliore-toi et repars.|星屑は保持。強化して再出撃。
+end.summary|RUN SUMMARY|本局结算|ИТОГ ЗАБЕГА|RESUMO DA RUN|RUN-ÜBERSICHT|SEFER ÖZETİ|RÉSUMÉ DU RUN|今回の結果
+end.wave_label|Wave|波次|Волна|Onda|Welle|Dalga|Vague|Wave
+end.dust_label|Star Dust|星尘|Звездная пыль|Pó Estelar|Sternenstaub|Yıldız Tozu|Poussière|星屑
+end.run_bonus_label|Run Bonus|流程奖励|Бонус забега|Bônus da run|Run-Bonus|Sefer bonusu|Bonus de run|進行ボーナス
+end.goal_bonus_label|Goal Bonus|目标奖励|Бонус цели|Bônus de meta|Zielbonus|Hedef bonusu|Bonus objectif|目標ボーナス
+end.time_label|Clear Time|通关用时|Время победы|Tempo de vitória|Bestzeit|Bitirme süresi|Temps de victoire|クリア時間
+end.restart|RESTART|重新开始|ПОВТОР|REINICIAR|NEU STARTEN|TEKRAR BAŞLA|REJOUER|再出撃
+end.reward|STAR DUST +{0}|星尘 +{0}|ПЫЛЬ +{0}|PÓ +{0}|STAUB +{0}|TOZ +{0}|POUSSIÈRE +{0}|星屑 +{0}
+end.objective_bonus|Goal Bonus +{0}|目标奖励 +{0}|Бонус цели +{0}|Bônus de meta +{0}|Zielbonus +{0}|Hedef bonusu +{0}|Bonus objectif +{0}|目標ボーナス +{0}
+end.score_bonus|Run Bonus +{0}|流程奖励 +{0}|Бонус забега +{0}|Bônus da run +{0}|Run-Bonus +{0}|Sefer bonusu +{0}|Bonus de run +{0}|進行ボーナス +{0}
 end.clear_time|CLEAR TIME {0}|通关用时 {0}|ВРЕМЯ {0}|TEMPO {0}|ZEIT {0}|SÜRE {0}|TEMPS {0}|クリア時間 {0}
 end.clear_record|NEW CLEAR RECORD #{0}  {1}|新的通关记录 第{0}名  {1}|НОВЫЙ РЕКОРД №{0}  {1}|NOVO RECORDE #{0}  {1}|NEUE BESTZEIT #{0}  {1}|YENİ REKOR #{0}  {1}|NOUVEAU RECORD N°{0}  {1}|新記録 #{0}  {1}
 end.unlock_pilot|NEW PILOT UNLOCKED: {0}|新角色解锁：{0}|НОВЫЙ ПИЛОТ: {0}|NOVO PILOTO: {0}|NEUER PILOT: {0}|YENİ PİLOT: {0}|NOUVEAU PILOTE : {0}|新パイロット解放：{0}
-end.meta_hint|B/Esc returns to title. Y opens Permanent Upgrades.|B/Esc 返回标题。Y 打开永久升级。|B/Esc к титулу. Y открывает узлы.|B/Esc volta. Y abre upgrades.|B/Esc zurück. Y öffnet Upgrades.|B/Esc başlığa. Y kalıcı gelişim.|B/Esc titre. Y ouvre améliorations.|B/Escで戻る。Yで恒久強化。
-meta.title|STAR VAULT|星库|ЗВЕЗДНОЕ ХРАНИЛИЩЕ|COFRE ESTELAR|STERNENARCHIV|YILDIZ KASASI|COFFRE STELLAIRE|星庫
-meta.subtitle|Permanent upgrades are a long route across many expeditions.|永久升级是一条跨越许多远征的长线目标。|Постоянные узлы ведут через многие вылеты.|Upgrades permanentes constroem muitas runs.|Dauer-Upgrades tragen viele Expeditionen.|Kalıcı gelişimler uzun sefer yoludur.|Les améliorations permanentes guident plusieurs runs.|恒久強化は遠征を越える長期目標。
+end.meta_hint|Enter/A restart   B/Esc main menu   Y Fighter Bay|Enter/A 重新开始   B/Esc 主界面   Y 战机升级室|Enter/A повтор   B/Esc меню   Y ангар|Enter/A reinicia   B/Esc menu   Y hangar|Enter/A neu   B/Esc Menü   Y Hangar|Enter/A tekrar   B/Esc menü   Y hangar|Entrée/A rejouer   B/Esc menu   Y hangar|Enter/A 再出撃   B/Esc メニュー   Y 格納庫
+meta.title|FIGHTER UPGRADE BAY|战机升级室|АНГАР УЛУЧШЕНИЙ|HANGAR DE UPGRADES|JÄGER-UPGRADEHANGAR|SAVAŞÇI GELİŞTİRME HANGARI|HANGAR D’AMÉLIORATION|戦機アップグレード格納庫
+meta.subtitle|Install long-term fighter upgrades.|消耗星尘，改装战机。|Ставь долгие улучшения истребителя.|Instale upgrades de longo prazo.|Baue dauerhafte Jäger-Upgrades ein.|Uzun vadeli savaşçı gelişimleri kur.|Installe des améliorations durables.|長期強化を取り付ける。
 meta.dust|Star Dust|星尘|Звездная пыль|Pó Estelar|Sternenstaub|Yıldız Tozu|Poussière stellaire|星屑
 meta.wallet|STAR DUST {0}|星尘 {0}|ПЫЛЬ {0}|PÓ {0}|STAUB {0}|TOZ {0}|POUSSIÈRE {0}|星屑 {0}
 meta.best|BEST WAVE {0}/40   RUNS {2}|最高波次 {0}/40   出航 {2}|ЛУЧШАЯ {0}/40   ВЫЛЕТЫ {2}|MELHOR {0}/40   RUNS {2}|BESTE {0}/40   RUNS {2}|EN İYİ {0}/40   SEFER {2}|MEILLEURE {0}/40   RUNS {2}|最高 {0}/40   遠征 {2}
@@ -434,8 +440,8 @@ goal.unlock_pilot|Play {0} once to unlock {1}|用 {0} 完成一局，解锁 {1}|
 goal.clear_40|Clear wave 40 and finish a run|通关 40 波，完成远征|Пройди 40 волн и заверши вылет|Passe a onda 40 e conclua a run|Schaffe Welle 40 und beende den Run|40. dalgayı geç ve seferi bitir|Passe la vague 40 et termine le run|40波を突破して遠征完了
 goal.beat_record|Beat your best clear time {0}|突破最快通关 {0}|Побей лучшее время {0}|Bata seu melhor tempo {0}|Unterbiete deine Bestzeit {0}|En iyi süreni geç {0}|Bats ton meilleur temps {0}|最速記録 {0} を更新
 goal.set_record|Finish a full clear to set a time|完成一次通关，留下最快时间|Заверши полный проход и поставь время|Conclua uma vitória para marcar tempo|Beende einen Sieg und setze eine Zeit|Tam zaferle süre kaydet|Termine une victoire pour poser un temps|一度クリアして記録を残す
-meta.open_hint|Press U or click Permanent Upgrades.|按 U 或点击永久升级。|Нажми U или открой узлы.|Pressione U ou clique upgrades.|Drücke U oder klicke Upgrades.|U bas veya gelişime tıkla.|Appuie sur U ou clique améliorations.|Uまたは恒久強化をクリック。
-meta.buy_hint|Click or use LS/D-Pad + A to buy. Keys 1-9 buy nodes. B/Esc returns.|点击或 LS/方向键 + A 购买。1-9 快捷购买。B/Esc 返回。|Клик или LS/D-Pad + A купить. 1-9 покупают. B/Esc назад.|Clique ou LS/D-Pad + A. 1-9 compra. B/Esc volta.|Klick oder LS/D-Pad + A. 1-9 kaufen. B/Esc zurück.|Tıkla veya LS/D-Pad + A. 1-9 satın alır. B/Esc geri.|Clic ou LS/D-Pad + A. 1-9 achète. B/Esc retour.|クリックまたはLS/十字+A。1-9購入。B/Esc戻る。
+meta.open_hint|Open the Fighter Bay between runs.|每局结束后可进入战机升级室。|Открывай ангар между вылетами.|Abra o hangar entre runs.|Öffne den Hangar zwischen Runs.|Sefer arasında hangarı aç.|Ouvre le hangar entre deux runs.|出撃の合間に格納庫を開く。
+meta.buy_hint|Click a module or press A to install.|点击模块或按 A 安装。|Кликни модуль или нажми A.|Clique no módulo ou aperte A.|Klicke ein Modul oder drücke A.|Modüle tıkla veya A bas.|Clique un module ou appuie sur A.|モジュールをクリック、またはAで装着。
 meta.back|BACK|返回|НАЗАД|VOLTAR|ZURÜCK|GERİ|RETOUR|戻る
 meta.cost|COST {0}|花费 {0}|ЦЕНА {0}|CUSTO {0}|KOSTEN {0}|BEDEL {0}|COÛT {0}|コスト {0}
 meta.max|MAX|已满|МАКС|MÁX|MAX|MAKS|MAX|最大
@@ -448,7 +454,7 @@ settings.guide|GAME GUIDE|游戏说明|СПРАВОЧНИК|GUIA DO JOGO|SPIELGU
 settings.main_menu|MAIN MENU|回到主界面|ГЛАВНОЕ МЕНЮ|MENU PRINCIPAL|HAUPTMENÜ|ANA MENÜ|MENU PRINCIPAL|メインメニュー
 settings.delete_save|DELETE SAVE|删除存档|УДАЛИТЬ СЕЙВ|APAGAR SAVE|SPIELSTAND LÖSCHEN|KAYDI SİL|SUPPRIMER SAUVEGARDE|セーブ削除
 settings.delete_confirm|CLICK AGAIN TO DELETE|再次点击确认删除|ЕЩЕ РАЗ ДЛЯ УДАЛЕНИЯ|CLIQUE DE NOVO|NOCHMAL KLICKEN|SİLMEK İÇİN TEKRAR|RECLIQUER POUR SUPPRIMER|もう一度で削除
-settings.delete_warning|Clears progress, unlocks, upgrades, and records. Keeps local settings.|清空进度、解锁、永久升级和记录。保留本机设置。|Стирает прогресс, пилотов, улучшения и рекорды. Настройки останутся.|Apaga progresso, pilotos, upgrades e recordes. Mantém ajustes locais.|Löscht Fortschritt, Piloten, Upgrades und Rekorde. Lokale Einstellungen bleiben.|İlerleme, pilotlar, gelişim ve kayıtları siler. Yerel ayarlar kalır.|Efface progression, pilotes, améliorations et records. Garde les réglages locaux.|進行、機体、強化、記録を消去。ローカル設定は残る。
+settings.delete_warning|Clears progress, unlocks, Fighter Bay upgrades, and records. Keeps local settings.|清空进度、解锁、战机升级室改装和记录。保留本机设置。|Стирает прогресс, пилотов, ангар и рекорды. Настройки останутся.|Apaga progresso, pilotos, hangar e recordes. Mantém ajustes locais.|Löscht Fortschritt, Piloten, Hangar-Upgrades und Rekorde. Lokale Einstellungen bleiben.|İlerleme, pilotlar, hangar ve kayıtları siler. Yerel ayarlar kalır.|Efface progression, pilotes, hangar et records. Garde les réglages locaux.|進行、機体、格納庫強化、記録を消去。ローカル設定は残る。
 settings.delete_notice|SAVE DATA CLEARED|存档已删除|СЕЙВ УДАЛЕН|SAVE APAGADO|SPIELSTAND GELÖSCHT|KAYIT SİLİNDİ|SAUVEGARDE EFFACÉE|セーブ削除済み
 settings.resume|RESUME|继续游戏|ПРОДОЛЖИТЬ|CONTINUAR|FORTSETZEN|DEVAM|REPRENDRE|再開
 settings.back|BACK|返回|НАЗАД|VOLTAR|ZURÜCK|GERİ|RETOUR|戻る
@@ -482,7 +488,7 @@ guide.build.1|Pilot cards and public cards appear together. Repeated choices mak
 guide.build.2|At max rank, some upgrades gain a max-rank effect that changes the build: chain, split, drones, shield, rhythm, or precision.|部分升级满级后会获得满级效果，改变流派：连锁、分裂、无人机、护盾、节拍或精准。|На максимальном ранге часть улучшений меняет билд: цепь, раскол, дроны, щит, ритм или точность.|No nível máximo, alguns upgrades mudam a build: cadeia, divisão, drones, escudo, ritmo ou precisão.|Auf Max-Rang ändern manche Upgrades den Build: Kette, Splitter, Drohnen, Schild, Rhythmus oder Präzision.|Maks seviyede bazı geliştirmeler yapıyı değiştirir: zincir, bölünme, dron, kalkan, ritim veya keskinlik.|Au rang max, certains effets changent le build : chaîne, éclats, drones, bouclier, rythme ou précision.|最大ランクで一部強化が変化。連鎖、分裂、ドローン、盾、リズム、精密。
 guide.build.3|Rerolls are limited. Use them when all choices do not fit your pilot or current build.|重抽次数有限。三个选项都不适合角色或当前流派时再用。|Рероллы ограничены. Используй, если все три карты не подходят пилоту или билду.|Rerolls são limitados. Use quando as três cartas não servem ao piloto ou build.|Neuwürfe sind begrenzt. Nutze sie, wenn alle Karten nicht zu Pilot oder Build passen.|Yenileme sınırlı. Üç seçim de pilota veya yapıya uymuyorsa kullan.|Relances limitées. Utilise-les si les trois cartes ne collent pas au pilote ou au build.|再抽選は有限。3枚とも機体やビルドに合わない時に使う。
 guide.progress.0|Pilots unlock in order. Play one run with the current pilot to unlock the next pilot.|角色按顺序解锁。用当前角色玩一局，就能解锁下一个角色。|Пилоты открываются по порядку. Сыграй один вылет текущим пилотом, чтобы открыть следующего.|Pilotos abrem em ordem. Jogue uma run com o atual para abrir o próximo.|Piloten öffnen der Reihe nach. Ein Run mit aktuellem Pilot öffnet den nächsten.|Pilotlar sırayla açılır. Mevcut pilotla bir sefer oyna, sonraki açılır.|Les pilotes se débloquent dans l’ordre. Une run avec l’actuel ouvre le suivant.|機体は順番に解放。現在の機体で1回遊ぶと次が開く。
-guide.progress.1|Star Dust buys permanent upgrades. Costs are tuned as a long journey, not something to finish in one run.|星尘用于购买永久升级。价格按长线成长设计，不应该一局买满。|Пыль покупает постоянные узлы. Цены рассчитаны на долгий путь, не на один забег.|Pó Estelar compra upgrades permanentes. Custos são jornada longa, não uma run.|Sternenstaub kauft Dauer-Upgrades. Kosten sind Langzeitreise, nicht ein Run.|Yıldız Tozu kalıcı gelişim alır. Maliyetler tek sefer değil uzun yol içindir.|La poussière achète des améliorations permanentes. Les coûts visent le long terme.|星屑で恒久強化。価格は長期進行向けで1回完了ではない。
+guide.progress.1|Star Dust upgrades your fighter in the Fighter Bay. Costs are tuned as a long journey, not something to finish in one run.|星尘用于在战机升级室改装战机。价格按长线成长设计，不应该一局买满。|Пыль улучшает истребитель в ангаре. Цены рассчитаны на долгий путь.|Pó Estelar melhora o caça no hangar. Custos são jornada longa.|Sternenstaub verbessert den Jäger im Hangar. Kosten sind Langzeitreise.|Yıldız Tozu hangarda savaşçıyı geliştirir. Maliyetler uzun yol içindir.|La poussière améliore le chasseur au hangar. Les coûts visent le long terme.|星屑で格納庫の戦機を強化。価格は長期進行向け。
 guide.progress.2|Enemy waves and bosses are partly random. Runs will not have the exact same order.|敌人波次和 Boss 有一定随机性，每局顺序不会完全一样。|Волны и боссы частично случайны. Порядок в забегах меняется.|Ondas e chefes são parcialmente aleatórios. A ordem muda entre runs.|Wellen und Bosse sind teils zufällig. Läufe haben nicht dieselbe Reihenfolge.|Dalgalar ve bosslar kısmen rastgele. Sıra her koşuda değişir.|Vagues et boss sont en partie aléatoires. L’ordre change entre runs.|敵Waveとボスは一部ランダム。毎回同じ順番ではない。
 guide.progress.3|Main goal: clear 40 waves. Advanced goal: keep combo high and finish faster without losing control.|主要目标是通过 40 波。进阶目标是保持高连击，在不失控的情况下更快通关。|Главная цель: 40 волн. Продвинутая: держать комбо и пройти быстрее без хаоса.|Meta principal: 40 ondas. Meta avançada: combo alto e final rápido sem perder controle.|Hauptziel: 40 Wellen. Fortgeschritten: hohe Kombo und schneller Abschluss ohne Kontrollverlust.|Ana hedef 40 dalga. İleri hedef yüksek kombo ve kontrolü kaybetmeden hızlı bitiş.|But principal: 40 vagues. But avancé: combo élevé et fin rapide sans perdre le contrôle.|目標は40波突破。上級目標は高コンボで制御しながら高速クリア。
 guide.0|Move with WASD, arrows, or left stick. Mouse/right stick aims dash; weapons auto-lock and fire.|WASD / 方向键 / 左摇杆移动。鼠标/右摇杆决定冲刺方向，武器自动锁敌开火。|WASD, стрелки или левый стик для движения. Мышь/правый стик задают рывок; оружие автостреляет.|Mova com WASD, setas ou analógico esquerdo. Mouse/stick direito mira o dash; armas travam e atiram.|WASD, Pfeile oder linker Stick bewegen. Maus/rechter Stick zielt den Sprint; Waffen feuern automatisch.|WASD, yön tuşları veya sol çubuk hareket. Mouse/sağ çubuk atılma yönünü verir; silahlar oto ateş eder.|WASD, flèches ou stick gauche. Souris/stick droit vise le dash; armes auto-lock et tirent.|WASD/矢印/左スティックで移動。マウス/右スティックでダッシュ方向、武器は自動ロック射撃。
