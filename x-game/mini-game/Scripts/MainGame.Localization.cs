@@ -220,6 +220,30 @@ wave.pace.short.elite|ELITE|精英|ЭЛИТА|ELITE|ELITE|ELİT|ÉLITE|精鋭
 wave.pace.short.recovery|SUPPLY|补给|СНАБЖ.|SUPRIM.|VERSORG.|İKMAL|RAVIT.|補給
 wave.pace.short.pressure|RUSH|压迫|РЫВОК|PRESSÃO|DRUCK|BASKI|RUÉE|圧力
 wave.pace.short.boss|BOSS|Boss|БОСС|CHEFE|BOSS|BOSS|BOSS|ボス
+route.theme.balanced|Balanced route|均衡路线|Сбалансированный маршрут|Rota equilibrada|Ausgewogene Route|Dengeli rota|Route équilibrée|均衡ルート
+route.theme.rush|Rush route|突袭路线|Маршрут натиска|Rota de ataque|Sturmroute|Baskın rotası|Route d’assaut|突撃ルート
+route.theme.artillery|Artillery route|炮火路线|Артиллерийский маршрут|Rota de artilharia|Artillerieroute|Topçu rotası|Route d’artillerie|砲撃ルート
+route.theme.harass|Harass route|游击路线|Маневренный маршрут|Rota de assédio|Störroute|Taciz rotası|Route de harcèlement|攪乱ルート
+route.theme.siege|Siege route|重压路线|Осадный маршрут|Rota de cerco|Belagerungsroute|Kuşatma rotası|Route de siège|包囲ルート
+route.theme.hazard|Hazard route|雷场路线|Опасный маршрут|Rota de perigo|Gefahrenroute|Tehlike rotası|Route dangereuse|危険ルート
+route.theme.short.balanced|BALANCED|均衡|БАЛАНС|EQUIL.|BALANCE|DENGE|ÉQUIL.|均衡
+route.theme.short.rush|RUSH|突袭|НАТИСК|ATAQUE|STURM|BASKIN|ASSAUT|突撃
+route.theme.short.artillery|ARTILLERY|炮火|АРТ.|ARTIL.|ARTILL.|TOPÇU|ARTIL.|砲撃
+route.theme.short.harass|HARASS|游击|МАНЕВР|ASSÉDIO|STÖRUNG|TACİZ|HARCÈL.|攪乱
+route.theme.short.siege|SIEGE|重压|ОСАДА|CERCO|BELAGER.|KUŞATMA|SIÈGE|包囲
+route.theme.short.hazard|HAZARD|雷场|ОПАСН.|PERIGO|GEFAHR|TEHLİKE|DANGER|危険
+wave.directive.none|Standard contact|标准接敌|Обычный контакт|Contato padrão|Standardkontakt|Standart temas|Contact standard|通常接敵
+wave.directive.flank|Flank group|侧翼敌群|Фланговая группа|Grupo de flanco|Flankengruppe|Kanat grubu|Groupe de flanc|側面部隊
+wave.directive.swarm|Dense swarm|密集蜂群|Плотный рой|Enxame denso|Dichter Schwarm|Yoğun sürü|Essaim dense|密集群
+wave.directive.artillery|Long-range fire|远程火力|Дальний огонь|Fogo distante|Fernfeuer|Uzak ateş|Feu longue portée|遠距離射撃
+wave.directive.anchor|Armored anchor|装甲核心|Бронированный якорь|Âncora blindada|Gepanzerter Anker|Zırhlı dayanak|Ancre blindée|装甲中核
+wave.directive.minefield|Minefield|星雷场|Минное поле|Campo minado|Minenfeld|Mayın alanı|Champ de mines|機雷原
+wave.directive.short.none|STD|标准|ОБЫЧ.|PADR.|STD|STD|STD|通常
+wave.directive.short.flank|FLANK|侧袭|ФЛАНГ|FLANCO|FLANKE|KANAT|FLANC|側面
+wave.directive.short.swarm|DENSE|密集|ПЛОТН.|DENSO|DICHT|YOĞUN|DENSE|密集
+wave.directive.short.artillery|RANGE|远程|ДАЛЬН.|LONGE|FERN|UZAK|PORTÉE|遠距
+wave.directive.short.anchor|ARMOR|装甲|БРОНЯ|BLIND.|PANZER|ZIRH|ARMURE|装甲
+wave.directive.short.minefield|MINES|星雷|МИНЫ|MINAS|MINEN|MAYIN|MINES|機雷
 flow.momentum|MOMENTUM +FOCUS +ENERGY|连战动量：专注与能量提升|ТЕМП +ФОКУС +ЭНЕРГИЯ|RITMO +FOCO +ENERGIA|MOMENTUM +FOKUS +ENERGIE|İVME +ODAK +ENERJİ|ÉLAN +FOCUS +ÉNERGIE|勢い +集中 +エネルギー
 flow.supply|SUPPLY WAVE: fewer enemies, better recovery.|补给波：敌人较少，恢复更多。|Волна снабжения: меньше врагов, больше восстановления.|Onda de suprimento: menos inimigos, mais cura.|Versorgung: weniger Feinde, bessere Erholung.|İkmal dalgası: az düşman, çok toparlanma.|Ravitaillement : moins d’ennemis, meilleure récupération.|補給波：敵少なめ、回復多め。
 flow.draft|BUILD DRAFT READY|构筑选择就绪|ВЫБОР СБОРКИ ГОТОВ|ESCOLHA DE BUILD|BUILD-WAHL BEREIT|YAPI SEÇİMİ HAZIR|CHOIX DE BUILD PRÊT|ビルド選択可能

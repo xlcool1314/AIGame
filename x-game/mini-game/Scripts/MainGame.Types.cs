@@ -200,6 +200,26 @@ public partial class MainGame
         Boss,
     }
 
+    private enum RunRouteTheme
+    {
+        Balanced,
+        Rush,
+        Artillery,
+        Harass,
+        Siege,
+        Hazard,
+    }
+
+    private enum WaveDirectiveKind
+    {
+        None,
+        Flank,
+        Swarm,
+        Artillery,
+        Anchor,
+        Minefield,
+    }
+
     private enum BossArchetype
     {
         Choir,
@@ -369,6 +389,7 @@ public partial class MainGame
         public bool Rift;
         public bool Grazed;
         public int Homing;
+        public float HomingRetargetTimer;
         public int Bounces;
         public bool Heavy;
         public bool Shadow;
@@ -401,6 +422,8 @@ public partial class MainGame
         public Vector2 Facing = Vector2.Up;
         public float Phase;
         public float CommandPulse;
+        public Enemy? Target;
+        public float RetargetTimer;
         public bool Active;
     }
 

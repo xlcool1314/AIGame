@@ -37,6 +37,7 @@ public partial class MainGame
         shot.SplitDepth = 0;
         shot.Grazed = false;
         shot.Homing = 0;
+        shot.HomingRetargetTimer = 0.0f;
         shot.Bounces = 0;
         shot.Heavy = false;
         shot.Shadow = false;
@@ -223,6 +224,8 @@ public partial class MainGame
             visual.Facing = Vector2.Up;
             visual.Phase = 0.0f;
             visual.CommandPulse = 0.0f;
+            visual.Target = null;
+            visual.RetargetTimer = 0.0f;
             visual.Active = false;
         }
     }
@@ -272,7 +275,9 @@ public partial class MainGame
         }
 
         _playerTrailTimer -= dt;
-        float minDistance = _dashTimer > 0.0f ? 5.0f : (_visualPressure > 0.84f ? 16.0f : 9.0f);
+        float minDistance = _dashTimer > 0.0f
+            ? (_visualPressure > 0.72f ? 8.0f : 5.0f)
+            : (_visualPressure > 0.68f ? 20.0f : _visualPressure > 0.42f ? 13.0f : 9.0f);
         if (_playerTrailTimer > 0.0f && _playerPos.DistanceSquaredTo(_playerTrail[0]) < minDistance * minDistance)
         {
             return;
@@ -285,7 +290,9 @@ public partial class MainGame
 
         _playerTrail[0] = _playerPos;
         _playerTrailCount = Math.Min(PlayerTrailCapacity, _playerTrailCount + 1);
-        _playerTrailTimer = _dashTimer > 0.0f ? 0.008f : (_visualPressure > 0.84f ? 0.044f : 0.022f);
+        _playerTrailTimer = _dashTimer > 0.0f
+            ? (_visualPressure > 0.72f ? 0.014f : 0.008f)
+            : (_visualPressure > 0.68f ? 0.06f : _visualPressure > 0.42f ? 0.036f : 0.022f);
     }
 
     private void RecyclePickup(Pickup pickup)

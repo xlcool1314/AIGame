@@ -22,14 +22,14 @@ public partial class MainGame : Node2D
     private const float SfxGlobalGain = 0.48f;
     private const float SfxNoiseScale = 0.18f;
     private const int MaxEnemies = 96;
-    private const int MaxShots = 480;
+    private const int MaxShots = 420;
     private const int MaxPickups = 260;
     private const int PickupTextureSoftCap = 110;
     private const int PickupTextureHardCap = 170;
-    private const int MaxParticles = 720;
-    private const int MaxDamageTexts = 72;
+    private const int MaxParticles = 560;
+    private const int MaxDamageTexts = 56;
     private const int MaxOrbiters = 10;
-    private const int MaxDroneCommandCues = 28;
+    private const int MaxDroneCommandCues = 18;
     private const int MaxPoolSize = 900;
     private const float TutorialMoveSeconds = 1.35f;
     private const float TutorialFlowSeconds = 5.6f;
@@ -54,7 +54,7 @@ public partial class MainGame : Node2D
     private const float EnemyBulletSpeedStartScale = 0.54f;
     private const float EnemyBulletSpeedEndScale = 0.84f;
     private const int EnemyBulletCapStart = 72;
-    private const int EnemyBulletCapEnd = 240;
+    private const int EnemyBulletCapEnd = 210;
     private const float CruiseChargeMax = 100.0f;
     private const float CruiseGrazeRadius = 58.0f;
     private const float AssaultBurstMin = 1.45f;
@@ -99,6 +99,8 @@ public partial class MainGame : Node2D
     private const float DashAimVisualTurnSpeed = 13.5f;
     private const float SeekerBaseCooldown = 0.86f;
     private const float HeavySlugBaseCooldown = 1.55f;
+    private const float HomingRetargetInterval = 0.075f;
+    private const float OrbiterRetargetInterval = 0.14f;
     private const float BasePlayerHull = 28.0f;
     private const float HullPlatingPerRank = 4.0f;
     private const float GamepadTriggerThreshold = 0.45f;
@@ -112,6 +114,21 @@ public partial class MainGame : Node2D
     private const int TitleSettingsFocus = TitleFooterFocusStart + 2;
     private static readonly float[] BossPhaseThresholds = { 0.72f, 0.43f, 0.18f };
     private static readonly int[] BuildMilestoneThresholds = { 5, 8, 11 };
+    private static readonly EnemyKind[] EnemyDirectorKinds =
+    {
+        EnemyKind.Chaser,
+        EnemyKind.Weaver,
+        EnemyKind.Turret,
+        EnemyKind.Drifter,
+        EnemyKind.Mine,
+        EnemyKind.Lance,
+        EnemyKind.Splitter,
+        EnemyKind.Siren,
+        EnemyKind.Shard,
+        EnemyKind.Harrier,
+        EnemyKind.Bulwark,
+        EnemyKind.Warden,
+    };
 
     private static List<float>[] CreateClearRecordLists()
     {
@@ -154,6 +171,7 @@ public partial class MainGame : Node2D
     private static readonly Vector2 ScreenCenter = new(ScreenWidth * 0.5f, ScreenHeight * 0.5f);
     private static readonly Rect2 Arena = new(new Vector2(84.0f, 86.0f), new Vector2(1752.0f, 884.0f));
     private static readonly Rect2 ShotCullBounds = Arena.Grow(180.0f);
+    private static readonly Rect2 DrawCullBounds = Arena.Grow(260.0f);
     private static readonly Color Void = new(0.002f, 0.004f, 0.008f);
     private static readonly Color Ink = new(0.008f, 0.015f, 0.022f);
     private static readonly Color Cyan = new(0.0f, 0.78f, 0.9f);
@@ -827,6 +845,10 @@ public partial class MainGame : Node2D
     private readonly Vector2[][][] _polygonScratch = CreatePolygonScratch(0);
     private readonly Vector2[][][] _closedPolygonScratch = CreatePolygonScratch(1);
     private readonly Queue<PendingSpawn> _pendingSpawns = new();
+    private readonly EnemyKind[] _wavePrimaryPlan = new EnemyKind[TotalWaves + 1];
+    private readonly EnemyKind[] _waveSupportPlan = new EnemyKind[TotalWaves + 1];
+    private readonly WavePaceKind[] _wavePacePlan = new WavePaceKind[TotalWaves + 1];
+    private readonly WaveDirectiveKind[] _waveDirectivePlan = new WaveDirectiveKind[TotalWaves + 1];
     private readonly Dictionary<UpgradeId, int> _upgradeRanks = new();
     private readonly Dictionary<MetaUpgradeId, int> _metaRanks = new();
     private readonly Dictionary<PilotKind, int> _pilotRuns = new();
@@ -893,6 +915,11 @@ public partial class MainGame : Node2D
     private float _polarityCooldown;
     private float _polarityCooldownMax = PolaritySwitchCooldownBase;
     private float _ultimateCooldown;
+    private float _tacticalBannerTimer;
+    private float _tacticalBannerFocus;
+    private string _tacticalBannerName = string.Empty;
+    private string _tacticalBannerTip = string.Empty;
+    private Color _tacticalBannerColor = Cyan;
     private float _polarityDenyTextCooldown;
     private int _playerPolarity;
     private int _wave;
@@ -932,6 +959,8 @@ public partial class MainGame : Node2D
     private float _bossPatternTimer;
     private float _sectorHazardTimer;
     private WavePaceKind _currentWavePace = WavePaceKind.Standard;
+    private RunRouteTheme _runRouteTheme = RunRouteTheme.Balanced;
+    private bool _waveDirectorReady;
     private int _combatChain;
     private BossArchetype _lastBossArchetype = BossArchetype.Choir;
     private bool _hasLastBossArchetype;
@@ -1750,31 +1779,61 @@ public partial class MainGame : Node2D
 
             foreach (Particle particle in _particles)
             {
+                if (!DrawCullBounds.HasPoint(particle.Pos))
+                {
+                    continue;
+                }
+
                 DrawParticle(particle);
             }
 
             foreach (DroneCommandCue cue in _droneCommandCues)
             {
+                if (!DrawCullBounds.HasPoint(cue.Pos))
+                {
+                    continue;
+                }
+
                 DrawDroneCommandCue(cue);
             }
 
             foreach (Shockwave shockwave in _shockwaves)
             {
+                if (!DrawCullBounds.Grow(shockwave.Radius).HasPoint(shockwave.Center))
+                {
+                    continue;
+                }
+
                 DrawShockwave(shockwave);
             }
 
             foreach (Pickup pickup in _pickups)
             {
+                if (!DrawCullBounds.HasPoint(pickup.Pos))
+                {
+                    continue;
+                }
+
                 DrawPickup(pickup);
             }
 
             foreach (Shot shot in _shots)
             {
+                if (!DrawCullBounds.HasPoint(shot.Pos))
+                {
+                    continue;
+                }
+
                 DrawShot(shot);
             }
 
             foreach (Enemy enemy in _enemies)
             {
+                if (enemy.Kind != EnemyKind.Boss && !DrawCullBounds.HasPoint(enemy.Pos))
+                {
+                    continue;
+                }
+
                 DrawEnemy(enemy);
             }
         }
@@ -2789,6 +2848,10 @@ public partial class MainGame : Node2D
         _invulnTimer = 1.8f;
         _hitFlashTimer = 0.0f;
         _ultimateCooldown = 0.0f;
+        _tacticalBannerTimer = 0.0f;
+        _tacticalBannerFocus = 0.0f;
+        _tacticalBannerName = string.Empty;
+        _tacticalBannerTip = string.Empty;
         _playerPolarity = CruiseStance;
         _polarityCooldown = 0.0f;
         _polarityDenyTextCooldown = 0.0f;
@@ -2928,10 +2991,12 @@ public partial class MainGame : Node2D
         if (tutorial)
         {
             _runObjectives.Clear();
+            ResetWaveDirectorPlan();
         }
         else
         {
             SetupRunObjectives();
+            SetupWaveDirectorPlan();
         }
         ApplyPilotBaseline();
         if (!tutorial)
@@ -3204,22 +3269,25 @@ public partial class MainGame : Node2D
         }
 
         int baseBudget = WaveBaseBudget(sector, waveInSector);
-        float budget = Mathf.Max(2.0f, (baseBudget + _nextWaveBonusEnemies) * WaveBudgetScale(_currentWavePace));
+        WaveDirectiveKind directive = CurrentWaveDirective();
+        float budget = Mathf.Max(2.0f, (baseBudget + _nextWaveBonusEnemies) * WaveBudgetScale(_currentWavePace) * RouteBudgetScale(_runRouteTheme) * DirectiveBudgetScale(directive));
         _waveProgressBudget = WaveProgressBudget(budget, sector, waveInSector, _currentWavePace);
         _waveBudget = Mathf.CeilToInt(_waveProgressBudget);
-        _waveRewardBoost = _nextWaveRewardBoost * WaveRewardScale(_currentWavePace);
+        _waveRewardBoost = _nextWaveRewardBoost * WaveRewardScale(_currentWavePace) * DirectiveRewardScale(directive);
         EnemyKind primaryKind = WavePrimaryEnemyKind(sector, waveInSector);
         EnemyKind supportKind = WaveSupportEnemyKind(sector, waveInSector);
         _nextWaveBonusEnemies = 0;
         _nextWaveRewardBoost = 1.0f;
-        int openingBatch = WaveOpeningBatchCount(sector, waveInSector, _currentWavePace, _waveProgressBudget);
+        int openingBatch = WaveOpeningBatchCount(sector, waveInSector, _currentWavePace, _waveProgressBudget) + DirectiveBatchBonus(directive, 0.0f);
+        openingBatch = Mathf.Clamp(openingBatch, 5, MaxSpawnBatchCount(sector, waveInSector));
         for (int i = 0; i < openingBatch && !WaveProgressComplete(); i++)
         {
             SpawnPendingEnemy(CreateNextWaveSpawn(primaryKind, supportKind));
         }
         ScheduleNextSpawnBatch(false);
 
-        QueueCenterText($"{T("wave.engage")}  /  {WavePaceText(_currentWavePace)}", ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 42.0f);
+        string directiveText = directive == WaveDirectiveKind.None ? RouteThemeText(_runRouteTheme) : WaveDirectiveText(directive);
+        QueueCenterText($"{T("wave.engage")}  /  {WavePaceText(_currentWavePace)}  /  {directiveText}", ScreenCenter + new Vector2(0.0f, -210.0f), info.Accent, 38.0f);
         if (_currentWavePace == WavePaceKind.Recovery)
         {
             QueueCenterText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
@@ -3387,6 +3455,7 @@ public partial class MainGame : Node2D
         interval -= Math.Min(0.32f, Math.Max(0, waveInSector - 1) * 0.04f);
         interval *= WaveIntervalArcScale(waveInSector);
         interval *= WaveSpawnIntervalScale(_currentWavePace);
+        interval *= DirectiveSpawnIntervalScale(CurrentWaveDirective());
         interval *= Mathf.Lerp(1.08f, 0.68f, WavePressure01());
         interval *= 1.0f - Math.Min(0.16f, sector * 0.035f);
         return Mathf.Clamp(interval, 0.95f, 7.2f);
@@ -3436,6 +3505,7 @@ public partial class MainGame : Node2D
                 count = Math.Max(5, Math.Min(count - 1, 6 + sector / 2 + (wavePressure > 0.72f ? 1 : 0)));
                 break;
         }
+        count += DirectiveBatchBonus(CurrentWaveDirective(), wavePressure);
 
         if (_combo >= 96)
         {
@@ -3487,6 +3557,7 @@ public partial class MainGame : Node2D
         {
             cap -= _currentWavePace == WavePaceKind.Recovery ? 3 : 1;
         }
+        cap += DirectiveSoftCapBonus(CurrentWaveDirective());
 
         if (_combo >= 50)
         {
@@ -5100,6 +5171,7 @@ public partial class MainGame : Node2D
         _hitFlashTimer = Mathf.Max(0.0f, _hitFlashTimer - gameDt);
         _polarityCooldown = Mathf.Max(0.0f, _polarityCooldown - gameDt);
         _ultimateCooldown = Mathf.Max(0.0f, _ultimateCooldown - gameDt);
+        _tacticalBannerTimer = Mathf.Max(0.0f, _tacticalBannerTimer - gameDt);
         _polarityDenyTextCooldown -= gameDt;
         _absorbTextCooldown -= gameDt;
         _counterTextCooldown -= gameDt;
@@ -5184,6 +5256,7 @@ public partial class MainGame : Node2D
         _hitFlashTimer = Mathf.Max(0.0f, _hitFlashTimer - gameDt);
         _polarityCooldown = Mathf.Max(0.0f, _polarityCooldown - gameDt);
         _ultimateCooldown = Mathf.Max(0.0f, _ultimateCooldown - gameDt);
+        _tacticalBannerTimer = Mathf.Max(0.0f, _tacticalBannerTimer - gameDt);
         _polarityDenyTextCooldown -= gameDt;
         _absorbTextCooldown -= gameDt;
         _counterTextCooldown -= gameDt;
@@ -5699,11 +5772,12 @@ public partial class MainGame : Node2D
         Color color = PilotAccent(_runPilot);
         _playerPolarity = CruiseStance;
         _polarityCooldown = _polarityCooldownMax;
-        _polarityTipTimer = 2.35f;
+        _polarityTipTimer = 0.0f;
         _energy = Mathf.Clamp(_energy + (4.0f + focus01 * 8.0f) * _absorbEfficiency, 0.0f, _maxEnergy);
         _assaultPower = 1.0f;
         _assaultBurstTimer = 0.0f;
         _cruiseCharge = 0.0f;
+        ShowTacticalBanner(color, focus01);
 
         switch (_runPilot)
         {
@@ -5739,9 +5813,19 @@ public partial class MainGame : Node2D
         }
 
         AddObjectiveProgress(RunObjectiveKind.CastTactical, 1);
+        AddShockwave(_playerPos, 132.0f + focus01 * 110.0f, color, 0.52f);
         Burst(_playerPos, color, 28 + Mathf.RoundToInt(focus01 * 18.0f), 410.0f, 0.78f);
-        AddText(TacticalTipText(), _playerPos + new Vector2(0.0f, -92.0f), color, 22.0f);
+        AddText(TacticalSkillName(_runPilot), _playerPos + new Vector2(0.0f, -104.0f), color, 24.0f);
         PlaySfx(430.0f + focus01 * 120.0f, 0.55f, 0.16f, 0.26f, 0.03f, 2);
+    }
+
+    private void ShowTacticalBanner(Color color, float focus01)
+    {
+        _tacticalBannerTimer = 1.85f;
+        _tacticalBannerFocus = focus01;
+        _tacticalBannerName = TacticalSkillName(_runPilot);
+        _tacticalBannerTip = TacticalTipText();
+        _tacticalBannerColor = color;
     }
 
     private void CastAstraTactical(float focus01, Color color)
@@ -5874,7 +5958,7 @@ public partial class MainGame : Node2D
         _shake = 0.62f;
         _flash = 0.46f;
         Color color = PilotAccent(_runPilot);
-        AddText(UltimateName(_runPilot), _playerPos + new Vector2(0.0f, -104.0f), PilotAccent(_runPilot), 30.0f);
+        AddText(UltimateName(_runPilot), _playerPos + new Vector2(0.0f, -104.0f), color, 30.0f);
         CastUnifiedBulletClearUltimate(color);
         AddObjectiveProgress(RunObjectiveKind.CastUltimate, 1);
     }
@@ -5883,8 +5967,8 @@ public partial class MainGame : Node2D
     {
         float radius = 420.0f + MetaRank(MetaUpgradeId.NovaCatalyst) * 24.0f + Math.Max(0.0f, _maxEnergy - 100.0f) * 0.7f;
         ClearBulletsNear(_playerPos, radius, false);
-        _invulnTimer = Mathf.Max(_invulnTimer, 0.38f);
-        AddShockwave(_playerPos, radius, color);
+        _invulnTimer = Mathf.Max(_invulnTimer, 0.5f);
+        AddShockwave(_playerPos, radius, color, 0.92f);
         Burst(_playerPos, color, 34, 520.0f, 0.85f);
         PlaySfx(120.0f, 0.9f, 0.28f, 0.42f, 0.12f, 0);
     }
@@ -8167,6 +8251,24 @@ public partial class MainGame : Node2D
             return;
         }
 
+        shot.HomingRetargetTimer -= dt;
+        if (shot.HomingRetargetTimer > 0.0f)
+        {
+            return;
+        }
+
+        float pressure = PerformancePressure();
+        float interval = HomingRetargetInterval;
+        if (pressure > 0.82f)
+        {
+            interval *= 1.85f;
+        }
+        else if (pressure > 0.62f)
+        {
+            interval *= 1.35f;
+        }
+        shot.HomingRetargetTimer = interval + _rng.RandfRange(0.0f, 0.022f);
+
         Enemy? target = FindNearestEnemy(shot.Pos, 560.0f + shot.Homing * 145.0f);
         if (target == null)
         {
@@ -9655,7 +9757,7 @@ public partial class MainGame : Node2D
             {
                 ClearBulletsNear(origin, 34.0f, false);
             }
-            Enemy? target = FindNearestEnemy(origin, _runPilot == PilotKind.Kairo ? 820.0f : 680.0f);
+            Enemy? target = GetOrbiterTarget(visual, origin, _runPilot == PilotKind.Kairo ? 820.0f : 680.0f, 0.0f, true);
             if (target == null)
             {
                 continue;
@@ -9666,6 +9768,38 @@ public partial class MainGame : Node2D
             visual.CommandPulse = 1.0f;
             fired++;
         }
+    }
+
+    private Enemy? GetOrbiterTarget(OrbiterVisual visual, Vector2 origin, float radius, float dt, bool force = false)
+    {
+        visual.RetargetTimer = Math.Max(0.0f, visual.RetargetTimer - dt);
+        Enemy? target = visual.Target;
+        float radiusSquared = radius * radius;
+        bool validTarget = target != null && target.Hp > 0.0f && target.Pos.DistanceSquaredTo(origin) <= radiusSquared * 1.28f;
+        if (!force && validTarget && visual.RetargetTimer > 0.0f)
+        {
+            return target;
+        }
+
+        if (!force && visual.RetargetTimer > 0.0f)
+        {
+            return validTarget ? target : null;
+        }
+
+        float pressure = PerformancePressure();
+        float interval = OrbiterRetargetInterval;
+        if (pressure > 0.82f)
+        {
+            interval *= 1.85f;
+        }
+        else if (pressure > 0.62f)
+        {
+            interval *= 1.35f;
+        }
+
+        visual.RetargetTimer = interval + _rng.RandfRange(0.0f, 0.035f);
+        visual.Target = FindNearestEnemy(origin, radius);
+        return visual.Target;
     }
 
     private void EnsureOrbiterVisuals()
@@ -9680,6 +9814,8 @@ public partial class MainGame : Node2D
             {
                 visual.Active = false;
                 visual.CommandPulse = 0.0f;
+                visual.Target = null;
+                visual.RetargetTimer = 0.0f;
                 continue;
             }
 
@@ -9694,6 +9830,8 @@ public partial class MainGame : Node2D
             visual.Vel = _playerVel * 0.24f;
             visual.Facing = aim;
             visual.CommandPulse = 0.0f;
+            visual.Target = null;
+            visual.RetargetTimer = _rng.RandfRange(0.0f, OrbiterRetargetInterval);
         }
     }
 
@@ -9715,7 +9853,7 @@ public partial class MainGame : Node2D
             }
 
             Vector2 desired = OrbiterFormationTarget(i, count, aim, right, visual.Phase);
-            Enemy? target = FindNearestEnemy(visual.Pos, kairo ? 760.0f : 620.0f);
+            Enemy? target = GetOrbiterTarget(visual, visual.Pos, kairo ? 760.0f : 620.0f, dt);
             if (target != null)
             {
                 Vector2 toTarget = target.Pos - visual.Pos;
@@ -12409,14 +12547,14 @@ public partial class MainGame : Node2D
         {
             Vector2 drawSize = DroneTextureDrawSize(region.Size, kairo);
             float shadowRadius = Mathf.Max(drawSize.X, drawSize.Y) * 0.34f;
-            if (_visualPressure < 0.86f)
+            if (_visualPressure < 0.58f)
             {
                 DrawCircle(pos + new Vector2(0.0f, 4.0f), shadowRadius, Alpha(Void, 0.34f));
                 DrawCircle(pos, shadowRadius * (1.0f + charge * 0.22f), Alpha(accent, 0.08f + charge * 0.04f));
             }
 
             DrawFacingTexture(texture, region, pos, visual.Facing, drawSize, Alpha(Colors.White, 0.92f));
-            if (visual.CommandPulse > 0.0f && _visualPressure < 0.84f)
+            if (visual.CommandPulse > 0.0f && _visualPressure < 0.62f)
             {
                 float ringRadius = Mathf.Max(drawSize.X, drawSize.Y) * (0.52f + visual.CommandPulse * 0.22f);
                 DrawArc(pos, ringRadius, -Mathf.Pi * 0.5f, Mathf.Pi * 1.5f, 24, Alpha(accent, visual.CommandPulse * 0.26f), UiHairline, true);
@@ -12436,7 +12574,7 @@ public partial class MainGame : Node2D
         }
 
         Vector2 shake = ShakeOffset();
-        int maxSegments = _visualPressure > 0.82f ? 6 : 11;
+        int maxSegments = _visualPressure > 0.68f ? 4 : _visualPressure > 0.42f ? 7 : 11;
         int count = Math.Min(_playerTrailCount, maxSegments);
         Vector2 from = current;
         for (int i = 0; i < count; i++)
@@ -12448,8 +12586,9 @@ public partial class MainGame : Node2D
             }
 
             float t = (i + 1.0f) / (count + 1.0f);
-            float width = Mathf.Lerp(26.0f, 3.0f, t);
-            float alpha = (1.0f - t) * (0.18f + (_dashTimer > 0.0f ? 0.16f : 0.0f)) * invuln;
+            float pressureScale = _visualPressure > 0.68f ? 0.72f : 1.0f;
+            float width = Mathf.Lerp(26.0f, 3.0f, t) * pressureScale;
+            float alpha = (1.0f - t) * (0.18f + (_dashTimer > 0.0f ? 0.16f : 0.0f)) * invuln * pressureScale;
             DrawLine(from, to, Alpha(polarity, alpha), width, true);
             DrawLine(from, to, Alpha(Paper, alpha * 0.36f), Mathf.Max(1.0f, width * 0.16f), true);
             from = to;
@@ -12714,7 +12853,7 @@ public partial class MainGame : Node2D
         float overheat = EnemyOverheat01(enemy);
         float dashWarm = enemy.DashWarmup > 0.0f ? EnemyDashWarmup01(enemy) : 0.0f;
         bool importantState = charge > 0.0f || overheat > 0.0f || dashWarm > 0.0f || enemy.DashTime > 0.0f;
-        bool heavyVisualLoad = _visualPressure > 0.72f && enemy.Kind != EnemyKind.Boss && !enemy.Elite && !importantState;
+        bool heavyVisualLoad = _visualPressure > 0.58f && enemy.Kind != EnemyKind.Boss && !enemy.Elite && !importantState;
         bool artBacked = HasEnemyTexture(enemy);
 
         if (!artBacked && !heavyVisualLoad)
@@ -12833,7 +12972,8 @@ public partial class MainGame : Node2D
         Vector2 drawSize = EnemyTextureDrawSize(enemy, sourceRegion.Size);
         DrawFacingTexture(texture, sourceRegion, p, facing, drawSize, Alpha(Colors.White, 0.95f));
 
-        if (hp < 0.995f || enemy.Elite)
+        bool drawHealthBar = enemy.Elite || hp < 0.35f || (hp < 0.995f && _visualPressure < 0.7f);
+        if (drawHealthBar)
         {
             Rect2 bar = new(p + new Vector2(-enemy.Radius, enemy.Radius + 12.0f), new Vector2(enemy.Radius * 2.0f, 5.0f));
             DrawRect(bar, Alpha(Paper, 0.13f), true);
@@ -13296,7 +13436,7 @@ public partial class MainGame : Node2D
         Vector2 pos = shot.Pos + ShakeOffset();
         if (shot.FromPlayer)
         {
-            bool heavyVisualLoad = _visualPressure > 0.78f;
+            bool heavyVisualLoad = _visualPressure > 0.58f;
             if (TryDrawShotTexture(shot, pos, color, heavyVisualLoad))
             {
                 return;
@@ -13322,7 +13462,7 @@ public partial class MainGame : Node2D
         }
         else
         {
-            bool heavyVisualLoad = _visualPressure > 0.68f;
+            bool heavyVisualLoad = _visualPressure > 0.52f;
             if (TryDrawShotTexture(shot, pos, color, heavyVisualLoad))
             {
                 return;
@@ -13556,12 +13696,13 @@ public partial class MainGame : Node2D
     {
         float t = Mathf.Clamp(particle.Life / particle.MaxLife, 0.0f, 1.0f);
         Vector2 pos = particle.Pos + ShakeOffset();
-        if (_visualPressure < 0.82f && particle.Vel.LengthSquared() > 2400.0f)
+        if (_visualPressure < 0.55f && particle.Vel.LengthSquared() > 2400.0f)
         {
             Vector2 dir = particle.Vel.Normalized();
             DrawLine(pos - dir * particle.Size * 2.0f, pos + dir * particle.Size * 0.6f, Alpha(particle.Color, t * 0.35f), Mathf.Max(1.0f, particle.Size * 0.34f), true);
         }
-        DrawCircle(pos, particle.Size * (0.35f + t), Alpha(particle.Color, t * 0.62f));
+        float pressureScale = _visualPressure > 0.82f ? 0.72f : _visualPressure > 0.62f ? 0.86f : 1.0f;
+        DrawCircle(pos, particle.Size * (0.35f + t) * pressureScale, Alpha(particle.Color, t * 0.62f * pressureScale));
     }
 
     private void DrawShockwave(Shockwave wave)
@@ -13576,7 +13717,7 @@ public partial class MainGame : Node2D
 
         DrawCircle(center, radius, Alpha(wave.Color, alpha * 0.12f), false, lineWidth * 4.0f, true);
         DrawCircle(center, radius, Alpha(wave.Color.Lerp(Paper, 0.18f), alpha), false, lineWidth, true);
-        if (_visualPressure < 0.78f)
+        if (_visualPressure < 0.55f)
         {
             DrawCircle(center, radius * 0.72f, Alpha(Paper, life01 * 0.1f), false, UiHairline, true);
         }
@@ -13802,10 +13943,42 @@ public partial class MainGame : Node2D
         DrawSettingsButton(HudSettingsButtonRect(), false);
         DrawBossHealthHud();
         DrawWaveIntelHud();
+        DrawTacticalBanner();
         DrawUpgradeIcons();
         DrawRunObjectives();
         DrawBottomExperienceBar();
         DrawTransientPolarityTip(polarity);
+    }
+
+    private void DrawTacticalBanner()
+    {
+        if (_tacticalBannerTimer <= 0.0f || string.IsNullOrWhiteSpace(_tacticalBannerName))
+        {
+            return;
+        }
+
+        const float duration = 1.85f;
+        float appear = Mathf.Clamp((duration - _tacticalBannerTimer) / 0.18f, 0.0f, 1.0f);
+        float fade = Mathf.Clamp(_tacticalBannerTimer / 0.28f, 0.0f, 1.0f);
+        float alpha = Mathf.Min(appear, fade);
+        Color accent = _tacticalBannerColor.Lerp(Paper, 0.12f);
+        float y = ActiveBoss() == null ? 136.0f : 158.0f;
+        Rect2 panel = new(new Vector2(560.0f, y), new Vector2(800.0f, 82.0f));
+        float line01 = Mathf.Clamp(_tacticalBannerTimer / duration, 0.0f, 1.0f);
+        string focusText = $"{T("tactical.focus")} {Mathf.RoundToInt(_tacticalBannerFocus * 100.0f)}%";
+        string windowText = _assaultBurstTimer > 0.0f ? Tf("hud.assault_window", _assaultBurstTimer) : T("hud.resonance_ready");
+
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 260.0f, 0.026f * alpha, 4);
+        DrawPanel(panel, Alpha(Ink, 0.64f * alpha), Alpha(accent, 0.46f * alpha));
+        DrawLine(panel.Position + new Vector2(22.0f, 18.0f), panel.Position + new Vector2(22.0f, panel.Size.Y - 18.0f), Alpha(accent, 0.54f * alpha), UiStroke, true);
+        DrawText(_tacticalBannerName, panel.Position + new Vector2(44.0f, 32.0f), 22, Alpha(Paper, 0.92f * alpha), HorizontalAlignment.Left, 242.0f, true, 2);
+        DrawText(focusText, panel.Position + new Vector2(44.0f, 59.0f), 12, Alpha(accent, 0.78f * alpha), HorizontalAlignment.Left, 126.0f, false, 0);
+        DrawText(windowText, panel.Position + new Vector2(180.0f, 59.0f), 12, Alpha(Paper, 0.52f * alpha), HorizontalAlignment.Left, 126.0f, false, 0);
+        DrawWrapped(_tacticalBannerTip, panel.Position + new Vector2(338.0f, 22.0f), 15, Alpha(Paper, 0.72f * alpha), 424.0f, 22.0f);
+
+        Rect2 bar = new(panel.Position + new Vector2(22.0f, panel.Size.Y - 7.0f), new Vector2(panel.Size.X - 44.0f, 2.0f));
+        DrawRect(bar, Alpha(Paper, 0.09f * alpha), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * line01, bar.Size.Y)), Alpha(accent, 0.76f * alpha), true);
     }
 
     private void DrawWaveIntelHud()
@@ -13824,10 +13997,14 @@ public partial class MainGame : Node2D
         int reserve = WaveReserveEstimate();
         float progress = WaveProgress01();
         float cooldown = NextReserveSpawnProgress01();
+        WaveDirectiveKind directive = CurrentWaveDirective();
         string batchText = reserve > 0 || _pendingSpawns.Count > 0
             ? Tf("wave.intel.batch", Math.Max(0.0f, _waveSpawnTimer), Math.Max(1, _waveNextSpawnCount))
             : T("wave.intel.complete");
         bool fast = SpawnRateMultiplier() > 1.65f;
+        string paceText = directive == WaveDirectiveKind.None
+            ? WavePaceShortText(_currentWavePace)
+            : $"{WavePaceShortText(_currentWavePace)} / {WaveDirectiveShortText(directive)}";
 
         DrawPanel(panel, Alpha(Ink, 0.34f), Alpha(accent, 0.22f + _waveIntelPulse * 0.12f));
         DrawLine(panel.Position + new Vector2(116.0f, 9.0f), panel.Position + new Vector2(116.0f, panel.Size.Y - 9.0f), Alpha(Paper, 0.1f), UiHairline, true);
@@ -13835,9 +14012,10 @@ public partial class MainGame : Node2D
         DrawLine(panel.Position + new Vector2(586.0f, 9.0f), panel.Position + new Vector2(586.0f, panel.Size.Y - 9.0f), Alpha(Paper, 0.1f), UiHairline, true);
 
         DrawText(Tf("wave.intel.wave", _wave, TotalWaves), panel.Position + new Vector2(12.0f, 16.0f), 11, Alpha(Paper, 0.54f), HorizontalAlignment.Left, 92.0f, false, 0);
-        DrawText(WavePaceShortText(_currentWavePace), panel.Position + new Vector2(12.0f, 34.0f), 13, Alpha(accent, 0.84f), HorizontalAlignment.Left, 92.0f, true, 1);
+        DrawText(paceText, panel.Position + new Vector2(12.0f, 34.0f), 12, Alpha(accent, 0.84f), HorizontalAlignment.Left, 96.0f, true, 1);
 
-        DrawText(Tf("wave.intel.primary", EnemyName(primary)), panel.Position + new Vector2(132.0f, 28.0f), 14, Alpha(Paper, 0.78f), HorizontalAlignment.Left, 218.0f, true, 1);
+        DrawText(Tf("wave.intel.primary", EnemyName(primary)), panel.Position + new Vector2(132.0f, 20.0f), 13, Alpha(Paper, 0.78f), HorizontalAlignment.Left, 218.0f, true, 1);
+        DrawText(RouteThemeShortText(_runRouteTheme), panel.Position + new Vector2(132.0f, 37.0f), 10, Alpha(accent, 0.56f), HorizontalAlignment.Left, 218.0f, false, 0);
         DrawText(batchText, panel.Position + new Vector2(380.0f, 18.0f), 12, Alpha(fast ? Gold : accent, 0.82f), HorizontalAlignment.Left, 188.0f, true, 1);
         DrawText(SpawnSpeedText(), panel.Position + new Vector2(498.0f, 35.0f), 11, Alpha(fast ? Gold : Paper, 0.62f), HorizontalAlignment.Right, 70.0f, false, 0);
 
@@ -13900,7 +14078,7 @@ public partial class MainGame : Node2D
 
     private void DrawTransientPolarityTip(Color current)
     {
-        if (_polarityTipTimer <= 0.0f)
+        if (_polarityTipTimer <= 0.0f || _tacticalBannerTimer > 0.0f)
         {
             return;
         }
@@ -15377,22 +15555,22 @@ public partial class MainGame : Node2D
     {
         int cap = _visualQuality switch
         {
-            VisualQuality.Low => 240,
-            VisualQuality.Medium => 360,
-            VisualQuality.Ultra => 680,
-            _ => 520,
+            VisualQuality.Low => 150,
+            VisualQuality.Medium => 240,
+            VisualQuality.Ultra => 460,
+            _ => 340,
         };
 
         if (pressure > 0.9f)
         {
-            cap = Mathf.RoundToInt(cap * 0.62f);
+            cap = Mathf.RoundToInt(cap * 0.48f);
         }
-        else if (pressure > 0.76f)
+        else if (pressure > 0.68f)
         {
-            cap = Mathf.RoundToInt(cap * 0.78f);
+            cap = Mathf.RoundToInt(cap * 0.68f);
         }
 
-        return Math.Max(140, cap);
+        return Math.Max(96, cap);
     }
 
     private int QualityDamageTextCap()
@@ -15404,19 +15582,19 @@ public partial class MainGame : Node2D
     {
         int cap = _visualQuality switch
         {
-            VisualQuality.Low => 36,
-            VisualQuality.Medium => 48,
+            VisualQuality.Low => 24,
+            VisualQuality.Medium => 34,
             VisualQuality.Ultra => MaxDamageTexts,
-            _ => 60,
+            _ => 44,
         };
 
         if (pressure > 0.86f)
         {
-            cap = Math.Min(cap, 28);
+            cap = Math.Min(cap, 18);
         }
-        else if (pressure > 0.72f)
+        else if (pressure > 0.64f)
         {
-            cap = Math.Min(cap, 40);
+            cap = Math.Min(cap, 28);
         }
 
         return cap;
@@ -15469,10 +15647,10 @@ public partial class MainGame : Node2D
     private float CalculateVisualPressure()
     {
         float pressure = PerformancePressure();
-        float shotPressure = _shots.Count / 320.0f;
-        float enemyPressure = _enemies.Count / 52.0f;
-        float pickupPressure = _pickups.Count / 150.0f;
-        float hazardPressure = (_hazards.Count + _hazardFields.Count * 1.4f) / 14.0f;
+        float shotPressure = _shots.Count / 235.0f;
+        float enemyPressure = _enemies.Count / 38.0f;
+        float pickupPressure = _pickups.Count / 120.0f;
+        float hazardPressure = (_hazards.Count + _hazardFields.Count * 1.4f) / 10.0f;
         float particlePressure = _particles.Count / (float)QualityParticleCap(pressure);
         float textPressure = _damageTexts.Count / (float)QualityDamageTextCap(pressure);
         float objectPressure = Mathf.Max(Mathf.Max(shotPressure, hazardPressure), Mathf.Max(enemyPressure, pickupPressure));
@@ -15900,7 +16078,12 @@ public partial class MainGame : Node2D
             return;
         }
 
-        if (pressure > 0.86f && _particles.Count > particleCap * 0.62f && _rng.Randf() < 0.5f)
+        if (pressure > 0.86f && _particles.Count > particleCap * 0.48f && _rng.Randf() < 0.72f)
+        {
+            return;
+        }
+
+        if (pressure > 0.68f && _particles.Count > particleCap * 0.56f && _rng.Randf() < 0.45f)
         {
             return;
         }
@@ -15917,7 +16100,7 @@ public partial class MainGame : Node2D
 
     private void AddDroneCommandCue(Vector2 pos, Vector2 facing, Color color, float scale)
     {
-        if (_visualPressure > 0.9f)
+        if (_visualPressure > 0.74f)
         {
             return;
         }
@@ -15940,9 +16123,10 @@ public partial class MainGame : Node2D
         });
     }
 
-    private void AddShockwave(Vector2 center, float radius, Color color)
+    private void AddShockwave(Vector2 center, float radius, Color color, float life = 0.58f)
     {
-        if (_shockwaves.Count >= 6)
+        int cap = PerformancePressure() > 0.78f ? 3 : 6;
+        while (_shockwaves.Count >= cap)
         {
             _shockwaves.RemoveAt(0);
         }
@@ -15952,8 +16136,8 @@ public partial class MainGame : Node2D
             Center = center,
             Radius = radius,
             Color = color,
-            Life = 0.58f,
-            MaxLife = 0.58f,
+            Life = life,
+            MaxLife = life,
         });
     }
 
@@ -16402,6 +16586,407 @@ public partial class MainGame : Node2D
         return new Vector2(Mathf.Sin(phase * 1.3f), Mathf.Cos(phase * 0.9f));
     }
 
+    private void ResetWaveDirectorPlan()
+    {
+        _runRouteTheme = RunRouteTheme.Balanced;
+        _waveDirectorReady = false;
+        for (int wave = 0; wave <= TotalWaves; wave++)
+        {
+            _wavePacePlan[wave] = DefaultWavePaceFor(wave);
+            _wavePrimaryPlan[wave] = DefaultWavePrimaryEnemyKind(Mathf.Clamp((wave - 1) / WavesPerSector, 0, SectorCount - 1), ((Math.Max(1, wave) - 1) % WavesPerSector) + 1);
+            _waveSupportPlan[wave] = DefaultWaveSupportEnemyKind(Mathf.Clamp((wave - 1) / WavesPerSector, 0, SectorCount - 1), ((Math.Max(1, wave) - 1) % WavesPerSector) + 1);
+            _waveDirectivePlan[wave] = WaveDirectiveKind.None;
+        }
+    }
+
+    private void SetupWaveDirectorPlan()
+    {
+        ResetWaveDirectorPlan();
+        _runRouteTheme = ChooseRouteTheme();
+        _waveDirectorReady = true;
+
+        for (int sector = 0; sector < SectorCount; sector++)
+        {
+            int recoveryCount = 0;
+            WavePaceKind previousPace = WavePaceKind.Standard;
+            for (int waveInSector = 1; waveInSector < WavesPerSector; waveInSector++)
+            {
+                int wave = sector * WavesPerSector + waveInSector;
+                WavePaceKind pace = ChooseDirectorPace(wave, sector, waveInSector, previousPace, recoveryCount);
+                if (pace == WavePaceKind.Recovery)
+                {
+                    recoveryCount++;
+                }
+
+                _wavePacePlan[wave] = pace;
+                _waveDirectivePlan[wave] = ChooseWaveDirective(sector, waveInSector, pace);
+                EnemyKind defaultPrimary = DefaultWavePrimaryEnemyKind(sector, waveInSector);
+                EnemyKind defaultSupport = DefaultWaveSupportEnemyKind(sector, waveInSector);
+                EnemyKind primary = ChooseEnemyForWave(wave, sector, waveInSector, defaultPrimary, defaultPrimary, false);
+                EnemyKind support = ChooseEnemyForWave(wave, sector, waveInSector, defaultSupport, primary, true);
+                _wavePrimaryPlan[wave] = primary;
+                _waveSupportPlan[wave] = support;
+                previousPace = pace;
+            }
+
+            if (sector < SectorCount - 1 && recoveryCount <= 0)
+            {
+                int recoveryWaveInSector = _rng.RandiRange(3, 5);
+                int recoveryWave = sector * WavesPerSector + recoveryWaveInSector;
+                if (recoveryWave > 2 && recoveryWave < TotalWaves)
+                {
+                    _wavePacePlan[recoveryWave] = WavePaceKind.Recovery;
+                    _waveDirectivePlan[recoveryWave] = WaveDirectiveKind.None;
+                }
+            }
+        }
+
+        for (int sector = 0; sector < SectorCount; sector++)
+        {
+            int bossWave = sector * WavesPerSector + WavesPerSector;
+            _wavePacePlan[bossWave] = WavePaceKind.Boss;
+            _waveDirectivePlan[bossWave] = WaveDirectiveKind.None;
+        }
+    }
+
+    private RunRouteTheme ChooseRouteTheme()
+    {
+        int roll = _rng.RandiRange(0, 99);
+        if (roll < 18)
+        {
+            return RunRouteTheme.Rush;
+        }
+        if (roll < 34)
+        {
+            return RunRouteTheme.Artillery;
+        }
+        if (roll < 50)
+        {
+            return RunRouteTheme.Harass;
+        }
+        if (roll < 66)
+        {
+            return RunRouteTheme.Siege;
+        }
+        if (roll < 82)
+        {
+            return RunRouteTheme.Hazard;
+        }
+
+        return RunRouteTheme.Balanced;
+    }
+
+    private WavePaceKind ChooseDirectorPace(int wave, int sector, int waveInSector, WavePaceKind previousPace, int recoveryCount)
+    {
+        if (wave <= 2 || waveInSector == 1)
+        {
+            return WavePaceKind.Standard;
+        }
+
+        WavePaceKind defaultPace = DefaultWavePaceFor(wave);
+        float standard = 1.55f + (defaultPace == WavePaceKind.Standard ? 2.4f : 0.0f);
+        float swarm = 0.55f + (defaultPace == WavePaceKind.Swarm ? 2.8f : 0.0f);
+        float elite = (sector >= 1 ? 0.8f : 0.3f) + (defaultPace == WavePaceKind.Elite ? 2.55f : 0.0f);
+        float recovery = waveInSector is >= 3 and <= 5 && recoveryCount <= 0 ? 1.35f : 0.15f;
+        float pressure = 0.72f + waveInSector * 0.12f + (defaultPace == WavePaceKind.Pressure ? 2.6f : 0.0f);
+
+        switch (_runRouteTheme)
+        {
+            case RunRouteTheme.Rush:
+                swarm += 1.8f;
+                pressure += 0.85f;
+                standard *= 0.78f;
+                break;
+            case RunRouteTheme.Artillery:
+                pressure += 1.55f;
+                elite += sector >= 1 ? 0.65f : 0.15f;
+                swarm *= 0.72f;
+                break;
+            case RunRouteTheme.Harass:
+                swarm += 0.8f;
+                pressure += 1.25f;
+                recovery *= 0.86f;
+                break;
+            case RunRouteTheme.Siege:
+                elite += 1.45f;
+                pressure += 0.72f;
+                swarm *= 0.62f;
+                break;
+            case RunRouteTheme.Hazard:
+                recovery += 0.28f;
+                pressure += 1.0f;
+                swarm += 0.38f;
+                break;
+        }
+
+        if (previousPace == WavePaceKind.Recovery)
+        {
+            recovery *= 0.08f;
+            pressure += 0.65f;
+            swarm += 0.3f;
+        }
+        else if (previousPace == WavePaceKind.Elite)
+        {
+            elite *= 0.4f;
+            standard += 0.45f;
+        }
+
+        if (waveInSector >= 6)
+        {
+            pressure += 0.75f;
+            swarm += 0.48f;
+            recovery *= 0.45f;
+        }
+
+        float total = standard + swarm + elite + recovery + pressure;
+        float roll = _rng.RandfRange(0.0f, total);
+        if ((roll -= standard) <= 0.0f)
+        {
+            return WavePaceKind.Standard;
+        }
+        if ((roll -= swarm) <= 0.0f)
+        {
+            return WavePaceKind.Swarm;
+        }
+        if ((roll -= elite) <= 0.0f)
+        {
+            return WavePaceKind.Elite;
+        }
+        if ((roll -= recovery) <= 0.0f)
+        {
+            return WavePaceKind.Recovery;
+        }
+
+        return WavePaceKind.Pressure;
+    }
+
+    private WaveDirectiveKind ChooseWaveDirective(int sector, int waveInSector, WavePaceKind pace)
+    {
+        if (waveInSector <= 2 || pace == WavePaceKind.Recovery)
+        {
+            return WaveDirectiveKind.None;
+        }
+
+        float none = 2.6f - sector * 0.18f;
+        float flank = 0.5f + (pace == WavePaceKind.Pressure ? 0.45f : 0.0f);
+        float swarm = 0.45f + (pace == WavePaceKind.Swarm ? 1.1f : 0.0f);
+        float artillery = 0.42f + (pace == WavePaceKind.Pressure ? 0.55f : 0.0f);
+        float anchor = sector >= 2 ? 0.42f + (pace == WavePaceKind.Elite ? 0.8f : 0.0f) : 0.08f;
+        float minefield = sector >= 1 ? 0.38f : 0.04f;
+
+        switch (_runRouteTheme)
+        {
+            case RunRouteTheme.Rush:
+                swarm += 1.25f;
+                flank += 0.75f;
+                break;
+            case RunRouteTheme.Artillery:
+                artillery += 1.55f;
+                anchor += 0.34f;
+                break;
+            case RunRouteTheme.Harass:
+                flank += 1.35f;
+                minefield += 0.38f;
+                break;
+            case RunRouteTheme.Siege:
+                anchor += 1.6f;
+                artillery += 0.65f;
+                break;
+            case RunRouteTheme.Hazard:
+                minefield += 1.55f;
+                flank += 0.32f;
+                break;
+        }
+
+        float total = none + flank + swarm + artillery + anchor + minefield;
+        float roll = _rng.RandfRange(0.0f, total);
+        if ((roll -= none) <= 0.0f)
+        {
+            return WaveDirectiveKind.None;
+        }
+        if ((roll -= flank) <= 0.0f)
+        {
+            return WaveDirectiveKind.Flank;
+        }
+        if ((roll -= swarm) <= 0.0f)
+        {
+            return WaveDirectiveKind.Swarm;
+        }
+        if ((roll -= artillery) <= 0.0f)
+        {
+            return WaveDirectiveKind.Artillery;
+        }
+        if ((roll -= anchor) <= 0.0f)
+        {
+            return WaveDirectiveKind.Anchor;
+        }
+
+        return WaveDirectiveKind.Minefield;
+    }
+
+    private EnemyKind ChooseEnemyForWave(int wave, int sector, int waveInSector, EnemyKind defaultKind, EnemyKind avoid, bool support)
+    {
+        if (wave <= 2)
+        {
+            return defaultKind;
+        }
+
+        EnemyKind chosen = defaultKind;
+        float total = 0.0f;
+        for (int i = 0; i < EnemyDirectorKinds.Length; i++)
+        {
+            EnemyKind kind = EnemyDirectorKinds[i];
+            total += EnemyDirectorWeight(kind, wave, sector, waveInSector, defaultKind, avoid, support);
+        }
+
+        if (total <= 0.001f)
+        {
+            return defaultKind;
+        }
+
+        float roll = _rng.RandfRange(0.0f, total);
+        for (int i = 0; i < EnemyDirectorKinds.Length; i++)
+        {
+            EnemyKind kind = EnemyDirectorKinds[i];
+            roll -= EnemyDirectorWeight(kind, wave, sector, waveInSector, defaultKind, avoid, support);
+            if (roll <= 0.0f)
+            {
+                chosen = kind;
+                break;
+            }
+        }
+
+        return chosen;
+    }
+
+    private float EnemyDirectorWeight(EnemyKind kind, int wave, int sector, int waveInSector, EnemyKind defaultKind, EnemyKind avoid, bool support)
+    {
+        int firstWave = FirstAppearanceWave(kind);
+        if (firstWave > wave)
+        {
+            return 0.0f;
+        }
+
+        int tier = EnemyThreatTier(kind);
+        int allowedTier = sector + (waveInSector >= 5 ? 1 : 0);
+        if (tier > allowedTier + 1)
+        {
+            return 0.0f;
+        }
+
+        float weight = 0.45f + Math.Max(0.0f, 1.1f - Math.Abs(tier - allowedTier) * 0.24f);
+        if (kind == defaultKind)
+        {
+            weight += support ? 1.1f : 1.9f;
+        }
+        if (wave - firstWave <= 2)
+        {
+            weight += support ? 0.65f : 1.1f;
+        }
+
+        weight *= RouteEnemyWeight(kind, _runRouteTheme);
+        weight *= PaceEnemyWeight(kind, _wavePacePlan[Mathf.Clamp(wave, 0, TotalWaves)]);
+        weight *= DirectiveEnemyWeight(kind, _waveDirectivePlan[Mathf.Clamp(wave, 0, TotalWaves)]);
+
+        if (support)
+        {
+            weight *= SupportEnemyWeight(kind);
+            if (kind == avoid)
+            {
+                weight *= 0.14f;
+            }
+        }
+
+        return Math.Max(0.0f, weight);
+    }
+
+    private static int EnemyThreatTier(EnemyKind kind)
+    {
+        return kind switch
+        {
+            EnemyKind.Chaser or EnemyKind.Weaver => 0,
+            EnemyKind.Drifter or EnemyKind.Turret or EnemyKind.Mine => 1,
+            EnemyKind.Lance or EnemyKind.Splitter or EnemyKind.Siren => 2,
+            EnemyKind.Shard or EnemyKind.Harrier => 3,
+            EnemyKind.Bulwark or EnemyKind.Warden => 4,
+            _ => 1,
+        };
+    }
+
+    private static float RouteEnemyWeight(EnemyKind kind, RunRouteTheme theme)
+    {
+        return theme switch
+        {
+            RunRouteTheme.Rush => kind switch
+            {
+                EnemyKind.Chaser or EnemyKind.Splitter or EnemyKind.Shard or EnemyKind.Harrier => 1.65f,
+                EnemyKind.Bulwark or EnemyKind.Warden or EnemyKind.Turret => 0.72f,
+                _ => 1.0f,
+            },
+            RunRouteTheme.Artillery => kind switch
+            {
+                EnemyKind.Turret or EnemyKind.Lance or EnemyKind.Siren or EnemyKind.Warden => 1.72f,
+                EnemyKind.Chaser or EnemyKind.Shard => 0.78f,
+                _ => 1.0f,
+            },
+            RunRouteTheme.Harass => kind switch
+            {
+                EnemyKind.Weaver or EnemyKind.Drifter or EnemyKind.Shard or EnemyKind.Harrier => 1.7f,
+                EnemyKind.Bulwark or EnemyKind.Warden => 0.75f,
+                _ => 1.0f,
+            },
+            RunRouteTheme.Siege => kind switch
+            {
+                EnemyKind.Bulwark or EnemyKind.Warden or EnemyKind.Turret or EnemyKind.Siren => 1.76f,
+                EnemyKind.Shard or EnemyKind.Harrier => 0.72f,
+                _ => 1.0f,
+            },
+            RunRouteTheme.Hazard => kind switch
+            {
+                EnemyKind.Mine or EnemyKind.Siren or EnemyKind.Drifter or EnemyKind.Splitter => 1.7f,
+                EnemyKind.Chaser or EnemyKind.Weaver => 0.84f,
+                _ => 1.0f,
+            },
+            _ => 1.0f,
+        };
+    }
+
+    private static float PaceEnemyWeight(EnemyKind kind, WavePaceKind pace)
+    {
+        return pace switch
+        {
+            WavePaceKind.Swarm => kind is EnemyKind.Chaser or EnemyKind.Splitter or EnemyKind.Shard ? 1.28f : 1.0f,
+            WavePaceKind.Elite => kind is EnemyKind.Bulwark or EnemyKind.Warden or EnemyKind.Lance ? 1.22f : 1.0f,
+            WavePaceKind.Pressure => kind is EnemyKind.Harrier or EnemyKind.Drifter or EnemyKind.Siren or EnemyKind.Lance ? 1.22f : 1.0f,
+            WavePaceKind.Recovery => kind is EnemyKind.Mine or EnemyKind.Weaver ? 1.16f : 0.92f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float DirectiveEnemyWeight(EnemyKind kind, WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Flank => kind is EnemyKind.Weaver or EnemyKind.Drifter or EnemyKind.Harrier ? 1.55f : 0.95f,
+            WaveDirectiveKind.Swarm => kind is EnemyKind.Chaser or EnemyKind.Splitter or EnemyKind.Shard ? 1.62f : 0.9f,
+            WaveDirectiveKind.Artillery => kind is EnemyKind.Turret or EnemyKind.Lance or EnemyKind.Siren ? 1.68f : 0.88f,
+            WaveDirectiveKind.Anchor => kind is EnemyKind.Bulwark or EnemyKind.Warden or EnemyKind.Turret ? 1.72f : 0.86f,
+            WaveDirectiveKind.Minefield => kind is EnemyKind.Mine or EnemyKind.Siren or EnemyKind.Drifter ? 1.7f : 0.86f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float SupportEnemyWeight(EnemyKind kind)
+    {
+        return kind switch
+        {
+            EnemyKind.Turret or EnemyKind.Mine or EnemyKind.Siren or EnemyKind.Drifter => 1.34f,
+            EnemyKind.Warden or EnemyKind.Bulwark => 1.16f,
+            EnemyKind.Chaser or EnemyKind.Shard => 0.82f,
+            _ => 1.0f,
+        };
+    }
+
     private void AddWaveEnemyCallout(EnemyKind primary, EnemyKind support, Color accent)
     {
         bool newEnemy = _wave == FirstAppearanceWave(primary);
@@ -16417,7 +17002,32 @@ public partial class MainGame : Node2D
         }
     }
 
-    private static WavePaceKind WavePaceFor(int wave)
+    private WavePaceKind WavePaceFor(int wave)
+    {
+        if (_waveDirectorReady && wave >= 0 && wave <= TotalWaves)
+        {
+            return _wavePacePlan[wave];
+        }
+
+        return DefaultWavePaceFor(wave);
+    }
+
+    private WaveDirectiveKind WaveDirectiveFor(int wave)
+    {
+        if (_waveDirectorReady && wave >= 0 && wave <= TotalWaves)
+        {
+            return _waveDirectivePlan[wave];
+        }
+
+        return WaveDirectiveKind.None;
+    }
+
+    private WaveDirectiveKind CurrentWaveDirective()
+    {
+        return WaveDirectiveFor(_wave);
+    }
+
+    private static WavePaceKind DefaultWavePaceFor(int wave)
     {
         if (wave <= 0)
         {
@@ -16556,8 +17166,22 @@ public partial class MainGame : Node2D
         return elite ? cost * 1.55f : cost;
     }
 
-    private static EnemyKind WaveEventEnemyKind(int sector, WavePaceKind pace, int eventIndex)
+    private EnemyKind WaveEventEnemyKind(int sector, WavePaceKind pace, int eventIndex)
     {
+        switch (CurrentWaveDirective())
+        {
+            case WaveDirectiveKind.Flank:
+                return sector >= 3 ? EnemyKind.Harrier : (eventIndex % 2 == 0 ? EnemyKind.Drifter : EnemyKind.Weaver);
+            case WaveDirectiveKind.Swarm:
+                return sector >= 3 ? EnemyKind.Shard : (sector >= 2 ? EnemyKind.Splitter : EnemyKind.Chaser);
+            case WaveDirectiveKind.Artillery:
+                return sector >= 2 ? (eventIndex == 0 ? EnemyKind.Siren : EnemyKind.Lance) : EnemyKind.Turret;
+            case WaveDirectiveKind.Anchor:
+                return sector >= 3 ? EnemyKind.Warden : (sector >= 2 ? EnemyKind.Bulwark : EnemyKind.Turret);
+            case WaveDirectiveKind.Minefield:
+                return sector >= 2 && eventIndex > 0 ? EnemyKind.Siren : EnemyKind.Mine;
+        }
+
         if (pace == WavePaceKind.Swarm)
         {
             return sector >= 3 ? EnemyKind.Harrier : EnemyKind.Splitter;
@@ -16606,6 +17230,82 @@ public partial class MainGame : Node2D
             WavePaceKind.Recovery => 1.28f,
             WavePaceKind.Pressure => 0.88f,
             _ => 1.0f,
+        };
+    }
+
+    private static float RouteBudgetScale(RunRouteTheme theme)
+    {
+        return theme switch
+        {
+            RunRouteTheme.Rush => 1.08f,
+            RunRouteTheme.Artillery => 1.02f,
+            RunRouteTheme.Harass => 1.04f,
+            RunRouteTheme.Siege => 1.1f,
+            RunRouteTheme.Hazard => 1.06f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float DirectiveBudgetScale(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Swarm => 1.12f,
+            WaveDirectiveKind.Anchor => 1.14f,
+            WaveDirectiveKind.Minefield => 1.08f,
+            WaveDirectiveKind.Artillery => 1.05f,
+            WaveDirectiveKind.Flank => 1.04f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float DirectiveRewardScale(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Anchor => 1.14f,
+            WaveDirectiveKind.Artillery => 1.1f,
+            WaveDirectiveKind.Minefield => 1.1f,
+            WaveDirectiveKind.Swarm => 1.06f,
+            WaveDirectiveKind.Flank => 1.06f,
+            _ => 1.0f,
+        };
+    }
+
+    private static float DirectiveSpawnIntervalScale(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Flank => 0.86f,
+            WaveDirectiveKind.Swarm => 0.82f,
+            WaveDirectiveKind.Artillery => 1.08f,
+            WaveDirectiveKind.Anchor => 1.12f,
+            WaveDirectiveKind.Minefield => 0.94f,
+            _ => 1.0f,
+        };
+    }
+
+    private static int DirectiveBatchBonus(WaveDirectiveKind directive, float wavePressure)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Swarm => wavePressure > 0.52f ? 2 : 1,
+            WaveDirectiveKind.Flank => 1,
+            WaveDirectiveKind.Minefield => wavePressure > 0.62f ? 1 : 0,
+            WaveDirectiveKind.Anchor => wavePressure > 0.72f ? 1 : 0,
+            _ => 0,
+        };
+    }
+
+    private static int DirectiveSoftCapBonus(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Swarm => 8,
+            WaveDirectiveKind.Flank => 5,
+            WaveDirectiveKind.Anchor => 6,
+            WaveDirectiveKind.Minefield => 4,
+            _ => 0,
         };
     }
 
@@ -16662,6 +17362,58 @@ public partial class MainGame : Node2D
             WavePaceKind.Pressure => T("wave.pace.short.pressure"),
             WavePaceKind.Boss => T("wave.pace.short.boss"),
             _ => T("wave.pace.short.standard"),
+        };
+    }
+
+    private string RouteThemeText(RunRouteTheme theme)
+    {
+        return theme switch
+        {
+            RunRouteTheme.Rush => T("route.theme.rush"),
+            RunRouteTheme.Artillery => T("route.theme.artillery"),
+            RunRouteTheme.Harass => T("route.theme.harass"),
+            RunRouteTheme.Siege => T("route.theme.siege"),
+            RunRouteTheme.Hazard => T("route.theme.hazard"),
+            _ => T("route.theme.balanced"),
+        };
+    }
+
+    private string RouteThemeShortText(RunRouteTheme theme)
+    {
+        return theme switch
+        {
+            RunRouteTheme.Rush => T("route.theme.short.rush"),
+            RunRouteTheme.Artillery => T("route.theme.short.artillery"),
+            RunRouteTheme.Harass => T("route.theme.short.harass"),
+            RunRouteTheme.Siege => T("route.theme.short.siege"),
+            RunRouteTheme.Hazard => T("route.theme.short.hazard"),
+            _ => T("route.theme.short.balanced"),
+        };
+    }
+
+    private string WaveDirectiveText(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Flank => T("wave.directive.flank"),
+            WaveDirectiveKind.Swarm => T("wave.directive.swarm"),
+            WaveDirectiveKind.Artillery => T("wave.directive.artillery"),
+            WaveDirectiveKind.Anchor => T("wave.directive.anchor"),
+            WaveDirectiveKind.Minefield => T("wave.directive.minefield"),
+            _ => T("wave.directive.none"),
+        };
+    }
+
+    private string WaveDirectiveShortText(WaveDirectiveKind directive)
+    {
+        return directive switch
+        {
+            WaveDirectiveKind.Flank => T("wave.directive.short.flank"),
+            WaveDirectiveKind.Swarm => T("wave.directive.short.swarm"),
+            WaveDirectiveKind.Artillery => T("wave.directive.short.artillery"),
+            WaveDirectiveKind.Anchor => T("wave.directive.short.anchor"),
+            WaveDirectiveKind.Minefield => T("wave.directive.short.minefield"),
+            _ => T("wave.directive.short.none"),
         };
     }
 
@@ -16816,7 +17568,18 @@ public partial class MainGame : Node2D
         };
     }
 
-    private static EnemyKind WavePrimaryEnemyKind(int sector, int waveInSector)
+    private EnemyKind WavePrimaryEnemyKind(int sector, int waveInSector)
+    {
+        int wave = sector * WavesPerSector + waveInSector;
+        if (_waveDirectorReady && wave >= 0 && wave <= TotalWaves)
+        {
+            return _wavePrimaryPlan[wave];
+        }
+
+        return DefaultWavePrimaryEnemyKind(sector, waveInSector);
+    }
+
+    private static EnemyKind DefaultWavePrimaryEnemyKind(int sector, int waveInSector)
     {
         return sector switch
         {
@@ -16873,7 +17636,18 @@ public partial class MainGame : Node2D
         };
     }
 
-    private static EnemyKind WaveSupportEnemyKind(int sector, int waveInSector)
+    private EnemyKind WaveSupportEnemyKind(int sector, int waveInSector)
+    {
+        int wave = sector * WavesPerSector + waveInSector;
+        if (_waveDirectorReady && wave >= 0 && wave <= TotalWaves)
+        {
+            return _waveSupportPlan[wave];
+        }
+
+        return DefaultWaveSupportEnemyKind(sector, waveInSector);
+    }
+
+    private static EnemyKind DefaultWaveSupportEnemyKind(int sector, int waveInSector)
     {
         return sector switch
         {
@@ -16883,7 +17657,7 @@ public partial class MainGame : Node2D
                 5 => EnemyKind.Chaser,
                 6 => EnemyKind.Weaver,
                 7 => EnemyKind.Turret,
-                _ => WavePrimaryEnemyKind(sector, waveInSector),
+                _ => DefaultWavePrimaryEnemyKind(sector, waveInSector),
             },
             1 => waveInSector switch
             {
@@ -16893,7 +17667,7 @@ public partial class MainGame : Node2D
                 5 => EnemyKind.Lance,
                 6 => EnemyKind.Mine,
                 7 => EnemyKind.Drifter,
-                _ => WavePrimaryEnemyKind(sector, waveInSector),
+                _ => DefaultWavePrimaryEnemyKind(sector, waveInSector),
             },
             2 => waveInSector switch
             {
@@ -16903,7 +17677,7 @@ public partial class MainGame : Node2D
                 5 => EnemyKind.Splitter,
                 6 => EnemyKind.Mine,
                 7 => EnemyKind.Siren,
-                _ => WavePrimaryEnemyKind(sector, waveInSector),
+                _ => DefaultWavePrimaryEnemyKind(sector, waveInSector),
             },
             3 => waveInSector switch
             {
@@ -16912,7 +17686,7 @@ public partial class MainGame : Node2D
                 5 => EnemyKind.Warden,
                 6 => EnemyKind.Shard,
                 7 => EnemyKind.Harrier,
-                _ => WavePrimaryEnemyKind(sector, waveInSector),
+                _ => DefaultWavePrimaryEnemyKind(sector, waveInSector),
             },
             _ => waveInSector switch
             {
@@ -16923,7 +17697,7 @@ public partial class MainGame : Node2D
                 5 => EnemyKind.Harrier,
                 6 => EnemyKind.Turret,
                 7 => EnemyKind.Bulwark,
-                _ => WavePrimaryEnemyKind(sector, waveInSector),
+                _ => DefaultWavePrimaryEnemyKind(sector, waveInSector),
             },
         };
     }
@@ -17436,6 +18210,11 @@ public partial class MainGame : Node2D
         int sector = Mathf.Clamp((nextWave - 1) / WavesPerSector, 0, SectorCount - 1);
         int waveInSector = ((nextWave - 1) % WavesPerSector) + 1;
         string pace = WavePaceText(WavePaceFor(nextWave));
+        WaveDirectiveKind directive = WaveDirectiveFor(nextWave);
+        if (directive != WaveDirectiveKind.None)
+        {
+            pace = $"{pace} / {WaveDirectiveText(directive)}";
+        }
         if (waveInSector == WavesPerSector)
         {
             string boss = Tf("boss.preview", T(Sectors[sector].NameKey));
