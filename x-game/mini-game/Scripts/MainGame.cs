@@ -13,7 +13,7 @@ public partial class MainGame : Node2D
     private const int TotalWaves = WavesPerSector * SectorCount;
     private const int DifficultyCount = 3;
     private const int ClearRecordCount = 5;
-    private const float BossHpTrialScale = 2.0f;
+    private const float BossHpTrialScale = 5.2f;
     private const float PlayerRadius = 24.0f;
     private const float EnemyBulletRadius = 8.0f;
     private const float PlayerBulletRadius = 7.0f;
@@ -24,11 +24,22 @@ public partial class MainGame : Node2D
     private const int MaxEnemies = 96;
     private const int MaxShots = 480;
     private const int MaxPickups = 260;
+    private const int PickupTextureSoftCap = 110;
+    private const int PickupTextureHardCap = 170;
     private const int MaxParticles = 720;
     private const int MaxDamageTexts = 72;
     private const int MaxOrbiters = 10;
     private const int MaxDroneCommandCues = 28;
     private const int MaxPoolSize = 900;
+    private const float TutorialMoveSeconds = 1.35f;
+    private const float TutorialFlowSeconds = 5.6f;
+    private const float LoadingDefaultDuration = 0.86f;
+    private const float LoadingCommitRatio = 0.46f;
+    private const int PilotIntroVariantCount = 5;
+    private const int PilotIntroMinLines = 3;
+    private const int PilotIntroMaxLines = 5;
+    private const float PilotIntroCharsPerSecond = 34.0f;
+    private const float PilotIntroBeepInterval = 0.062f;
     private const float EnemyGridCellSize = 160.0f;
     private const int EnemyGridColumns = 12;
     private const int EnemyGridRows = 7;
@@ -51,6 +62,10 @@ public partial class MainGame : Node2D
     private const float UltimateCooldownBase = 8.5f;
     private const float UltimateCostBase = 108.0f;
     private const float UltimateCostFloor = 88.0f;
+    private const float DashEndpointClearBaseRadius = 112.0f;
+    private const float DashAimHintVisibleTime = 2.15f;
+    private const float DashAimHintFadeTime = 0.75f;
+    private const float PlayerHitFlashDuration = 0.22f;
     private const int ScoreCacheBase = 12000;
     private const int ScoreCacheStep = 9000;
     private const int XpBase = 48;
@@ -79,8 +94,9 @@ public partial class MainGame : Node2D
     private const float DroneCommandTextureMaxMaxSide = 76.0f;
     private const int MaxJoypadSlots = 8;
     private const float GamepadStickDeadZone = 0.24f;
-    private const float AutoAimTurnSpeed = 12.0f;
-    private const float AutoAimFallbackTurnSpeed = 8.0f;
+    private const float AutoAimTurnSpeed = 7.2f;
+    private const float AutoAimFallbackTurnSpeed = 5.0f;
+    private const float DashAimVisualTurnSpeed = 13.5f;
     private const float SeekerBaseCooldown = 0.86f;
     private const float HeavySlugBaseCooldown = 1.55f;
     private const float BasePlayerHull = 28.0f;
@@ -156,6 +172,7 @@ public partial class MainGame : Node2D
     private static readonly Color PickupBlue = new(0.12f, 0.52f, 0.86f);
     private static readonly Color AlertRed = new(0.98f, 0.04f, 0.36f);
     private static readonly Color EnemyFireRed = new(1.0f, 0.08f, 0.05f);
+    private static readonly Color DamageNumberRed = new(1.0f, 0.16f, 0.1f);
     private static readonly string[] UpgradeHighlightTerms =
     {
         "MAX RANK",
@@ -558,7 +575,7 @@ public partial class MainGame : Node2D
         ["hud.resonance_cooldown"] = new("COOLDOWN {0:0.0}s", "冷却 {0:0.0}秒"),
         ["hud.cruise_charge"] = new("FOCUS", "专注"),
         ["hud.assault_window"] = new("SKILL {0:0.0}s", "战术 {0:0.0}秒"),
-        ["hud.controls"] = new("WASD/LS MOVE  AUTO LOCK-ON  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT  START MENU", "WASD/左摇杆移动  自动锁敌  自动射击  A/LB冲刺  X/RB技能  Y/RT大招  Start菜单"),
+        ["hud.controls"] = new("WASD/LS MOVE  MOUSE/RS AIM DASH  AUTO FIRE  A/LB DASH  X/RB SKILL  Y/RT ULT", "WASD/左摇杆移动  鼠标/右摇杆定冲刺  自动射击  A/LB冲刺  X/RB技能  Y/RT大招"),
         ["title.loop"] = new("LOOP", "循环"),
         ["title.fighter"] = new("FIGHTER", "战机"),
         ["title.subtitle"] = new("a pilot-build arcade roguelite built in Godot C#", "Godot C# 制作的角色构筑弹幕 Roguelite"),
@@ -580,6 +597,30 @@ public partial class MainGame : Node2D
         ["pilot.unlock.wave16"] = new("Reach wave 16", "到达第 16 波解锁"),
         ["pilot.unlock.wave24"] = new("Reach wave 24", "到达第 24 波解锁"),
         ["title.start"] = new("ENTER / CLICK / A", "ENTER / 点击 / A 开始"),
+        ["tutorial.title"] = new("TRAINING RUN", "新手训练"),
+        ["tutorial.start"] = new("Training run: Astra online.", "训练开始：星棱已启动。"),
+        ["tutorial.move.title"] = new("Move", "移动"),
+        ["tutorial.move.body"] = new("Use WASD or the left stick. Keep moving to stay alive.", "使用 WASD 或左摇杆移动。保持移动，是活下来的第一步。"),
+        ["tutorial.lock.title"] = new("Auto Lock-On", "自动锁敌"),
+        ["tutorial.lock.body"] = new("Weapons fire automatically and lock onto nearby enemies. Focus on dodging.", "武器会自动开火并锁定附近敌人。你只需要专心走位。"),
+        ["tutorial.dash.title"] = new("Dash Clears Bullets", "冲刺清弹"),
+        ["tutorial.dash.body"] = new("Right click, Shift, A, or LB to dash. Dash through red fire to open a safe lane.", "右键、Shift、A 或 LB 冲刺。穿过红弹，可以清出安全通路。"),
+        ["tutorial.ultimate.title"] = new("F: Emergency Clear", "F：紧急清场"),
+        ["tutorial.ultimate.body"] = new("Press F or Y/RT when energy is ready. It clears bullets around you and buys space.", "能量足够时按 F 或 Y/RT。大招会清除周围红弹，帮你抢回空间。"),
+        ["tutorial.flow.title"] = new("Run Flow", "战斗流程"),
+        ["tutorial.flow.body"] = new("Collect gray EXP. Fill the bottom bar to choose an upgrade. After the run, spend Star Dust on permanent growth.", "拾取灰色经验。底部经验条满后选择升级。战斗结束后，用星尘进行局外成长。"),
+        ["tutorial.upgrade.title"] = new("Choose an Upgrade", "选择升级"),
+        ["tutorial.upgrade.body"] = new("EXP fills the bottom bar. When it is full, choose one upgrade to shape this run.", "经验会填满底部条。经验满后，从三张卡里选择一个升级，决定本局构筑方向。"),
+        ["tutorial.combo.title"] = new("Combo Pace", "连击节奏"),
+        ["tutorial.combo.body"] = new("Avoid damage to keep combo. Higher combo makes the next enemies arrive faster, so clean play speeds up the run.", "不受伤会保持连击。连击越高，后续敌人来得越快；打得越稳，流程越快。"),
+        ["tutorial.complete"] = new("Training complete. Returning to the main menu.", "训练完成，正在返回主界面。"),
+        ["tutorial.hit"] = new("Training armor absorbed the hit.", "训练护甲吸收了这次伤害。"),
+        ["loading.title"] = new("LOADING", "载入中"),
+        ["loading.start"] = new("LAUNCHING", "准备出航"),
+        ["loading.menu"] = new("RETURNING", "返回主界面"),
+        ["loading.meta"] = new("OPENING VAULT", "打开永久升级"),
+        ["loading.victory"] = new("RUN COMPLETE", "战斗结算"),
+        ["loading.defeat"] = new("SIGNAL RECOVERING", "信号回收"),
         ["title.won_once"] = new("Choir Core fractured once. It remembers.", "合唱核心曾被击碎。它记得你。"),
         ["upgrade.title"] = new("CHOOSE A BUILD UPGRADE", "选择一个构筑升级"),
         ["upgrade.hint"] = new("1 / 2 / 3 or click. Gamepad: LS/D-Pad choose, A select, X reroll.", "按 1 / 2 / 3 或点击。手柄：左摇杆/方向键选择，A确认，X重抽。"),
@@ -799,13 +840,31 @@ public partial class MainGame : Node2D
 
     private GameMode _mode = GameMode.Title;
     private GameMode _settingsReturnMode = GameMode.Title;
+    private LoadingAction _loadingAction = LoadingAction.None;
+    private string _loadingTextKey = "loading.title";
+    private Color _loadingAccent = Cyan;
+    private float _loadingTimer;
+    private float _loadingDuration = LoadingDefaultDuration;
+    private bool _loadingActive;
+    private bool _loadingCommitted;
+    private bool _pilotIntroActive;
+    private readonly List<string> _pilotIntroLines = new();
+    private string _pilotIntroText = string.Empty;
+    private int _pilotIntroLineIndex;
+    private int _pilotIntroVisibleChars;
+    private float _pilotIntroTypeCursor;
+    private float _pilotIntroBeepTimer;
+    private PilotKind _pilotIntroPilot = PilotKind.Astra;
     private PilotKind _selectedPilot = PilotKind.Astra;
     private PilotKind _runPilot = PilotKind.Astra;
     private Vector2 _playerPos = ScreenCenter;
     private Vector2 _playerVel = Vector2.Zero;
     private Vector2 _aimDir = Vector2.Right;
     private Vector2 _dashDir = Vector2.Right;
+    private Vector2 _dashAimDir = Vector2.Right;
+    private Vector2 _dashAimVisualDir = Vector2.Right;
     private Vector2 _lastMousePos = ScreenCenter;
+    private Vector2 _lastDashAimMousePos = ScreenCenter;
     private float _playerHp = BasePlayerHull;
     private float _playerMaxHp = BasePlayerHull;
     private float _energy = 35.0f;
@@ -821,7 +880,10 @@ public partial class MainGame : Node2D
     private float _fireTimer;
     private float _dashTimer;
     private float _dashCooldown;
+    private float _dashAimHintTimer;
+    private bool _dashLandingClearPending;
     private float _invulnTimer;
+    private float _hitFlashTimer;
     private float _polarityCooldown;
     private float _polarityCooldownMax = PolaritySwitchCooldownBase;
     private float _ultimateCooldown;
@@ -879,6 +941,14 @@ public partial class MainGame : Node2D
     private float _assaultBurstTimer;
     private float _assaultPower = 1.0f;
     private bool _wonOnce;
+    private bool _tutorialCompleted;
+    private TutorialStep _tutorialStep = TutorialStep.Move;
+    private float _tutorialStepTimer;
+    private float _tutorialMoveTimer;
+    private int _tutorialKills;
+    private bool _tutorialStepSpawned;
+    private bool _tutorialDashUsed;
+    private bool _tutorialUltimateUsed;
     private bool _runRewardGranted;
     private GameLanguage _language = GameLanguage.English;
     private DisplayResolutionPreset _resolutionPreset = DisplayResolutionPreset.R1920x1080;
@@ -1057,12 +1127,18 @@ public partial class MainGame : Node2D
     private Texture2D? _kairoDroneTexture;
     private Texture2D? _kairoCommandTexture;
     private Texture2D? _enemyBulletTexture;
+    private Texture2D? _xpPickupTexture;
+    private Texture2D? _repairPickupTexture;
     private Rect2 _supportDroneRegion;
     private Rect2 _kairoDroneRegion;
     private Rect2 _kairoCommandRegion;
     private Rect2 _enemyBulletRegion;
+    private Rect2 _xpPickupRegion;
+    private Rect2 _repairPickupRegion;
     private readonly Dictionary<PilotKind, Texture2D> _pilotTextures = new();
     private readonly Dictionary<PilotKind, Rect2> _pilotTextureRegions = new();
+    private readonly Dictionary<PilotKind, Texture2D> _pilotPortraitTextures = new();
+    private readonly Dictionary<PilotKind, Rect2> _pilotPortraitTextureRegions = new();
     private readonly Dictionary<PilotKind, Texture2D> _fighterBulletTextures = new();
     private readonly Dictionary<PilotKind, Rect2> _fighterBulletTextureRegions = new();
     private readonly Dictionary<EnemyKind, Texture2D> _enemyTextures = new();
@@ -1098,7 +1174,9 @@ public partial class MainGame : Node2D
         LoadTitleLogos();
         LoadDroneTextures();
         LoadBulletTextures();
+        LoadPickupTextures();
         LoadPilotTextures();
+        LoadPilotPortraitTextures();
         LoadEnemyTextures();
         LoadUpgradeIconTextures();
         GenerateBackdrop();
@@ -1120,8 +1198,12 @@ public partial class MainGame : Node2D
         _kairoDroneTexture = null;
         _kairoCommandTexture = null;
         _enemyBulletTexture = null;
+        _xpPickupTexture = null;
+        _repairPickupTexture = null;
         _pilotTextures.Clear();
         _pilotTextureRegions.Clear();
+        _pilotPortraitTextures.Clear();
+        _pilotPortraitTextureRegions.Clear();
         _fighterBulletTextures.Clear();
         _fighterBulletTextureRegions.Clear();
         _enemyTextures.Clear();
@@ -1174,6 +1256,14 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void LoadPickupTextures()
+    {
+        _xpPickupTexture = LoadTextureIfExists("res://Assets/EnergyArt/Energy.png");
+        _xpPickupRegion = TextureRegionOrEmpty(_xpPickupTexture);
+        _repairPickupTexture = LoadTextureIfExists("res://Assets/EnergyArt/AddHp.png");
+        _repairPickupRegion = TextureRegionOrEmpty(_repairPickupTexture);
+    }
+
     private static Rect2 TextureRegionOrEmpty(Texture2D? texture)
     {
         return texture == null ? new Rect2(Vector2.Zero, Vector2.Zero) : VisibleTextureRegion(texture);
@@ -1192,6 +1282,25 @@ public partial class MainGame : Node2D
                 _pilotTextures[pilot] = texture;
                 _pilotTextureRegions[pilot] = VisibleTextureRegion(texture);
             }
+        }
+    }
+
+    private void LoadPilotPortraitTextures()
+    {
+        _pilotPortraitTextures.Clear();
+        _pilotPortraitTextureRegions.Clear();
+        for (int i = 0; i < PilotCount(); i++)
+        {
+            PilotKind pilot = PilotFromIndex(i);
+            string directory = $"res://Assets/PilotPortraits/{pilot}";
+            Texture2D? texture = LoadTextureOrFirstInDirectory($"{directory}/1.png", directory);
+            if (texture == null)
+            {
+                continue;
+            }
+
+            _pilotPortraitTextures[pilot] = texture;
+            _pilotPortraitTextureRegions[pilot] = VisibleTextureRegion(texture);
         }
     }
 
@@ -1322,8 +1431,13 @@ public partial class MainGame : Node2D
 
     private static Texture2D? LoadTextureOrFirstInDirectory(string path, string directory)
     {
-        Texture2D? texture = GD.Load<Texture2D>(path);
+        Texture2D? texture = LoadTextureIfExists(path);
         return texture ?? LoadFirstTextureInDirectory(directory);
+    }
+
+    private static Texture2D? LoadTextureIfExists(string path)
+    {
+        return ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
     }
 
     private static string PilotTexturePath(PilotKind pilot)
@@ -1539,6 +1653,20 @@ public partial class MainGame : Node2D
         UpdateGamepadNavigation(dt);
         UpdateLanguageToggle();
 
+        if (_loadingActive)
+        {
+            UpdateLoadingTransition(dt);
+            UpdateCenterTextQueue(dt);
+            UpdateHudBarEasing(dt);
+            _shake = Approach(_shake, 0.0f, dt * 9.0f);
+            _flash = Approach(_flash, 0.0f, dt * 2.8f);
+            _visualPressure = CalculateVisualPressure();
+            UpdatePerformancePressure(dt);
+            QueueRedraw();
+            CaptureButtons();
+            return;
+        }
+
         switch (_mode)
         {
             case GameMode.Title:
@@ -1549,6 +1677,9 @@ public partial class MainGame : Node2D
                 break;
             case GameMode.Playing:
                 UpdatePlaying(dt);
+                break;
+            case GameMode.Tutorial:
+                UpdateTutorial(dt);
                 break;
             case GameMode.Upgrade:
                 UpdateUpgrade(dt);
@@ -1646,6 +1777,14 @@ public partial class MainGame : Node2D
         {
             DrawPlayer();
             DrawHud();
+            if (_pilotIntroActive)
+            {
+                DrawPilotIntroOverlay();
+            }
+            if (visibleMode == GameMode.Tutorial)
+            {
+                DrawTutorialOverlay();
+            }
         }
 
         foreach (DamageText damageText in _damageTexts)
@@ -1694,6 +1833,107 @@ public partial class MainGame : Node2D
         {
             DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), Alpha(Paper, 0.18f * _flash), true);
         }
+
+        if (_loadingActive)
+        {
+            DrawLoadingOverlay();
+        }
+    }
+
+    private void BeginLoadingTransition(LoadingAction action, string textKey, Color accent, float duration = LoadingDefaultDuration)
+    {
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        _loadingAction = action;
+        _loadingTextKey = textKey;
+        _loadingAccent = accent;
+        _loadingDuration = Math.Max(0.2f, duration);
+        _loadingTimer = 0.0f;
+        _loadingCommitted = false;
+        _loadingActive = true;
+        _gamepadFocusVisible = false;
+        PlaySfx(240.0f, 40.0f, 0.08f, 0.12f, 0.02f, 1);
+    }
+
+    private void UpdateLoadingTransition(float dt)
+    {
+        _loadingTimer += dt;
+        if (!_loadingCommitted && _loadingTimer >= _loadingDuration * LoadingCommitRatio)
+        {
+            _loadingCommitted = true;
+            ExecuteLoadingAction();
+        }
+
+        if (_loadingTimer >= _loadingDuration)
+        {
+            _loadingActive = false;
+            _loadingAction = LoadingAction.None;
+            _loadingTimer = 0.0f;
+        }
+    }
+
+    private void ExecuteLoadingAction()
+    {
+        LoadingAction action = _loadingAction;
+        _loadingAction = LoadingAction.None;
+        switch (action)
+        {
+            case LoadingAction.Title:
+                ResetTitle();
+                break;
+            case LoadingAction.Meta:
+                ResetTitle();
+                _mode = GameMode.Meta;
+                _settingsReturnMode = GameMode.Meta;
+                break;
+            case LoadingAction.StartRun:
+                StartRun();
+                break;
+            case LoadingAction.StartTutorial:
+                StartRun(true);
+                break;
+            case LoadingAction.Victory:
+                CompleteWinRun();
+                break;
+            case LoadingAction.GameOver:
+                CompleteLoseRun();
+                break;
+        }
+    }
+
+    private void DrawLoadingOverlay()
+    {
+        float progress = Mathf.Clamp(_loadingTimer / Math.Max(0.001f, _loadingDuration), 0.0f, 1.0f);
+        float fadeIn = Mathf.Clamp(progress / 0.24f, 0.0f, 1.0f);
+        float fadeOut = Mathf.Clamp((1.0f - progress) / 0.24f, 0.0f, 1.0f);
+        float uiAlpha = Mathf.Min(fadeIn, fadeOut);
+        float pulse = 0.5f + 0.5f * Mathf.Sin(_time * 8.0f);
+        Color accent = _loadingAccent.Lerp(Paper, 0.1f + pulse * 0.08f);
+
+        Rect2 full = new(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight));
+        DrawRect(full, Void, true);
+        DrawRect(full, Alpha(accent, 0.035f), true);
+        DrawGlow(ScreenCenter, accent, 620.0f, 0.032f * uiAlpha, 6);
+
+        float sweepX = Mathf.Lerp(260.0f, ScreenWidth - 260.0f, Mathf.SmoothStep(0.0f, 1.0f, progress));
+        DrawLine(new Vector2(240.0f, 404.0f), new Vector2(ScreenWidth - 240.0f, 404.0f), Alpha(Paper, 0.075f * uiAlpha), UiHairline, true);
+        DrawLine(new Vector2(sweepX - 180.0f, 404.0f), new Vector2(sweepX + 180.0f, 404.0f), Alpha(accent, 0.58f * uiAlpha), UiHairline, true);
+        DrawCircle(ScreenCenter, 122.0f + pulse * 10.0f, Alpha(accent, 0.07f * uiAlpha), false, UiHairline, true);
+        DrawCircle(ScreenCenter, 214.0f - pulse * 8.0f, Alpha(Paper, 0.045f * uiAlpha), false, UiHairline, true);
+
+        Rect2 panel = new(ScreenCenter - new Vector2(230.0f, 44.0f), new Vector2(460.0f, 88.0f));
+        DrawPanel(panel, Alpha(Ink, 0.9f * uiAlpha), Alpha(accent, 0.54f * uiAlpha));
+        DrawText(T(_loadingTextKey), panel.Position + new Vector2(0.0f, 38.0f), 22, Alpha(Paper, 0.9f * uiAlpha), HorizontalAlignment.Center, panel.Size.X, true, 2);
+
+        Rect2 bar = new(panel.Position + new Vector2(60.0f, 60.0f), new Vector2(panel.Size.X - 120.0f, 3.0f));
+        float barFill = Mathf.SmoothStep(0.0f, 1.0f, progress);
+        DrawRect(bar, Alpha(Paper, 0.08f * uiAlpha), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * barFill, bar.Size.Y)), Alpha(accent, 0.92f * uiAlpha), true);
+        DrawLine(panel.Position + new Vector2(28.0f, 16.0f), panel.Position + new Vector2(126.0f, 16.0f), Alpha(accent, 0.58f * uiAlpha), UiHairline, true);
+        DrawLine(panel.End - new Vector2(126.0f, 16.0f), panel.End - new Vector2(28.0f, 16.0f), Alpha(accent, 0.58f * uiAlpha), UiHairline, true);
     }
 
     private void ResetTitle()
@@ -1704,6 +1944,19 @@ public partial class MainGame : Node2D
         _playerVel = Vector2.Zero;
         _aimDir = Vector2.Right;
         _dashDir = Vector2.Right;
+        _dashAimDir = Vector2.Right;
+        _dashAimVisualDir = Vector2.Right;
+        _lastDashAimMousePos = _playerPos + _dashAimDir * 120.0f;
+        _dashAimHintTimer = 0.0f;
+        _dashLandingClearPending = false;
+        _hitFlashTimer = 0.0f;
+        _tutorialStep = TutorialStep.Move;
+        _tutorialStepTimer = 0.0f;
+        _tutorialMoveTimer = 0.0f;
+        _tutorialKills = 0;
+        _tutorialStepSpawned = false;
+        _tutorialDashUsed = false;
+        _tutorialUltimateUsed = false;
         ResetPlayerTrail(_playerPos);
         ClearShots();
         ClearEnemies();
@@ -1800,6 +2053,7 @@ public partial class MainGame : Node2D
         _bestWave = Mathf.Clamp(ReadConfigInt(config, "stats", "best_wave", 0), 0, TotalWaves);
         _runsCompleted = Mathf.Max(0, ReadConfigInt(config, "stats", "runs_completed", 0));
         _wonOnce = ReadConfigInt(config, "stats", "won_once", 0) > 0;
+        _tutorialCompleted = ReadConfigInt(config, "stats", "tutorial_completed", _runsCompleted > 0 ? 1 : 0) > 0;
         _careerKills = Mathf.Max(0, ReadConfigInt(config, "career", "kills", 0));
         _careerPickups = Mathf.Max(0, ReadConfigInt(config, "career", "pickups", 0));
         _careerAbsorbs = Mathf.Max(0, ReadConfigInt(config, "career", "absorbs", 0));
@@ -1855,6 +2109,7 @@ public partial class MainGame : Node2D
         config.SetValue("stats", "best_wave", _bestWave);
         config.SetValue("stats", "runs_completed", _runsCompleted);
         config.SetValue("stats", "won_once", _wonOnce ? 1 : 0);
+        config.SetValue("stats", "tutorial_completed", _tutorialCompleted ? 1 : 0);
         config.SetValue("stats", "pilot_unlock_order_version", PilotUnlockOrderVersion);
         config.SetValue("career", "kills", _careerKills);
         config.SetValue("career", "pickups", _careerPickups);
@@ -1968,6 +2223,7 @@ public partial class MainGame : Node2D
         _careerPerfectWaves = 0;
         _pilotRuns.Clear();
         _wonOnce = false;
+        _tutorialCompleted = false;
         _selectedPilot = PilotKind.Astra;
         _gamepadPilotIndex = PilotIndex(_selectedPilot);
         _gamepadTitleIndex = TitlePilotFocusStart;
@@ -2459,18 +2715,18 @@ public partial class MainGame : Node2D
         AddText(Tf("end.reward", earned, reachedWave), ScreenCenter + new Vector2(0.0f, -220.0f), Gold, 28.0f);
     }
 
-    private void StartRun()
+    private void StartRun(bool tutorial = false)
     {
-        if (!IsPilotUnlocked(_selectedPilot))
+        if (!tutorial && !IsPilotUnlocked(_selectedPilot))
         {
             _selectedPilot = PilotKind.Astra;
         }
         _selectedDifficulty = ClampDifficulty(_selectedDifficulty);
-        _runDifficulty = _selectedDifficulty;
+        _runDifficulty = tutorial ? GameDifficulty.Cruise : _selectedDifficulty;
 
-        _mode = GameMode.Playing;
-        _settingsReturnMode = GameMode.Playing;
-        _runPilot = _selectedPilot;
+        _mode = tutorial ? GameMode.Tutorial : GameMode.Playing;
+        _settingsReturnMode = _mode;
+        _runPilot = tutorial ? PilotKind.Astra : _selectedPilot;
         _wave = 0;
         _score = 0;
         _runTimer = 0.0f;
@@ -2493,6 +2749,13 @@ public partial class MainGame : Node2D
         _playerVel = Vector2.Zero;
         _aimDir = Vector2.Right;
         _dashDir = Vector2.Right;
+        _dashAimDir = Vector2.Right;
+        _dashAimVisualDir = Vector2.Right;
+        _lastDashAimMousePos = _playerPos + _dashAimDir * 120.0f;
+        _dashAimHintTimer = 0.0f;
+        _dashLandingClearPending = false;
+        _hitFlashTimer = 0.0f;
+        ClearPilotIntroState();
         ResetPlayerTrail(_playerPos);
         int hullRank = MetaRank(MetaUpgradeId.HullPlating);
         int reactorRank = MetaRank(MetaUpgradeId.ReactorSeed);
@@ -2515,8 +2778,10 @@ public partial class MainGame : Node2D
         _fireTimer = 0.0f;
         _dashTimer = 0.0f;
         _dashCooldown = 0.0f;
+        _dashLandingClearPending = false;
         SnapHudBars();
         _invulnTimer = 1.8f;
+        _hitFlashTimer = 0.0f;
         _ultimateCooldown = 0.0f;
         _playerPolarity = CruiseStance;
         _polarityCooldown = 0.0f;
@@ -2654,11 +2919,21 @@ public partial class MainGame : Node2D
         _waveTookDamage = false;
         _upgradeRanks.Clear();
         _upgradeOrder.Clear();
-        SetupRunObjectives();
+        if (tutorial)
+        {
+            _runObjectives.Clear();
+        }
+        else
+        {
+            SetupRunObjectives();
+        }
         ApplyPilotBaseline();
-        ApplyMetaStarterModules(starterModuleRank, pilotCodexRank);
+        if (!tutorial)
+        {
+            ApplyMetaStarterModules(starterModuleRank, pilotCodexRank);
+        }
         ClampUltimateCost();
-        if (droneRank > 0)
+        if (!tutorial && droneRank > 0)
         {
             int metaDrones = 1 + (droneRank - 1) / 2;
             _orbiters = Math.Min(6, Math.Max(_orbiters, metaDrones + (_runPilot == PilotKind.Kairo ? 1 : 0)));
@@ -2674,14 +2949,21 @@ public partial class MainGame : Node2D
         ClearDamageTexts();
         _centerTextQueue.Clear();
         _centerTextQueueTimer = 0.0f;
+        ClearPilotIntroState();
         _hazards.Clear();
         _hazardFields.Clear();
         _upgradeChoices.Clear();
         Burst(ScreenCenter, Cyan, 64, 680.0f, 2.2f);
-        AddText(T("wake"), ScreenCenter + new Vector2(0.0f, -90.0f), Cyan, 42.0f);
+        AddText(tutorial ? T("tutorial.start") : T("wake"), ScreenCenter + new Vector2(0.0f, -90.0f), Cyan, 42.0f);
         PlaySfx(220.0f, 0.9f, 0.22f, 0.36f, 0.05f, 1);
+        if (tutorial)
+        {
+            BeginTutorialRun();
+            return;
+        }
+
         OnRunStartedAchievements();
-        BeginNextWave();
+        BeginPilotIntro();
     }
 
     private void ApplyPilotBaseline()
@@ -2935,10 +3217,9 @@ public partial class MainGame : Node2D
         if (_currentWavePace == WavePaceKind.Recovery)
         {
             QueueCenterText(T("flow.supply"), ScreenCenter + new Vector2(0.0f, -168.0f), Jade, 22.0f);
-            SpawnPickup(ScreenCenter + new Vector2(-72.0f, 34.0f), PickupKind.Energy);
             if (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.42f)
             {
-                SpawnPickup(ScreenCenter + new Vector2(72.0f, 34.0f), PickupKind.Repair);
+                SpawnPickup(ScreenCenter + new Vector2(0.0f, 34.0f), PickupKind.Repair);
             }
         }
         AddWaveEnemyCallout(primaryKind, supportKind, info.Accent);
@@ -3368,7 +3649,17 @@ public partial class MainGame : Node2D
     private void SpawnWaveEventPickup(int eventIndex)
     {
         bool repair = eventIndex > 0 && (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.35f);
-        SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), repair ? PickupKind.Repair : PickupKind.Energy);
+        if (repair)
+        {
+            SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), PickupKind.Repair);
+            return;
+        }
+
+        int dustCount = 2 + Math.Min(2, eventIndex);
+        for (int i = 0; i < dustCount; i++)
+        {
+            SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(68.0f, 118.0f), PickupKind.Dust);
+        }
     }
 
     private void SpawnPendingEnemy(PendingSpawn spawn)
@@ -3572,8 +3863,10 @@ public partial class MainGame : Node2D
             case WavePaceKind.Recovery:
                 _playerHp = Mathf.Clamp(_playerHp + 4.0f + sector * 1.2f, 0.0f, _playerMaxHp);
                 _energy = Mathf.Clamp(_energy + 16.0f + sector * 3.0f, 0.0f, _maxEnergy);
-                PickupKind recoveryDrop = clean && (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.42f) ? PickupKind.Repair : PickupKind.Energy;
-                SpawnPickup(ScreenCenter + new Vector2(_rng.RandfRange(-88.0f, 88.0f), 42.0f), recoveryDrop);
+                if (clean && (_leechChance > 0.04f || _playerHp < _playerMaxHp * 0.42f))
+                {
+                    SpawnPickup(ScreenCenter + new Vector2(_rng.RandfRange(-88.0f, 88.0f), 42.0f), PickupKind.Repair);
+                }
                 AddText(T("flow.reward.recovery"), ScreenCenter + new Vector2(0.0f, -82.0f), Jade, 19.0f);
                 break;
             case WavePaceKind.Pressure:
@@ -3856,6 +4149,11 @@ public partial class MainGame : Node2D
         return new Color(0.58f, 0.62f, 0.66f);
     }
 
+    private static Color DamageNumberColor(bool critical)
+    {
+        return critical ? DamageNumberRed.Lerp(Gold, 0.18f) : DamageNumberRed;
+    }
+
     private Enemy? SpawnBoss()
     {
         int sector = CurrentSectorIndex();
@@ -3892,7 +4190,7 @@ public partial class MainGame : Node2D
         boss.BossIntent = BossPatternKind.AimedFan;
         boss.BossIntentPulse = 0.0f;
         boss.BossPhase = 0;
-        boss.BossGuard = 1.15f;
+        boss.BossGuard = 1.35f;
         Burst(boss.Pos, BossAccent(archetype), 100 + sector * 24, 760.0f + sector * 80.0f, 2.8f);
         _shake = 1.0f;
         return boss;
@@ -4191,8 +4489,7 @@ public partial class MainGame : Node2D
         }
         else if ((metaKey && !_lastMeta) || (click && MetaButtonRect().HasPoint(mouse)))
         {
-            _mode = GameMode.Meta;
-            PlaySfx(360.0f, 80.0f, 0.18f, 0.2f, 0.02f, 1);
+            BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
         }
         else if ((settingsKey && !_lastSettingsShortcut) || (click && TitleSettingsButtonRect().HasPoint(mouse)))
         {
@@ -4266,7 +4563,7 @@ public partial class MainGame : Node2D
         PlaySfx(360.0f + _gamepadPilotIndex * 55.0f, 70.0f, 0.14f, 0.2f, 0.02f, 1);
         if (samePilot && startIfAlreadySelected)
         {
-            StartRun();
+            BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
         }
 
         return true;
@@ -4274,9 +4571,18 @@ public partial class MainGame : Node2D
 
     private void TryStartTitleRun()
     {
+        if (!_tutorialCompleted)
+        {
+            _selectedPilot = PilotKind.Astra;
+            _gamepadPilotIndex = PilotIndex(_selectedPilot);
+            SaveMetaProgress();
+            BeginLoadingTransition(LoadingAction.StartTutorial, "loading.start", Cyan);
+            return;
+        }
+
         if (SelectDisplayedPilotOrShowLock(false))
         {
-            StartRun();
+            BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
         }
     }
 
@@ -4331,8 +4637,7 @@ public partial class MainGame : Node2D
 
         if (focus == TitleMetaFocus)
         {
-            _mode = GameMode.Meta;
-            PlaySfx(360.0f, 80.0f, 0.18f, 0.2f, 0.02f, 1);
+            BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
         }
         else if (focus == TitleStartFocus)
         {
@@ -4604,8 +4909,7 @@ public partial class MainGame : Node2D
         if (index == mainMenuIndex)
         {
             _deleteSaveConfirmTimer = 0.0f;
-            ResetTitle();
-            PlaySfx(180.0f, -80.0f, 0.18f, 0.2f, 0.04f, 1);
+            BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
             return;
         }
 
@@ -4709,7 +5013,7 @@ public partial class MainGame : Node2D
 
         if ((CancelHeld() && !_lastCancel) || (click && MetaBackButtonRect().HasPoint(mouse)))
         {
-            ResetTitle();
+            BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
             return;
         }
 
@@ -4788,6 +5092,14 @@ public partial class MainGame : Node2D
             return;
         }
 
+        if (_pilotIntroActive)
+        {
+            UpdatePilotIntro(dt, click);
+            UpdateParticles(dt);
+            UpdateDamageTexts(dt);
+            return;
+        }
+
         float gameDt = dt * _slowMo;
         _slowMo = Approach(_slowMo, 1.0f, dt * 1.5f);
         _runTimer += dt;
@@ -4796,6 +5108,7 @@ public partial class MainGame : Node2D
         _dashTimer -= gameDt;
         _dashCooldown -= gameDt;
         _invulnTimer -= gameDt;
+        _hitFlashTimer = Mathf.Max(0.0f, _hitFlashTimer - gameDt);
         _polarityCooldown = Mathf.Max(0.0f, _polarityCooldown - gameDt);
         _ultimateCooldown = Mathf.Max(0.0f, _ultimateCooldown - gameDt);
         _polarityDenyTextCooldown -= gameDt;
@@ -4857,12 +5170,475 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void UpdateTutorial(float dt)
+    {
+        Vector2 mouse = GetGlobalMousePosition();
+        bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
+        if (click)
+        {
+            _usingGamepad = false;
+        }
+        if ((click && HudSettingsButtonRect().HasPoint(mouse)) || (PauseHeld() && !_lastPause))
+        {
+            OpenSettings(GameMode.Tutorial);
+            return;
+        }
+
+        float gameDt = dt * _slowMo;
+        _slowMo = Approach(_slowMo, 1.0f, dt * 1.5f);
+        _runTimer += dt;
+        _energy = Mathf.Clamp(_energy + dt * 7.0f, 0.0f, _maxEnergy);
+        _fireTimer -= gameDt;
+        _dashTimer -= gameDt;
+        _dashCooldown -= gameDt;
+        _invulnTimer -= gameDt;
+        _hitFlashTimer = Mathf.Max(0.0f, _hitFlashTimer - gameDt);
+        _polarityCooldown = Mathf.Max(0.0f, _polarityCooldown - gameDt);
+        _ultimateCooldown = Mathf.Max(0.0f, _ultimateCooldown - gameDt);
+        _polarityDenyTextCooldown -= gameDt;
+        _absorbTextCooldown -= gameDt;
+        _counterTextCooldown -= gameDt;
+        _polarityTipTimer -= gameDt;
+        _scoreCachePulse = Mathf.Max(0.0f, _scoreCachePulse - gameDt * 2.6f);
+        _xpPulse = Mathf.Max(0.0f, _xpPulse - gameDt * 3.2f);
+        _comboTierPulse = Mathf.Max(0.0f, _comboTierPulse - gameDt * 1.9f);
+        _waveIntelPulse = Mathf.Max(0.0f, _waveIntelPulse - gameDt * 0.72f);
+        _assaultBurstTimer = Mathf.Max(0.0f, _assaultBurstTimer - gameDt);
+        _cruiseCharge = Mathf.Max(0.0f, _cruiseCharge - gameDt * 0.45f);
+        _timeSinceHit += gameDt;
+
+        UpdatePlayer(gameDt);
+        UpdateTutorialDirector(gameDt);
+        UpdateEnemies(gameDt);
+        UpdateShots(gameDt);
+        UpdatePickups(gameDt);
+        UpdateParticles(dt);
+        UpdateDamageTexts(dt);
+        ResolveCombat(gameDt);
+        UpdateOrbiters(gameDt);
+
+        _playerHp = Mathf.Clamp(_playerHp, 1.0f, _playerMaxHp);
+    }
+
+    private void BeginTutorialRun()
+    {
+        _tutorialStep = TutorialStep.Move;
+        _tutorialStepTimer = 0.0f;
+        _tutorialMoveTimer = 0.0f;
+        _tutorialKills = 0;
+        _tutorialStepSpawned = false;
+        _tutorialDashUsed = false;
+        _tutorialUltimateUsed = false;
+        _wave = 0;
+        _waveProgressBudget = 1.0f;
+        _waveProgressSpent = 0.0f;
+        _waveSpawnTimer = 0.0f;
+        _waveSpawnInterval = 0.0f;
+        _waveNextSpawnCount = 0;
+        _currentWavePace = WavePaceKind.Standard;
+        _playerPos = ScreenCenter;
+        _playerVel = Vector2.Zero;
+        _aimDir = Vector2.Right;
+        _dashAimDir = Vector2.Right;
+        _dashAimVisualDir = Vector2.Right;
+        _dashCooldown = 0.0f;
+        _polarityCooldown = 0.0f;
+        _ultimateCooldown = 0.0f;
+        _maxEnergy = Mathf.Max(_maxEnergy, 125.0f);
+        _energy = _maxEnergy;
+        _novaCost = 42.0f;
+        _playerMaxHp = Mathf.Max(_playerMaxHp, 34.0f);
+        _playerHp = _playerMaxHp;
+        _pickupMagnet = Math.Max(_pickupMagnet, 260.0f);
+        _runLevel = 1;
+        _xp = 0;
+        _queuedLevelUps = 0;
+        _xpToNext = 24;
+        SnapHudBars();
+        ClearEnemies();
+        ClearShots();
+        ClearPickups();
+        ClearParticles();
+        ClearDamageTexts();
+        _centerTextQueue.Clear();
+        _centerTextQueueTimer = 0.0f;
+        AddText(T("tutorial.title"), ScreenCenter + new Vector2(0.0f, -148.0f), Cyan, 34.0f);
+        PlaySfx(320.0f, 120.0f, 0.18f, 0.26f, 0.02f, 1);
+    }
+
+    private void UpdateTutorialDirector(float dt)
+    {
+        _tutorialStepTimer += dt;
+        switch (_tutorialStep)
+        {
+            case TutorialStep.Move:
+                if (ReadMoveInput().LengthSquared() > 0.04f || _playerVel.LengthSquared() > 6400.0f)
+                {
+                    _tutorialMoveTimer += dt;
+                }
+                if (_tutorialMoveTimer >= TutorialMoveSeconds)
+                {
+                    SetTutorialStep(TutorialStep.LockOn);
+                }
+                break;
+            case TutorialStep.LockOn:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(360.0f, -96.0f), 24.0f);
+                    SpawnTutorialEnemy(EnemyKind.Weaver, ScreenCenter + new Vector2(430.0f, 92.0f), 28.0f);
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(260.0f, 174.0f), 24.0f);
+                    AddText(T("tutorial.lock.title"), ScreenCenter + new Vector2(0.0f, -118.0f), Cyan, 26.0f);
+                }
+                if (_tutorialKills >= 3 || _tutorialStepTimer > 8.0f && _enemies.Count == 0 || _tutorialStepTimer > 12.0f)
+                {
+                    SetTutorialStep(TutorialStep.Dash);
+                }
+                break;
+            case TutorialStep.Dash:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    ClearShots();
+                    _playerPos = ScreenCenter + new Vector2(-280.0f, 0.0f);
+                    _playerVel = Vector2.Zero;
+                    _dashCooldown = 0.0f;
+                    SpawnTutorialBulletWall();
+                    AddText(T("tutorial.dash.title"), ScreenCenter + new Vector2(0.0f, -118.0f), Gold, 26.0f);
+                }
+                if (_tutorialStepTimer > 1.0f && (_tutorialDashUsed || ActiveEnemyBulletCount() <= 2))
+                {
+                    SetTutorialStep(TutorialStep.Ultimate);
+                }
+                else if (_tutorialStepTimer > 8.0f)
+                {
+                    SetTutorialStep(TutorialStep.Ultimate);
+                }
+                break;
+            case TutorialStep.Ultimate:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    ClearShots();
+                    _energy = _maxEnergy;
+                    _ultimateCooldown = 0.0f;
+                    _novaCost = Math.Min(_novaCost, 42.0f);
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(280.0f, -120.0f), 34.0f);
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(330.0f, 70.0f), 34.0f);
+                    SpawnTutorialBulletRing();
+                    AddText(T("tutorial.ultimate.title"), ScreenCenter + new Vector2(0.0f, -118.0f), PilotAccent(_runPilot), 26.0f);
+                }
+                if (_tutorialStepTimer > 0.8f && (_tutorialUltimateUsed || ActiveEnemyBulletCount() == 0))
+                {
+                    SetTutorialStep(TutorialStep.Flow);
+                }
+                else if (_tutorialStepTimer > 9.0f)
+                {
+                    SetTutorialStep(TutorialStep.Flow);
+                }
+                break;
+            case TutorialStep.Flow:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    ClearEnemies();
+                    ClearShots();
+                    _xp = 0;
+                    _queuedLevelUps = 0;
+                    _xpToNext = 24;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        SpawnPickup(_playerPos + RandomDirection() * _rng.RandfRange(58.0f, 140.0f), PickupKind.Dust);
+                    }
+                    AddText(T("tutorial.flow.title"), ScreenCenter + new Vector2(0.0f, -118.0f), Jade, 26.0f);
+                }
+                if (_queuedLevelUps > 0 || _tutorialStepTimer >= TutorialFlowSeconds)
+                {
+                    if (_queuedLevelUps <= 0)
+                    {
+                        _queuedLevelUps = 1;
+                    }
+                    SetTutorialStep(TutorialStep.Upgrade);
+                }
+                break;
+            case TutorialStep.Upgrade:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    ClearEnemies();
+                    ClearShots();
+                    _combo = 0;
+                    _comboTimer = 0.0f;
+                    if (_queuedLevelUps <= 0)
+                    {
+                        _queuedLevelUps = 1;
+                    }
+                    AddText(T("tutorial.upgrade.title"), ScreenCenter + new Vector2(0.0f, -118.0f), Jade, 26.0f);
+                    OpenLevelUpChoice(_playerPos);
+                }
+                break;
+            case TutorialStep.ComboCombat:
+                if (!_tutorialStepSpawned)
+                {
+                    _tutorialStepSpawned = true;
+                    ClearShots();
+                    ClearEnemies();
+                    _combo = 0;
+                    _comboTimer = 0.0f;
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(360.0f, -128.0f), 30.0f);
+                    SpawnTutorialEnemy(EnemyKind.Weaver, ScreenCenter + new Vector2(440.0f, 0.0f), 32.0f);
+                    SpawnTutorialEnemy(EnemyKind.Drifter, ScreenCenter + new Vector2(360.0f, 132.0f), 30.0f);
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(-340.0f, -88.0f), 28.0f);
+                    SpawnTutorialEnemy(EnemyKind.Turret, ScreenCenter + new Vector2(-390.0f, 118.0f), 38.0f);
+                    SpawnTutorialEnemy(EnemyKind.Weaver, ScreenCenter + new Vector2(-210.0f, -210.0f), 30.0f);
+                    SpawnTutorialEnemy(EnemyKind.Drifter, ScreenCenter + new Vector2(70.0f, 230.0f), 28.0f);
+                    SpawnTutorialEnemy(EnemyKind.Chaser, ScreenCenter + new Vector2(205.0f, -230.0f), 28.0f);
+                    AddText(T("tutorial.combo.title"), ScreenCenter + new Vector2(0.0f, -118.0f), Cyan, 26.0f);
+                }
+                if (_tutorialKills >= 8 || _tutorialStepTimer > 14.0f && _enemies.Count == 0 || _tutorialStepTimer > 19.0f)
+                {
+                    CompleteTutorialRun();
+                }
+                break;
+            case TutorialStep.Complete:
+                if (_tutorialStepTimer > 1.6f)
+                {
+                    BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
+                }
+                break;
+        }
+    }
+
+    private void SetTutorialStep(TutorialStep step)
+    {
+        _tutorialStep = step;
+        _tutorialStepTimer = 0.0f;
+        _tutorialStepSpawned = false;
+        if (step == TutorialStep.LockOn || step == TutorialStep.ComboCombat)
+        {
+            _tutorialKills = 0;
+        }
+        if (step == TutorialStep.Dash)
+        {
+            _tutorialDashUsed = false;
+        }
+        if (step == TutorialStep.Ultimate)
+        {
+            _tutorialUltimateUsed = false;
+        }
+        _centerTextQueue.Clear();
+        _centerTextQueueTimer = 0.0f;
+    }
+
+    private void BeginPilotIntro()
+    {
+        ClearPilotIntroState();
+        _pilotIntroPilot = _runPilot;
+        int lineCount = Math.Max(1, Math.Min(PilotIntroVariantCount, _rng.RandiRange(PilotIntroMinLines, PilotIntroMaxLines)));
+        int[] order = new int[PilotIntroVariantCount];
+        for (int i = 0; i < order.Length; i++)
+        {
+            order[i] = i;
+        }
+
+        for (int i = 0; i < order.Length - 1; i++)
+        {
+            int swapIndex = _rng.RandiRange(i, order.Length - 1);
+            (order[i], order[swapIndex]) = (order[swapIndex], order[i]);
+        }
+
+        for (int i = 0; i < lineCount; i++)
+        {
+            string line = T(PilotIntroTextKey(_pilotIntroPilot, order[i])).Trim();
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                _pilotIntroLines.Add(line);
+            }
+        }
+
+        if (_pilotIntroLines.Count <= 0)
+        {
+            FinishPilotIntro();
+            return;
+        }
+
+        _pilotIntroActive = true;
+        _gamepadFocusVisible = false;
+        BeginPilotIntroLine(0);
+        PlaySfx(310.0f, 40.0f, 0.1f, 0.12f, 0.01f, 1);
+    }
+
+    private void BeginPilotIntroLine(int index)
+    {
+        _pilotIntroLineIndex = Math.Max(0, Math.Min(_pilotIntroLines.Count - 1, index));
+        _pilotIntroText = _pilotIntroLines[_pilotIntroLineIndex];
+        _pilotIntroVisibleChars = 0;
+        _pilotIntroTypeCursor = 0.0f;
+        _pilotIntroBeepTimer = 0.0f;
+    }
+
+    private void UpdatePilotIntro(float dt, bool click)
+    {
+        bool confirm = ConfirmHeld() && !_lastConfirm || StartHeld() && !_lastStart || click;
+        int length = _pilotIntroText.Length;
+        if (length <= 0)
+        {
+            FinishPilotIntro();
+            return;
+        }
+
+        if (confirm)
+        {
+            if (_pilotIntroVisibleChars < length)
+            {
+                _pilotIntroVisibleChars = length;
+                PlaySfx(420.0f, 20.0f, 0.06f, 0.1f, 0.0f, 1);
+                return;
+            }
+
+            AdvancePilotIntroLine();
+            return;
+        }
+
+        if (_pilotIntroVisibleChars < length)
+        {
+            _pilotIntroBeepTimer = Mathf.Max(0.0f, _pilotIntroBeepTimer - dt);
+            int oldVisible = _pilotIntroVisibleChars;
+            _pilotIntroTypeCursor += dt * PilotIntroCharsPerSecond;
+            _pilotIntroVisibleChars = Mathf.Clamp(Mathf.FloorToInt(_pilotIntroTypeCursor), 0, length);
+            if (_pilotIntroVisibleChars > oldVisible && _pilotIntroBeepTimer <= 0.0f)
+            {
+                char c = _pilotIntroText[Mathf.Clamp(_pilotIntroVisibleChars - 1, 0, length - 1)];
+                if (!char.IsWhiteSpace(c) && !",.，。;；:：!?！？、".Contains(c))
+                {
+                    float pitch = 360.0f + PilotIndex(_pilotIntroPilot) * 18.0f + (_pilotIntroVisibleChars % 5) * 18.0f;
+                    PlaySfx(pitch, 24.0f, 0.045f, 0.08f, 0.0f, 2);
+                    _pilotIntroBeepTimer = PilotIntroBeepInterval;
+                }
+            }
+            return;
+        }
+    }
+
+    private void AdvancePilotIntroLine()
+    {
+        if (_pilotIntroLineIndex + 1 >= _pilotIntroLines.Count)
+        {
+            FinishPilotIntro();
+            return;
+        }
+
+        BeginPilotIntroLine(_pilotIntroLineIndex + 1);
+        PlaySfx(340.0f + _pilotIntroLineIndex * 22.0f, 24.0f, 0.06f, 0.1f, 0.0f, 1);
+    }
+
+    private void FinishPilotIntro()
+    {
+        ClearPilotIntroState();
+        BeginNextWave();
+    }
+
+    private void ClearPilotIntroState()
+    {
+        _pilotIntroActive = false;
+        _pilotIntroLines.Clear();
+        _pilotIntroText = string.Empty;
+        _pilotIntroLineIndex = 0;
+        _pilotIntroVisibleChars = 0;
+        _pilotIntroTypeCursor = 0.0f;
+        _pilotIntroBeepTimer = 0.0f;
+    }
+
+    private void CompleteTutorialRun()
+    {
+        if (_tutorialStep == TutorialStep.Complete)
+        {
+            return;
+        }
+
+        _tutorialCompleted = true;
+        _tutorialStep = TutorialStep.Complete;
+        _tutorialStepTimer = 0.0f;
+        _tutorialStepSpawned = true;
+        SaveMetaProgress();
+        ClearEnemies();
+        ClearShots();
+        AddText(T("tutorial.complete"), ScreenCenter + new Vector2(0.0f, -126.0f), Gold, 28.0f);
+        PlaySfx(420.0f, 160.0f, 0.2f, 0.28f, 0.02f, 1);
+    }
+
+    private Enemy? SpawnTutorialEnemy(EnemyKind kind, Vector2 pos, float hp)
+    {
+        Enemy? enemy = SpawnEnemy(kind, ClampToArena(pos, 38.0f), CruiseStance);
+        if (enemy == null)
+        {
+            return null;
+        }
+
+        enemy.Hp = hp;
+        enemy.MaxHp = hp;
+        enemy.Value = 0;
+        enemy.DropMultiplier = 0.0f;
+        enemy.Cooldown = 8.0f;
+        enemy.Elite = false;
+        enemy.Armor = 0.86f;
+        return enemy;
+    }
+
+    private void SpawnTutorialBulletWall()
+    {
+        Vector2 basePos = ScreenCenter + new Vector2(14.0f, -180.0f);
+        for (int i = 0; i < 8; i++)
+        {
+            SpawnTutorialBullet(basePos + new Vector2(0.0f, i * 52.0f), new Vector2(-58.0f, 0.0f), 9.0f, 7.2f);
+        }
+    }
+
+    private void SpawnTutorialBulletRing()
+    {
+        int count = 14;
+        for (int i = 0; i < count; i++)
+        {
+            float angle = i * Mathf.Tau / count;
+            Vector2 dir = Vector2.Right.Rotated(angle);
+            SpawnTutorialBullet(_playerPos + dir * 260.0f, -dir * 46.0f, 8.0f, 8.0f);
+        }
+    }
+
+    private void SpawnTutorialBullet(Vector2 pos, Vector2 velocity, float radius, float life)
+    {
+        Shot? shot = AddShot(false);
+        if (shot == null)
+        {
+            return;
+        }
+
+        shot.Pos = pos;
+        shot.Prev = pos;
+        shot.Vel = velocity;
+        shot.Radius = radius;
+        shot.Damage = 1.0f;
+        shot.Life = life;
+        shot.MaxLife = life;
+        shot.Polarity = AssaultStance;
+        shot.Pierce = 0;
+        shot.ChainDepth = 0;
+        shot.SplitDepth = 0;
+        shot.Rift = false;
+        shot.Grazed = false;
+        shot.Homing = 0;
+        shot.Bounces = 0;
+        shot.Heavy = false;
+        shot.Shadow = false;
+    }
+
     private void UpdatePlayer(float dt)
     {
         Vector2 move = ReadMoveInput();
         _seekerFireTimer = Mathf.Max(0.0f, _seekerFireTimer - dt);
         _heavySlugTimer = Mathf.Max(0.0f, _heavySlugTimer - dt);
         UpdateAutoAim(move, dt);
+        UpdateDashAimInput(dt, move);
 
         bool tactical = TacticalHeld();
         if (tactical && !_lastToggle)
@@ -4894,7 +5670,7 @@ public partial class MainGame : Node2D
         bool dash = DashHeld();
         if (dash && !_lastDash && _dashCooldown <= 0.0f)
         {
-            StartDash(move.LengthSquared() > 0.0f ? move.Normalized() : _aimDir);
+            StartDash(ResolveDashDirection(move));
         }
 
         float speed = _playerSpeed;
@@ -4903,12 +5679,16 @@ public partial class MainGame : Node2D
             speed = _dashPower;
             move = _dashDir;
             _invulnTimer = Mathf.Max(_invulnTimer, 0.05f);
-            ClearBulletsNear(_playerPos, 62.0f + (_dashDamage - 70.0f) * 0.24f, true);
+            ClearBulletsNear(_playerPos, DashTravelClearRadius(), true);
         }
 
         _playerVel = _playerVel.Lerp(move * speed, 1.0f - Mathf.Exp(-dt * 14.0f));
         _playerPos += _playerVel * dt;
         _playerPos = ClampToArena(_playerPos, PlayerRadius + 6.0f);
+        if (_dashLandingClearPending && _dashTimer <= 0.0f)
+        {
+            FinishDashLandingClear();
+        }
 
         if (_enemies.Count > 0 && _fireTimer <= 0.0f)
         {
@@ -5094,6 +5874,11 @@ public partial class MainGame : Node2D
 
     private void CastUltimate()
     {
+        if (_mode == GameMode.Tutorial)
+        {
+            _tutorialUltimateUsed = true;
+        }
+
         _energy -= _novaCost;
         _ultimateCooldown = UltimateCooldownBase;
         _slowMo = 0.68f;
@@ -5681,19 +6466,108 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void UpdateDashAimInput(float dt, Vector2 fallbackMove)
+    {
+        _dashAimHintTimer = Mathf.Max(0.0f, _dashAimHintTimer - dt);
+
+        Vector2 rightStick = ReadGamepadStick(JoyAxis.RightX, JoyAxis.RightY, GamepadStickDeadZone);
+        if (rightStick.LengthSquared() > 0.01f)
+        {
+            _dashAimDir = rightStick.Normalized();
+            _dashAimHintTimer = DashAimHintVisibleTime + DashAimHintFadeTime;
+        }
+        else
+        {
+            Vector2 mouse = GetGlobalMousePosition();
+            bool mouseMoved = mouse.DistanceSquaredTo(_lastDashAimMousePos) > 9.0f;
+            bool mouseDashHeld = Input.IsMouseButtonPressed(MouseButton.Right);
+            Vector2 toMouse = mouse - _playerPos;
+            if ((mouseMoved || mouseDashHeld) && toMouse.LengthSquared() > 144.0f)
+            {
+                _usingGamepad = false;
+                _dashAimDir = toMouse.Normalized();
+                _dashAimHintTimer = DashAimHintVisibleTime + DashAimHintFadeTime;
+            }
+
+            _lastDashAimMousePos = mouse;
+        }
+
+        if (_dashAimDir.LengthSquared() <= 0.01f)
+        {
+            _dashAimDir = SafeDirection(fallbackMove, _aimDir);
+        }
+
+        _dashAimVisualDir = TurnTowardDirection(_dashAimVisualDir, _dashAimDir, DashAimVisualTurnSpeed * dt);
+    }
+
+    private Vector2 ResolveDashDirection(Vector2 fallbackMove)
+    {
+        if (!_usingGamepad)
+        {
+            Vector2 toMouse = GetGlobalMousePosition() - _playerPos;
+            if (toMouse.LengthSquared() > 144.0f)
+            {
+                _dashAimDir = toMouse.Normalized();
+                _dashAimHintTimer = DashAimHintVisibleTime + DashAimHintFadeTime;
+                return _dashAimDir;
+            }
+        }
+
+        if (_dashAimHintTimer > 0.0f && _dashAimDir.LengthSquared() > 0.01f)
+        {
+            return _dashAimDir.Normalized();
+        }
+
+        if (fallbackMove.LengthSquared() > 0.01f)
+        {
+            return fallbackMove.Normalized();
+        }
+
+        return SafeDirection(_dashAimDir, _aimDir);
+    }
+
     private void StartDash(Vector2 direction)
     {
+        if (_mode == GameMode.Tutorial)
+        {
+            _tutorialDashUsed = true;
+        }
+
         if (direction.LengthSquared() < 0.1f)
         {
             direction = Vector2.Right;
         }
         _dashDir = direction.Normalized();
+        _dashAimDir = _dashDir;
+        _dashAimVisualDir = TurnTowardDirection(_dashAimVisualDir, _dashAimDir, DashAimVisualTurnSpeed * 0.08f);
+        _dashAimHintTimer = Math.Max(_dashAimHintTimer, 0.46f);
+        _dashLandingClearPending = true;
         _dashTimer = 0.16f;
         _dashCooldown = DashCooldownDuration();
         _invulnTimer = 0.22f;
         _playerVel = _dashDir * _dashPower;
         Burst(_playerPos, PolarityColor(_playerPolarity), 24, 520.0f, 0.7f);
         PlaySfx(150.0f, 1.2f, 0.16f, 0.34f, 0.12f, 2);
+    }
+
+    private void FinishDashLandingClear()
+    {
+        _dashLandingClearPending = false;
+        float radius = DashEndpointClearRadius();
+        Color color = PilotAccent(_runPilot).Lerp(Paper, 0.14f);
+        ClearBulletsNear(_playerPos, radius, true);
+        AddShockwave(_playerPos, radius, color);
+        Burst(_playerPos, color, _visualPressure > 0.82f ? 6 : 14, 360.0f, 0.42f);
+    }
+
+    private float DashTravelClearRadius()
+    {
+        return Mathf.Clamp(60.0f + (_dashDamage - 70.0f) * 0.2f + _vectorThrusters * 3.0f, 58.0f, 92.0f);
+    }
+
+    private float DashEndpointClearRadius()
+    {
+        return Mathf.Clamp(DashEndpointClearBaseRadius + (_dashDamage - 70.0f) * 0.32f + _vectorThrusters * 8.0f, 104.0f, 178.0f);
     }
 
     private float DashCooldownDuration()
@@ -7435,7 +8309,7 @@ public partial class MainGame : Node2D
                                 if (_damageTexts.Count < MaxDamageTexts * 0.6f || _rng.Randf() < textChance)
                                 {
                                     string damageLabel = overheated && tacticalShot ? $"{(int)damage}!" : ((int)damage).ToString();
-                                    AddText(damageLabel, hitPos + RandomDirection() * 26.0f, PolarityColor(shot.Polarity), overheated && tacticalShot ? 23.0f : 20.0f);
+                                    AddText(damageLabel, hitPos + RandomDirection() * 26.0f, DamageNumberColor(overheated && tacticalShot), overheated && tacticalShot ? 23.0f : 20.0f);
                                 }
                                 if (overheated && tacticalShot && _counterTextCooldown <= 0.0f)
                                 {
@@ -7744,7 +8618,7 @@ public partial class MainGame : Node2D
     {
         int sector = CurrentSectorIndex();
         Color color = BossAccent(boss.BossArchetype);
-        boss.BossGuard = 0.86f + boss.BossPhase * 0.18f;
+        boss.BossGuard = 1.05f + boss.BossPhase * 0.24f;
         boss.Cooldown = 0.18f;
         boss.Overheat = 0.0f;
         boss.Phase += 0.72f + boss.BossPhase * 0.18f;
@@ -8058,6 +8932,18 @@ public partial class MainGame : Node2D
         Burst(enemy.Pos, color, enemy.Kind == EnemyKind.Boss ? 180 : 28, enemy.Kind == EnemyKind.Boss ? 980.0f : 440.0f, enemy.Kind == EnemyKind.Boss ? 2.2f : 0.9f);
         _shake = Mathf.Max(_shake, enemy.Kind == EnemyKind.Boss ? 1.0f : 0.24f);
         _flash = Mathf.Max(_flash, enemy.Kind == EnemyKind.Boss ? 0.75f : 0.12f);
+        if (_mode == GameMode.Tutorial)
+        {
+            _tutorialKills++;
+            if (_tutorialStep == TutorialStep.ComboCombat)
+            {
+                IncreaseCombo(enemy.Pos);
+            }
+            PlaySfx(220.0f, -20.0f, 0.12f, 0.18f, 0.04f, 1);
+            RecycleEnemy(enemy);
+            return;
+        }
+
         IncreaseCombo(enemy.Pos);
         int multiplier = ScoreMultiplier();
         int scoreGain = enemy.Value * multiplier;
@@ -8246,11 +9132,32 @@ public partial class MainGame : Node2D
             return;
         }
 
+        if (_mode == GameMode.Tutorial)
+        {
+            _waveTookDamage = true;
+            _playerHp = Mathf.Clamp(_playerHp - amount * 0.18f, MathF.Min(8.0f, _playerMaxHp), _playerMaxHp);
+            _timeSinceHit = 0.0f;
+            _invulnTimer = 1.05f;
+            _hitFlashTimer = PlayerHitFlashDuration;
+            _shake = Mathf.Max(_shake, 0.42f);
+            _flash = Mathf.Max(_flash, 0.08f);
+            if (_tutorialStep == TutorialStep.ComboCombat)
+            {
+                _combo = 0;
+                _comboTimer = 0.0f;
+                _comboTier = 0;
+            }
+            AddText(T("tutorial.hit"), _playerPos + new Vector2(0.0f, -82.0f), Alpha(Paper, 0.82f), 17.0f);
+            PlaySfx(120.0f, -30.0f, 0.1f, 0.16f, 0.02f, 1);
+            return;
+        }
+
         _waveTookDamage = true;
         float finalDamage = amount * _mirrorReduction;
         _playerHp -= finalDamage;
         _timeSinceHit = 0.0f;
         _invulnTimer = 0.86f;
+        _hitFlashTimer = PlayerHitFlashDuration;
         if (_combo > 0)
         {
             int comboRank = MetaRank(MetaUpgradeId.ComboEngine);
@@ -8262,9 +9169,9 @@ public partial class MainGame : Node2D
             AddText(T("score.combo_break"), _playerPos + new Vector2(0.0f, -92.0f), Rose, 20.0f);
         }
         _shake = Mathf.Max(_shake, 0.72f);
-        _flash = Mathf.Max(_flash, 0.45f);
+        _flash = Mathf.Max(_flash, 0.1f);
         Burst(_playerPos, Rose, 34, 470.0f, 1.0f);
-        AddText($"-{(int)finalDamage}", _playerPos + new Vector2(0.0f, -60.0f), Rose, 34.0f);
+        AddText($"-{(int)finalDamage}", _playerPos + new Vector2(0.0f, -60.0f), DamageNumberColor(false), 34.0f);
         PlaySfx(92.0f, -20.0f, 0.26f, 0.45f, 0.2f, 0);
 
         Vector2 knock = _playerPos - source;
@@ -8366,13 +9273,6 @@ public partial class MainGame : Node2D
                     {
                         MagnetizedCorePulse(pickup.Pos);
                     }
-                }
-                break;
-            case PickupKind.Energy:
-                _energy = Mathf.Clamp(_energy + 12.0f, 0.0f, _maxEnergy);
-                if (_magnetizedCore > 0)
-                {
-                    ClearBulletsNear(pickup.Pos, 42.0f + _magnetizedCore * 12.0f, true);
                 }
                 break;
             case PickupKind.Repair:
@@ -9103,11 +10003,28 @@ public partial class MainGame : Node2D
     private void OpenUpgradeChoice()
     {
         _mode = GameMode.Upgrade;
-        _rerollsRemaining = _baseRerolls;
-        GenerateUpgradeChoices();
+        bool tutorialChoice = _tutorialStep == TutorialStep.Upgrade;
+        _rerollsRemaining = tutorialChoice ? 0 : _baseRerolls;
+        if (tutorialChoice)
+        {
+            GenerateTutorialUpgradeChoices();
+        }
+        else
+        {
+            GenerateUpgradeChoices();
+        }
         ClearShots();
         Burst(ScreenCenter, Jade, 42, 360.0f, 1.2f);
         PlaySfx(330.0f, 110.0f, 0.38f, 0.28f, 0.04f, 1);
+    }
+
+    private void GenerateTutorialUpgradeChoices()
+    {
+        _upgradeChoices.Clear();
+        _upgradeChoices.Add(CreateCard(UpgradeId.MoonWisp));
+        _upgradeChoices.Add(CreateCard(UpgradeId.PrismArray));
+        _upgradeChoices.Add(CreateCard(UpgradeId.ChainRelay));
+        LayoutUpgradeChoices();
     }
 
     private void GenerateUpgradeChoices()
@@ -9123,6 +10040,11 @@ public partial class MainGame : Node2D
             AddRandomUpgradeChoice(commonPool, pilotPool);
         }
 
+        LayoutUpgradeChoices();
+    }
+
+    private void LayoutUpgradeChoices()
+    {
         const float cardWidth = 386.0f;
         const float cardHeight = 386.0f;
         const float cardGap = 42.0f;
@@ -9765,7 +10687,7 @@ public partial class MainGame : Node2D
                 }
                 if (tier >= 2)
                 {
-                    SpawnPickup(_playerPos + new Vector2(-48.0f, -22.0f), PickupKind.Energy);
+                    _energy = Mathf.Clamp(_energy + 18.0f + tier * 4.0f, 0.0f, _maxEnergy);
                     SpawnPickup(_playerPos + new Vector2(48.0f, -22.0f), PickupKind.Repair);
                 }
                 break;
@@ -9979,6 +10901,13 @@ public partial class MainGame : Node2D
         }
         Burst(ScreenCenter, card.Accent, 64, 620.0f, 1.2f);
         PlaySfx(420.0f, 220.0f, 0.34f, 0.34f, 0.03f, 1);
+        if (_tutorialStep == TutorialStep.Upgrade)
+        {
+            _mode = GameMode.Tutorial;
+            _queuedLevelUps = 0;
+            SetTutorialStep(TutorialStep.ComboCombat);
+            return;
+        }
         if (_queuedLevelUps > 0)
         {
             OpenLevelUpChoice(ScreenCenter);
@@ -10612,7 +11541,9 @@ public partial class MainGame : Node2D
             UpgradeId.OrionMarkedPrey => new UpgradeCard { Id = id, Title = T("upgrade.orion.prey.title"), Tag = rank, Body = T("upgrade.orion.prey.body"), Accent = Rose.Lerp(Gold, 0.16f) },
             _ => new UpgradeCard { Id = id, Title = T("upgrade.unknown.title"), Tag = Tf("rank", 1), Body = T("upgrade.unknown.body"), Accent = Paper },
         };
-        return ApplyCapstonePreview(card, nextRank);
+        card = ApplyCapstonePreview(card, nextRank);
+        card.Delta = UpgradeDeltaText(card.Id, nextRank);
+        return card;
     }
 
     private UpgradeCard ApplyCapstonePreview(UpgradeCard card, int nextRank)
@@ -10630,8 +11561,106 @@ public partial class MainGame : Node2D
         }
 
         card.Tag = T("choice.capstone");
-        card.Body = $"{card.Body}\n{body}";
         return card;
+    }
+
+    private string UpgradeDeltaText(UpgradeId id, int nextRank)
+    {
+        int maxRank = MaxRank(id);
+        if (maxRank < 20 && nextRank >= maxRank)
+        {
+            string capstone = CapstoneBody(id);
+            if (capstone.Length > 0)
+            {
+                return capstone;
+            }
+        }
+
+        return id switch
+        {
+            UpgradeId.PrismArray => DeltaText("+1 shot lane, fire interval +0.025s.", "+1 条弹道，射击间隔 +0.025秒。"),
+            UpgradeId.RailHeart => DeltaText("Damage +26%, fire interval -0.016s.", "伤害 +26%，射击间隔 -0.016秒。"),
+            UpgradeId.CoolantLattice => DeltaText("Fire interval -0.045s, energy limit +10.", "射击间隔 -0.045秒，能量上限 +10。"),
+            UpgradeId.KineticBloom => DeltaText("Dash power +145, move speed +32.", "冲刺力度 +145，移动速度 +32。"),
+            UpgradeId.GravityWell => DeltaText("Pickup range +110, enemies slow 8% more.", "拾取范围 +110，敌人减速效果提高 8%。"),
+            UpgradeId.VitalShell => DeltaText("Max hull +8, heal 12 hull now.", "生命上限 +8，并立即回复 12生命。"),
+            UpgradeId.ResonanceLeech => DeltaText("Repair drop chance +7%, energy +22 now.", "回血掉落概率 +7%，立即获得 22能量。"),
+            UpgradeId.MoonWisp => DeltaText("+1 support drone, drone fires sooner.", "+1 架无人机，无人机更快开火。"),
+            UpgradeId.RiftNeedle => DeltaText("Unlock piercing shots, damage +12%.", "解锁穿透弹，伤害 +12%。"),
+            UpgradeId.MirrorSkin => DeltaText("Incoming damage reduced 14%, heal 6 hull.", "受到伤害降低 14%，立即回复 6生命。"),
+            UpgradeId.NovaCapacitor => DeltaText("Ultimate cost -7, energy limit +18, energy +28.", "大招消耗 -7，能量上限 +18，立即获得 28能量。"),
+            UpgradeId.PolarityStorm => DeltaText("Tactical mode rank +1, switch cooldown becomes shorter.", "战术形态等级 +1，切换冷却缩短。"),
+            UpgradeId.CometTrail => DeltaText("Dash damage +32, dash power +85.", "冲刺伤害 +32，冲刺力度 +85。"),
+            UpgradeId.AegisBloom => DeltaText("Regen +0.34/s, max hull +5, heal 8 hull.", "回血 +0.34/秒，生命上限 +5，立即回复 8生命。"),
+            UpgradeId.QuantumEcho => DeltaText("Echo shot chance +11%, damage +6%.", "额外射击概率 +11%，伤害 +6%。"),
+            UpgradeId.ChainRelay => DeltaText("Chain rank +1, damage +3.5%.", "连锁等级 +1，伤害 +3.5%。"),
+            UpgradeId.FractalSplit => DeltaText("Split rank +1, damage +3.5%.", "分裂等级 +1，伤害 +3.5%。"),
+            UpgradeId.SolarThesis => DeltaText("Critical damage +22%, damage +10%.", "暴击伤害 +22%，伤害 +10%。"),
+            UpgradeId.EmergencyRepair => DeltaText("Max hull +4, heal 24 hull now.", "生命上限 +4，立即回复 24生命。"),
+            UpgradeId.OneWaveOverdrive => DeltaText("Next wave damage x1.55, energy +45.", "下一波伤害 x1.55，立即获得 45能量。"),
+            UpgradeId.GlassCannon => DeltaText("Damage +42%, max hull -8.", "伤害 +42%，生命上限 -8。"),
+            UpgradeId.BountyContract => DeltaText($"Next wave enemies +{5 + CurrentSectorIndex()}, rewards x2.", $"下一波敌人 +{5 + CurrentSectorIndex()}，奖励 x2。"),
+            UpgradeId.BulletTransmute => DeltaText("Clear all red bullets, energy +35.", "清除全屏红弹，立即获得 35能量。"),
+            UpgradeId.HarmonicMap => DeltaText("+1 reroll for this run.", "本局重抽次数 +1。"),
+            UpgradeId.PulseMagazine => DeltaText("Pulse rank +1, fire interval -0.012s.", "脉冲等级 +1，射击间隔 -0.012秒。"),
+            UpgradeId.ExecutionMark => DeltaText("Execute rank +1, crit damage +8%, damage +3.5%.", "处决等级 +1，暴击伤害 +8%，伤害 +3.5%。"),
+            UpgradeId.StasisField => DeltaText("Stasis rank +1, enemies slow more, pickup range +18.", "静滞等级 +1，敌人更慢，拾取范围 +18。"),
+            UpgradeId.MagnetizedCore => DeltaText("Magnet rank +1, pickup range +72, energy limit +6.", "磁吸等级 +1，拾取范围 +72，能量上限 +6。"),
+            UpgradeId.RicochetMatrix => DeltaText("Ricochet rank +1, damage +2.5%.", "弹射等级 +1，伤害 +2.5%。"),
+            UpgradeId.SeekerRack => DeltaText("Missile rank +1, reload now, damage +2.5%.", "导弹等级 +1，立即装填，伤害 +2.5%。"),
+            UpgradeId.ShieldRebound => DeltaText("Rebound rank +1, incoming damage down, heal 5 hull.", "反弹等级 +1，受到伤害降低，回复 5生命。"),
+            UpgradeId.ShadowClone => DeltaText("Clone rank +1, echo chance +3.5%, damage +2.5%.", "分身等级 +1，额外射击概率 +3.5%，伤害 +2.5%。"),
+            UpgradeId.HeavySlug => DeltaText("Heavy shot rank +1, damage +4%, fire interval +0.006s.", "重弹等级 +1，伤害 +4%，射击间隔 +0.006秒。"),
+            UpgradeId.PinballRounds => DeltaText("Pinball rank +1, damage +2%.", "弹球等级 +1，伤害 +2%。"),
+            UpgradeId.GyroStabilizer => DeltaText("Turn speed +2.2, fire interval -0.01s.", "转向速度 +2.2，射击间隔 -0.01秒。"),
+            UpgradeId.VectorThrusters => DeltaText("Move speed +34, dash power +62, dash partly refreshed.", "移动速度 +34，冲刺力度 +62，冲刺冷却部分刷新。"),
+            UpgradeId.AstraRefraction => DeltaText("Refraction rank +1, damage +5%.", "折射等级 +1，伤害 +5%。"),
+            UpgradeId.AstraPrismWake => DeltaText("Prism wake rank +1, fire interval -0.02s, damage +8%.", "棱镜余波等级 +1，射击间隔 -0.02秒，伤害 +8%。"),
+            UpgradeId.VesperCapacitor => DeltaText("Charge rank +1, fire interval -0.046s, damage +8%.", "蓄能等级 +1，射击间隔 -0.046秒，伤害 +8%。"),
+            UpgradeId.VesperSplitRail => DeltaText("Split rail rank +1, fire interval -0.026s.", "分轨等级 +1，射击间隔 -0.026秒。"),
+            UpgradeId.KairoDroneBay => DeltaText("+1 drone, drone fires sooner.", "+1 架无人机，无人机更快开火。"),
+            UpgradeId.KairoSwarmSync => DeltaText("Swarm sync rank +1, fire interval -0.026s, damage +6%.", "蜂群同步等级 +1，射击间隔 -0.026秒，伤害 +6%。"),
+            UpgradeId.SolCoronaBloom => DeltaText("Corona rank +1, fire interval -0.028s.", "日冕等级 +1，射击间隔 -0.028秒。"),
+            UpgradeId.SolSolarForge => DeltaText("Energy limit +16, energy +24, ultimate cost -6, damage +6%.", "能量上限 +16，立即获得 24能量，大招消耗 -6，伤害 +6%。"),
+            UpgradeId.AstraNovaBloom => DeltaText("Nova rank +1, ultimate cost -3, damage +4%.", "新星等级 +1，大招消耗 -3，伤害 +4%。"),
+            UpgradeId.AstraTwinRefraction => DeltaText("Twin refraction rank +1, unlock split, damage +5%.", "双相折射等级 +1，解锁分裂，伤害 +5%。"),
+            UpgradeId.AstraPrismOrbit => DeltaText("Prism orbit rank +1, unlock split, damage +4%.", "棱镜环绕等级 +1，解锁分裂，伤害 +4%。"),
+            UpgradeId.VesperJudgmentCoil => DeltaText("Judgment rank +1, ultimate cost -4, damage +5%.", "裁决等级 +1，大招消耗 -4，伤害 +5%。"),
+            UpgradeId.VesperSeverLine => DeltaText("Sever line rank +1, damage +4%.", "裁切线圈等级 +1，伤害 +4%。"),
+            UpgradeId.VesperOverchargeRail => DeltaText("Overcharge rank +1, unlock execute, damage +6%.", "过载轨道等级 +1，解锁处决，伤害 +6%。"),
+            UpgradeId.KairoOverrideMatrix => DeltaText("Override rank +1, drones fire sooner, ultimate cost -3.", "无人机指令等级 +1，无人机更快开火，大招消耗 -3。"),
+            UpgradeId.KairoRelayProtocol => DeltaText("Relay rank +1, unlock chain, damage +4%.", "中继协议等级 +1，解锁连锁，伤害 +4%。"),
+            UpgradeId.KairoHunterWing => DeltaText("Hunter wing rank +1, +1 drone, unlock missiles.", "猎手机群等级 +1，+1 架无人机，解锁导弹。"),
+            UpgradeId.SolFlareCore => DeltaText("Flare core rank +1, energy limit +10, damage +4%.", "耀斑核心等级 +1，能量上限 +10，伤害 +4%。"),
+            UpgradeId.SolRadiantMantle => DeltaText("Radiant mantle rank +1, max hull +8, heal 18, ultimate cost -4.", "光辉护层等级 +1，生命上限 +8，回复 18生命，大招消耗 -4。"),
+            UpgradeId.SolIgnitionWave => DeltaText("Ignition rank +1, unlock chain, damage +4.5%.", "点燃波等级 +1，解锁连锁，伤害 +4.5%。"),
+            UpgradeId.NyxOrbit => DeltaText("Gravity orbit rank +1, fire interval -0.025s.", "重力环绕等级 +1，射击间隔 -0.025秒。"),
+            UpgradeId.NyxSingularity => DeltaText("Singularity rank +1, damage +6%, pickup range +24.", "奇点等级 +1，伤害 +6%，拾取范围 +24。"),
+            UpgradeId.NyxEventHorizon => DeltaText("Event horizon rank +1, unlock stasis, ultimate cost -4.", "事件视界等级 +1，解锁静滞，大招消耗 -4。"),
+            UpgradeId.NyxGravityCantor => DeltaText("Gravity chant rank +1, damage +4%.", "重力合唱等级 +1，伤害 +4%。"),
+            UpgradeId.NyxVoidTax => DeltaText("Void tax rank +1, unlock stasis, pickup range +30, damage +3.5%.", "虚空税等级 +1，解锁静滞，拾取范围 +30，伤害 +3.5%。"),
+            UpgradeId.RookBulwarkCore => DeltaText("Bulwark rank +1, max hull +18, heal 24, damage taken down.", "壁垒等级 +1，生命上限 +18，回复 24生命，受到伤害降低。"),
+            UpgradeId.RookSiegeBattery => DeltaText("Siege rank +1, damage +8%, fire interval -0.035s.", "攻城等级 +1，伤害 +8%，射击间隔 -0.035秒。"),
+            UpgradeId.RookAegisRelay => DeltaText("Aegis rank +1, regen +0.42/s, energy limit +8.", "护盾中继等级 +1，回血 +0.42/秒，能量上限 +8。"),
+            UpgradeId.RookCitadelProtocol => DeltaText("Citadel rank +1, dash damage +22, ultimate cost -5.", "堡垒协议等级 +1，冲刺伤害 +22，大招消耗 -5。"),
+            UpgradeId.RookCounterBattery => DeltaText("Counter rank +1, incoming damage down, damage +4.5%.", "反击炮台等级 +1，受到伤害降低，伤害 +4.5%。"),
+            UpgradeId.LyraResonanceChord => DeltaText("Resonance rank +1, odd ranks add +1 shot lane, damage +4%.", "共振和弦等级 +1，奇数等级 +1 条弹道，伤害 +4%。"),
+            UpgradeId.LyraTempoBloom => DeltaText("Tempo rank +1, fire interval -0.028s, echo chance +2.5%.", "节拍等级 +1，射击间隔 -0.028秒，额外射击概率 +2.5%。"),
+            UpgradeId.LyraHarmonicCascade => DeltaText("Cascade rank +1, unlock chain and split.", "和声连锁等级 +1，解锁连锁和分裂。"),
+            UpgradeId.LyraEncoreField => DeltaText("Encore rank +1, energy limit +12, energy +18, ultimate cost -5.", "安可领域等级 +1，能量上限 +12，立即获得 18能量，大招消耗 -5。"),
+            UpgradeId.LyraBeatTrigger => DeltaText("Beat trigger rank +1, echo chance +3.5%, fire interval -0.012s.", "节拍触发等级 +1，额外射击概率 +3.5%，射击间隔 -0.012秒。"),
+            UpgradeId.OrionCometSpear => DeltaText("Comet spear rank +1, damage +9%.", "彗星矛等级 +1，伤害 +9%。"),
+            UpgradeId.OrionDeadeyeMark => DeltaText("Deadeye rank +1, unlock execute, crit damage +10%.", "死眼标记等级 +1，解锁处决，暴击伤害 +10%。"),
+            UpgradeId.OrionStarfallQuiver => DeltaText("Starfall quiver rank +1, fire interval -0.04s.", "星落箭匣等级 +1，射击间隔 -0.04秒。"),
+            UpgradeId.OrionPerihelionVector => DeltaText("Perihelion rank +1, move speed +22, dash power +70, ultimate cost -5.", "近日点矢量等级 +1，移动速度 +22，冲刺力度 +70，大招消耗 -5。"),
+            UpgradeId.OrionMarkedPrey => DeltaText("Marked prey rank +1, unlock execute, crit damage +8%.", "猎物标记等级 +1，解锁处决，暴击伤害 +8%。"),
+            _ => DeltaText("Effect rank +1.", "效果等级 +1。"),
+        };
+    }
+
+    private string DeltaText(string english, string chinese)
+    {
+        return _language == GameLanguage.Chinese ? chinese : english;
     }
 
     private string CapstoneBody(UpgradeId id)
@@ -11039,6 +12068,16 @@ public partial class MainGame : Node2D
 
     private void WinRun()
     {
+        if (_loadingActive || _mode == GameMode.Victory)
+        {
+            return;
+        }
+
+        BeginLoadingTransition(LoadingAction.Victory, "loading.victory", Gold, 1.0f);
+    }
+
+    private void CompleteWinRun()
+    {
         _mode = GameMode.Victory;
         _wonOnce = true;
         AwardMetaProgress(true);
@@ -11049,10 +12088,28 @@ public partial class MainGame : Node2D
 
     private void LoseRun()
     {
+        if (_mode == GameMode.Tutorial)
+        {
+            _playerHp = Mathf.Max(1.0f, _playerMaxHp * 0.35f);
+            _invulnTimer = 1.2f;
+            AddText(T("tutorial.hit"), _playerPos + new Vector2(0.0f, -82.0f), Alpha(Paper, 0.82f), 17.0f);
+            return;
+        }
+
         if (_mode == GameMode.GameOver)
         {
             return;
         }
+        if (_loadingActive)
+        {
+            return;
+        }
+
+        BeginLoadingTransition(LoadingAction.GameOver, "loading.defeat", Rose, 1.0f);
+    }
+
+    private void CompleteLoseRun()
+    {
         _mode = GameMode.GameOver;
         _playerHp = 0.0f;
         AwardMetaProgress(false);
@@ -11069,19 +12126,18 @@ public partial class MainGame : Node2D
         UpdateDamageTexts(dt);
         if (MetaHeld() && !_lastMeta)
         {
-            ResetTitle();
-            _mode = GameMode.Meta;
+            BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
             return;
         }
 
         bool restart = ConfirmHeld() || StartHeld() || Input.IsMouseButtonPressed(MouseButton.Left);
         if (restart && !_lastRestart)
         {
-            StartRun();
+            BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
         }
         if (CancelHeld() && !_lastCancel)
         {
-            ResetTitle();
+            BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
         }
     }
 
@@ -11263,11 +12319,14 @@ public partial class MainGame : Node2D
     {
         Vector2 p = _playerPos + ShakeOffset();
         Color polarity = PilotAccent(_runPilot);
-        float invuln = _invulnTimer > 0.0f ? 0.5f + 0.5f * Mathf.Sin(_time * 36.0f) : 1.0f;
+        float hitFlash = PlayerHitFlash01();
+        float invuln = hitFlash > 0.0f ? 1.0f : _invulnTimer > 0.0f ? 0.82f : 1.0f;
         Vector2 forward = _aimDir;
 
         DrawPlayerTrail(p, polarity, invuln);
-        DrawPilotHull(_runPilot, p, forward, polarity, invuln, 1.0f);
+        DrawDashAimHint(p, polarity);
+        DrawPilotHull(_runPilot, p, forward, polarity, invuln, 1.0f, hitFlash);
+        DrawPlayerHitFlash(p, polarity, hitFlash);
         DrawPolarityCooldownBadge(p, polarity);
 
         if (_dashTimer > 0.0f)
@@ -11281,6 +12340,64 @@ public partial class MainGame : Node2D
         {
             DrawOrbiter(_orbiterVisuals[i], polarity);
         }
+    }
+
+    private float PlayerHitFlash01()
+    {
+        if (_hitFlashTimer <= 0.0f)
+        {
+            return 0.0f;
+        }
+
+        float life = Mathf.Clamp(_hitFlashTimer / PlayerHitFlashDuration, 0.0f, 1.0f);
+        return Mathf.Sin(life * Mathf.Pi * 0.5f);
+    }
+
+    private void DrawPlayerHitFlash(Vector2 playerPos, Color polarity, float hitFlash)
+    {
+        if (hitFlash <= 0.01f || _visualPressure > 0.9f)
+        {
+            return;
+        }
+
+        Color red = AlertRed.Lerp(Paper, 0.08f);
+        DrawCircle(playerPos, 42.0f + hitFlash * 20.0f, Alpha(red, 0.18f * hitFlash), false, 2.8f, true);
+        DrawCircle(playerPos, 24.0f + hitFlash * 10.0f, Alpha(red.Lerp(polarity, 0.18f), 0.12f * hitFlash));
+    }
+
+    private void DrawDashAimHint(Vector2 playerPos, Color polarity)
+    {
+        if (_dashAimHintTimer <= 0.0f)
+        {
+            return;
+        }
+
+        float fade = _dashAimHintTimer > DashAimHintFadeTime
+            ? 1.0f
+            : Mathf.Clamp(_dashAimHintTimer / DashAimHintFadeTime, 0.0f, 1.0f);
+        fade *= _dashTimer > 0.0f ? 0.72f : 0.54f;
+        if (fade <= 0.02f)
+        {
+            return;
+        }
+
+        Vector2 dir = SafeDirection(_dashAimVisualDir, _dashAimDir);
+        Vector2 right = new(-dir.Y, dir.X);
+        Vector2 stemStart = playerPos + dir * 48.0f;
+        Vector2 stemEnd = playerPos + dir * 82.0f;
+        Vector2 tip = playerPos + dir * 104.0f;
+        Vector2[] head =
+        {
+            tip,
+            stemEnd - dir * 1.5f + right * 8.0f,
+            stemEnd - dir * 1.5f - right * 8.0f,
+        };
+
+        DrawLine(stemStart, stemEnd, Alpha(polarity, 0.24f * fade), 2.0f, true);
+        DrawLine(stemStart + right * 5.0f, stemEnd + right * 3.0f, Alpha(Paper, 0.08f * fade), UiHairline, true);
+        DrawLine(stemStart - right * 5.0f, stemEnd - right * 3.0f, Alpha(Paper, 0.08f * fade), UiHairline, true);
+        DrawColoredPolygon(head, Alpha(polarity, 0.16f * fade), Array.Empty<Vector2>(), null);
+        DrawPolyline(ClosePolygon(head), Alpha(Paper, 0.18f * fade), UiHairline, true);
     }
 
     private void DrawOrbiter(OrbiterVisual visual, Color polarity)
@@ -11368,17 +12485,19 @@ public partial class MainGame : Node2D
         DrawCircle(center, 3.0f, Alpha(next, 0.42f));
     }
 
-    private void DrawPilotHull(PilotKind pilot, Vector2 center, Vector2 forward, Color polarity, float invuln, float scale)
+    private void DrawPilotHull(PilotKind pilot, Vector2 center, Vector2 forward, Color polarity, float invuln, float scale, float hitFlash = 0.0f)
     {
-        if (TryDrawPilotTexture(pilot, center, forward, invuln, scale))
+        if (TryDrawPilotTexture(pilot, center, forward, invuln, scale, hitFlash))
         {
             return;
         }
 
         Vector2 right = new(-forward.Y, forward.X);
-        Color body = Alpha(Graphite, 0.78f * invuln);
-        Color line = Alpha(Paper, 0.86f * invuln);
-        Color softLine = Alpha(GridLine, 0.45f * invuln);
+        Color hitColor = AlertRed.Lerp(Paper, 0.08f);
+        polarity = polarity.Lerp(hitColor, Mathf.Clamp(hitFlash * 0.72f, 0.0f, 1.0f));
+        Color body = Alpha(Graphite.Lerp(hitColor, hitFlash * 0.58f), 0.78f * invuln);
+        Color line = Alpha(Paper.Lerp(hitColor, hitFlash * 0.72f), 0.86f * invuln);
+        Color softLine = Alpha(GridLine.Lerp(hitColor, hitFlash * 0.5f), 0.45f * invuln);
         switch (pilot)
         {
             case PilotKind.Vesper:
@@ -11525,7 +12644,7 @@ public partial class MainGame : Node2D
         }
     }
 
-    private bool TryDrawPilotTexture(PilotKind pilot, Vector2 center, Vector2 forward, float alpha, float scale)
+    private bool TryDrawPilotTexture(PilotKind pilot, Vector2 center, Vector2 forward, float alpha, float scale, float hitFlash)
     {
         if (!_pilotTextures.TryGetValue(pilot, out Texture2D? texture) || texture == null)
         {
@@ -11541,7 +12660,8 @@ public partial class MainGame : Node2D
 
         Vector2 direction = forward.LengthSquared() > 0.01f ? forward.Normalized() : Vector2.Right;
         Vector2 drawSize = PilotTextureDrawSize(pilot, sourceSize, scale);
-        Color tint = Alpha(Colors.White, Mathf.Clamp(alpha, 0.0f, 1.0f));
+        Color tintColor = Colors.White.Lerp(AlertRed.Lerp(Paper, 0.08f), Mathf.Clamp(hitFlash * 0.72f, 0.0f, 1.0f));
+        Color tint = Alpha(tintColor, Mathf.Clamp(alpha, 0.0f, 1.0f));
         DrawSetTransform(center, direction.Angle() + Mathf.Pi * 0.5f, Vector2.One);
         DrawTextureRectRegion(texture, new Rect2(drawSize * -0.5f, drawSize), sourceRegion, tint);
         DrawSetTransform(Vector2.Zero, 0.0f, Vector2.One);
@@ -12318,12 +13438,28 @@ public partial class MainGame : Node2D
         Color accent = PickupColor(pickup.Kind);
         Vector2 pos = pickup.Pos + ShakeOffset();
         float pulse = 1.0f + Mathf.Sin(_time * 7.0f + pickup.Pos.X) * 0.08f;
+        if (ShouldDrawSimplePickup(pickup.Kind))
+        {
+            DrawSimplePickup(pickup.Kind, pos, pickup.Radius, pulse, accent);
+            return;
+        }
+
         if (pickup.Kind == PickupKind.Dust)
         {
-            float size = pickup.Radius * 1.95f * pulse;
-            Rect2 shard = new(pos - new Vector2(size, size) * 0.5f, new Vector2(size, size));
+            if (ShouldUsePickupTexture(PickupKind.Dust) && TryDrawPickupTexture(_xpPickupTexture, _xpPickupRegion, pos, pickup.Radius, pulse, 2.42f, 12.0f, 18.0f))
+            {
+                return;
+            }
+
+            float fallbackSize = pickup.Radius * 1.95f * pulse;
+            Rect2 shard = new(pos - new Vector2(fallbackSize, fallbackSize) * 0.5f, new Vector2(fallbackSize, fallbackSize));
             DrawRect(shard, Alpha(accent, 0.7f), true);
             DrawRect(shard, Alpha(Paper, 0.18f), false, UiHairline, true);
+            return;
+        }
+
+        if (pickup.Kind == PickupKind.Repair && ShouldUsePickupTexture(PickupKind.Repair) && TryDrawPickupTexture(_repairPickupTexture, _repairPickupRegion, pos, pickup.Radius, pulse, 2.8f, 24.0f, 38.0f))
+        {
             return;
         }
 
@@ -12343,14 +13479,6 @@ public partial class MainGame : Node2D
             DrawLine(pos - Vector2.Down * radius * 0.34f, pos + Vector2.Down * radius * 0.34f, Alpha(accent, 0.9f), 2.1f, true);
             DrawLine(pos - Vector2.Right * radius * 0.34f, pos + Vector2.Right * radius * 0.34f, Alpha(Paper, 0.42f), UiHairline, true);
         }
-        else if (pickup.Kind == PickupKind.Energy)
-        {
-            Rect2 cell = new(pos - new Vector2(radius * 0.34f, radius * 0.23f), new Vector2(radius * 0.68f, radius * 0.46f));
-            DrawRect(cell, Alpha(accent, 0.12f), true);
-            DrawRect(cell, Alpha(accent, 0.78f), false, UiHairline, true);
-            DrawLine(cell.Position + new Vector2(cell.Size.X * 0.22f, cell.Size.Y * 0.5f), cell.Position + new Vector2(cell.Size.X * 0.78f, cell.Size.Y * 0.5f), Alpha(Paper, 0.62f), 1.4f, true);
-            DrawLine(cell.End + new Vector2(0.0f, -cell.Size.Y * 0.32f), cell.End + new Vector2(radius * 0.12f, -cell.Size.Y * 0.32f), Alpha(accent, 0.78f), UiHairline, true);
-        }
         else
         {
             Vector2[] core = RegularPolygon(pos, radius * 0.32f, 4, rotation);
@@ -12361,6 +13489,78 @@ public partial class MainGame : Node2D
 
         DrawPolyline(ClosePolygon(RegularPolygon(pos, radius * 1.2f, 4, rotation)), Alpha(Paper, 0.12f), UiHairline, true);
     }
+
+    private bool TryDrawPickupTexture(Texture2D? texture, Rect2 sourceRegion, Vector2 pos, float radius, float pulse, float scale, float minSide, float maxSide)
+    {
+        if (texture == null || sourceRegion.Size.X <= 0.0f || sourceRegion.Size.Y <= 0.0f)
+        {
+            return false;
+        }
+
+        float sourceMax = Mathf.Max(sourceRegion.Size.X, sourceRegion.Size.Y);
+        if (sourceMax <= 0.0f)
+        {
+            return false;
+        }
+
+        float targetMax = Mathf.Clamp(radius * scale * pulse, minSide, maxSide);
+        Vector2 drawSize = sourceRegion.Size * (targetMax / sourceMax);
+        Rect2 drawRect = new(pos - drawSize * 0.5f, drawSize);
+        DrawTextureRectRegion(texture, drawRect, sourceRegion, Colors.White);
+        return true;
+    }
+
+    private bool ShouldDrawSimplePickup(PickupKind kind)
+    {
+        float pressure = PerformancePressure();
+        if (_visualQuality == VisualQuality.Low || pressure > 0.9f)
+        {
+            return true;
+        }
+
+        int count = _pickups.Count;
+        return kind == PickupKind.Dust && (count >= PickupTextureHardCap || count >= PickupTextureSoftCap && pressure > 0.62f);
+    }
+
+    private bool ShouldUsePickupTexture(PickupKind kind)
+    {
+        float pressure = PerformancePressure();
+        if (_visualQuality == VisualQuality.Low || pressure > 0.9f)
+        {
+            return false;
+        }
+
+        int count = _pickups.Count;
+        if (kind == PickupKind.Dust)
+        {
+            if (count >= PickupTextureHardCap)
+            {
+                return false;
+            }
+
+            if (count >= PickupTextureSoftCap && pressure > 0.62f)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void DrawSimplePickup(PickupKind kind, Vector2 pos, float radius, float pulse, Color accent)
+    {
+        if (kind == PickupKind.Repair)
+        {
+            float size = radius * 2.1f * pulse;
+            DrawRect(new Rect2(pos - new Vector2(size * 0.22f, size * 0.5f), new Vector2(size * 0.44f, size)), Alpha(accent, 0.86f), true);
+            DrawRect(new Rect2(pos - new Vector2(size * 0.5f, size * 0.22f), new Vector2(size, size * 0.44f)), Alpha(accent, 0.86f), true);
+            return;
+        }
+
+        float dustSize = radius * 1.78f * pulse;
+        DrawRect(new Rect2(pos - new Vector2(dustSize, dustSize) * 0.5f, new Vector2(dustSize, dustSize)), Alpha(accent, 0.74f), true);
+    }
+
 
     private void DrawParticle(Particle particle)
     {
@@ -12437,6 +13637,141 @@ public partial class MainGame : Node2D
                 DrawLine(center - side, center + side, Alpha(color, 0.18f + warm * 0.18f), 1.0f, true);
             }
         }
+    }
+
+    private void DrawTutorialOverlay()
+    {
+        Rect2 panel = new(new Vector2(500.0f, 112.0f), new Vector2(920.0f, 118.0f));
+        Color accent = _tutorialStep switch
+        {
+            TutorialStep.Dash => Gold,
+            TutorialStep.Ultimate => PilotAccent(_runPilot),
+            TutorialStep.Flow => Jade,
+            TutorialStep.Upgrade => Jade,
+            TutorialStep.ComboCombat => Cyan,
+            TutorialStep.Complete => Gold,
+            _ => Cyan,
+        };
+
+        DrawPanel(panel, Alpha(Ink, 0.78f), Alpha(accent, 0.52f));
+        DrawText(T("tutorial.title"), panel.Position + new Vector2(24.0f, 30.0f), 13, Alpha(accent, 0.95f), HorizontalAlignment.Left, 180.0f, false, 0);
+        DrawText(TutorialStepTitle(), panel.Position + new Vector2(24.0f, 68.0f), 28, Paper, HorizontalAlignment.Left, 250.0f, true, 2);
+        DrawWrapped(TutorialStepBody(), panel.Position + new Vector2(300.0f, 38.0f), 18, Alpha(Paper, 0.78f), 560.0f, 23.0f);
+
+        Rect2 progress = new(panel.Position + new Vector2(300.0f, 88.0f), new Vector2(560.0f, 6.0f));
+        DrawRect(progress, Alpha(Graphite, 0.74f), true);
+        DrawRect(new Rect2(progress.Position, new Vector2(progress.Size.X * TutorialProgress01(), progress.Size.Y)), Alpha(accent, 0.9f), true);
+        DrawRect(progress, Alpha(Paper, 0.18f), false, UiHairline, true);
+    }
+
+    private string TutorialStepTitle()
+    {
+        return _tutorialStep switch
+        {
+            TutorialStep.LockOn => T("tutorial.lock.title"),
+            TutorialStep.Dash => T("tutorial.dash.title"),
+            TutorialStep.Ultimate => T("tutorial.ultimate.title"),
+            TutorialStep.Flow => T("tutorial.flow.title"),
+            TutorialStep.Upgrade => T("tutorial.upgrade.title"),
+            TutorialStep.ComboCombat => T("tutorial.combo.title"),
+            TutorialStep.Complete => T("tutorial.complete"),
+            _ => T("tutorial.move.title"),
+        };
+    }
+
+    private string TutorialStepBody()
+    {
+        return _tutorialStep switch
+        {
+            TutorialStep.LockOn => T("tutorial.lock.body"),
+            TutorialStep.Dash => T("tutorial.dash.body"),
+            TutorialStep.Ultimate => T("tutorial.ultimate.body"),
+            TutorialStep.Flow => T("tutorial.flow.body"),
+            TutorialStep.Upgrade => T("tutorial.upgrade.body"),
+            TutorialStep.ComboCombat => T("tutorial.combo.body"),
+            TutorialStep.Complete => T("tutorial.complete"),
+            _ => T("tutorial.move.body"),
+        };
+    }
+
+    private float TutorialProgress01()
+    {
+        return _tutorialStep switch
+        {
+            TutorialStep.Move => Mathf.Clamp(_tutorialMoveTimer / TutorialMoveSeconds, 0.0f, 1.0f),
+            TutorialStep.LockOn => Mathf.Clamp(_tutorialKills / 3.0f, 0.0f, 1.0f),
+            TutorialStep.Dash => _tutorialDashUsed ? 1.0f : Mathf.Clamp(1.0f - ActiveEnemyBulletCount() / 8.0f, 0.0f, 0.86f),
+            TutorialStep.Ultimate => _tutorialUltimateUsed ? 1.0f : Mathf.Clamp(1.0f - ActiveEnemyBulletCount() / 14.0f, 0.0f, 0.86f),
+            TutorialStep.Flow => Mathf.Clamp(_tutorialStepTimer / TutorialFlowSeconds, 0.0f, 1.0f),
+            TutorialStep.Upgrade => 0.5f,
+            TutorialStep.ComboCombat => Mathf.Clamp(_tutorialKills / 8.0f, 0.0f, 1.0f),
+            TutorialStep.Complete => Mathf.Clamp(_tutorialStepTimer / 1.6f, 0.0f, 1.0f),
+            _ => 0.0f,
+        };
+    }
+
+    private void DrawPilotIntroOverlay()
+    {
+        if (!_pilotIntroActive)
+        {
+            return;
+        }
+
+        Color accent = PilotAccent(_pilotIntroPilot);
+        Rect2 panel = new(new Vector2(400.0f, 774.0f), new Vector2(1120.0f, 178.0f));
+        Rect2 portrait = new(new Vector2(panel.Position.X + 22.0f, panel.End.Y - 238.0f), new Vector2(238.0f, 238.0f));
+        Rect2 textPanel = new(panel.Position + new Vector2(284.0f, 20.0f), new Vector2(806.0f, 136.0f));
+        float progress = _pilotIntroText.Length <= 0 ? 1.0f : Mathf.Clamp(_pilotIntroVisibleChars / (float)_pilotIntroText.Length, 0.0f, 1.0f);
+        string visible = _pilotIntroText[..Math.Min(_pilotIntroVisibleChars, _pilotIntroText.Length)];
+        int totalLines = Math.Max(1, _pilotIntroLines.Count);
+        bool lineComplete = _pilotIntroVisibleChars >= _pilotIntroText.Length;
+        string hintKey = lineComplete
+            ? _pilotIntroLineIndex + 1 >= totalLines ? "intro.start" : "intro.next"
+            : "intro.reveal";
+
+        DrawGlow(panel.Position + panel.Size * 0.5f, accent, 320.0f, 0.034f, 5);
+        DrawPanel(panel, Alpha(Ink, 0.84f), Alpha(accent, 0.48f));
+        DrawRect(textPanel, Alpha(Graphite, 0.28f), true);
+        DrawLine(panel.Position + new Vector2(268.0f, 18.0f), panel.Position + new Vector2(268.0f, panel.Size.Y - 18.0f), Alpha(accent, 0.36f), UiHairline, true);
+        DrawLine(panel.Position + new Vector2(292.0f, 1.0f), panel.Position + new Vector2(panel.Size.X - 26.0f, 1.0f), Alpha(accent, 0.36f), UiHairline, true);
+        DrawLine(panel.Position + new Vector2(292.0f, panel.Size.Y - 1.0f), panel.Position + new Vector2(panel.Size.X - 26.0f, panel.Size.Y - 1.0f), Alpha(accent, 0.2f), UiHairline, true);
+
+        DrawPilotIntroPortrait(portrait, accent);
+        DrawText(T("intro.channel").ToUpperInvariant(), textPanel.Position + new Vector2(22.0f, 24.0f), 12, Alpha(accent, 0.82f), HorizontalAlignment.Left, 250.0f, false, 0);
+        DrawText(PilotName(_pilotIntroPilot).ToUpperInvariant(), textPanel.Position + new Vector2(22.0f, 66.0f), 32, Paper, HorizontalAlignment.Left, 300.0f, true, 3);
+        DrawText($"{_pilotIntroLineIndex + 1}/{totalLines}", textPanel.Position + new Vector2(textPanel.Size.X - 102.0f, 25.0f), 13, Alpha(Paper, 0.46f), HorizontalAlignment.Right, 78.0f, false, 0);
+        DrawWrapped(visible, textPanel.Position + new Vector2(352.0f, 42.0f), 22, Alpha(Paper, 0.88f), 420.0f, 32.0f);
+
+        Rect2 bar = new(textPanel.Position + new Vector2(352.0f, 118.0f), new Vector2(420.0f, 4.0f));
+        DrawRect(bar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, 0.82f), true);
+        DrawText(T(hintKey), panel.Position + new Vector2(panel.Size.X - 256.0f, 160.0f), 12, Alpha(Paper, lineComplete ? 0.52f : 0.34f), HorizontalAlignment.Right, 230.0f, false, 0);
+    }
+
+    private void DrawPilotIntroPortrait(Rect2 rect, Color accent)
+    {
+        Vector2 center = rect.Position + rect.Size * 0.5f;
+        DrawGlow(center + new Vector2(0.0f, 26.0f), accent, rect.Size.X * 0.82f, 0.048f, 4);
+        DrawLine(rect.Position + new Vector2(34.0f, rect.Size.Y - 10.0f), rect.Position + new Vector2(rect.Size.X - 24.0f, rect.Size.Y - 10.0f), Alpha(accent, 0.62f), UiStroke, true);
+        DrawLine(rect.Position + new Vector2(70.0f, rect.Size.Y - 3.0f), rect.Position + new Vector2(rect.Size.X - 52.0f, rect.Size.Y - 3.0f), Alpha(Paper, 0.18f), UiHairline, true);
+
+        if (_pilotPortraitTextures.TryGetValue(_pilotIntroPilot, out Texture2D? texture)
+            && _pilotPortraitTextureRegions.TryGetValue(_pilotIntroPilot, out Rect2 source)
+            && source.Size.X > 0.0f
+            && source.Size.Y > 0.0f)
+        {
+            float scale = Math.Min(rect.Size.X / source.Size.X, rect.Size.Y / source.Size.Y);
+            Vector2 drawSize = source.Size * scale;
+            Rect2 drawRect = new(new Vector2(rect.Position.X + (rect.Size.X - drawSize.X) * 0.5f, rect.End.Y - drawSize.Y), drawSize);
+            DrawTextureRectRegion(texture, drawRect, source, Colors.White);
+            return;
+        }
+
+        DrawCircle(center, 38.0f, Alpha(accent, 0.12f));
+        DrawCircle(center, 34.0f, Alpha(accent, 0.64f), false, UiStroke, true);
+        DrawLine(center + new Vector2(-24.0f, 0.0f), center + new Vector2(24.0f, 0.0f), Alpha(Paper, 0.28f), UiHairline, true);
+        DrawLine(center + new Vector2(0.0f, -24.0f), center + new Vector2(0.0f, 24.0f), Alpha(Paper, 0.18f), UiHairline, true);
+        DrawText(PilotPortraitCode(_pilotIntroPilot), rect.Position + new Vector2(0.0f, 72.0f), 18, Alpha(Paper, 0.7f), HorizontalAlignment.Center, rect.Size.X, true, 1);
     }
 
     private void DrawHud()
@@ -13446,7 +14781,17 @@ public partial class MainGame : Node2D
 
             DrawText(card.Tag.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 38.0f), 15, Alpha(card.Accent, 0.96f), HorizontalAlignment.Left, rect.Size.X - 118.0f, true, 1);
             DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(112.0f, 92.0f), 25, Paper, HorizontalAlignment.Left, rect.Size.X - 180.0f, true, 3);
-            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 172.0f), 18, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 27.0f);
+            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 170.0f), 18, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 26.0f, 3);
+
+            if (!string.IsNullOrWhiteSpace(card.Delta))
+            {
+                Rect2 delta = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 116.0f), new Vector2(rect.Size.X - 48.0f, 52.0f));
+                DrawRect(delta, Alpha(Graphite, hover ? 0.42f : 0.28f), true);
+                DrawRect(delta, Alpha(card.Accent, hover ? 0.34f : 0.18f), false, UiHairline, true);
+                DrawLine(delta.Position + new Vector2(0.0f, delta.Size.Y), delta.Position + delta.Size, Alpha(card.Accent, hover ? 0.46f : 0.24f), UiHairline, true);
+                DrawText(T("upgrade.delta.label").ToUpperInvariant(), delta.Position + new Vector2(12.0f, 16.0f), 10, Alpha(Paper, 0.42f), HorizontalAlignment.Left, delta.Size.X - 24.0f, false, 0);
+                DrawHighlightedWrapped(card.Delta, delta.Position + new Vector2(12.0f, 31.0f), 13, Alpha(Paper, 0.72f), card.Accent, delta.Size.X - 24.0f, 16.0f, 2);
+            }
 
             int rank = GetRank(card.Id);
             int maxRank = MaxRank(card.Id);
@@ -14036,10 +15381,12 @@ public partial class MainGame : Node2D
         float pressure = PerformancePressure();
         float shotPressure = _shots.Count / 320.0f;
         float enemyPressure = _enemies.Count / 52.0f;
+        float pickupPressure = _pickups.Count / 150.0f;
         float hazardPressure = (_hazards.Count + _hazardFields.Count * 1.4f) / 14.0f;
         float particlePressure = _particles.Count / (float)QualityParticleCap(pressure);
         float textPressure = _damageTexts.Count / (float)QualityDamageTextCap(pressure);
-        return Mathf.Clamp(Mathf.Max(Mathf.Max(shotPressure, hazardPressure), Mathf.Max(enemyPressure, particlePressure * 0.9f)) + textPressure * 0.08f, 0.0f, 1.0f);
+        float objectPressure = Mathf.Max(Mathf.Max(shotPressure, hazardPressure), Mathf.Max(enemyPressure, pickupPressure));
+        return Mathf.Clamp(Mathf.Max(objectPressure, particlePressure * 0.9f) + textPressure * 0.08f, 0.0f, 1.0f);
     }
 
     private float PerformancePressure()
@@ -14089,7 +15436,7 @@ public partial class MainGame : Node2D
 
     private static bool IsRunViewMode(GameMode mode)
     {
-        return mode == GameMode.Playing || mode == GameMode.Upgrade || mode == GameMode.GameOver || mode == GameMode.Victory;
+        return mode == GameMode.Playing || mode == GameMode.Tutorial || mode == GameMode.Upgrade || mode == GameMode.GameOver || mode == GameMode.Victory;
     }
 
     private void DrawWrapped(string text, Vector2 pos, int size, Color color, float width, float lineHeight)
@@ -14131,7 +15478,7 @@ public partial class MainGame : Node2D
         }
     }
 
-    private void DrawHighlightedWrapped(string text, Vector2 pos, int size, Color color, Color accent, float width, float lineHeight)
+    private void DrawHighlightedWrapped(string text, Vector2 pos, int size, Color color, Color accent, float width, float lineHeight, int maxLines = int.MaxValue)
     {
         int lineIndex = 0;
         float lineWidth = 0.0f;
@@ -14147,6 +15494,10 @@ public partial class MainGame : Node2D
                     line.Clear();
                     lineWidth = 0.0f;
                     lineIndex++;
+                    if (lineIndex >= maxLines)
+                    {
+                        return;
+                    }
                     continue;
                 }
 
@@ -14158,6 +15509,10 @@ public partial class MainGame : Node2D
                     line.Clear();
                     lineWidth = 0.0f;
                     lineIndex++;
+                    if (lineIndex >= maxLines)
+                    {
+                        return;
+                    }
                     if (isSpace)
                     {
                         continue;
@@ -14172,7 +15527,7 @@ public partial class MainGame : Node2D
             }
         }
 
-        if (line.Count > 0)
+        if (line.Count > 0 && lineIndex < maxLines)
         {
             DrawRichLine(line, pos + new Vector2(0.0f, lineIndex * lineHeight), size, color, accent, width);
         }
@@ -14777,6 +16132,38 @@ public partial class MainGame : Node2D
             PilotKind.Lyra => T("pilot.lyra.name"),
             PilotKind.Orion => T("pilot.orion.name"),
             _ => T("pilot.astra.name"),
+        };
+    }
+
+    private static string PilotIntroTextKey(PilotKind pilot, int variant)
+    {
+        string prefix = pilot switch
+        {
+            PilotKind.Vesper => "vesper",
+            PilotKind.Kairo => "kairo",
+            PilotKind.Sol => "sol",
+            PilotKind.Nyx => "nyx",
+            PilotKind.Rook => "rook",
+            PilotKind.Lyra => "lyra",
+            PilotKind.Orion => "orion",
+            _ => "astra",
+        };
+        int clamped = Math.Max(0, Math.Min(PilotIntroVariantCount - 1, variant));
+        return $"intro.{prefix}.{clamped}";
+    }
+
+    private static string PilotPortraitCode(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Vesper => "VS",
+            PilotKind.Kairo => "KR",
+            PilotKind.Sol => "SL",
+            PilotKind.Nyx => "NX",
+            PilotKind.Rook => "RK",
+            PilotKind.Lyra => "LY",
+            PilotKind.Orion => "OR",
+            _ => "AS",
         };
     }
 
@@ -15735,7 +17122,6 @@ public partial class MainGame : Node2D
         return kind switch
         {
             PickupKind.Dust => XpGray(),
-            PickupKind.Energy => PickupBlue,
             PickupKind.Repair => AlertRed.Lerp(Paper, 0.16f),
             _ => Paper,
         };

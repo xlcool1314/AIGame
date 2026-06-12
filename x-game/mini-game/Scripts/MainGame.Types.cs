@@ -9,11 +9,23 @@ public partial class MainGame
         Title,
         Meta,
         Playing,
+        Tutorial,
         Upgrade,
         GameOver,
         Victory,
         Settings,
         Guide,
+    }
+
+    private enum LoadingAction
+    {
+        None,
+        Title,
+        Meta,
+        StartRun,
+        StartTutorial,
+        Victory,
+        GameOver,
     }
 
     private enum GameLanguage
@@ -49,6 +61,18 @@ public partial class MainGame
         Cruise,
         Storm,
         Eclipse,
+    }
+
+    private enum TutorialStep
+    {
+        Move,
+        LockOn,
+        Dash,
+        Ultimate,
+        Flow,
+        Upgrade,
+        ComboCombat,
+        Complete,
     }
 
     private enum PilotKind
@@ -211,7 +235,6 @@ public partial class MainGame
     private enum PickupKind
     {
         Dust,
-        Energy,
         Repair,
     }
 
@@ -468,6 +491,7 @@ public partial class MainGame
         public string Title = string.Empty;
         public string Tag = string.Empty;
         public string Body = string.Empty;
+        public string Delta = string.Empty;
         public Color Accent;
         public Rect2 Rect;
     }
