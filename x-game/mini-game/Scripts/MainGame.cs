@@ -1176,6 +1176,8 @@ public partial class MainGame : Node2D
     private readonly Dictionary<PilotKind, Rect2> _pilotPortraitTextureRegions = new();
     private readonly Dictionary<PilotKind, Texture2D> _fighterBulletTextures = new();
     private readonly Dictionary<PilotKind, Rect2> _fighterBulletTextureRegions = new();
+    private readonly Dictionary<ShotStyle, Texture2D> _specialProjectileTextures = new();
+    private readonly Dictionary<ShotStyle, Rect2> _specialProjectileTextureRegions = new();
     private readonly Dictionary<EnemyKind, Texture2D> _enemyTextures = new();
     private readonly Dictionary<EnemyKind, Texture2D> _eliteEnemyTextures = new();
     private readonly Dictionary<BossArchetype, Texture2D> _bossTextures = new();
@@ -1209,6 +1211,7 @@ public partial class MainGame : Node2D
         LoadTitleLogos();
         LoadDroneTextures();
         LoadBulletTextures();
+        LoadSpecialProjectileTextures();
         LoadPickupTextures();
         LoadPilotTextures();
         LoadPilotPortraitTextures();
@@ -1241,6 +1244,8 @@ public partial class MainGame : Node2D
         _pilotPortraitTextureRegions.Clear();
         _fighterBulletTextures.Clear();
         _fighterBulletTextureRegions.Clear();
+        _specialProjectileTextures.Clear();
+        _specialProjectileTextureRegions.Clear();
         _enemyTextures.Clear();
         _eliteEnemyTextures.Clear();
         _bossTextures.Clear();
@@ -1291,6 +1296,29 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void LoadSpecialProjectileTextures()
+    {
+        _specialProjectileTextures.Clear();
+        _specialProjectileTextureRegions.Clear();
+        foreach (ShotStyle style in Enum.GetValues(typeof(ShotStyle)))
+        {
+            if (style == ShotStyle.Bullet)
+            {
+                continue;
+            }
+
+            string directory = SpecialProjectileDirectory(style);
+            Texture2D? texture = LoadTextureOrFirstInDirectory($"{directory}/1.png", directory);
+            if (texture == null)
+            {
+                continue;
+            }
+
+            _specialProjectileTextures[style] = texture;
+            _specialProjectileTextureRegions[style] = VisibleTextureRegion(texture);
+        }
+    }
+
     private void LoadPickupTextures()
     {
         _xpPickupTexture = LoadTextureIfExists("res://Assets/EnergyArt/Energy.png");
@@ -1327,8 +1355,7 @@ public partial class MainGame : Node2D
         for (int i = 0; i < PilotCount(); i++)
         {
             PilotKind pilot = PilotFromIndex(i);
-            string directory = $"res://Assets/PilotPortraits/{pilot}";
-            Texture2D? texture = LoadTextureOrFirstInDirectory($"{directory}/1.png", directory);
+            Texture2D? texture = LoadTextureIfExists(PilotPortraitTexturePath(pilot));
             if (texture == null)
             {
                 continue;
@@ -1491,6 +1518,22 @@ public partial class MainGame : Node2D
         };
     }
 
+    private static string PilotPortraitTexturePath(PilotKind pilot)
+    {
+        return pilot switch
+        {
+            PilotKind.Astra => "res://Assets/PilotPortraits/Astra/8.png",
+            PilotKind.Kairo => "res://Assets/PilotPortraits/Kairo/3.png",
+            PilotKind.Lyra => "res://Assets/PilotPortraits/Lyra/1.png",
+            PilotKind.Nyx => "res://Assets/PilotPortraits/Nyx/2.png",
+            PilotKind.Orion => "res://Assets/PilotPortraits/Orion/4.png",
+            PilotKind.Rook => "res://Assets/PilotPortraits/Rook/5.png",
+            PilotKind.Sol => "res://Assets/PilotPortraits/Sol/6.png",
+            PilotKind.Vesper => "res://Assets/PilotPortraits/Vesper/7.png",
+            _ => "res://Assets/PilotPortraits/Astra/8.png",
+        };
+    }
+
     private static string FighterBulletTexturePath(PilotKind pilot)
     {
         return pilot switch
@@ -1504,6 +1547,22 @@ public partial class MainGame : Node2D
             PilotKind.Sol => "res://Assets/FighterBullets/Sol/77.png",
             PilotKind.Vesper => "res://Assets/FighterBullets/Vesper/88.png",
             _ => "res://Assets/FighterBullets/Astra/11.png",
+        };
+    }
+
+    private static string SpecialProjectileDirectory(ShotStyle style)
+    {
+        return style switch
+        {
+            ShotStyle.Missile => "res://Assets/SpecialProjectiles/01_跟踪导弹",
+            ShotStyle.Pulse => "res://Assets/SpecialProjectiles/02_脉冲波",
+            ShotStyle.HeavySlug => "res://Assets/SpecialProjectiles/03_重型巨弹",
+            ShotStyle.Pinball => "res://Assets/SpecialProjectiles/04_弹球弹丸",
+            ShotStyle.Shadow => "res://Assets/SpecialProjectiles/05_影子分身",
+            ShotStyle.FractalShard => "res://Assets/SpecialProjectiles/06_分裂碎片",
+            ShotStyle.Ricochet => "res://Assets/SpecialProjectiles/07_连锁弹跳",
+            ShotStyle.ShieldRebound => "res://Assets/SpecialProjectiles/08_护盾反弹",
+            _ => "res://Assets/SpecialProjectiles/00_普通子弹",
         };
     }
 
@@ -6187,25 +6246,11 @@ public partial class MainGame : Node2D
         Burst(_playerPos, Gold, 150, 900.0f, 1.85f);
         ClearBulletsNear(_playerPos, 760.0f + _solFlareCore * 55.0f, true);
 
-        int count = Math.Min(58, 36 + _solBloom * 4 + _solFlareCore * 6);
-        for (int i = 0; i < count; i++)
-        {
-            float angle = i * Mathf.Tau / count;
-            Vector2 dir = Vector2.Right.Rotated(angle);
-            SpawnPlayerShot(_playerPos + dir * 46.0f, dir, 940.0f, 6.8f, (18.0f + _solForge * 2.6f + _solFlareCore * 3.0f) * _damageMultiplier, 0.74f, 1, false);
-        }
-
-        for (int i = _enemies.Count - 1; i >= 0; i--)
-        {
-            Enemy enemy = _enemies[i];
-            float distance = enemy.Pos.DistanceTo(_playerPos);
-            float range = 720.0f + _solFlareCore * 50.0f;
-            if (distance < range)
-            {
-                float damage = Mathf.Lerp(198.0f + _solForge * 18.0f + _solFlareCore * 30.0f, 54.0f + _solFlareCore * 8.0f, distance / range) * _damageMultiplier;
-                DamageEnemy(enemy, damage, _playerPos, true);
-            }
-        }
+        float range = 720.0f + _solFlareCore * 50.0f;
+        float damage = (132.0f + _solForge * 18.0f + _solFlareCore * 24.0f) * _damageMultiplier;
+        SpawnDamageWave(_playerPos, range * 0.42f, damage * 0.78f, color, 0.46f, 32, true);
+        SpawnDamageWave(_playerPos, range * 0.72f, damage * 0.58f, color.Lerp(Gold, 0.28f), 0.58f, 44, false);
+        SpawnDamageWave(_playerPos, range, damage * 0.42f, Gold, 0.72f, 64, false);
 
         _playerHp = Mathf.Clamp(_playerHp + 14.0f + _solForge * 4.0f + _solRadiantMantle * 12.0f, 0.0f, _playerMaxHp);
         _invulnTimer = Mathf.Max(_invulnTimer, 0.55f + _solRadiantMantle * 0.35f);
@@ -6395,6 +6440,48 @@ public partial class MainGame : Node2D
             Vector2 pos = center + Vector2.Right.Rotated(angle) * radius;
             AddParticle(pos, Vector2.Right.Rotated(angle) * 90.0f, color, 5.0f, 0.2f);
         }
+    }
+
+    private void SpawnDamageWave(Vector2 center, float radius, float damage, Color color, float life = 0.46f, int maxHits = 28, bool clearBullets = false)
+    {
+        AddShockwave(center, radius, color, life);
+        if (clearBullets)
+        {
+            ClearBulletsNear(center, radius * 0.48f, true);
+        }
+
+        float radiusSquared = radius * radius;
+        int hits = 0;
+        for (int i = _enemies.Count - 1; i >= 0 && hits < maxHits; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (enemy.Hp <= 0.0f)
+            {
+                continue;
+            }
+
+            float range = radius + enemy.Radius;
+            if (enemy.Pos.DistanceSquaredTo(center) > Math.Max(radiusSquared, range * range))
+            {
+                continue;
+            }
+
+            float distance01 = Mathf.Clamp(enemy.Pos.DistanceTo(center) / Mathf.Max(1.0f, radius), 0.0f, 1.0f);
+            float waveDamage = damage * Mathf.Lerp(1.0f, 0.5f, distance01);
+            DamageEnemy(enemy, waveDamage, center, false, 0, 0, true);
+            enemy.Vel += SafeDirection(enemy.Pos - center, RandomDirection()) * Mathf.Lerp(128.0f, 42.0f, distance01);
+            if (_runPilot == PilotKind.Sol && _solIgnitionWave > 0)
+            {
+                EnterOverheat(enemy);
+            }
+            hits++;
+        }
+
+        if (hits > 0)
+        {
+            AddRunScore(10 + hits * 5, center, color);
+        }
+        DrawPulseParticles(center, radius, color);
     }
 
     private void CastNyxUltimate(Color color)
@@ -6825,6 +6912,7 @@ public partial class MainGame : Node2D
                 hunter.Pierce = _kairoHunterWing >= 3 ? 1 : 0;
                 hunter.Rift = true;
                 hunter.Homing = 2 + _kairoHunterWing;
+                hunter.Style = ShotStyle.Missile;
                 FinalizePlayerShot(hunter);
                 visual.CommandPulse = 1.0f;
             }
@@ -6850,15 +6938,11 @@ public partial class MainGame : Node2D
         {
             _pilotMechanicPulse++;
             int cadence = Math.Max(3, 7 - _solIgnitionWave);
-            if (_pilotMechanicPulse % cadence == 0 && _shots.Count < MaxShots * 0.86f)
+            if (_pilotMechanicPulse % cadence == 0)
             {
-                int rays = Math.Min(10, 4 + _solIgnitionWave * 2);
-                for (int i = 0; i < rays; i++)
-                {
-                    Vector2 ray = Vector2.Right.Rotated(i * Mathf.Tau / rays + _time * 0.18f);
-                    SpawnPlayerShot(_playerPos + ray * 30.0f, ray, 720.0f + _solIgnitionWave * 50.0f, 7.2f + _solIgnitionWave * 0.4f, (13.0f + _solIgnitionWave * 4.0f) * _damageMultiplier, 0.68f, _solIgnitionWave >= 3 ? 1 : 0, false);
-                }
-                DrawPulseParticles(_playerPos, 82.0f + _solIgnitionWave * 18.0f, UpgradeAccent(UpgradeId.SolIgnitionWave));
+                float radius = 118.0f + _solIgnitionWave * 28.0f;
+                float damage = (18.0f + _solIgnitionWave * 6.5f + _solFlareCore * 1.6f) * _damageMultiplier;
+                SpawnDamageWave(_playerPos, radius, damage, UpgradeAccent(UpgradeId.SolIgnitionWave), 0.36f, 12);
             }
         }
 
@@ -7033,7 +7117,7 @@ public partial class MainGame : Node2D
         {
             float offset = count == 1 ? 0.0f : (i - (count - 1) * 0.5f) * spread;
             Vector2 dir = _aimDir.Rotated(offset);
-            SpawnPlayerShot(_playerPos + dir * 30.0f, dir, 1180.0f, 4.0f, (7.0f + _pulseMagazine * 1.8f) * _damageMultiplier, 0.52f, 0, _riftNeedle);
+            SpawnPlayerShot(_playerPos + dir * 30.0f, dir, 1180.0f, 4.0f, (7.0f + _pulseMagazine * 1.8f) * _damageMultiplier, 0.52f, 0, _riftNeedle, -1, ShotStyle.Pulse);
         }
     }
 
@@ -7087,6 +7171,7 @@ public partial class MainGame : Node2D
             shot.Pierce = IsUpgradeMaxed(UpgradeId.SeekerRack) ? 1 : 0;
             shot.Rift = true;
             shot.Homing = _seekerRack;
+            shot.Style = ShotStyle.Missile;
             FinalizePlayerShot(shot);
             AddParticle(origin, shot.Vel.Normalized() * 120.0f, UpgradeAccent(UpgradeId.SeekerRack), 7.0f, 0.18f);
         }
@@ -7130,6 +7215,7 @@ public partial class MainGame : Node2D
         shot.Pierce = 1 + _heavySlug / 2 + (IsUpgradeMaxed(UpgradeId.HeavySlug) ? 1 : 0);
         shot.Rift = false;
         shot.Heavy = true;
+        shot.Style = ShotStyle.HeavySlug;
         FinalizePlayerShot(shot);
         Burst(shot.Pos, UpgradeAccent(UpgradeId.HeavySlug), _visualPressure > 0.84f ? 5 : 11, 220.0f, 0.34f);
 
@@ -7183,11 +7269,12 @@ public partial class MainGame : Node2D
             shot.Rift = true;
             shot.Shadow = true;
             shot.Homing = IsUpgradeMaxed(UpgradeId.ShadowClone) ? 1 : 0;
+            shot.Style = ShotStyle.Shadow;
             FinalizePlayerShot(shot);
         }
     }
 
-    private void SpawnPlayerShot(Vector2 pos, Vector2 dir, float speed, float radius, float damage, float life, int pierce, bool rift, int polarity = -1)
+    private void SpawnPlayerShot(Vector2 pos, Vector2 dir, float speed, float radius, float damage, float life, int pierce, bool rift, int polarity = -1, ShotStyle style = ShotStyle.Bullet)
     {
         Shot? shot = AddShot(true);
         if (shot == null)
@@ -7207,6 +7294,7 @@ public partial class MainGame : Node2D
         shot.Polarity = shotPolarity;
         shot.Pierce = pierce;
         shot.Rift = rift;
+        shot.Style = style;
         FinalizePlayerShot(shot);
         TrySpawnQuantumEcho(shot);
     }
@@ -7247,6 +7335,7 @@ public partial class MainGame : Node2D
         echo.Rift = true;
         echo.Homing = source.Homing;
         echo.Shadow = true;
+        echo.Style = ShotStyle.Shadow;
         FinalizePlayerShot(echo);
     }
 
@@ -7278,6 +7367,10 @@ public partial class MainGame : Node2D
 
         int bounces = 1 + (_pinballRounds >= 3 ? 1 : 0) + (IsUpgradeMaxed(UpgradeId.PinballRounds) ? 1 : 0);
         shot.Bounces = Math.Max(shot.Bounces, bounces);
+        if (!shot.Heavy && shot.Style == ShotStyle.Bullet)
+        {
+            shot.Style = ShotStyle.Pinball;
+        }
     }
 
     private void FirePolarityStorm()
@@ -8216,6 +8309,10 @@ public partial class MainGame : Node2D
             {
                 UpdateHomingShot(shot, dt);
             }
+            if (shot.FromPlayer && shot.Style == ShotStyle.Missile)
+            {
+                UpdateMissileMotion(shot, dt);
+            }
             shot.Pos += shot.Vel * dt;
             shot.Life -= dt;
 
@@ -8240,6 +8337,26 @@ public partial class MainGame : Node2D
             {
                 RemoveShotAt(i);
             }
+        }
+    }
+
+    private void UpdateMissileMotion(Shot shot, float dt)
+    {
+        float speed = shot.Vel.Length();
+        if (speed <= 1.0f)
+        {
+            return;
+        }
+
+        Vector2 direction = shot.Vel / speed;
+        float age01 = 1.0f - Mathf.Clamp(shot.Life / Mathf.Max(0.01f, shot.MaxLife), 0.0f, 1.0f);
+        float targetSpeed = 760.0f + shot.Homing * 76.0f + age01 * 150.0f;
+        float nextSpeed = Mathf.Lerp(speed, targetSpeed, 1.0f - Mathf.Exp(-dt * 2.35f));
+        shot.Vel = direction * nextSpeed;
+
+        if (_visualPressure < 0.74f && _rng.Randf() < dt * 8.0f)
+        {
+            AddParticle(shot.Pos - direction * shot.Radius * 1.7f, -direction * 70.0f + RandomDirection() * 26.0f, UpgradeAccent(UpgradeId.SeekerRack), Mathf.Max(3.0f, shot.Radius * 0.72f), 0.18f);
         }
     }
 
@@ -8281,7 +8398,9 @@ public partial class MainGame : Node2D
             return;
         }
 
-        float turn = 4.4f + shot.Homing * 1.15f + (shot.Shadow ? 0.8f : 0.0f);
+        float turn = shot.Style == ShotStyle.Missile
+            ? 3.0f + shot.Homing * 0.82f
+            : 4.4f + shot.Homing * 1.15f + (shot.Shadow ? 0.8f : 0.0f);
         shot.Vel = TurnTowardDirection(shot.Vel, desired, turn * dt) * speed;
     }
 
@@ -8386,6 +8505,7 @@ public partial class MainGame : Node2D
                                 bool lethal = enemy.Hp - damage <= 0.0f;
                                 Vector2 hitPos = enemy.Pos;
                                 DamageEnemy(enemy, damage, shot.Pos, false, shot.ChainDepth, shot.SplitDepth);
+                                TrySpecialProjectileImpact(shot, enemy, hitPos, damage);
                                 TryChainReaction(shot, enemy, hitPos, damage, overheated);
                                 TryRicochetMatrix(shot, enemy, hitPos, damage);
                                 if (!tacticalShot)
@@ -8410,7 +8530,11 @@ public partial class MainGame : Node2D
                                 Burst(shot.Pos, PolarityColor(shot.Polarity), pressure > 0.82f ? (shot.Rift ? 4 : 3) : (shot.Rift ? 8 : 5), shot.Rift ? 360.0f : 210.0f, 0.42f);
                                 _energy = Mathf.Clamp(_energy + (overheated && tacticalShot ? 1.8f : 0.75f) * _absorbEfficiency, 0.0f, _maxEnergy);
 
-                                if (shot.Pierce > 0)
+                                if (shot.Style == ShotStyle.Missile && shot.Pierce <= 0)
+                                {
+                                    removeShot = true;
+                                }
+                                else if (shot.Pierce > 0)
                                 {
                                     shot.Pierce--;
                                     shot.Damage *= 0.72f;
@@ -8510,6 +8634,72 @@ public partial class MainGame : Node2D
         }
     }
 
+    private void TrySpecialProjectileImpact(Shot shot, Enemy primary, Vector2 hitPos, float baseDamage)
+    {
+        if (!shot.FromPlayer || baseDamage <= 0.0f)
+        {
+            return;
+        }
+
+        switch (shot.Style)
+        {
+            case ShotStyle.Missile:
+                ApplyProjectileSplash(primary, hitPos, 74.0f + shot.Homing * 9.0f, baseDamage * 0.34f, UpgradeAccent(UpgradeId.SeekerRack), 4);
+                AddShockwave(hitPos, 86.0f + shot.Homing * 10.0f, UpgradeAccent(UpgradeId.SeekerRack), 0.32f);
+                Burst(hitPos, UpgradeAccent(UpgradeId.SeekerRack), _visualPressure > 0.82f ? 5 : 11, 320.0f, 0.34f);
+                break;
+            case ShotStyle.HeavySlug:
+                ApplyProjectileSplash(primary, hitPos, 104.0f + _heavySlug * 8.0f, baseDamage * 0.24f, UpgradeAccent(UpgradeId.HeavySlug), 5);
+                AddShockwave(hitPos, 116.0f + _heavySlug * 8.0f, UpgradeAccent(UpgradeId.HeavySlug), 0.38f);
+                _shake = Mathf.Max(_shake, 0.08f);
+                break;
+            case ShotStyle.Pinball:
+                if (shot.Bounces > 0)
+                {
+                    AddShockwave(hitPos, 52.0f + _pinballRounds * 5.0f, UpgradeAccent(UpgradeId.PinballRounds), 0.24f);
+                }
+                break;
+            case ShotStyle.Ricochet:
+                AddParticle(hitPos, RandomDirection() * 120.0f, UpgradeAccent(UpgradeId.RicochetMatrix), 5.0f, 0.18f);
+                break;
+        }
+    }
+
+    private void ApplyProjectileSplash(Enemy primary, Vector2 center, float radius, float damage, Color color, int cap)
+    {
+        if (damage <= 0.0f || radius <= 0.0f || PerformancePressure() > 0.94f)
+        {
+            return;
+        }
+
+        float radiusSquared = radius * radius;
+        int hits = 0;
+        for (int i = _enemies.Count - 1; i >= 0 && hits < cap; i--)
+        {
+            Enemy enemy = _enemies[i];
+            if (ReferenceEquals(enemy, primary) || enemy.Hp <= 0.0f)
+            {
+                continue;
+            }
+
+            float range = radius + enemy.Radius;
+            if (enemy.Pos.DistanceSquaredTo(center) > Math.Max(radiusSquared, range * range))
+            {
+                continue;
+            }
+
+            float distance01 = Mathf.Clamp(enemy.Pos.DistanceTo(center) / Mathf.Max(1.0f, radius), 0.0f, 1.0f);
+            DamageEnemy(enemy, damage * Mathf.Lerp(1.0f, 0.42f, distance01), center, false, 0, 0, false);
+            enemy.Vel += SafeDirection(enemy.Pos - center, RandomDirection()) * (46.0f + damage * 0.7f);
+            hits++;
+        }
+
+        if (hits > 0)
+        {
+            AddRunScore(8 + hits * 4, center, color);
+        }
+    }
+
     private bool TryShieldRebound(Shot shot)
     {
         if (_shieldRebound <= 0 || shot.FromPlayer || _playerHp <= 0.0f)
@@ -8546,6 +8736,7 @@ public partial class MainGame : Node2D
         shot.Homing = _shieldRebound >= 4 || IsUpgradeMaxed(UpgradeId.ShieldRebound) ? 1 : 0;
         shot.Heavy = false;
         shot.Shadow = false;
+        shot.Style = ShotStyle.ShieldRebound;
         FinalizePlayerShot(shot);
 
         AddCruiseCharge(7.0f + _shieldRebound, shot.Pos);
@@ -8942,7 +9133,7 @@ public partial class MainGame : Node2D
             }
 
             Vector2 dir = (target.Pos - start).LengthSquared() > 0.01f ? (target.Pos - start).Normalized() : RandomDirection();
-            SpawnPlayerShot(start + dir * 18.0f, dir, 1180.0f, Mathf.Max(3.8f, shot.Radius * 0.82f), Mathf.Max(6.0f, baseDamage * (0.22f + _ricochetMatrix * 0.018f)), 0.42f, 0, true, shot.Polarity);
+            SpawnPlayerShot(start + dir * 18.0f, dir, 1180.0f, Mathf.Max(3.8f, shot.Radius * 0.82f), Mathf.Max(6.0f, baseDamage * (0.22f + _ricochetMatrix * 0.018f)), 0.42f, 0, true, shot.Polarity, ShotStyle.Ricochet);
             SpawnChainArc(start, target.Pos, UpgradeAccent(UpgradeId.RicochetMatrix));
             start = target.Pos;
             excluded = target;
@@ -9213,6 +9404,7 @@ public partial class MainGame : Node2D
         shard.ChainDepth = 0;
         shard.SplitDepth = splitDepth;
         shard.Rift = true;
+        shard.Style = ShotStyle.FractalShard;
         FinalizePlayerShot(shard);
     }
 
@@ -11787,7 +11979,231 @@ public partial class MainGame : Node2D
 
     private string DeltaText(string english, string chinese)
     {
-        return _language == GameLanguage.Chinese ? chinese : english;
+        return _language switch
+        {
+            GameLanguage.Chinese => chinese,
+            GameLanguage.Russian => ReplaceDeltaTerms(english,
+                ("damage taken down", "меньше входящего урона"),
+                ("incoming damage reduced", "входящий урон ниже"),
+                ("incoming damage down", "входящий урон ниже"),
+                ("fire interval", "интервал огня"),
+                ("energy limit", "лимит энергии"),
+                ("ultimate cost", "цена ульты"),
+                ("max hull", "макс. корпус"),
+                ("move speed", "скорость"),
+                ("dash power", "сила рывка"),
+                ("dash damage", "урон рывка"),
+                ("pickup range", "радиус сбора"),
+                ("repair drop chance", "шанс ремонта"),
+                ("echo chance", "шанс эха"),
+                ("crit damage", "крит. урон"),
+                ("shot lanes", "линии огня"),
+                ("shot lane", "линия огня"),
+                ("side shots", "боковые выстрелы"),
+                ("piercing shots", "пробивающие выстрелы"),
+                ("support drones", "дроны поддержки"),
+                ("support drone", "дрон поддержки"),
+                ("rank", "ранг"),
+                ("damage", "урон"),
+                ("energy", "энергия"),
+                ("hull", "корпус"),
+                ("heal", "ремонт"),
+                ("drones", "дроны"),
+                ("drone", "дрон"),
+                ("skill", "навык"),
+                ("unlock", "откр."),
+                ("shots", "выстрелы"),
+                ("shot", "выстрел"),
+                ("enemies", "враги"),
+                ("slow", "замедл."),
+                ("chance", "шанс")),
+            GameLanguage.PortugueseBrazil => ReplaceDeltaTerms(english,
+                ("damage taken down", "dano recebido menor"),
+                ("incoming damage reduced", "dano recebido menor"),
+                ("incoming damage down", "dano recebido menor"),
+                ("fire interval", "intervalo de tiro"),
+                ("energy limit", "limite de energia"),
+                ("ultimate cost", "custo da ultimate"),
+                ("max hull", "casco máximo"),
+                ("move speed", "velocidade"),
+                ("dash power", "força do dash"),
+                ("dash damage", "dano do dash"),
+                ("pickup range", "alcance de coleta"),
+                ("repair drop chance", "chance de reparo"),
+                ("echo chance", "chance de eco"),
+                ("crit damage", "dano crítico"),
+                ("shot lanes", "linhas de tiro"),
+                ("shot lane", "linha de tiro"),
+                ("side shots", "tiros laterais"),
+                ("piercing shots", "tiros perfurantes"),
+                ("support drones", "drones de apoio"),
+                ("support drone", "drone de apoio"),
+                ("rank", "nível"),
+                ("damage", "dano"),
+                ("energy", "energia"),
+                ("hull", "casco"),
+                ("heal", "cura"),
+                ("drones", "drones"),
+                ("drone", "drone"),
+                ("skill", "habilidade"),
+                ("unlock", "libera"),
+                ("shots", "tiros"),
+                ("shot", "tiro"),
+                ("enemies", "inimigos"),
+                ("slow", "lentidão"),
+                ("chance", "chance")),
+            GameLanguage.German => ReplaceDeltaTerms(english,
+                ("damage taken down", "eingehender Schaden sinkt"),
+                ("incoming damage reduced", "eingehender Schaden sinkt"),
+                ("incoming damage down", "eingehender Schaden sinkt"),
+                ("fire interval", "Feuerintervall"),
+                ("energy limit", "Energielimit"),
+                ("ultimate cost", "Ult-Kosten"),
+                ("max hull", "Max-Hülle"),
+                ("move speed", "Tempo"),
+                ("dash power", "Sprintkraft"),
+                ("dash damage", "Sprintschaden"),
+                ("pickup range", "Sammelradius"),
+                ("repair drop chance", "Reparaturchance"),
+                ("echo chance", "Echochance"),
+                ("crit damage", "Kritschaden"),
+                ("shot lanes", "Schussbahnen"),
+                ("shot lane", "Schussbahn"),
+                ("side shots", "Seitenschüsse"),
+                ("piercing shots", "Durchschüsse"),
+                ("support drones", "Hilfsdrohnen"),
+                ("support drone", "Hilfsdrohne"),
+                ("rank", "Rang"),
+                ("damage", "Schaden"),
+                ("energy", "Energie"),
+                ("hull", "Hülle"),
+                ("heal", "Heilung"),
+                ("drones", "Drohnen"),
+                ("drone", "Drohne"),
+                ("skill", "Skill"),
+                ("unlock", "öffnet"),
+                ("shots", "Schüsse"),
+                ("shot", "Schuss"),
+                ("enemies", "Gegner"),
+                ("slow", "Verlangsamung"),
+                ("chance", "Chance")),
+            GameLanguage.Turkish => ReplaceDeltaTerms(english,
+                ("damage taken down", "alınan hasar azalır"),
+                ("incoming damage reduced", "alınan hasar azalır"),
+                ("incoming damage down", "alınan hasar azalır"),
+                ("fire interval", "atış aralığı"),
+                ("energy limit", "enerji sınırı"),
+                ("ultimate cost", "ulti bedeli"),
+                ("max hull", "maks. gövde"),
+                ("move speed", "hareket hızı"),
+                ("dash power", "atılma gücü"),
+                ("dash damage", "atılma hasarı"),
+                ("pickup range", "toplama menzili"),
+                ("repair drop chance", "onarım şansı"),
+                ("echo chance", "yankı şansı"),
+                ("crit damage", "kritik hasar"),
+                ("shot lanes", "atış hatları"),
+                ("shot lane", "atış hattı"),
+                ("side shots", "yan atışlar"),
+                ("piercing shots", "delici atışlar"),
+                ("support drones", "destek dronları"),
+                ("support drone", "destek dronu"),
+                ("rank", "seviye"),
+                ("damage", "hasar"),
+                ("energy", "enerji"),
+                ("hull", "gövde"),
+                ("heal", "onarım"),
+                ("drones", "dronlar"),
+                ("drone", "dron"),
+                ("skill", "yetenek"),
+                ("unlock", "açar"),
+                ("shots", "atışlar"),
+                ("shot", "atış"),
+                ("enemies", "düşmanlar"),
+                ("slow", "yavaşlatma"),
+                ("chance", "şans")),
+            GameLanguage.French => ReplaceDeltaTerms(english,
+                ("damage taken down", "dégâts subis réduits"),
+                ("incoming damage reduced", "dégâts subis réduits"),
+                ("incoming damage down", "dégâts subis réduits"),
+                ("fire interval", "intervalle de tir"),
+                ("energy limit", "limite d’énergie"),
+                ("ultimate cost", "coût d’ultime"),
+                ("max hull", "coque max"),
+                ("move speed", "vitesse"),
+                ("dash power", "puissance du dash"),
+                ("dash damage", "dégâts du dash"),
+                ("pickup range", "portée de collecte"),
+                ("repair drop chance", "chance de réparation"),
+                ("echo chance", "chance d’écho"),
+                ("crit damage", "dégâts crit."),
+                ("shot lanes", "lignes de tir"),
+                ("shot lane", "ligne de tir"),
+                ("side shots", "tirs latéraux"),
+                ("piercing shots", "tirs perforants"),
+                ("support drones", "drones de soutien"),
+                ("support drone", "drone de soutien"),
+                ("rank", "rang"),
+                ("damage", "dégâts"),
+                ("energy", "énergie"),
+                ("hull", "coque"),
+                ("heal", "soin"),
+                ("drones", "drones"),
+                ("drone", "drone"),
+                ("skill", "compétence"),
+                ("unlock", "débloque"),
+                ("shots", "tirs"),
+                ("shot", "tir"),
+                ("enemies", "ennemis"),
+                ("slow", "ralent."),
+                ("chance", "chance")),
+            GameLanguage.Japanese => ReplaceDeltaTerms(english,
+                ("damage taken down", "被ダメージ低下"),
+                ("incoming damage reduced", "被ダメージ低下"),
+                ("incoming damage down", "被ダメージ低下"),
+                ("fire interval", "射撃間隔"),
+                ("energy limit", "エネルギー上限"),
+                ("ultimate cost", "奥義コスト"),
+                ("max hull", "最大耐久"),
+                ("move speed", "移動速度"),
+                ("dash power", "ダッシュ力"),
+                ("dash damage", "ダッシュ火力"),
+                ("pickup range", "吸引範囲"),
+                ("repair drop chance", "修理ドロップ率"),
+                ("echo chance", "反響率"),
+                ("crit damage", "クリティカル火力"),
+                ("shot lanes", "射線"),
+                ("shot lane", "射線"),
+                ("side shots", "側面弾"),
+                ("piercing shots", "貫通弾"),
+                ("support drones", "支援ドローン"),
+                ("support drone", "支援ドローン"),
+                ("rank", "ランク"),
+                ("damage", "火力"),
+                ("energy", "エネルギー"),
+                ("hull", "耐久"),
+                ("heal", "回復"),
+                ("drones", "ドローン"),
+                ("drone", "ドローン"),
+                ("skill", "スキル"),
+                ("unlock", "解放"),
+                ("shots", "弾"),
+                ("shot", "弾"),
+                ("enemies", "敵"),
+                ("slow", "減速"),
+                ("chance", "確率")),
+            _ => english,
+        };
+    }
+
+    private static string ReplaceDeltaTerms(string text, params (string From, string To)[] terms)
+    {
+        foreach ((string from, string to) in terms)
+        {
+            text = text.Replace(from, to, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return text;
     }
 
     private string CapstoneBody(UpgradeId id)
@@ -13442,6 +13858,11 @@ public partial class MainGame : Node2D
                 return;
             }
 
+            if (TryDrawSpecialShotFallback(shot, pos, color, heavyVisualLoad))
+            {
+                return;
+            }
+
             if (!heavyVisualLoad)
             {
                 DrawCircle(pos, shot.Radius * (shot.Heavy ? 1.24f : 1.05f), Alpha(Paper, shot.Shadow ? 0.42f : 0.78f));
@@ -13479,18 +13900,108 @@ public partial class MainGame : Node2D
         }
     }
 
+    private bool TryDrawSpecialShotFallback(Shot shot, Vector2 pos, Color color, bool heavyVisualLoad)
+    {
+        if (!shot.FromPlayer || shot.Style == ShotStyle.Bullet)
+        {
+            return false;
+        }
+
+        Vector2 dir = shot.Vel.LengthSquared() > 0.01f ? shot.Vel.Normalized() : Vector2.Up;
+        Vector2 side = new(-dir.Y, dir.X);
+        float r = shot.Radius;
+        float alpha = shot.Shadow ? 0.56f : 0.88f;
+
+        switch (shot.Style)
+        {
+            case ShotStyle.Missile:
+            {
+                Vector2[] body =
+                {
+                    pos + dir * r * 2.45f,
+                    pos - dir * r * 1.45f + side * r * 1.0f,
+                    pos - dir * r * 0.78f,
+                    pos - dir * r * 1.45f - side * r * 1.0f,
+                };
+                DrawLine(pos - dir * r * 3.8f, pos - dir * r * 1.0f, Alpha(color, heavyVisualLoad ? 0.26f : 0.42f), Mathf.Max(1.2f, r * 0.45f), true);
+                DrawColoredPolygon(body, Alpha(color, heavyVisualLoad ? 0.18f : 0.28f), Array.Empty<Vector2>(), null);
+                DrawPolyline(ClosePolygon(body), Alpha(color.Lerp(Paper, 0.16f), alpha), heavyVisualLoad ? UiHairline : UiStroke, true);
+                DrawCircle(pos - dir * r * 1.55f, r * 0.36f, Alpha(Gold, heavyVisualLoad ? 0.46f : 0.74f));
+                return true;
+            }
+            case ShotStyle.Pulse:
+            {
+                float angle = dir.Angle();
+                float radius = r * (heavyVisualLoad ? 2.0f : 2.55f);
+                DrawArc(pos, radius, angle - 0.72f, angle + 0.72f, 14, Alpha(color, 0.78f), heavyVisualLoad ? UiHairline : UiStroke, true);
+                DrawLine(pos - side * r * 0.7f, pos + side * r * 0.7f + dir * r * 0.45f, Alpha(Paper, 0.28f), UiHairline, true);
+                return true;
+            }
+            case ShotStyle.HeavySlug:
+            {
+                DrawCircle(pos, r * 1.65f, Alpha(color, heavyVisualLoad ? 0.18f : 0.26f), false, heavyVisualLoad ? UiStroke : UiAccentStroke, true);
+                DrawLine(pos - dir * r * 1.9f, pos + dir * r * 2.25f, Alpha(color.Lerp(Paper, 0.18f), 0.9f), Mathf.Max(2.0f, r * 0.42f), true);
+                DrawLine(pos - side * r * 0.8f, pos + side * r * 0.8f, Alpha(Paper, 0.32f), UiHairline, true);
+                return true;
+            }
+            case ShotStyle.Pinball:
+                DrawDiamond(pos, r * (heavyVisualLoad ? 1.25f : 1.65f), color, _time * 3.0f + shot.VisualPhase);
+                return true;
+            case ShotStyle.Shadow:
+                DrawCircle(pos - side * r * 0.34f, r * 0.84f, Alpha(Violet, 0.18f));
+                DrawCircle(pos + side * r * 0.28f, r * 0.76f, Alpha(color, 0.44f), false, UiHairline, true);
+                DrawLine(pos - dir * r * 1.8f, pos + dir * r * 1.2f, Alpha(color, 0.46f), UiHairline, true);
+                return true;
+            case ShotStyle.FractalShard:
+            {
+                Vector2[] shard =
+                {
+                    pos + dir * r * 1.8f,
+                    pos - dir * r * 1.1f + side * r * 0.72f,
+                    pos - dir * r * 0.34f,
+                    pos - dir * r * 1.1f - side * r * 0.72f,
+                };
+                DrawPolyline(ClosePolygon(shard), Alpha(color, 0.82f), UiHairline, true);
+                DrawCircle(pos, r * 0.36f, Alpha(Paper, 0.4f));
+                return true;
+            }
+            case ShotStyle.Ricochet:
+                DrawDiamond(pos, r * 1.28f, color, dir.Angle() + Mathf.Pi * 0.25f);
+                DrawLine(pos - dir * r * 1.9f, pos + dir * r * 0.7f, Alpha(color, 0.34f), UiHairline, true);
+                return true;
+            case ShotStyle.ShieldRebound:
+                DrawPlus(pos, r * 1.25f, color);
+                return true;
+        }
+
+        return false;
+    }
+
     private bool TryDrawShotTexture(Shot shot, Vector2 pos, Color color, bool heavyVisualLoad)
     {
         Texture2D? texture;
         Rect2 sourceRegion;
         if (shot.FromPlayer)
         {
-            if (!_fighterBulletTextures.TryGetValue(_runPilot, out texture) || texture == null)
+            if (shot.Style != ShotStyle.Bullet)
+            {
+                if (!_specialProjectileTextures.TryGetValue(shot.Style, out texture) || texture == null)
+                {
+                    return false;
+                }
+
+                sourceRegion = _specialProjectileTextureRegions.TryGetValue(shot.Style, out Rect2 specialRegion) && specialRegion.Size.X > 0.0f && specialRegion.Size.Y > 0.0f
+                    ? specialRegion
+                    : new Rect2(Vector2.Zero, texture.GetSize());
+            }
+            else if (!_fighterBulletTextures.TryGetValue(_runPilot, out texture) || texture == null)
             {
                 return false;
             }
-
-            sourceRegion = FighterBulletTextureRegion(_runPilot, texture);
+            else
+            {
+                sourceRegion = FighterBulletTextureRegion(_runPilot, texture);
+            }
         }
         else
         {
@@ -13556,10 +14067,19 @@ public partial class MainGame : Node2D
             return Vector2.Zero;
         }
 
-        float playerScale = shot.Heavy ? 3.05f : 2.45f;
+        float playerScale = shot.Style switch
+        {
+            ShotStyle.Missile => 3.35f,
+            ShotStyle.HeavySlug => 3.55f,
+            ShotStyle.Pinball => 2.55f,
+            ShotStyle.Pulse => 3.05f,
+            ShotStyle.FractalShard => 2.15f,
+            _ => shot.Heavy ? 3.05f : 2.45f,
+        };
         float visualRoot = Mathf.Max(shot.FromPlayer ? 14.0f : 17.0f, shot.Radius * (shot.FromPlayer ? playerScale : 2.6f));
-        float minSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (shot.Heavy ? 2.55f : 2.05f), 14.0f, shot.Heavy ? 38.0f : 24.0f) : Mathf.Clamp(shot.Radius * 2.15f, 18.0f, 26.0f);
-        float maxSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (shot.Heavy ? 4.15f : 3.1f), 18.0f, shot.Heavy ? 58.0f : 34.0f) : Mathf.Clamp(shot.Radius * 3.0f, 20.0f, 32.0f);
+        bool heavy = shot.Heavy || shot.Style == ShotStyle.HeavySlug;
+        float minSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (heavy ? 2.55f : 2.05f), 14.0f, heavy ? 38.0f : 24.0f) : Mathf.Clamp(shot.Radius * 2.15f, 18.0f, 26.0f);
+        float maxSide = shot.FromPlayer ? Mathf.Clamp(shot.Radius * (heavy ? 4.15f : 3.1f), 18.0f, heavy ? 62.0f : 38.0f) : Mathf.Clamp(shot.Radius * 3.0f, 20.0f, 32.0f);
         return FitTextureSizeToArea(sourceSize, visualRoot * visualRoot, minSide, maxSide);
     }
 
@@ -14956,7 +15476,7 @@ public partial class MainGame : Node2D
             DrawPanel(rect, Alpha(Ink, hover ? 0.92f : 0.78f), border);
             DrawHoverFrame(rect, card.Accent, hover, 0.92f);
 
-            Rect2 header = new(rect.Position, new Vector2(rect.Size.X, 126.0f));
+            Rect2 header = new(rect.Position, new Vector2(rect.Size.X, 132.0f));
             DrawRect(header, Alpha(card.Accent, hover ? 0.13f : 0.085f), true);
             DrawLine(header.Position + new Vector2(22.0f, header.Size.Y), header.Position + new Vector2(header.Size.X - 22.0f, header.Size.Y), Alpha(card.Accent, hover ? 0.42f : 0.24f), UiHairline, true);
 
@@ -14966,21 +15486,20 @@ public partial class MainGame : Node2D
                 DrawLine(new Vector2(rect.Position.X + 26.0f, y), new Vector2(rect.End.X - 26.0f, y + Mathf.Sin(_time + line) * 4.0f), Alpha(card.Accent, hover ? 0.065f : 0.035f), UiHairline, true);
             }
 
-            Rect2 iconSlot = new(rect.Position + new Vector2(26.0f, 54.0f), new Vector2(70.0f, 70.0f));
+            Rect2 iconSlot = new(rect.Position + new Vector2(26.0f, 52.0f), new Vector2(70.0f, 70.0f));
             DrawUpgradeCardIcon(card.Id, iconSlot, card.Accent, hover);
 
-            DrawText(card.Tag.ToUpperInvariant(), rect.Position + new Vector2(26.0f, 38.0f), 15, Alpha(card.Accent, 0.96f), HorizontalAlignment.Left, rect.Size.X - 118.0f, true, 1);
-            DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(112.0f, 92.0f), 25, Paper, HorizontalAlignment.Left, rect.Size.X - 180.0f, true, 3);
-            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 170.0f), 18, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 26.0f, 3);
+            DrawText(card.Title.ToUpperInvariant(), rect.Position + new Vector2(112.0f, 96.0f), 23, Paper, HorizontalAlignment.Left, rect.Size.X - 152.0f, true, 3);
+            DrawHighlightedWrapped(card.Body, rect.Position + new Vector2(26.0f, 166.0f), 16, Alpha(Paper, 0.68f), card.Accent, rect.Size.X - 52.0f, 24.0f, 4);
 
             if (!string.IsNullOrWhiteSpace(card.Delta))
             {
-                Rect2 delta = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 116.0f), new Vector2(rect.Size.X - 48.0f, 52.0f));
+                Rect2 delta = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 130.0f), new Vector2(rect.Size.X - 48.0f, 62.0f));
                 DrawRect(delta, Alpha(Graphite, hover ? 0.42f : 0.28f), true);
                 DrawRect(delta, Alpha(card.Accent, hover ? 0.34f : 0.18f), false, UiHairline, true);
                 DrawLine(delta.Position + new Vector2(0.0f, delta.Size.Y), delta.Position + delta.Size, Alpha(card.Accent, hover ? 0.46f : 0.24f), UiHairline, true);
-                DrawText(T("upgrade.delta.label").ToUpperInvariant(), delta.Position + new Vector2(12.0f, 16.0f), 10, Alpha(Paper, 0.42f), HorizontalAlignment.Left, delta.Size.X - 24.0f, false, 0);
-                DrawHighlightedWrapped(card.Delta, delta.Position + new Vector2(12.0f, 31.0f), 13, Alpha(Paper, 0.72f), card.Accent, delta.Size.X - 24.0f, 16.0f, 2);
+                DrawText(T("upgrade.delta.label").ToUpperInvariant(), delta.Position + new Vector2(12.0f, 15.0f), 10, Alpha(Paper, 0.42f), HorizontalAlignment.Left, delta.Size.X - 24.0f, false, 0);
+                DrawHighlightedWrapped(card.Delta, delta.Position + new Vector2(12.0f, 37.0f), 12, Alpha(Paper, 0.72f), card.Accent, delta.Size.X - 24.0f, 15.0f, 2);
             }
 
             int rank = GetRank(card.Id);
@@ -14990,11 +15509,11 @@ public partial class MainGame : Node2D
             string slotText = IsGamepadFocused(card.Rect)
                 ? T("upgrade.select_gamepad")
                 : Tf("upgrade.select_key", i + 1);
-            Rect2 footer = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 58.0f), new Vector2(rect.Size.X - 48.0f, 36.0f));
+            Rect2 footer = new(rect.Position + new Vector2(24.0f, rect.Size.Y - 54.0f), new Vector2(rect.Size.X - 48.0f, 34.0f));
             DrawRect(footer, Alpha(Graphite, 0.34f), true);
             DrawRect(footer, Alpha(card.Accent, hover ? 0.36f : 0.2f), false, UiHairline, true);
-            DrawText(rankText, footer.Position + new Vector2(12.0f, 23.0f), 14, Alpha(card.Accent, 0.94f), HorizontalAlignment.Left, footer.Size.X - 24.0f, false, 0);
-            DrawText(slotText, footer.Position + new Vector2(0.0f, 23.0f), 14, Alpha(Paper, hover ? 0.78f : 0.52f), HorizontalAlignment.Right, footer.Size.X - 12.0f, false, 0);
+            DrawText(rankText, footer.Position + new Vector2(12.0f, 22.0f), 13, Alpha(card.Accent, 0.94f), HorizontalAlignment.Left, footer.Size.X - 24.0f, false, 0);
+            DrawText(slotText, footer.Position + new Vector2(0.0f, 22.0f), 13, Alpha(Paper, hover ? 0.78f : 0.52f), HorizontalAlignment.Right, footer.Size.X - 12.0f, false, 0);
         }
     }
 
@@ -15695,6 +16214,11 @@ public partial class MainGame : Node2D
     {
         Font font = _uiFont ?? ThemeDB.FallbackFont;
         size = LocalizedFontSize(text, size, width);
+        DrawTextAtSize(font, text, pos, size, color, alignment, width, outline, outlineSize);
+    }
+
+    private void DrawTextAtSize(Font font, string text, Vector2 pos, int size, Color color, HorizontalAlignment alignment, float width, bool outline, int outlineSize)
+    {
         if (outline && outlineSize > 0)
         {
             DrawStringOutline(font, pos, text, alignment, width, size, outlineSize, Alpha(Void, 0.78f));
@@ -15748,6 +16272,7 @@ public partial class MainGame : Node2D
 
     private void DrawHighlightedWrapped(string text, Vector2 pos, int size, Color color, Color accent, float width, float lineHeight, int maxLines = int.MaxValue)
     {
+        size = LocalizedFontSize(text, size, width);
         int lineIndex = 0;
         float lineWidth = 0.0f;
         List<RichTextSegment> line = new();
@@ -15807,6 +16332,7 @@ public partial class MainGame : Node2D
         float cursor = pos.X;
         float right = pos.X + width;
         const float SegmentSafetyGap = 2.0f;
+        Font font = _uiFont ?? ThemeDB.FallbackFont;
         for (int i = 0; i < cleanLine.Count; i++)
         {
             RichTextSegment segment = cleanLine[i];
@@ -15817,7 +16343,7 @@ public partial class MainGame : Node2D
                 DrawRect(new Rect2(new Vector2(cursor, pos.Y + 3.0f), new Vector2(segmentWidth, 2.0f)), Alpha(accent, 0.18f), true);
             }
 
-            DrawText(segment.Text, new Vector2(cursor, pos.Y), size, textColor, HorizontalAlignment.Left, Mathf.Max(segmentWidth + 24.0f, right - cursor), true, 1);
+            DrawTextAtSize(font, segment.Text, new Vector2(cursor, pos.Y), size, textColor, HorizontalAlignment.Left, Mathf.Max(segmentWidth + 8.0f, right - cursor), true, 1);
             cursor += segmentWidth + (i < cleanLine.Count - 1 ? SegmentSafetyGap : 0.0f);
         }
     }

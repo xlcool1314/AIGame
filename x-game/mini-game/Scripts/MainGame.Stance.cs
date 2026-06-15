@@ -110,19 +110,35 @@ public partial class MainGame
             return EnemyBulletColor();
         }
         Color color = PolarityColor(shot.Polarity);
-        if (shot.Heavy)
+        if (shot.Style == ShotStyle.HeavySlug || shot.Heavy)
         {
             return color.Lerp(UpgradeAccent(UpgradeId.HeavySlug), 0.46f).Lerp(Paper, 0.08f);
         }
-        if (shot.Homing > 0)
+        if (shot.Style == ShotStyle.Missile || shot.Homing > 0)
         {
             return color.Lerp(UpgradeAccent(UpgradeId.SeekerRack), 0.42f);
         }
-        if (shot.Shadow)
+        if (shot.Style == ShotStyle.Pulse)
+        {
+            return color.Lerp(PickupBlue.Lerp(Paper, 0.15f), 0.35f);
+        }
+        if (shot.Style == ShotStyle.Shadow || shot.Shadow)
         {
             return color.Lerp(Violet, 0.48f);
         }
-        if (shot.Bounces > 0)
+        if (shot.Style == ShotStyle.FractalShard)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.FractalSplit), 0.44f);
+        }
+        if (shot.Style == ShotStyle.Ricochet)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.RicochetMatrix), 0.38f);
+        }
+        if (shot.Style == ShotStyle.ShieldRebound)
+        {
+            return color.Lerp(UpgradeAccent(UpgradeId.ShieldRebound), 0.4f);
+        }
+        if (shot.Style == ShotStyle.Pinball || shot.Bounces > 0)
         {
             return color.Lerp(UpgradeAccent(UpgradeId.PinballRounds), 0.28f);
         }

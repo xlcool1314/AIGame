@@ -41,6 +41,8 @@ public partial class MainGame
         shot.Bounces = 0;
         shot.Heavy = false;
         shot.Shadow = false;
+        shot.Style = ShotStyle.Bullet;
+        shot.VisualPhase = _rng.RandfRange(0.0f, Mathf.Tau);
         _shots.Add(shot);
         if (!fromPlayer)
         {

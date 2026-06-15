@@ -258,6 +258,19 @@ public partial class MainGame
         Repair,
     }
 
+    private enum ShotStyle
+    {
+        Bullet,
+        Missile,
+        Pulse,
+        HeavySlug,
+        Pinball,
+        Shadow,
+        FractalShard,
+        Ricochet,
+        ShieldRebound,
+    }
+
     private enum UpgradeId
     {
         PrismArray,
@@ -393,6 +406,8 @@ public partial class MainGame
         public int Bounces;
         public bool Heavy;
         public bool Shadow;
+        public ShotStyle Style;
+        public float VisualPhase;
     }
 
     private sealed class Pickup
