@@ -140,7 +140,7 @@ public partial class MainGame
 
     private readonly struct MetaUpgradeDef
     {
-        public MetaUpgradeDef(MetaUpgradeId id, string titleKey, string bodyKey, Color accent, int maxRank, int baseCost, int stepCost)
+        public MetaUpgradeDef(MetaUpgradeId id, string titleKey, string bodyKey, Color accent, int maxRank, int baseCost, int stepCost, Vector2 treePosition, params MetaUpgradeId[] requires)
         {
             Id = id;
             TitleKey = titleKey;
@@ -149,6 +149,8 @@ public partial class MainGame
             MaxRank = maxRank;
             BaseCost = baseCost;
             StepCost = stepCost;
+            TreePosition = treePosition;
+            Requires = requires;
         }
 
         public readonly MetaUpgradeId Id;
@@ -158,6 +160,8 @@ public partial class MainGame
         public readonly int MaxRank;
         public readonly int BaseCost;
         public readonly int StepCost;
+        public readonly Vector2 TreePosition;
+        public readonly MetaUpgradeId[] Requires;
     }
 
     private enum EnemyKind

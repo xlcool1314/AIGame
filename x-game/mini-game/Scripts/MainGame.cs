@@ -467,22 +467,22 @@ public partial class MainGame : Node2D
 
     private static readonly MetaUpgradeDef[] MetaUpgrades =
     {
-        new(MetaUpgradeId.HullPlating, "meta.hull.title", "meta.hull.body", Rose, 7, 95, 34),
-        new(MetaUpgradeId.ReactorSeed, "meta.energy.title", "meta.energy.body", Cyan, 6, 105, 38),
-        new(MetaUpgradeId.FocusLens, "meta.weapon.title", "meta.weapon.body", Gold, 6, 120, 42),
-        new(MetaUpgradeId.DriftEngine, "meta.engine.title", "meta.engine.body", Violet, 6, 95, 36),
-        new(MetaUpgradeId.SalvageRig, "meta.salvage.title", "meta.salvage.body", Jade, 5, 145, 54),
-        new(MetaUpgradeId.StarterChart, "meta.chart.title", "meta.chart.body", new Color(0.52f, 0.76f, 0.94f), 3, 210, 86),
-        new(MetaUpgradeId.RepairProtocol, "meta.repair.title", "meta.repair.body", new Color(0.08f, 0.86f, 0.66f), 5, 125, 46),
-        new(MetaUpgradeId.AegisMatrix, "meta.aegis.title", "meta.aegis.body", new Color(0.38f, 0.82f, 0.94f), 4, 165, 66),
-        new(MetaUpgradeId.NovaCatalyst, "meta.nova.title", "meta.nova.body", new Color(1.0f, 0.48f, 0.14f), 5, 145, 54),
-        new(MetaUpgradeId.DroneDock, "meta.drone.title", "meta.drone.body", PickupBlue, 4, 175, 70),
-        new(MetaUpgradeId.PolarityTuner, "meta.tuner.title", "meta.tuner.body", PolarityAmber, 4, 150, 62),
-        new(MetaUpgradeId.DeepSurvey, "meta.survey.title", "meta.survey.body", new Color(0.74f, 0.44f, 0.92f), 4, 185, 78),
-        new(MetaUpgradeId.StarterModule, "meta.module.title", "meta.module.body", new Color(0.18f, 0.92f, 0.76f), 3, 260, 126),
-        new(MetaUpgradeId.PilotCodex, "meta.codex.title", "meta.codex.body", new Color(1.0f, 0.36f, 0.68f), 4, 225, 96),
-        new(MetaUpgradeId.ComboEngine, "meta.combo.title", "meta.combo.body", new Color(0.2f, 0.78f, 1.0f), 4, 205, 88),
-        new(MetaUpgradeId.EliteAnalyzer, "meta.elite.title", "meta.elite.body", new Color(1.0f, 0.68f, 0.22f), 5, 240, 104),
+        new(MetaUpgradeId.ReactorSeed, "meta.energy.title", "meta.energy.body", Cyan, 6, 85, 36, new Vector2(0.0f, 0.0f)),
+        new(MetaUpgradeId.HullPlating, "meta.hull.title", "meta.hull.body", Rose, 7, 80, 34, new Vector2(0.75f, 1.0f), MetaUpgradeId.ReactorSeed),
+        new(MetaUpgradeId.FocusLens, "meta.weapon.title", "meta.weapon.body", Gold, 6, 95, 40, new Vector2(0.0f, 1.0f), MetaUpgradeId.ReactorSeed),
+        new(MetaUpgradeId.DriftEngine, "meta.engine.title", "meta.engine.body", Violet, 6, 85, 34, new Vector2(0.25f, 1.0f), MetaUpgradeId.ReactorSeed),
+        new(MetaUpgradeId.SalvageRig, "meta.salvage.title", "meta.salvage.body", Jade, 5, 135, 52, new Vector2(0.5f, 1.0f), MetaUpgradeId.ReactorSeed),
+        new(MetaUpgradeId.RepairProtocol, "meta.repair.title", "meta.repair.body", new Color(0.08f, 0.86f, 0.66f), 5, 120, 48, new Vector2(0.625f, 2.0f), MetaUpgradeId.HullPlating),
+        new(MetaUpgradeId.AegisMatrix, "meta.aegis.title", "meta.aegis.body", new Color(0.38f, 0.82f, 0.94f), 4, 165, 70, new Vector2(0.75f, 2.0f), MetaUpgradeId.HullPlating, MetaUpgradeId.RepairProtocol),
+        new(MetaUpgradeId.NovaCatalyst, "meta.nova.title", "meta.nova.body", new Color(1.0f, 0.48f, 0.14f), 5, 135, 54, new Vector2(0.875f, 2.0f), MetaUpgradeId.FocusLens),
+        new(MetaUpgradeId.DroneDock, "meta.drone.title", "meta.drone.body", PickupBlue, 4, 155, 64, new Vector2(0.125f, 2.0f), MetaUpgradeId.FocusLens),
+        new(MetaUpgradeId.PolarityTuner, "meta.tuner.title", "meta.tuner.body", PolarityAmber, 4, 165, 70, new Vector2(0.25f, 2.0f), MetaUpgradeId.NovaCatalyst),
+        new(MetaUpgradeId.StarterChart, "meta.chart.title", "meta.chart.body", new Color(0.52f, 0.76f, 0.94f), 3, 205, 92, new Vector2(0.375f, 2.0f), MetaUpgradeId.SalvageRig),
+        new(MetaUpgradeId.ComboEngine, "meta.combo.title", "meta.combo.body", new Color(0.2f, 0.78f, 1.0f), 4, 220, 96, new Vector2(0.0f, 3.0f), MetaUpgradeId.DriftEngine, MetaUpgradeId.PolarityTuner),
+        new(MetaUpgradeId.StarterModule, "meta.module.title", "meta.module.body", new Color(0.18f, 0.92f, 0.76f), 3, 260, 126, new Vector2(0.125f, 3.0f), MetaUpgradeId.StarterChart, MetaUpgradeId.PolarityTuner),
+        new(MetaUpgradeId.PilotCodex, "meta.codex.title", "meta.codex.body", new Color(1.0f, 0.36f, 0.68f), 4, 285, 132, new Vector2(0.25f, 3.0f), MetaUpgradeId.StarterModule, MetaUpgradeId.DeepSurvey),
+        new(MetaUpgradeId.DeepSurvey, "meta.survey.title", "meta.survey.body", new Color(0.74f, 0.44f, 0.92f), 4, 180, 78, new Vector2(0.5f, 3.0f), MetaUpgradeId.SalvageRig, MetaUpgradeId.DroneDock),
+        new(MetaUpgradeId.EliteAnalyzer, "meta.elite.title", "meta.elite.body", new Color(1.0f, 0.68f, 0.22f), 5, 300, 136, new Vector2(0.75f, 3.0f), MetaUpgradeId.ComboEngine, MetaUpgradeId.StarterChart),
     };
 
     private static readonly Dictionary<string, LocalizedText> Texts = new()
@@ -699,10 +699,25 @@ public partial class MainGame : Node2D
         ["meta.best"] = new("BEST WAVE {0}/40   RUNS {2}", "最高波次 {0}/40   出航 {2}"),
         ["meta.open_hint"] = new("Open the Fighter Bay between runs.", "每局结束后可进入战机升级室。"),
         ["meta.buy_hint"] = new("Click a module or press A to install.", "点击模块或按 A 安装。"),
+        ["meta.flow"] = new("Select a node, read its effect, then install it.", "选择节点，查看效果，然后安装。"),
         ["meta.back"] = new("BACK", "返回"),
+        ["meta.install"] = new("INSTALL", "安装"),
+        ["meta.nodes"] = new("Nodes Active", "已激活节点"),
+        ["meta.required_dust"] = new("Dust Needed", "需要星尘"),
+        ["meta.gamepad_hint"] = new("A Install  B Back", "A 安装  B 返回"),
+        ["meta.start_here"] = new("Start here", "从这里开始"),
         ["meta.cost"] = new("COST {0}", "花费 {0}"),
         ["meta.max"] = new("MAX", "已满"),
         ["meta.rank"] = new("Rank {0}/{1}", "等级 {0}/{1}"),
+        ["meta.node.detail"] = new("Upgrade Node", "升级节点"),
+        ["meta.ready"] = new("Ready", "可升级"),
+        ["meta.active"] = new("Active", "已激活"),
+        ["meta.short_state"] = new("Need Dust", "星尘不足"),
+        ["meta.missing_dust"] = new("Missing {0}", "还差 {0}"),
+        ["meta.locked"] = new("Locked", "未解锁"),
+        ["meta.root"] = new("Core node. It can be upgraded immediately.", "基础节点，可以直接升级。"),
+        ["meta.requires"] = new("Requires: {0}", "需要：{0}"),
+        ["meta.requires.toast"] = new("Unlock first: {0}", "请先解锁：{0}"),
         ["meta.bought"] = new("UPGRADED", "升级完成"),
         ["meta.short"] = new("NEED {0} MORE", "还差 {0}"),
         ["settings.title"] = new("SETTINGS", "设置"),
@@ -5167,14 +5182,15 @@ public partial class MainGame : Node2D
         _gamepadMetaIndex = Mathf.Clamp(_gamepadMetaIndex, 0, MetaUpgrades.Length - 1);
         int navX = ConsumeGamepadNavX();
         int navY = ConsumeGamepadNavY();
-        if (navX != 0 || navY != 0)
+        if (navX != 0)
         {
-            int row = _gamepadMetaIndex / 4;
-            int column = _gamepadMetaIndex % 4;
-            column = (column + navX + 4) % 4;
-            row = Mathf.Clamp(row + navY, 0, (MetaUpgrades.Length - 1) / 4);
-            _gamepadMetaIndex = Mathf.Clamp(row * 4 + column, 0, MetaUpgrades.Length - 1);
-            PlaySfx(230.0f + column * 18.0f, 18.0f, 0.055f, 0.1f, 0.01f, 1);
+            _gamepadMetaIndex = MoveMetaFocus(_gamepadMetaIndex, new Vector2(navX, 0.0f));
+            PlaySfx(230.0f + _gamepadMetaIndex * 7.0f, 18.0f, 0.055f, 0.1f, 0.01f, 1);
+        }
+        else if (navY != 0)
+        {
+            _gamepadMetaIndex = MoveMetaFocus(_gamepadMetaIndex, new Vector2(0.0f, navY));
+            PlaySfx(230.0f + _gamepadMetaIndex * 7.0f, 18.0f, 0.055f, 0.1f, 0.01f, 1);
         }
         SetGamepadFocus(MetaUpgradeRect(_gamepadMetaIndex));
 
@@ -5191,6 +5207,12 @@ public partial class MainGame : Node2D
             return;
         }
 
+        if (click && MetaAcceptButtonRect().HasPoint(mouse))
+        {
+            TryBuyMetaUpgrade(MetaUpgrades[_gamepadMetaIndex]);
+            return;
+        }
+
         if (ConfirmHeld() && !_lastConfirm)
         {
             TryBuyMetaUpgrade(MetaUpgrades[_gamepadMetaIndex]);
@@ -5202,7 +5224,7 @@ public partial class MainGame : Node2D
             if (click && MetaUpgradeRect(i).HasPoint(mouse))
             {
                 _gamepadMetaIndex = i;
-                TryBuyMetaUpgrade(MetaUpgrades[i]);
+                PlaySfx(300.0f + i * 4.0f, 28.0f, 0.055f, 0.1f, 0.01f, 1);
                 return;
             }
         }
@@ -5211,6 +5233,13 @@ public partial class MainGame : Node2D
     private void TryBuyMetaUpgrade(MetaUpgradeDef def)
     {
         int rank = MetaRank(def.Id);
+        if (!IsMetaUpgradeUnlocked(def))
+        {
+            AddText(Tf("meta.requires.toast", MetaRequirementText(def)), ScreenCenter + new Vector2(0.0f, -250.0f), Alpha(Paper, 0.86f), 24.0f);
+            PlaySfx(145.0f, -26.0f, 0.14f, 0.16f, 0.04f, 0);
+            return;
+        }
+
         if (rank >= def.MaxRank)
         {
             AddText(T("meta.max"), ScreenCenter + new Vector2(0.0f, -250.0f), def.Accent, 28.0f);
@@ -12561,6 +12590,148 @@ public partial class MainGame : Node2D
         return maxRank < 20 && GetRank(id) >= maxRank;
     }
 
+    private static int MetaUpgradeIndex(MetaUpgradeId id)
+    {
+        for (int i = 0; i < MetaUpgrades.Length; i++)
+        {
+            if (MetaUpgrades[i].Id == id)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private static MetaUpgradeDef MetaDef(MetaUpgradeId id)
+    {
+        return MetaUpgrades[MetaUpgradeIndex(id)];
+    }
+
+    private bool IsMetaUpgradeUnlocked(MetaUpgradeDef def)
+    {
+        if (MetaRank(def.Id) > 0 || def.Requires.Length == 0)
+        {
+            return true;
+        }
+
+        foreach (MetaUpgradeId required in def.Requires)
+        {
+            if (MetaRank(required) <= 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private string MetaRequirementText(MetaUpgradeDef def)
+    {
+        if (MetaRank(def.Id) > 0 || def.Requires.Length == 0)
+        {
+            return T("meta.ready");
+        }
+
+        List<string> missing = new();
+        foreach (MetaUpgradeId required in def.Requires)
+        {
+            if (MetaRank(required) <= 0)
+            {
+                missing.Add(T(MetaDef(required).TitleKey));
+            }
+        }
+
+        if (missing.Count == 0)
+        {
+            return T("meta.ready");
+        }
+
+        return string.Join(" / ", missing);
+    }
+
+    private string MetaNodeStateText(MetaUpgradeDef def)
+    {
+        int rank = MetaRank(def.Id);
+        if (rank >= def.MaxRank)
+        {
+            return T("meta.max");
+        }
+
+        if (!IsMetaUpgradeUnlocked(def))
+        {
+            return T("meta.locked");
+        }
+
+        int cost = MetaUpgradeCost(def, rank);
+        if (_starDust < cost)
+        {
+            return T("meta.short_state");
+        }
+
+        return rank > 0 ? T("meta.active") : T("meta.ready");
+    }
+
+    private Color MetaNodeStateColor(MetaUpgradeDef def)
+    {
+        int rank = MetaRank(def.Id);
+        if (rank >= def.MaxRank)
+        {
+            return Jade;
+        }
+
+        if (!IsMetaUpgradeUnlocked(def))
+        {
+            return Alpha(Paper, 0.54f);
+        }
+
+        int cost = MetaUpgradeCost(def, rank);
+        if (_starDust < cost)
+        {
+            return Rose;
+        }
+
+        return rank > 0 ? def.Accent.Lerp(Jade, 0.22f) : Gold;
+    }
+
+    private int MoveMetaFocus(int currentIndex, Vector2 direction)
+    {
+        currentIndex = Mathf.Clamp(currentIndex, 0, MetaUpgrades.Length - 1);
+        if (direction.LengthSquared() <= 0.001f)
+        {
+            return currentIndex;
+        }
+
+        Vector2 from = MetaNodeCenter(MetaUpgrades[currentIndex]);
+        Vector2 dir = direction.Normalized();
+        int best = currentIndex;
+        float bestScore = float.MaxValue;
+        for (int i = 0; i < MetaUpgrades.Length; i++)
+        {
+            if (i == currentIndex)
+            {
+                continue;
+            }
+
+            Vector2 delta = MetaNodeCenter(MetaUpgrades[i]) - from;
+            float primary = delta.Dot(dir);
+            if (primary <= 12.0f)
+            {
+                continue;
+            }
+
+            float perpendicular = MathF.Abs(delta.X * dir.Y - delta.Y * dir.X);
+            float score = primary + perpendicular * 0.62f;
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = i;
+            }
+        }
+
+        return best;
+    }
+
     private int MetaRank(MetaUpgradeId id)
     {
         return _metaRanks.TryGetValue(id, out int rank) ? rank : 0;
@@ -14813,6 +14984,134 @@ public partial class MainGame : Node2D
         DrawUpgradeGlyph(id, center, slot.Size.X * 0.28f, accent);
     }
 
+    private void DrawMetaGlyph(MetaUpgradeId id, Vector2 center, float radius, Color accent, bool unlocked, bool active)
+    {
+        Color line = Alpha(accent, unlocked ? 0.86f : 0.38f);
+        Color soft = Alpha(accent, active ? 0.18f : 0.08f);
+        DrawCircle(center, radius * 1.34f, soft, false, UiHairline, true);
+
+        switch (id)
+        {
+            case MetaUpgradeId.HullPlating:
+                DrawDiamond(center, radius * 0.92f, Alpha(accent, unlocked ? 0.22f : 0.08f), 0.0f);
+                DrawLine(center + new Vector2(0.0f, -radius * 0.82f), center + new Vector2(radius * 0.72f, -radius * 0.12f), line, UiHairline, true);
+                DrawLine(center + new Vector2(0.0f, -radius * 0.82f), center + new Vector2(-radius * 0.72f, -radius * 0.12f), line, UiHairline, true);
+                DrawLine(center + new Vector2(radius * 0.72f, -radius * 0.12f), center + new Vector2(0.0f, radius * 0.8f), line, UiHairline, true);
+                DrawLine(center + new Vector2(-radius * 0.72f, -radius * 0.12f), center + new Vector2(0.0f, radius * 0.8f), line, UiHairline, true);
+                break;
+            case MetaUpgradeId.ReactorSeed:
+                DrawCircle(center, radius * 0.78f, Alpha(accent, 0.16f), false, UiHairline, true);
+                DrawCircle(center, radius * 0.24f, line);
+                DrawLine(center - Vector2.Right * radius, center + Vector2.Right * radius, Alpha(Paper, unlocked ? 0.42f : 0.18f), UiHairline, true);
+                DrawLine(center - Vector2.Down * radius, center + Vector2.Down * radius, Alpha(Paper, unlocked ? 0.42f : 0.18f), UiHairline, true);
+                break;
+            case MetaUpgradeId.FocusLens:
+                DrawCircle(center, radius * 0.86f, line, false, UiHairline, true);
+                DrawCircle(center, radius * 0.3f, Alpha(Paper, unlocked ? 0.5f : 0.18f), false, UiHairline, true);
+                DrawLine(center - Vector2.Right * radius, center - Vector2.Right * radius * 0.46f, line, UiHairline, true);
+                DrawLine(center + Vector2.Right * radius * 0.46f, center + Vector2.Right * radius, line, UiHairline, true);
+                DrawLine(center - Vector2.Down * radius, center - Vector2.Down * radius * 0.46f, line, UiHairline, true);
+                DrawLine(center + Vector2.Down * radius * 0.46f, center + Vector2.Down * radius, line, UiHairline, true);
+                break;
+            case MetaUpgradeId.DriftEngine:
+                for (int i = 0; i < 3; i++)
+                {
+                    float y = (i - 1) * radius * 0.34f;
+                    DrawLine(center + new Vector2(-radius * 0.82f, y - radius * 0.42f), center + new Vector2(radius * 0.1f, y), line, UiHairline, true);
+                    DrawLine(center + new Vector2(-radius * 0.82f, y + radius * 0.42f), center + new Vector2(radius * 0.1f, y), line, UiHairline, true);
+                    DrawLine(center + new Vector2(radius * 0.1f, y), center + new Vector2(radius * 0.88f, y), line, UiHairline, true);
+                }
+                break;
+            case MetaUpgradeId.SalvageRig:
+                DrawDiamond(center, radius * 0.82f, line, Mathf.Pi * 0.25f);
+                DrawLine(center + new Vector2(-radius * 0.6f, radius * 0.62f), center + new Vector2(radius * 0.62f, -radius * 0.58f), Alpha(Paper, unlocked ? 0.48f : 0.18f), UiHairline, true);
+                DrawCircle(center + new Vector2(radius * 0.5f, -radius * 0.48f), radius * 0.18f, line);
+                break;
+            case MetaUpgradeId.StarterChart:
+                for (int i = 0; i < 4; i++)
+                {
+                    float angle = i * Mathf.Pi * 0.5f + 0.4f;
+                    Vector2 p = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius * (i % 2 == 0 ? 0.82f : 0.52f);
+                    DrawCircle(p, radius * 0.13f, line);
+                    if (i > 0)
+                    {
+                        float prevAngle = (i - 1) * Mathf.Pi * 0.5f + 0.4f;
+                        Vector2 prev = center + new Vector2(Mathf.Cos(prevAngle), Mathf.Sin(prevAngle)) * radius * ((i - 1) % 2 == 0 ? 0.82f : 0.52f);
+                        DrawLine(prev, p, Alpha(accent, unlocked ? 0.56f : 0.18f), UiHairline, true);
+                    }
+                }
+                break;
+            case MetaUpgradeId.RepairProtocol:
+                DrawLine(center - Vector2.Right * radius * 0.74f, center + Vector2.Right * radius * 0.74f, line, UiStroke, true);
+                DrawLine(center - Vector2.Down * radius * 0.74f, center + Vector2.Down * radius * 0.74f, line, UiStroke, true);
+                DrawCircle(center, radius * 0.92f, Alpha(accent, 0.14f), false, UiHairline, true);
+                break;
+            case MetaUpgradeId.AegisMatrix:
+                DrawDiamond(center, radius * 0.98f, line, 0.0f);
+                DrawCircle(center, radius * 0.56f, Alpha(Paper, unlocked ? 0.34f : 0.14f), false, UiHairline, true);
+                DrawLine(center - Vector2.Right * radius * 0.48f, center + Vector2.Right * radius * 0.48f, line, UiHairline, true);
+                break;
+            case MetaUpgradeId.NovaCatalyst:
+                for (int i = 0; i < 8; i++)
+                {
+                    float angle = i * Mathf.Tau / 8.0f;
+                    Vector2 dir = new(Mathf.Cos(angle), Mathf.Sin(angle));
+                    DrawLine(center + dir * radius * 0.24f, center + dir * radius, line, UiHairline, true);
+                }
+                DrawCircle(center, radius * 0.22f, line);
+                break;
+            case MetaUpgradeId.DroneDock:
+                for (int i = 0; i < 3; i++)
+                {
+                    float angle = -Mathf.Pi * 0.5f + i * Mathf.Tau / 3.0f;
+                    Vector2 p = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius * 0.62f;
+                    DrawCircle(p, radius * 0.22f, line, false, UiHairline, true);
+                    DrawLine(center, p, Alpha(accent, unlocked ? 0.4f : 0.14f), UiHairline, true);
+                }
+                DrawCircle(center, radius * 0.16f, line);
+                break;
+            case MetaUpgradeId.PolarityTuner:
+                DrawCircle(center - Vector2.Right * radius * 0.46f, radius * 0.28f, line, false, UiHairline, true);
+                DrawCircle(center + Vector2.Right * radius * 0.46f, radius * 0.28f, Alpha(Paper, unlocked ? 0.48f : 0.16f), false, UiHairline, true);
+                DrawLine(center - Vector2.Right * radius * 0.18f, center + Vector2.Right * radius * 0.18f, line, UiStroke, true);
+                break;
+            case MetaUpgradeId.DeepSurvey:
+                DrawCircle(center, radius * 0.92f, line, false, UiHairline, true);
+                DrawLine(center, center + new Vector2(radius * 0.86f, -radius * 0.18f), line, UiHairline, true);
+                DrawLine(center, center + new Vector2(radius * 0.32f, radius * 0.72f), Alpha(Paper, unlocked ? 0.42f : 0.14f), UiHairline, true);
+                DrawCircle(center, radius * 0.12f, line);
+                break;
+            case MetaUpgradeId.StarterModule:
+                DrawRect(new Rect2(center - Vector2.One * radius * 0.62f, Vector2.One * radius * 1.24f), Alpha(accent, 0.12f), true);
+                DrawRect(new Rect2(center - Vector2.One * radius * 0.62f, Vector2.One * radius * 1.24f), line, false, UiHairline, true);
+                for (int i = 0; i < 3; i++)
+                {
+                    float x = center.X - radius * 0.36f + i * radius * 0.36f;
+                    DrawLine(new Vector2(x, center.Y - radius * 0.78f), new Vector2(x, center.Y - radius * 0.58f), line, UiHairline, true);
+                    DrawLine(new Vector2(x, center.Y + radius * 0.58f), new Vector2(x, center.Y + radius * 0.78f), line, UiHairline, true);
+                }
+                break;
+            case MetaUpgradeId.PilotCodex:
+                DrawLine(center + new Vector2(-radius * 0.68f, -radius * 0.78f), center + new Vector2(-radius * 0.68f, radius * 0.78f), line, UiHairline, true);
+                DrawLine(center + new Vector2(-radius * 0.68f, -radius * 0.78f), center + new Vector2(radius * 0.66f, -radius * 0.52f), line, UiHairline, true);
+                DrawLine(center + new Vector2(-radius * 0.68f, radius * 0.78f), center + new Vector2(radius * 0.66f, radius * 0.52f), line, UiHairline, true);
+                DrawLine(center + new Vector2(-radius * 0.28f, -radius * 0.25f), center + new Vector2(radius * 0.42f, -radius * 0.1f), Alpha(Paper, unlocked ? 0.42f : 0.16f), UiHairline, true);
+                DrawLine(center + new Vector2(-radius * 0.28f, radius * 0.22f), center + new Vector2(radius * 0.42f, radius * 0.08f), Alpha(Paper, unlocked ? 0.42f : 0.16f), UiHairline, true);
+                break;
+            case MetaUpgradeId.ComboEngine:
+                DrawCircle(center - Vector2.Right * radius * 0.38f, radius * 0.38f, line, false, UiHairline, true);
+                DrawCircle(center + Vector2.Right * radius * 0.38f, radius * 0.38f, line, false, UiHairline, true);
+                DrawLine(center - Vector2.Right * radius * 0.12f, center + Vector2.Right * radius * 0.12f, Alpha(Paper, unlocked ? 0.5f : 0.18f), UiStroke, true);
+                break;
+            case MetaUpgradeId.EliteAnalyzer:
+                DrawCircle(center, radius * 0.9f, line, false, UiHairline, true);
+                DrawCircle(center, radius * 0.28f, Alpha(Paper, unlocked ? 0.48f : 0.16f), false, UiHairline, true);
+                DrawLine(center - Vector2.Right * radius, center + Vector2.Right * radius, line, UiHairline, true);
+                DrawLine(center - Vector2.Down * radius, center + Vector2.Down * radius, line, UiHairline, true);
+                break;
+        }
+    }
+
     private void DrawUpgradeGlyph(UpgradeId id, Vector2 center, float radius, Color accent)
     {
         Color line = Alpha(accent, 0.88f);
@@ -15500,71 +15799,219 @@ public partial class MainGame : Node2D
 
     private void DrawMeta()
     {
-        DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, 0.46f), true);
-        DrawGlow(ScreenCenter + new Vector2(0.0f, -40.0f), Gold, 520.0f, 0.055f, 8);
-        DrawGlow(ScreenCenter + new Vector2(-380.0f, 160.0f), Cyan, 340.0f, 0.035f, 7);
-        DrawText(T("meta.title"), new Vector2(0.0f, 96.0f), 52, Gold, HorizontalAlignment.Center, ScreenWidth, true, 5);
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(ScreenWidth, ScreenHeight)), new Color(0.0f, 0.0f, 0.0f, 0.58f), true);
+        DrawGlow(ScreenCenter + new Vector2(-220.0f, -60.0f), Gold, 520.0f, 0.042f, 8);
+        DrawGlow(ScreenCenter + new Vector2(280.0f, 120.0f), Cyan, 420.0f, 0.028f, 7);
 
-        Rect2 wallet = new(new Vector2(730.0f, 126.0f), new Vector2(460.0f, 54.0f));
-        DrawPanel(wallet, Alpha(Ink, 0.74f), Alpha(Gold, 0.42f));
-        DrawLine(wallet.Position + new Vector2(22.0f, wallet.Size.Y - 8.0f), wallet.Position + new Vector2(wallet.Size.X - 22.0f, wallet.Size.Y - 8.0f), Alpha(Gold, 0.3f), UiHairline, true);
-        DrawText(T("meta.dust").ToUpperInvariant(), wallet.Position + new Vector2(28.0f, 32.0f), 13, Alpha(Paper, 0.52f), HorizontalAlignment.Left, 160.0f, false, 0);
-        DrawText($"{_starDust}", wallet.Position + new Vector2(wallet.Size.X - 206.0f, 35.0f), 24, Gold, HorizontalAlignment.Right, 178.0f, true, 2);
+        Rect2 treePanel = MetaTreePanelRect();
+        Vector2 orbit = MetaOrbitCenter();
+        Color frame = Gold.Lerp(Cyan, 0.22f);
+        int selected = Mathf.Clamp(_gamepadMetaIndex, 0, MetaUpgrades.Length - 1);
+        MetaUpgradeDef selectedDef = MetaUpgrades[selected];
+        int selectedRank = MetaRank(selectedDef.Id);
+        bool selectedUnlocked = IsMetaUpgradeUnlocked(selectedDef);
+        bool selectedMaxed = selectedRank >= selectedDef.MaxRank;
+        int selectedCost = selectedMaxed ? 0 : MetaUpgradeCost(selectedDef, selectedRank);
+        bool selectedShort = selectedUnlocked && !selectedMaxed && _starDust < selectedCost;
 
-        Rect2 gridPanel = new(new Vector2(104.0f, 214.0f), new Vector2(1712.0f, 650.0f));
-        DrawPanel(gridPanel, Alpha(Ink, 0.24f), Alpha(GridLine, 0.18f));
-        DrawLine(gridPanel.Position + new Vector2(28.0f, 18.0f), gridPanel.Position + new Vector2(gridPanel.Size.X - 28.0f, 18.0f), Alpha(Paper, 0.06f), UiHairline, true);
-        DrawLine(gridPanel.Position + new Vector2(28.0f, gridPanel.Size.Y - 18.0f), gridPanel.Position + new Vector2(gridPanel.Size.X - 28.0f, gridPanel.Size.Y - 18.0f), Alpha(Paper, 0.06f), UiHairline, true);
+        DrawPanel(treePanel, Alpha(Ink, 0.34f), Alpha(frame, 0.38f));
+        DrawRect(treePanel.Grow(-10.0f), Alpha(frame, 0.18f), false, UiHairline, true);
+        DrawLine(treePanel.Position + new Vector2(28.0f, 14.0f), treePanel.Position + new Vector2(184.0f, 14.0f), Alpha(frame, 0.52f), UiHairline, true);
+        DrawLine(treePanel.End - new Vector2(184.0f, 14.0f), treePanel.End - new Vector2(28.0f, 14.0f), Alpha(frame, 0.52f), UiHairline, true);
+        DrawLine(treePanel.Position + new Vector2(28.0f, treePanel.Size.Y - 14.0f), treePanel.Position + new Vector2(184.0f, treePanel.Size.Y - 14.0f), Alpha(frame, 0.38f), UiHairline, true);
+        DrawLine(treePanel.End - new Vector2(184.0f, treePanel.Size.Y - 14.0f), treePanel.End - new Vector2(28.0f, treePanel.Size.Y - 14.0f), Alpha(frame, 0.38f), UiHairline, true);
+
+        DrawText(T("meta.title").ToUpperInvariant(), treePanel.Position + new Vector2(0.0f, 48.0f), 30, Gold.Lerp(Paper, 0.16f), HorizontalAlignment.Center, treePanel.Size.X, true, 4);
+        DrawText(T("meta.subtitle"), treePanel.Position + new Vector2(0.0f, 82.0f), 14, Alpha(Paper, 0.52f), HorizontalAlignment.Center, treePanel.Size.X, true, 1);
+        DrawText(T("meta.flow"), treePanel.Position + new Vector2(0.0f, 858.0f), 13, Alpha(Paper, 0.42f), HorizontalAlignment.Center, treePanel.Size.X, true, 1);
+
+        Rect2 wallet = new(treePanel.Position + new Vector2(44.0f, 58.0f), new Vector2(270.0f, 48.0f));
+        Color walletColor = selectedShort ? Rose : Gold;
+        DrawPanel(wallet, Alpha(Ink, 0.74f), Alpha(walletColor, selectedShort ? 0.62f : 0.42f));
+        DrawLine(wallet.Position + new Vector2(22.0f, wallet.Size.Y - 8.0f), wallet.Position + new Vector2(wallet.Size.X - 22.0f, wallet.Size.Y - 8.0f), Alpha(walletColor, selectedShort ? 0.52f : 0.3f), UiHairline, true);
+        DrawText(T("meta.dust").ToUpperInvariant(), wallet.Position + new Vector2(20.0f, 19.0f), 10, Alpha(Paper, 0.48f), HorizontalAlignment.Left, 110.0f, false, 0);
+        DrawText($"{_starDust}", wallet.Position + new Vector2(wallet.Size.X - 138.0f, 32.0f), 22, walletColor, HorizontalAlignment.Right, 118.0f, true, 2);
+
+        Rect2 insight = new(treePanel.Position + new Vector2(treePanel.Size.X - 314.0f, 58.0f), new Vector2(270.0f, 48.0f));
+        int upgraded = 0;
+        foreach (MetaUpgradeDef def in MetaUpgrades)
+        {
+            if (MetaRank(def.Id) > 0)
+            {
+                upgraded++;
+            }
+        }
+        DrawPanel(insight, Alpha(Ink, 0.54f), Alpha(Cyan, 0.28f));
+        DrawText(T("meta.nodes").ToUpperInvariant(), insight.Position + new Vector2(18.0f, 19.0f), 10, Alpha(Paper, 0.46f), HorizontalAlignment.Left, 120.0f, false, 0);
+        DrawText($"{upgraded}/{MetaUpgrades.Length}", insight.Position + new Vector2(insight.Size.X - 112.0f, 32.0f), 21, Cyan.Lerp(Paper, 0.1f), HorizontalAlignment.Right, 94.0f, true, 2);
+
+        float[] rings = { MetaRingRadius(1.0f), MetaRingRadius(2.0f), MetaRingRadius(3.0f) };
+        for (int i = 0; i < rings.Length; i++)
+        {
+            float radius = rings[i];
+            DrawCircle(orbit, radius, Alpha(Paper, 0.09f), false, UiHairline, true);
+            DrawCircle(orbit, radius + 3.0f, Alpha(i == rings.Length - 1 ? Gold : Cyan, i == rings.Length - 1 ? 0.05f : 0.035f), false, UiHairline, true);
+        }
+        DrawCircle(orbit, MetaRingRadius(0.0f) + 22.0f, Alpha(Cyan, 0.08f), false, UiHairline, true);
+        for (int i = 0; i < 16; i++)
+        {
+            float angle = i * Mathf.Tau / 16.0f;
+            Vector2 dir = new(Mathf.Cos(angle), Mathf.Sin(angle));
+            DrawLine(orbit + dir * (MetaRingRadius(1.0f) - 22.0f), orbit + dir * (MetaRingRadius(3.0f) + 18.0f), Alpha(Paper, i % 2 == 0 ? 0.055f : 0.03f), UiHairline, true);
+        }
 
         Vector2 mouse = GetGlobalMousePosition();
         for (int i = 0; i < MetaUpgrades.Length; i++)
         {
             MetaUpgradeDef def = MetaUpgrades[i];
-            int rank = MetaRank(def.Id);
-            bool maxed = rank >= def.MaxRank;
-            int cost = maxed ? 0 : MetaUpgradeCost(def, rank);
-            Rect2 rect = MetaUpgradeRect(i);
-            bool hover = rect.HasPoint(mouse) || IsGamepadFocused(rect);
-            Rect2 drawRect = rect;
-            Color accent = def.Accent;
-            bool affordable = !maxed && _starDust >= cost;
-            DrawGlow(drawRect.Position + drawRect.Size * 0.5f, accent, hover ? 112.0f : 66.0f, hover ? 0.045f : 0.018f, 4);
-            DrawPanel(drawRect, Alpha(Ink, hover ? 0.78f : 0.58f), Alpha(accent, hover ? 0.72f : 0.28f));
-            DrawHoverFrame(drawRect, accent, hover, 0.68f);
-
-            Rect2 header = new(drawRect.Position, new Vector2(drawRect.Size.X, 42.0f));
-            DrawRect(header, Alpha(accent, hover ? 0.11f : 0.065f), true);
-            DrawLine(header.Position + new Vector2(16.0f, header.Size.Y), header.Position + new Vector2(header.Size.X - 16.0f, header.Size.Y), Alpha(accent, hover ? 0.34f : 0.18f), UiHairline, true);
-            DrawCircle(drawRect.Position + new Vector2(drawRect.Size.X - 24.0f, 22.0f), 5.0f, Alpha(accent, hover ? 0.86f : 0.56f));
-
-            DrawText(T(def.TitleKey).ToUpperInvariant(), drawRect.Position + new Vector2(18.0f, 29.0f), 17, Paper, HorizontalAlignment.Left, drawRect.Size.X - 58.0f, true, 2);
-            DrawText(Tf("meta.rank", rank, def.MaxRank), drawRect.Position + new Vector2(18.0f, 60.0f), 12, Alpha(accent, 0.9f), HorizontalAlignment.Left, 92.0f, true, 1);
-
-            Rect2 bar = new(drawRect.Position + new Vector2(112.0f, 50.0f), new Vector2(drawRect.Size.X - 132.0f, 9.0f));
-            float progress = def.MaxRank <= 0 ? 1.0f : (float)rank / def.MaxRank;
-            DrawRect(bar.Grow(2.0f), Alpha(Void, 0.34f), true);
-            DrawRect(bar.Grow(1.0f), Alpha(Paper, 0.07f), true);
-            DrawRect(bar, Alpha(Paper, 0.1f), true);
-            DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * progress, bar.Size.Y)), Alpha(accent, maxed ? 0.78f : 0.62f), true);
-            DrawLine(bar.Position + new Vector2(0.0f, 2.0f), bar.Position + new Vector2(bar.Size.X * progress, 2.0f), Alpha(Paper, hover ? 0.24f : 0.16f), UiHairline, true);
-            if (def.MaxRank > 1)
+            Vector2 to = MetaNodeCenter(def);
+            foreach (MetaUpgradeId required in def.Requires)
             {
-                for (int step = 1; step < def.MaxRank; step++)
-                {
-                    float x = bar.Position.X + bar.Size.X * step / def.MaxRank;
-                    DrawLine(new Vector2(x, bar.Position.Y), new Vector2(x, bar.End.Y), Alpha(Void, 0.42f), UiHairline, true);
-                    DrawLine(new Vector2(x, bar.Position.Y + 1.0f), new Vector2(x, bar.End.Y - 1.0f), Alpha(Paper, 0.08f), UiHairline, true);
-                }
+                MetaUpgradeDef parent = MetaDef(required);
+                Vector2 from = MetaNodeCenter(parent);
+                bool active = MetaRank(parent.Id) > 0;
+                bool childActive = MetaRank(def.Id) > 0;
+                bool focusEdge = i == selected || MetaUpgradeIndex(required) == selected;
+                Color line = active
+                    ? Alpha(childActive ? def.Accent.Lerp(parent.Accent, 0.35f) : parent.Accent, focusEdge ? 0.72f : 0.38f)
+                    : Alpha(Paper, focusEdge ? 0.20f : 0.10f);
+                DrawLine(from, to, Alpha(Void, 0.42f), focusEdge ? 4.0f : 2.6f, true);
+                DrawLine(from, to, line, focusEdge ? 1.6f : UiHairline, true);
             }
-            DrawRect(bar, Alpha(accent, hover ? 0.38f : 0.24f), false, UiHairline, true);
-
-            DrawWrapped(T(def.BodyKey), drawRect.Position + new Vector2(18.0f, 82.0f), 11, Alpha(Paper, 0.62f), drawRect.Size.X - 36.0f, 14.0f);
-
-            Color costColor = maxed ? Jade : affordable ? Gold : Alpha(Rose, 0.86f);
-            DrawText(maxed ? T("meta.max") : Tf("meta.cost", cost), drawRect.Position + new Vector2(18.0f, drawRect.Size.Y - 6.0f), 14, costColor, HorizontalAlignment.Left, drawRect.Size.X - 36.0f, true, 1);
         }
 
+        for (int i = 0; i < MetaUpgrades.Length; i++)
+        {
+            DrawMetaNode(MetaUpgrades[i], MetaUpgradeRect(i), i == selected, MetaUpgradeRect(i).HasPoint(mouse) || IsGamepadFocused(MetaUpgradeRect(i)));
+        }
+
+        DrawMetaDetailPanel(MetaUpgrades[selected]);
         DrawMenuButton(MetaBackButtonRect(), T("meta.back"), Violet, false);
+    }
+
+    private void DrawMetaNode(MetaUpgradeDef def, Rect2 rect, bool selected, bool hover)
+    {
+        int rank = MetaRank(def.Id);
+        bool unlocked = IsMetaUpgradeUnlocked(def);
+        bool maxed = rank >= def.MaxRank;
+        int cost = maxed ? 0 : MetaUpgradeCost(def, rank);
+        bool affordable = unlocked && !maxed && _starDust >= cost;
+        bool shortDust = unlocked && !maxed && _starDust < cost;
+        Color accent = unlocked ? def.Accent : Alpha(Paper, 0.44f);
+        float pulse = selected ? 0.5f + 0.5f * Mathf.Sin(_time * 4.0f) : 0.0f;
+        Vector2 center = rect.Position + rect.Size * 0.5f;
+        float radius = MetaNodeRadius(def);
+        Color fill = rank > 0
+            ? Alpha(accent, selected ? 0.24f : 0.16f)
+            : Alpha(Ink, unlocked ? shortDust ? 0.58f : 0.78f : 0.54f);
+        Color outline = maxed ? Jade : affordable ? accent.Lerp(Paper, 0.12f) : shortDust ? Rose : accent;
+
+        DrawGlow(center, shortDust ? Rose : def.Accent, selected ? 128.0f : hover ? 94.0f : rank > 0 ? 68.0f : 42.0f, selected ? 0.056f : rank > 0 ? 0.026f : shortDust ? 0.018f : 0.012f, 4);
+        DrawCircle(center, radius + 7.0f, Alpha(Void, 0.42f));
+        DrawCircle(center, radius + 4.0f, Alpha(outline, selected ? 0.28f : hover ? 0.18f : 0.08f), false, UiHairline, true);
+        if (shortDust)
+        {
+            DrawCircle(center, radius + 10.0f, Alpha(Rose, selected ? 0.36f : 0.22f), false, UiHairline, true);
+        }
+        DrawCircle(center, radius, fill);
+        DrawCircle(center, radius, Alpha(outline, selected ? 0.92f : hover ? 0.72f : unlocked ? 0.48f : 0.22f), false, selected ? UiStroke : UiHairline, true);
+        DrawCircle(center, radius * 0.76f, Alpha(Paper, rank > 0 ? 0.18f : 0.07f), false, UiHairline, true);
+        if (!unlocked)
+        {
+            DrawLine(center - Vector2.Right * radius * 0.42f, center + Vector2.Right * radius * 0.42f, Alpha(Paper, 0.18f), UiHairline, true);
+        }
+        else if (!maxed && rank <= 0)
+        {
+            Vector2 badge = center + new Vector2(radius * 0.68f, -radius * 0.62f);
+            DrawCircle(badge, 9.0f, Alpha(Ink, 0.92f));
+            if (shortDust)
+            {
+                DrawCircle(badge, 9.0f, Alpha(Rose, 0.82f), false, UiHairline, true);
+                DrawText("!", badge + new Vector2(-5.0f, 5.5f), 13, Rose.Lerp(Paper, 0.18f), HorizontalAlignment.Center, 10.0f, true, 1);
+            }
+            else
+            {
+                DrawCircle(badge, 9.0f, Alpha(affordable ? Gold : Paper, affordable ? 0.8f : 0.36f), false, UiHairline, true);
+                DrawLine(badge - Vector2.Right * 4.2f, badge + Vector2.Right * 4.2f, Alpha(affordable ? Gold : Paper, 0.78f), UiHairline, true);
+                DrawLine(badge - Vector2.Down * 4.2f, badge + Vector2.Down * 4.2f, Alpha(affordable ? Gold : Paper, 0.78f), UiHairline, true);
+            }
+        }
+
+        DrawMetaGlyph(def.Id, center, radius * 0.38f, accent, unlocked, rank > 0);
+
+        if (rank > 0)
+        {
+            Vector2 badge = center + new Vector2(radius * 0.64f, radius * 0.62f);
+            DrawCircle(badge, 11.0f, Alpha(Ink, 0.95f));
+            DrawCircle(badge, 11.0f, Alpha(maxed ? Jade : accent, 0.82f), false, UiHairline, true);
+            string rankText = maxed ? "M" : rank.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            DrawText(rankText, badge + new Vector2(-11.0f, 5.0f), 11, maxed ? Jade.Lerp(Paper, 0.22f) : Paper, HorizontalAlignment.Center, 22.0f, false, 0);
+        }
+
+        if (selected)
+        {
+            DrawCircle(center, radius + 13.0f + pulse * 4.0f, Alpha(shortDust ? Rose : def.Accent, 0.24f + pulse * 0.08f), false, UiHairline, true);
+            DrawCircle(center, radius + 22.0f, Alpha(Paper, 0.11f), false, UiHairline, true);
+        }
+
+        if (def.Requires.Length == 0 && rank <= 0)
+        {
+            DrawText(T("meta.start_here").ToUpperInvariant(), center + new Vector2(-72.0f, radius + 32.0f), 10, Alpha(Gold, 0.72f), HorizontalAlignment.Center, 144.0f, false, 0);
+        }
+    }
+
+    private void DrawMetaDetailPanel(MetaUpgradeDef def)
+    {
+        int rank = MetaRank(def.Id);
+        bool unlocked = IsMetaUpgradeUnlocked(def);
+        bool maxed = rank >= def.MaxRank;
+        int cost = maxed ? 0 : MetaUpgradeCost(def, rank);
+        bool affordable = unlocked && !maxed && _starDust >= cost;
+        Rect2 panel = MetaDetailPanelRect();
+        Color accent = unlocked ? def.Accent : Alpha(Paper, 0.48f);
+
+        DrawPanel(panel, Alpha(Ink, 0.88f), Alpha(accent, unlocked ? 0.52f : 0.24f));
+        DrawLine(panel.Position + new Vector2(22.0f, panel.Size.Y - 10.0f), panel.Position + new Vector2(panel.Size.X - 22.0f, panel.Size.Y - 10.0f), Alpha(accent, 0.34f), UiHairline, true);
+        DrawText(T("meta.node.detail").ToUpperInvariant(), panel.Position + new Vector2(22.0f, 22.0f), 10, Alpha(Paper, 0.48f), HorizontalAlignment.Left, 180.0f, false, 0);
+        DrawText(T(def.TitleKey), panel.Position + new Vector2(22.0f, 52.0f), 23, unlocked ? Paper : Alpha(Paper, 0.54f), HorizontalAlignment.Left, 252.0f, true, 2);
+        DrawText(MetaNodeStateText(def).ToUpperInvariant(), panel.Position + new Vector2(208.0f, 22.0f), 10, Alpha(MetaNodeStateColor(def), 0.82f), HorizontalAlignment.Left, 118.0f, false, 0);
+        DrawText(Tf("meta.rank", rank, def.MaxRank), panel.Position + new Vector2(318.0f, 22.0f), 12, Alpha(accent, 0.84f), HorizontalAlignment.Right, 120.0f, true, 1);
+
+        Rect2 rankBar = new(panel.Position + new Vector2(22.0f, 72.0f), new Vector2(282.0f, 7.0f));
+        float progress = def.MaxRank <= 0 ? 1.0f : (float)rank / def.MaxRank;
+        DrawRect(rankBar, Alpha(Paper, 0.08f), true);
+        DrawRect(new Rect2(rankBar.Position, new Vector2(rankBar.Size.X * progress, rankBar.Size.Y)), Alpha(def.Accent, maxed ? 0.8f : 0.62f), true);
+        DrawRect(rankBar, Alpha(def.Accent, 0.26f), false, UiHairline, true);
+        for (int step = 1; step < def.MaxRank; step++)
+        {
+            float x = rankBar.Position.X + rankBar.Size.X * step / def.MaxRank;
+            DrawLine(new Vector2(x, rankBar.Position.Y), new Vector2(x, rankBar.End.Y), Alpha(Void, 0.46f), UiHairline, true);
+        }
+
+        DrawWrapped(T(def.BodyKey), panel.Position + new Vector2(22.0f, 100.0f), 13, unlocked ? Alpha(Paper, 0.68f) : Alpha(Paper, 0.44f), 306.0f, 18.0f);
+
+        Rect2 costBox = MetaCostBoxRect();
+        Color actionColor = maxed ? Jade : affordable ? Gold : unlocked ? Rose : GridLine;
+        DrawRect(costBox, Alpha(Graphite, 0.42f), true);
+        DrawRect(costBox, Alpha(actionColor, maxed || affordable ? 0.34f : 0.18f), false, UiHairline, true);
+        DrawText(T("meta.required_dust").ToUpperInvariant(), costBox.Position + new Vector2(0.0f, 17.0f), 10, Alpha(Paper, 0.46f), HorizontalAlignment.Center, costBox.Size.X, false, 0);
+        string costText = maxed ? T("meta.max") : unlocked ? $"{_starDust}/{cost}" : T("meta.locked");
+        DrawText(costText, costBox.Position + new Vector2(0.0f, maxed || !unlocked ? 45.0f : 38.0f), maxed || !unlocked ? 19 : 18, Alpha(actionColor, maxed || affordable ? 0.96f : 0.72f), HorizontalAlignment.Center, costBox.Size.X, true, 2);
+        if (unlocked && !maxed && !affordable)
+        {
+            DrawText(Tf("meta.missing_dust", cost - _starDust), costBox.Position + new Vector2(0.0f, 58.0f), 10, Alpha(Rose, 0.86f), HorizontalAlignment.Center, costBox.Size.X, false, 0);
+        }
+
+        Rect2 action = MetaAcceptButtonRect();
+        bool actionHover = action.HasPoint(GetGlobalMousePosition());
+        DrawPanel(action, Alpha(Graphite, actionHover ? 0.68f : 0.5f), Alpha(actionColor, actionHover || affordable ? 0.58f : 0.26f));
+        DrawHoverFrame(action, actionColor, actionHover || _usingGamepad, affordable ? 0.72f : 0.42f);
+        string actionText = maxed ? T("meta.max") : !unlocked ? T("meta.locked") : affordable ? T("meta.install") : T("meta.short_state");
+        DrawText(actionText, action.Position + new Vector2(0.0f, 31.0f), 16, Alpha(actionColor, maxed || affordable ? 0.96f : 0.62f), HorizontalAlignment.Center, action.Size.X, true, 1);
+
+        string requirement = def.Requires.Length == 0 ? T("meta.root") : Tf("meta.requires", MetaRequirementText(def));
+        DrawWrapped(requirement, panel.Position + new Vector2(22.0f, panel.Size.Y - 17.0f), 10, Alpha(Paper, unlocked ? 0.52f : 0.44f), 414.0f, 14.0f);
+        DrawText(T("meta.gamepad_hint"), panel.Position + new Vector2(panel.Size.X - 168.0f, panel.Size.Y - 18.0f), 10, Alpha(Paper, 0.4f), HorizontalAlignment.Right, 144.0f, false, 0);
     }
 
     private void DrawUpgrade()
@@ -17214,18 +17661,82 @@ public partial class MainGame : Node2D
 
     private static Rect2 MetaBackButtonRect()
     {
-        return new Rect2(new Vector2(810.0f, 922.0f), new Vector2(300.0f, 44.0f));
+        Rect2 panel = MetaTreePanelRect();
+        return new Rect2(panel.Position + new Vector2(70.0f, panel.Size.Y - 70.0f), new Vector2(180.0f, 44.0f));
+    }
+
+    private static Rect2 MetaAcceptButtonRect()
+    {
+        Rect2 panel = MetaDetailPanelRect();
+        return new Rect2(panel.Position + new Vector2(panel.Size.X - 148.0f, 52.0f), new Vector2(124.0f, 66.0f));
+    }
+
+    private static Rect2 MetaCostBoxRect()
+    {
+        Rect2 panel = MetaDetailPanelRect();
+        return new Rect2(panel.Position + new Vector2(panel.Size.X - 278.0f, 52.0f), new Vector2(116.0f, 66.0f));
+    }
+
+    private static Rect2 MetaTreePanelRect()
+    {
+        return new Rect2(new Vector2(300.0f, 92.0f), new Vector2(1320.0f, 900.0f));
+    }
+
+    private static Rect2 MetaDetailPanelRect()
+    {
+        Rect2 panel = MetaTreePanelRect();
+        return new Rect2(panel.Position + new Vector2(350.0f, 72.0f), new Vector2(620.0f, 154.0f));
+    }
+
+    private static Vector2 MetaOrbitCenter()
+    {
+        Rect2 panel = MetaTreePanelRect();
+        return panel.Position + new Vector2(panel.Size.X * 0.5f, 492.0f);
+    }
+
+    private static float MetaRingRadius(float ring)
+    {
+        if (ring <= 0.0f)
+        {
+            return 42.0f;
+        }
+
+        return 106.0f + (ring - 1.0f) * 112.0f;
+    }
+
+    private static float MetaNodeRadius(MetaUpgradeDef def)
+    {
+        float ring = def.TreePosition.Y;
+        if (ring <= 0.0f)
+        {
+            return 43.0f;
+        }
+
+        if (ring >= 3.0f)
+        {
+            return 34.0f;
+        }
+
+        return ring >= 2.0f ? 26.0f : 32.0f;
+    }
+
+    private static Vector2 MetaNodeCenter(MetaUpgradeDef def)
+    {
+        if (def.TreePosition.Y <= 0.0f)
+        {
+            return MetaOrbitCenter();
+        }
+
+        float angle = def.TreePosition.X * Mathf.Tau;
+        return MetaOrbitCenter() + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * MetaRingRadius(def.TreePosition.Y);
     }
 
     private static Rect2 MetaUpgradeRect(int index)
     {
-        const float width = 394.0f;
-        const float height = 136.0f;
-        const float gapX = 22.0f;
-        const float gapY = 14.0f;
-        int column = index % 4;
-        int row = index / 4;
-        return new Rect2(new Vector2(138.0f + column * (width + gapX), 242.0f + row * (height + gapY)), new Vector2(width, height));
+        MetaUpgradeDef def = MetaUpgrades[Mathf.Clamp(index, 0, MetaUpgrades.Length - 1)];
+        float radius = MetaNodeRadius(def) + 14.0f;
+        Vector2 size = new(radius * 2.0f, radius * 2.0f);
+        return new Rect2(MetaNodeCenter(def) - size * 0.5f, size);
     }
 
     private static Vector2 RandomOrbit(float phase)

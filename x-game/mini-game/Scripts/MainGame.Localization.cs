@@ -479,10 +479,25 @@ goal.beat_record|Beat your best clear time {0}|突破最快通关 {0}|Побей
 goal.set_record|Finish a full clear to set a time|完成一次通关，留下最快时间|Заверши полный проход и поставь время|Conclua uma vitória para marcar tempo|Beende einen Sieg und setze eine Zeit|Tam zaferle süre kaydet|Termine une victoire pour poser un temps|一度クリアして記録を残す
 meta.open_hint|Open the Fighter Bay between runs.|每局结束后可进入战机升级室。|Открывай ангар между вылетами.|Abra o hangar entre runs.|Öffne den Hangar zwischen Runs.|Sefer arasında hangarı aç.|Ouvre le hangar entre deux runs.|出撃の合間に格納庫を開く。
 meta.buy_hint|Click a module or press A to install.|点击模块或按 A 安装。|Кликни модуль или нажми A.|Clique no módulo ou aperte A.|Klicke ein Modul oder drücke A.|Modüle tıkla veya A bas.|Clique un module ou appuie sur A.|モジュールをクリック、またはAで装着。
+meta.flow|Select a node, read its effect, then install it.|选择节点，查看效果，然后安装。|Выбери узел, прочитай эффект и установи.|Selecione um nó, leia o efeito e instale.|Wähle einen Knoten, lies den Effekt, baue ihn ein.|Düğüm seç, etkisini oku, sonra kur.|Choisis un nœud, lis l’effet, puis installe.|ノードを選び、効果を見てから装着。
 meta.back|BACK|返回|НАЗАД|VOLTAR|ZURÜCK|GERİ|RETOUR|戻る
+meta.install|INSTALL|安装|УСТАНОВИТЬ|INSTALAR|EINBAUEN|KUR|INSTALLER|装着
+meta.nodes|Nodes Active|已激活节点|Активные узлы|Nós ativos|Aktive Knoten|Aktif Düğümler|Nœuds actifs|起動ノード
+meta.required_dust|Dust Needed|需要星尘|Нужно пыли|Pó necessário|Staub nötig|Gereken Toz|Poussière requise|必要な星屑
+meta.gamepad_hint|A Install  B Back|A 安装  B 返回|A установить  B назад|A instalar  B voltar|A Einbauen  B Zurück|A kur  B geri|A installer  B retour|A装着  B戻る
+meta.start_here|Start here|从这里开始|Начни здесь|Comece aqui|Hier starten|Buradan başla|Commence ici|ここから開始
 meta.cost|COST {0}|花费 {0}|ЦЕНА {0}|CUSTO {0}|KOSTEN {0}|BEDEL {0}|COÛT {0}|コスト {0}
 meta.max|MAX|已满|МАКС|MÁX|MAX|MAKS|MAX|最大
 meta.rank|Rank {0}/{1}|等级 {0}/{1}|Ранг {0}/{1}|Rank {0}/{1}|Rang {0}/{1}|Rütbe {0}/{1}|Rang {0}/{1}|ランク {0}/{1}
+meta.node.detail|Upgrade Node|升级节点|Узел улучшения|Nó de upgrade|Upgrade-Knoten|Geliştirme Düğümü|Nœud d’amélioration|強化ノード
+meta.ready|Ready|可升级|Готово|Pronto|Bereit|Hazır|Prêt|強化可
+meta.active|Active|已激活|Активно|Ativo|Aktiv|Aktif|Actif|起動中
+meta.short_state|Need Dust|星尘不足|Нужно пыли|Falta Pó|Staub fehlt|Toz eksik|Manque poussière|星屑不足
+meta.missing_dust|Missing {0}|还差 {0}|Не хватает {0}|Faltam {0}|Fehlen {0}|{0} eksik|Manque {0}|あと {0}
+meta.locked|Locked|未解锁|Заблокировано|Bloqueado|Gesperrt|Kilitli|Verrouillé|ロック中
+meta.root|Core node. It can be upgraded immediately.|基础节点，可以直接升级。|Базовый узел, доступен сразу.|Nó básico, pode melhorar agora.|Grundknoten, sofort verfügbar.|Temel düğüm, hemen yükselir.|Nœud de base, améliorable tout de suite.|基礎ノード。すぐ強化できる。
+meta.requires|Requires: {0}|需要：{0}|Требуется: {0}|Requer: {0}|Benötigt: {0}|Gereken: {0}|Requiert : {0}|必要: {0}
+meta.requires.toast|Unlock first: {0}|请先解锁：{0}|Сначала открой: {0}|Libere antes: {0}|Erst freischalten: {0}|Önce aç: {0}|Débloque d’abord : {0}|先に解除: {0}
 meta.bought|UPGRADED|升级完成|УЛУЧШЕНО|APRIMORADO|VERSTÄRKT|GELİŞTİ|AMÉLIORÉ|強化完了
 meta.short|NEED {0} MORE|还差 {0}|НУЖНО {0}|FALTA {0}|NOCH {0}|{0} EKSİK|MANQUE {0}|あと {0}
 settings.title|SETTINGS|设置|НАСТРОЙКИ|CONFIGURAÇÕES|EINSTELLUNGEN|AYARLAR|PARAMÈTRES|設定
