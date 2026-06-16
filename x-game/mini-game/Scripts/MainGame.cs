@@ -19,7 +19,11 @@ public partial class MainGame : Node2D
     private const float PlayerBulletRadius = 7.0f;
     private const float SampleRate = 44100.0f;
     private const int MaxSfxVoices = 16;
-    private const float SfxGlobalGain = 0.48f;
+    private const float AudioOutputDb = -7.0f;
+    private const float AudioSoftClipLimit = 0.76f;
+    private const float MusicGlobalGain = 1.55f;
+    private const float SfxGlobalGain = 0.72f;
+    private const float SfxVoiceVolumeCap = 0.28f;
     private const float SfxNoiseScale = 0.18f;
     private const int MaxEnemies = 96;
     private const int MaxShots = 420;
@@ -112,6 +116,10 @@ public partial class MainGame : Node2D
     private const int TitleMetaFocus = TitleFooterFocusStart;
     private const int TitleStartFocus = TitleFooterFocusStart + 1;
     private const int TitleSettingsFocus = TitleFooterFocusStart + 2;
+    private const int EndTitleFocus = 0;
+    private const int EndRestartFocus = 1;
+    private const int EndMetaFocus = 2;
+    private const int EndActionCount = 3;
     private static readonly float[] BossPhaseThresholds = { 0.72f, 0.43f, 0.18f };
     private static readonly int[] BuildMilestoneThresholds = { 5, 8, 11 };
     private static readonly EnemyKind[] EnemyDirectorKinds =
@@ -990,8 +998,8 @@ public partial class MainGame : Node2D
     private VisualQuality _visualQuality = VisualQuality.High;
     private GameDifficulty _selectedDifficulty = GameDifficulty.Cruise;
     private GameDifficulty _runDifficulty = GameDifficulty.Cruise;
-    private float _musicVolume = 0.52f;
-    private float _sfxVolume = 0.56f;
+    private float _musicVolume = 0.70f;
+    private float _sfxVolume = 0.74f;
     private Font? _uiFont;
     private bool _usingGamepad;
     private Rect2 _gamepadFocusRect;
@@ -1001,6 +1009,7 @@ public partial class MainGame : Node2D
     private int _gamepadUpgradeIndex;
     private int _gamepadMetaIndex;
     private int _gamepadSettingsIndex;
+    private int _gamepadEndIndex = EndRestartFocus;
     private int _guidePage;
     private float _gamepadNavCooldown;
     private int _gamepadLastNavX;
@@ -2333,6 +2342,11 @@ public partial class MainGame : Node2D
 
     private void DeleteSaveData()
     {
+        if (!CanShowDeleteSaveButton())
+        {
+            return;
+        }
+
         _metaRanks.Clear();
         _starDust = 0;
         _lifetimeDust = 0;
@@ -4947,7 +4961,32 @@ public partial class MainGame : Node2D
 
     private int SettingsOptionCount()
     {
-        return IsRunViewMode(_settingsReturnMode) ? 9 : 8;
+        return 6 + (IsRunViewMode(_settingsReturnMode) ? 1 : 0) + (CanShowDeleteSaveButton() ? 1 : 0) + 1;
+    }
+
+    private int SettingsMainMenuIndex()
+    {
+        return IsRunViewMode(_settingsReturnMode) ? 6 : -1;
+    }
+
+    private int SettingsDeleteSaveIndex()
+    {
+        if (!CanShowDeleteSaveButton())
+        {
+            return -1;
+        }
+
+        return 6 + (IsRunViewMode(_settingsReturnMode) ? 1 : 0);
+    }
+
+    private int SettingsBackIndex()
+    {
+        return 6 + (IsRunViewMode(_settingsReturnMode) ? 1 : 0) + (CanShowDeleteSaveButton() ? 1 : 0);
+    }
+
+    private static bool CanShowDeleteSaveButton()
+    {
+        return OS.HasFeature("editor");
     }
 
     private Rect2 SettingsOptionRect(int index)
@@ -5022,10 +5061,9 @@ public partial class MainGame : Node2D
 
     private void ActivateSettingsOption(int index)
     {
-        bool runSettings = IsRunViewMode(_settingsReturnMode);
-        int mainMenuIndex = runSettings ? 6 : -1;
-        int deleteIndex = runSettings ? 7 : 6;
-        int backIndex = runSettings ? 8 : 7;
+        int mainMenuIndex = SettingsMainMenuIndex();
+        int deleteIndex = SettingsDeleteSaveIndex();
+        int backIndex = SettingsBackIndex();
 
         if (index == 0)
         {
@@ -5049,7 +5087,7 @@ public partial class MainGame : Node2D
             return;
         }
 
-        if (index == deleteIndex)
+        if (deleteIndex >= 0 && index == deleteIndex)
         {
             if (_deleteSaveConfirmTimer > 0.0f)
             {
@@ -12622,6 +12660,7 @@ public partial class MainGame : Node2D
     private void CompleteWinRun()
     {
         _mode = GameMode.Victory;
+        _gamepadEndIndex = EndRestartFocus;
         _wonOnce = true;
         AwardMetaProgress(true);
         ClearShots();
@@ -12654,6 +12693,7 @@ public partial class MainGame : Node2D
     private void CompleteLoseRun()
     {
         _mode = GameMode.GameOver;
+        _gamepadEndIndex = EndRestartFocus;
         _playerHp = 0.0f;
         AwardMetaProgress(false);
         ClearShots();
@@ -12667,21 +12707,84 @@ public partial class MainGame : Node2D
     {
         UpdateParticles(dt);
         UpdateDamageTexts(dt);
+        _gamepadEndIndex = Mathf.Clamp(_gamepadEndIndex, 0, EndActionCount - 1);
+        int nav = ConsumeGamepadNavX();
+        if (nav == 0)
+        {
+            nav = ConsumeGamepadNavY();
+        }
+        if (nav != 0)
+        {
+            _gamepadEndIndex = WrapIndex(_gamepadEndIndex + nav, EndActionCount);
+            PlaySfx(250.0f + _gamepadEndIndex * 35.0f, 16.0f, 0.055f, 0.1f, 0.01f, 1);
+        }
+        SetGamepadFocus(EndActionRect(_gamepadEndIndex));
+
         bool click = Input.IsMouseButtonPressed(MouseButton.Left) && !_lastClick;
         Vector2 mouse = GetGlobalMousePosition();
-        if ((MetaHeld() && !_lastMeta) || (click && EndMetaButtonRect().HasPoint(mouse)))
+        if (click)
         {
-            BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
+            _usingGamepad = false;
+        }
+
+        if (MetaHeld() && !_lastMeta)
+        {
+            ActivateEndAction(EndMetaFocus);
             return;
         }
 
-        if ((ConfirmHeld() && !_lastConfirm) || (StartHeld() && !_lastStart) || (click && EndRestartButtonRect().HasPoint(mouse)))
+        if (StartHeld() && !_lastStart)
         {
-            BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
+            ActivateEndAction(EndRestartFocus);
+            return;
         }
-        if ((CancelHeld() && !_lastCancel) || (click && EndTitleButtonRect().HasPoint(mouse)))
+
+        if (CancelHeld() && !_lastCancel)
         {
-            BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
+            ActivateEndAction(EndTitleFocus);
+            return;
+        }
+
+        if (ConfirmHeld() && !_lastConfirm)
+        {
+            ActivateEndAction(_gamepadEndIndex);
+            return;
+        }
+
+        if (click && EndTitleButtonRect().HasPoint(mouse))
+        {
+            _gamepadEndIndex = EndTitleFocus;
+            ActivateEndAction(EndTitleFocus);
+            return;
+        }
+
+        if (click && EndRestartButtonRect().HasPoint(mouse))
+        {
+            _gamepadEndIndex = EndRestartFocus;
+            ActivateEndAction(EndRestartFocus);
+            return;
+        }
+
+        if (click && EndMetaButtonRect().HasPoint(mouse))
+        {
+            _gamepadEndIndex = EndMetaFocus;
+            ActivateEndAction(EndMetaFocus);
+        }
+    }
+
+    private void ActivateEndAction(int index)
+    {
+        switch (Mathf.Clamp(index, 0, EndActionCount - 1))
+        {
+            case EndTitleFocus:
+                BeginLoadingTransition(LoadingAction.Title, "loading.menu", Cyan);
+                break;
+            case EndMetaFocus:
+                BeginLoadingTransition(LoadingAction.Meta, "loading.meta", Gold);
+                break;
+            default:
+                BeginLoadingTransition(LoadingAction.StartRun, "loading.start", Cyan);
+                break;
         }
     }
 
@@ -15327,22 +15430,29 @@ public partial class MainGame : Node2D
         DrawSettingsValueRow(SettingsOptionRect(3), T("settings.language"), LanguageDisplayName(_language), PolarityColor(_playerPolarity), -1.0f);
         DrawSettingsValueRow(SettingsOptionRect(4), T("settings.resolution"), ResolutionDisplayName(_resolutionPreset), PickupBlue, -1.0f);
         DrawSettingsValueRow(SettingsOptionRect(5), T("settings.quality"), QualityDisplayName(_visualQuality), Jade, (int)_visualQuality / (float)(VisualQualityCount() - 1));
-        if (runSettings)
+        int mainMenuIndex = SettingsMainMenuIndex();
+        int deleteIndex = SettingsDeleteSaveIndex();
+        int backIndex = SettingsBackIndex();
+
+        if (mainMenuIndex >= 0)
         {
-            DrawMenuButton(SettingsOptionRect(6), T("settings.main_menu"), Rose, false);
+            DrawMenuButton(SettingsOptionRect(mainMenuIndex), T("settings.main_menu"), Rose, false);
         }
-        string deleteLabel = _deleteSaveConfirmTimer > 0.0f ? T("settings.delete_confirm") : T("settings.delete_save");
-        DrawMenuButton(SettingsOptionRect(runSettings ? 7 : 6), deleteLabel, _deleteSaveConfirmTimer > 0.0f ? Rose : AlertRed.Lerp(Paper, 0.2f), false);
-        if (_deleteSaveConfirmTimer > 0.0f)
+        if (deleteIndex >= 0)
         {
-            DrawText(T("settings.delete_warning"), panel.Position + new Vector2(70.0f, 728.0f), 15, Alpha(Rose, 0.76f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
-        }
-        else if (_deleteSaveNoticeTimer > 0.0f)
-        {
-            DrawText(T("settings.delete_notice"), panel.Position + new Vector2(70.0f, 728.0f), 16, Alpha(Jade, 0.78f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
+            string deleteLabel = _deleteSaveConfirmTimer > 0.0f ? T("settings.delete_confirm") : T("settings.delete_save");
+            DrawMenuButton(SettingsOptionRect(deleteIndex), deleteLabel, _deleteSaveConfirmTimer > 0.0f ? Rose : AlertRed.Lerp(Paper, 0.2f), false);
+            if (_deleteSaveConfirmTimer > 0.0f)
+            {
+                DrawText(T("settings.delete_warning"), panel.Position + new Vector2(70.0f, 728.0f), 15, Alpha(Rose, 0.76f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
+            }
+            else if (_deleteSaveNoticeTimer > 0.0f)
+            {
+                DrawText(T("settings.delete_notice"), panel.Position + new Vector2(70.0f, 728.0f), 16, Alpha(Jade, 0.78f), HorizontalAlignment.Center, panel.Size.X - 140.0f, true, 1);
+            }
         }
         string backLabel = runSettings ? T("settings.resume") : T("settings.back");
-        DrawMenuButton(SettingsOptionRect(runSettings ? 8 : 7), backLabel, GridLine, false);
+        DrawMenuButton(SettingsOptionRect(backIndex), backLabel, GridLine, false);
         DrawText(T("settings.adjust_hint"), panel.Position + new Vector2(0.0f, 778.0f), 17, Alpha(Paper, 0.42f), HorizontalAlignment.Center, panel.Size.X, true, 2);
     }
 
@@ -16805,6 +16915,16 @@ public partial class MainGame : Node2D
         return new Rect2(new Vector2(1116.0f, 782.0f), new Vector2(210.0f, 42.0f));
     }
 
+    private static Rect2 EndActionRect(int index)
+    {
+        return Mathf.Clamp(index, 0, EndActionCount - 1) switch
+        {
+            EndTitleFocus => EndTitleButtonRect(),
+            EndMetaFocus => EndMetaButtonRect(),
+            _ => EndRestartButtonRect(),
+        };
+    }
+
     private static bool IsGmUnlockAvailable()
     {
         return OS.HasFeature("editor") || OS.HasFeature("debug");
@@ -17065,12 +17185,13 @@ public partial class MainGame : Node2D
 
     private Rect2 SettingsDeleteSaveButtonRect()
     {
-        return SettingsOptionRect(IsRunViewMode(_settingsReturnMode) ? 7 : 6);
+        int index = SettingsDeleteSaveIndex();
+        return index >= 0 ? SettingsOptionRect(index) : new Rect2();
     }
 
     private Rect2 SettingsBackButtonRect()
     {
-        return SettingsOptionRect(IsRunViewMode(_settingsReturnMode) ? 8 : 7);
+        return SettingsOptionRect(SettingsBackIndex());
     }
 
     private static Rect2 GuideBackButtonRect()
@@ -19174,7 +19295,7 @@ public partial class MainGame : Node2D
         _musicPlayer = new AudioStreamPlayer
         {
             Stream = generator,
-            VolumeDb = -15.0f,
+            VolumeDb = AudioOutputDb,
         };
         AddChild(_musicPlayer);
         _musicPlayer.Play();
@@ -19191,8 +19312,8 @@ public partial class MainGame : Node2D
         int frames = Math.Min(_musicPlayback.GetFramesAvailable(), 2048);
         for (int i = 0; i < frames; i++)
         {
-            float sample = MusicSample() * _musicVolume + SfxSample() * _sfxVolume;
-            sample = SoftClip(sample, 0.52f);
+            float sample = MusicSample() * _musicVolume * MusicGlobalGain + SfxSample() * _sfxVolume;
+            sample = SoftClip(sample, AudioSoftClipLimit);
             _musicPlayback.PushFrame(new Vector2(sample, sample));
             _musicClock += 1.0f / SampleRate;
         }
@@ -19262,7 +19383,7 @@ public partial class MainGame : Node2D
             Frequency = Mathf.Clamp(frequency * 0.9f, 42.0f, 860.0f),
             Sweep = Mathf.Clamp(sweep * 0.36f, -170.0f, 170.0f),
             Life = Mathf.Clamp(life * 0.68f, 0.05f, 0.68f),
-            Volume = Mathf.Clamp(volume * SfxGlobalGain, 0.0f, 0.2f),
+            Volume = Mathf.Clamp(volume * SfxGlobalGain, 0.0f, SfxVoiceVolumeCap),
             Noise = Mathf.Clamp(noise * SfxNoiseScale, 0.0f, 0.05f),
             Wave = wave,
         });
