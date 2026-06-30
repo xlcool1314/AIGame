@@ -246,6 +246,8 @@ wave.directive.short.anchor|ARMOR|装甲|БРОНЯ|BLIND.|PANZER|ZIRH|ARMURE|�
 wave.directive.short.minefield|MINES|星雷|МИНЫ|MINAS|MINEN|MAYIN|MINES|機雷
 flow.momentum|MOMENTUM +FOCUS +ENERGY|连战动量：专注与能量提升|ТЕМП +ФОКУС +ЭНЕРГИЯ|RITMO +FOCO +ENERGIA|MOMENTUM +FOKUS +ENERGIE|İVME +ODAK +ENERJİ|ÉLAN +FOCUS +ÉNERGIE|勢い +集中 +エネルギー
 flow.supply|SUPPLY WAVE: fewer enemies, better recovery.|补给波：敌人较少，恢复更多。|Волна снабжения: меньше врагов, больше восстановления.|Onda de suprimento: menos inimigos, mais cura.|Versorgung: weniger Feinde, bessere Erholung.|İkmal dalgası: az düşman, çok toparlanma.|Ravitaillement : moins d’ennemis, meilleure récupération.|補給波：敵少なめ、回復多め。
+director.pressure|Clean play: next wave escalates.|稳定发挥：下一波压力提高。|Чистая игра: следующая волна сильнее.|Boa jogada: próxima onda sobe.|Sauber gespielt: nächste Welle härter.|Temiz oyun: sonraki dalga sertleşir.|Jeu propre : prochaine vague plus dure.|安定プレイ：次の波が強化。
+director.recover|Damaged: next wave stabilizes.|刚刚受伤：下一波节奏放缓。|Получен урон: следующая волна мягче.|Você sofreu dano: próxima onda acalma.|Getroffen: nächste Welle ruhiger.|Hasar aldın: sonraki dalga yavaşlar.|Touché : prochaine vague plus calme.|被弾：次の波は落ち着く。
 flow.draft|BUILD DRAFT READY|构筑选择就绪|ВЫБОР СБОРКИ ГОТОВ|ESCOLHA DE BUILD|BUILD-WAHL BEREIT|YAPI SEÇİMİ HAZIR|CHOIX DE BUILD PRÊT|ビルド選択可能
 flow.reward.clean|No damage: next wave reward improves.|无伤通过：下一波奖励提高。|Без урона: награда следующей волны выше.|Sem dano: próxima recompensa melhora.|Ohne Schaden: nächste Belohnung steigt.|Hasarsız: sonraki ödül artar.|Sans dégâts : prochaine récompense accrue.|無傷：次Wave報酬上昇。
 flow.reward.swarm|Swarm routed: extra EXP crystals drift in.|蜂群击溃：额外经验晶体出现。|Рой разбит: плывут кристаллы опыта.|Enxame vencido: cristais EXP surgem.|Schwarm gebrochen: EXP-Kristalle treiben ein.|Sürü dağıldı: EXP kristalleri gelir.|Essaim brisé : cristaux EXP en plus.|群襲撃破：追加EXP結晶。
@@ -480,6 +482,7 @@ goal.set_record|Finish a full clear to set a time|完成一次通关，留下最
 meta.open_hint|Open the Fighter Bay between runs.|每局结束后可进入战机升级室。|Открывай ангар между вылетами.|Abra o hangar entre runs.|Öffne den Hangar zwischen Runs.|Sefer arasında hangarı aç.|Ouvre le hangar entre deux runs.|出撃の合間に格納庫を開く。
 meta.buy_hint|Click a module or press A to install.|点击模块或按 A 安装。|Кликни модуль или нажми A.|Clique no módulo ou aperte A.|Klicke ein Modul oder drücke A.|Modüle tıkla veya A bas.|Clique un module ou appuie sur A.|モジュールをクリック、またはAで装着。
 meta.flow|Select a node, read its effect, then install it.|选择节点，查看效果，然后安装。|Выбери узел, прочитай эффект и установи.|Selecione um nó, leia o efeito e instale.|Wähle einen Knoten, lies den Effekt, baue ihn ein.|Düğüm seç, etkisini oku, sonra kur.|Choisis un nœud, lis l’effet, puis installe.|ノードを選び、効果を見てから装着。
+meta.hover_hint|Hover or click a node to inspect it.|悬停或点击节点查看详情。|Наведи или кликни узел для деталей.|Passe o mouse ou clique no nó.|Knoten anvisieren oder anklicken.|Düğümün üstüne gel veya tıkla.|Survole ou clique un nœud.|ノードに重ねるかクリック。
 meta.back|BACK|返回|НАЗАД|VOLTAR|ZURÜCK|GERİ|RETOUR|戻る
 meta.install|INSTALL|安装|УСТАНОВИТЬ|INSTALAR|EINBAUEN|KUR|INSTALLER|装着
 meta.nodes|Nodes Active|已激活节点|Активные узлы|Nós ativos|Aktive Knoten|Aktif Düğümler|Nœuds actifs|起動ノード
